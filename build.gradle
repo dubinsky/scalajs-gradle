@@ -1,0 +1,32 @@
+plugins {
+  id 'com.github.ben-manes.versions' version '0.42.0'
+  id 'scala'
+  id 'java-gradle-plugin'
+}
+
+group = 'org.podval.tools'
+version = '0.0.1'
+description = 'Gradle plugin for ScalaJS'
+
+dependencies {
+  implementation 'org.scala-lang:scala3-library_3:3.1.2-RC2'
+  implementation 'org.scala-js:scalajs-linker_2.13:1.9.0'
+}
+
+tasks.withType(ScalaCompile) {
+  scalaCompileOptions.with {
+    targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
+  }
+}
+
+// There is no Java in the project :)
+project.gradle.startParameter.excludedTaskNames.add('compileJava')
+
+gradlePlugin {
+  plugins {
+    scalajs {
+      id = 'org.podval.tools.scalajs'
+      implementationClass = 'org.podval.tools.scalajs.ScalaJSPlugin'
+    }
+  }
+}
