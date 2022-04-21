@@ -1,9 +1,9 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.{DefaultTask, Plugin, Project}
+import org.gradle.api.{DefaultTask, NamedDomainObjectContainer, Plugin, Project, Task}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{SourceSet, TaskAction}
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
@@ -19,23 +19,29 @@ import scala.jdk.CollectionConverters.*
 
 final class ScalaJSPlugin extends Plugin[Project]:
   override def apply(project: Project): Unit =
+    project.getPluginManager.apply(classOf[org.gradle.api.plugins.scala.ScalaPlugin])
     project.getExtensions.create("scalajs", classOf[ScalaJSPlugin.Extension])
     project.getTasks.create("fastLinkJS", classOf[ScalaJSPlugin.FastLinkTask])
     project.getTasks.create("fullLinkJS", classOf[ScalaJSPlugin.FullLinkTask])
 
 object ScalaJSPlugin:
 
-  abstract class Extension:
-    def getMainClass: Property[String]
-    def getMainMethod: Property[String]
+  abstract class ModuleInitializerProperties:
+    def getName: String // Type must have a read-only 'name' property
+    def getClassName: Property[String]
+    def getMainMethodName: Property[String]
     def getMainMethodHasArgs: Property[Boolean]
 
-    final def mainModuleInitializer: Option[ModuleInitializer] = optional(getMainClass).map { (mainClass: String) =>
-      val mainMethod: String = getOrElse(getMainMethod, "main")
+    final def toModuleInitializer: ModuleInitializer =
+      val clazz : String = getClassName.get
+      val method: String = getOrElse(getMainMethodName, "main")
+      // TODO use the name as the module id:
       if getOrElse(getMainMethodHasArgs, false)
-      then ModuleInitializer.mainMethodWithArgs(mainClass, mainMethod)
-      else ModuleInitializer.mainMethod(mainClass, mainMethod)
-    }
+      then ModuleInitializer.mainMethodWithArgs(clazz, method)//.withModuleID(getName)
+      else ModuleInitializer.mainMethod        (clazz, method)//.withModuleID(getName)
+
+  abstract class Extension:
+    def getModuleInitializers: NamedDomainObjectContainer[ModuleInitializerProperties]
 
     def getOutputDirectory: Property[File]
     final def outputDirectory(project: Project): File = getOrElse(getOutputDirectory, File(project.getBuildDir, "js"))
@@ -78,15 +84,18 @@ object ScalaJSPlugin:
     @TaskAction def execute(): Unit =
       val extension: Extension = getExtension
       val outputDirectory: File = extension.outputDirectory(getProject)
-
-      // Without the initializer, no JavaScript is emitted!
-      val mainModuleInitializer: Option[ModuleInitializer] = extension.mainModuleInitializer
       val linkerConfig: StandardConfig = extension.linkerConfig(fullOptimization)
+      // Without the initializer, no JavaScript is emitted!
+      val moduleInitializers: Seq[ModuleInitializer] = extension
+        .getModuleInitializers
+        .asScala
+        .toSeq
+        .map(_.toModuleInitializer)
 
       info(
         s"""ScalaJSPlugin:
            |outputDirectory = $outputDirectory
-           |mainModuleInitializer = ${mainModuleInitializer.map(ModuleInitializer.fingerprint)}
+           |moduleInitializers = ${moduleInitializers.map(ModuleInitializer.fingerprint).mkString(", ")}
            |linkerConfig = $linkerConfig
            |""".stripMargin,
       )
@@ -99,7 +108,7 @@ object ScalaJSPlugin:
         .flatMap((irContainers: Seq[IRContainer]) => StandardImpl.irFileCache().newCache.cached(irContainers))
         .flatMap((irFiles     : Seq[IRFile]     ) => StandardImpl.linker(linkerConfig).link(
           irFiles = irFiles,
-          moduleInitializers = mainModuleInitializer.toSeq,
+          moduleInitializers = moduleInitializers,
           output = PathOutputDirectory(outputDirectory.toPath),
           logger = GradleLogger(getProject)
         ))
@@ -108,17 +117,17 @@ object ScalaJSPlugin:
       info(report.toString)
 
   private def getMainSourceSet(project: Project): SourceSet = project
-    .getConvention
-    .findPlugin(classOf[JavaPluginConvention])
+    .getExtensions
+    .getByType(classOf[JavaPluginExtension])
     .getSourceSets
     .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
 
-  private def getClassesTask(project: Project) = project
+  private def getClassesTask(project: Project): Task = project
     .getTasks
     .findByName(getMainSourceSet(project).getClassesTaskName)
 
-  private def optional[T](property: Property[T]): Option[T] =
-    if !property.isPresent then None else Some(property.get)
+//  private def optional[T](property: Property[T]): Option[T] =
+//    if !property.isPresent then None else Some(property.get)
 
   private def getOrElse[T](property: Property[T], default: => T): T =
     if !property.isPresent then default else property.get
