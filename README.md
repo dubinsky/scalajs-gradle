@@ -3,11 +3,6 @@
 ## Summary ##
 
 This is a Gradle plugin for working with Scala.js.
-
-This is not yet a full-blown plugin: it is not published to the Gradle Plugin Portal.
-To use it right now one needs to check out this repository
-and include it in the compound build...
-
 Plugin adds to the Gradle project two new tasks: `fastLinkJS` and `fullLinkJS`.
 Both of those tasks depend on the `classes` task.
 
@@ -29,6 +24,8 @@ Hence, this plugin.
 
 ## Applying to a Gradle project ##
 
+### Plugin ###
+
 Plugin is [published](https://plugins.gradle.org/plugin/org.podval.tools.scalajs)
 on the Gradle Plugin Portal. To apply it to a Gradle project:
 
@@ -40,6 +37,63 @@ plugins {
 
 Plugin will automatically apply the `scala` plugin to the project, so there is no need to manually do
 `id 'scala'` - but there is no harm in it either.
+
+### ScalaJS libraries ###
+
+It is the responsibility of the project using the plugin to add as dependencies:
+- Scala standard library;
+- Scala standard library compiled into ScalaJS (the same version as the above);
+- ScalaJS library;
+- ScalaJS DOM library if needed.
+
+For example:
+```groovy
+final String scalaVersion             = '3.1.3-RC2'
+final String scalaJsScalaVersionMinor = '2.13'
+final String scalaJsVersion           = '1.10.0'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+  implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
+  implementation "org.scala-js:scalajs-library_$scalaJsScalaVersionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.1.0"
+}
+```
+
+### ScalaJS compiler ###
+
+Plugin does not configure nor verifies configuration of the ScalaJS compiler
+(but should; see https://github.com/dubinsky/scalajs-gradle/issues/2).
+Project using the plugin is responsible for configuring the Scala compiler to produce
+`.sjsir` files in addition to the `.class` files.
+
+If the project uses Scala 3, all it takes is to pass `-scalajs` option to the Scala compiler, since
+Scala 3 compiler has ScalaJS support built in:
+
+```groovy
+tasks.withType(ScalaCompile) {
+  scalaCompileOptions.additionalParameters = [
+    '-scalajs'
+  ]
+}
+```
+
+If the project uses Scala 2, ScalaJS compiler plugin has to be enabled:
+```groovy
+dependencies {
+  scalaCompilerPlugin 'scalajs-compiler_2.13.4-1.4.0.jar'
+}
+tasks.withType(ScalaCompile) {
+  scalaCompileOptions.additionalParameters = [
+    '-Xplugin:' + configurations.scalaCompilerPlugin.asPath
+  ]
+}
+```
+
+### ScalaJS Linker ###
+
+Plugin uses hard-coded version of the ScalaJS linker and does not provide a way to change it
+(but should; see https://github.com/dubinsky/scalajs-gradle/issues/3).
 
 ## Configuration ##
 

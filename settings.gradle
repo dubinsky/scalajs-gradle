@@ -1,3 +1,5 @@
+rootProject.name = 'org.podval.tools.scalajs'
+
 dependencyResolutionManagement {
   repositories {
     mavenCentral()

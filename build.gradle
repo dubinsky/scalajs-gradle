@@ -1,7 +1,11 @@
 plugins {
   id 'com.github.ben-manes.versions' version '0.42.0'
   id 'scala'
+  id 'java-library'
   id 'java-gradle-plugin'
+  id 'maven-publish'
+  id 'signing'
+  id 'com.gradle.plugin-publish' version '0.20.0'
 }
 
 group = 'org.podval.tools'
@@ -16,11 +20,114 @@ dependencies {
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.with {
     targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
+    additionalParameters = [
+      '-new-syntax',
+      '-feature',
+      '-language:strictEquality',
+      '-source:future'
+    ]
   }
 }
 
 // There is no Java in the project :)
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
+
+jar {
+  manifest {
+    attributes(
+      'Implementation-Title'  : project.description,
+      'Implementation-Version': project.version
+    )
+  }
+}
+
+task sourcesJar(type: Jar) {
+  from sourceSets.main.allSource
+  archiveClassifier.set('sources')
+}
+
+task scaladocJar(type: Jar) {
+  from scaladoc.destinationDir
+  archiveClassifier.set('scaladoc')
+}
+scaladocJar.dependsOn scaladoc
+
+// There is no Java in the project :)
+project.gradle.startParameter.excludedTaskNames.add('compileJava')
+// but Maven Central requires javadoc JAR...
+task javadocJar(type: Jar) {
+  from javadoc.destinationDir
+  archiveClassifier.set('javadoc')
+}
+javadocJar.dependsOn(javadoc)
+
+final String gitHubRepository = "dubinsky/scalajs-gradle"
+final String gitHubRepositoryUrl = "https://github.com/$gitHubRepository"
+final String orgName = 'Podval Group'
+final String orgUrl = 'https://www.podval.org'
+final List<String> projectTags = ['Scala', 'ScalaJS']
+
+publishing {
+  repositories {
+    maven {
+      name = 'mavenCentral'
+      url = version.endsWith('SNAPSHOT') ?
+        'https://oss.sonatype.org/content/repositories/snapshots' :
+        'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+
+      // Note: this will use mavenCentralUsername and mavenCentralPassword properties - if they are available
+      credentials(PasswordCredentials)
+    }
+  }
+
+  publications {
+    library(MavenPublication) {
+      from components.java
+      artifact sourcesJar
+      artifact scaladocJar
+      artifact javadocJar
+
+      pom {
+        name = project.name
+        description = project.description
+        url = gitHubRepositoryUrl
+        scm {
+          url = gitHubRepositoryUrl
+          connection = "scm:git:git://github.com/${gitHubRepository}.git"
+          developerConnection = "scm:git:ssh://github.com/${gitHubRepository}.git"
+        }
+        licenses {
+          license {
+            name = 'The Apache Software License, Version 2.0'
+            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            distribution = 'repo'
+            comments = 'A business-friendly OSS license'
+          }
+        }
+        organization {
+          name = orgName
+          url = orgUrl
+        }
+        developers {
+          developer {
+            id = 'dub'
+            name = 'Leonid Dubinsky'
+            email = 'dub@podval.org'
+            url = 'https://dub.podval.org'
+            organization = orgName
+            organizationUrl = orgUrl
+            timezone = '-5'
+          }
+        }
+      }
+    }
+  }
+}
+
+signing {
+  useInMemoryPgpKeys(findProperty('gnupg.dub-podval-org.key'), findProperty('gnupg.dub-podval-org.password'))
+  sign publishing.publications.library
+}
 
 gradlePlugin {
   plugins {
@@ -30,3 +137,35 @@ gradlePlugin {
     }
   }
 }
+
+pluginBundle {
+  website = gitHubRepositoryUrl
+  vcsUrl  = gitHubRepositoryUrl //.git' ?
+
+  plugins {
+    scalajs {
+      displayName = project.description
+      description = project.description
+      tags        = projectTags
+    }
+  }
+
+  // If you have an existing plugin deployed to MavenCentral and would like to keep
+  // your existing group ID and artifact ID for continuity, you can specify
+  // them here (needs manual approval on first publication).
+  mavenCoordinates {
+    groupId    = project.group
+    artifactId = project.name
+  }
+}
+
+task uploadLibrary
+uploadLibrary.description('Upload artifacts')
+uploadLibrary.group('publishing')
+uploadLibrary.dependsOn(publishLibraryPublicationToMavenCentralRepository)
+
+task upload
+upload.description('Upload artifacts and plugins')
+upload.group('publishing')
+upload.dependsOn(uploadLibrary)
+upload.dependsOn(publishPlugins)

@@ -10,7 +10,6 @@ import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, ModuleInitializer, ModuleKind, ModuleSplitStyle, Report,
   Semantics, StandardConfig}
 import org.scalajs.logging.{Level, Logger}
-
 import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -25,6 +24,9 @@ final class ScalaJSPlugin extends Plugin[Project]:
     project.getTasks.create("fullLinkJS", classOf[ScalaJSPlugin.FullLinkTask])
 
 object ScalaJSPlugin:
+
+  given CanEqual[ModuleKind, ModuleKind] = CanEqual.derived
+  given CanEqual[Level     , Level     ] = CanEqual.derived
 
   abstract class ModuleInitializerProperties:
     def getName: String // Type must have a read-only 'name' property
@@ -85,7 +87,7 @@ object ScalaJSPlugin:
       val extension: Extension = getExtension
       val outputDirectory: File = extension.outputDirectory(getProject)
       val linkerConfig: StandardConfig = extension.linkerConfig(fullOptimization)
-      // Without the initializer, no JavaScript is emitted!
+      // Without the initializers, no JavaScript is emitted!
       val moduleInitializers: Seq[ModuleInitializer] = extension
         .getModuleInitializers
         .asScala
