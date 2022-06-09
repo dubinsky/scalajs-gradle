@@ -3,8 +3,8 @@
 ## Summary ##
 
 This is a Gradle plugin for working with Scala.js.
-Plugin adds to the Gradle project two new tasks: `fastLinkJS` and `fullLinkJS`.
-Both of those tasks depend on the `classes` task.
+It supports linking ScalaJS code and running it.
+Testing is not yet supported.
 
 ## Motivation ##
 
@@ -13,7 +13,8 @@ I want to be able to do it in Scala.
 Thanks to [Scala.js](https://www.scala-js.org/), this is possible.
 
 I dislike [sbt](https://www.scala-sbt.org/) - the [official
-build tool](https://www.scala-js.org/doc/project/) of Scala.js.
+build tool](https://www.scala-js.org/doc/project/) of Scala.js,
+which uses [ScalaJS sbt plugin](https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin).
 I want to be able to use my preferred build tool - [Gradle](https://gradle.org/).
 
 Existing Scala.js Gradle [plugin](https://github.com/gtache/scalajs-gradle) by
@@ -48,15 +49,18 @@ It is the responsibility of the project using the plugin to add as dependencies:
 
 For example:
 ```groovy
-final String scalaVersion             = '3.1.3-RC2'
-final String scalaJsScalaVersionMinor = '2.13'
-final String scalaJsVersion           = '1.10.0'
+final String scalaVersion       = '3.1.3'
+final String scala2versionMinor = '2.13'
+final String scalaJsVersion     = '1.10.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
-  implementation "org.scala-js:scalajs-library_$scalaJsScalaVersionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.1.0"
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+
+  // for ScalaTest tests:  
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
 }
 ```
 
@@ -95,6 +99,11 @@ tasks.withType(ScalaCompile) {
 Plugin uses hard-coded version of the ScalaJS linker and does not provide a way to change it
 (but should; see https://github.com/dubinsky/scalajs-gradle/issues/3).
 
+## Tasks ##
+
+Plugin adds to the Gradle project two new tasks: `fastLinkJS` and `fullLinkJS`.
+Both of those tasks depend on the `classes` task.
+
 ## Configuration ##
 
 Plugin adds to the Gradle project an extension `scalajs`,
@@ -103,7 +112,6 @@ Configurable properties with their defaults are:
 
 ```groovy
 scalajs {
-  outputDirectory  = File(project.getBuildDir, 'js')
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
   prettyPrint      = false
@@ -126,6 +134,8 @@ moduleInitializers {
 ```
 
 Name of the module initializer ('module1' in the example above) is ignored.
+
+## Compared to the sbt extension ##
 
 ## Credits ##
 

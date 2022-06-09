@@ -3,5 +3,10 @@ rootProject.name = 'org.podval.tools.scalajs'
 dependencyResolutionManagement {
   repositories {
     mavenCentral()
+    maven {
+      url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
   }
 }
+
+//includeBuild '../../OpenTorah/opentorah.org'
