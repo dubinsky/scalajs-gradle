@@ -5,13 +5,12 @@ import scala.annotation.tailrec
 
 // Note: based on org.scalajs.sbtplugin.PipeOutputThread;
 // see https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/PipeOutputThread.scala
-
 object PipeOutputThread:
   def pipe(from: Option[InputStream], log: String => Unit): List[Thread] =
     from.map(start(_, log)).toList
 
   private def start(from: InputStream, log: String => Unit): Thread =
-    val thread: PipeOutputThread = new PipeOutputThread(
+    val thread: PipeOutputThread = PipeOutputThread(
       BufferedReader(InputStreamReader(from)),
       log
     )

@@ -2,7 +2,8 @@ package org.podval.tools.scalajs
 
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
-import org.gradle.api.tasks.{OutputDirectory, OutputFile, SourceSet, TaskAction, TaskExecutionException}
+import org.gradle.api.tasks.{Classpath, OutputDirectory, OutputFile, SourceSet, TaskAction, TaskExecutionException,
+  TaskProvider}
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
 import org.scalajs.jsenv.{Input, JSEnv}
@@ -11,6 +12,9 @@ import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Modu
   ModuleSplitStyle, Report, Semantics, StandardConfig}
 import org.scalajs.testing.adapter.TestAdapterInitializer
 import Util.given
+import org.gradle.api.tasks.scala.ScalaCompile
+import sbt.internal.inc.Analysis
+import xsbti.compile.FileAnalysisStore
 import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -36,21 +40,41 @@ abstract class LinkTask extends ScalaJSTask:
   @OutputDirectory final def getJSDirectory: File = outputFile("js")
   final def reportFile : File = outputFile("report.txt")
 
-  def classesTask: org.gradle.api.Task = getProject.getClassesTask(getSourceSet(getProject))
+  final def classesTask: org.gradle.api.Task = getProject.getClassesTask(getSourceSet(getProject))
 
-  // TODO annotate with @Classpath
-  private def getRuntimeClassPath: FileCollection = getSourceSet(getProject).getRuntimeClasspath
+  @Classpath final def getRuntimeClassPath: FileCollection = getSourceSet(getProject).getRuntimeClasspath
 
-  getProject.afterEvaluate { (project: Project) =>
+  getProject.afterEvaluate { (_: Project) =>
     getDependsOn.add(classesTask)
     getInputs.files(getRuntimeClassPath)
     () // return Unit to help the compiler find the correct overload
   }
 
+  final def scalaCompile: ScalaCompile = classesTask
+    .getDependsOn
+    .asScala
+    .find(classOf[TaskProvider[ScalaCompile]].isInstance)
+    .get
+    .asInstanceOf[TaskProvider[ScalaCompile]]
+    .get
+
+  // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
+  final def scalaCompileAnalysisFile: File = Files.file(
+    directory = getProject.getBuildDir,
+    segments  = s"tmp/scala/compilerAnalysis/${scalaCompile.getName}.analysis"
+  )
+
+  final def scalaCompileAnalysis: Analysis = FileAnalysisStore
+    .getDefault(scalaCompileAnalysisFile)
+    .get
+    .get
+    .getAnalysis
+    .asInstanceOf[Analysis]
+
   // TODO Without the initializers, no JavaScript is emitted - unless entry points are marked in what special way?
   protected def moduleInitializers: Seq[ModuleInitializer]
 
-  @TaskAction def execute(): Unit =
+  @TaskAction final def execute(): Unit =
     val outputDirectory: File = getJSDirectory
     val fullOptimization: Boolean = extension.stage == Stage.FullOpt
     val linkerConfig: StandardConfig = StandardConfig()
@@ -86,6 +110,7 @@ abstract class LinkTask extends ScalaJSTask:
       )
 
       info(report.toString)
+      // TODO write binary form of the report too
 
       Files.write(file = reportFile, content = report.toString())
     catch

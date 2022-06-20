@@ -25,7 +25,7 @@ final class TestRunner(
       taskDef.explicitlySpecified,
       taskDef.selectors
     )
-    log.debug("Running " + taskDef, null, null, null)
+    log.debug(s"Running $taskDef", null, null, null)
     val name: String = testDefinition.name
 
     def runTest(): (SuiteResult, Seq[TestTask]) =
@@ -69,4 +69,4 @@ final class TestRunner(
         (SuiteResult.Error, Seq.empty[TestTask])
 
   private def safeListenersCall(call: (TestsListener) => Unit): Unit =
-    TestFramework.safeForeach(listeners, log)(call)
+    Util.safeForeach(listeners, log)(call)

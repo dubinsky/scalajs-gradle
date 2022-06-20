@@ -9,10 +9,10 @@ final class TestDefinition(
   val explicitlySpecified: Boolean,
   val selectors: Array[Selector]
 ):
-  override def toString: String = "Test " + name + " : " + TestFramework.toString(fingerprint)
+  override def toString: String = s"Test $name : ${Util.toString(fingerprint)}"
 
   override def equals(t: Any): Boolean = t.asInstanceOf[Matchable] match
-    case r: TestDefinition => name == r.name && TestFramework.matches(fingerprint, r.fingerprint)
+    case r: TestDefinition => name == r.name && Util.matches(fingerprint, r.fingerprint)
     case _                 => false
 
-  override def hashCode: Int = (name.hashCode, TestFramework.hashCode(fingerprint)).hashCode
+  override def hashCode: Int = (name.hashCode, Util.hashCode(fingerprint)).hashCode

@@ -21,3 +21,12 @@ final case class Output(
        |  summaries=${summaries.mkString(", ")}
        |)
        |""".stripMargin
+
+object Output:
+  def processResults(events: Map[String, SuiteResult]): Output = Output(
+    overall = events.toSeq.map(_._2.result).foldLeft[TestResult](TestResult.Passed)((acc, result) =>
+      if acc.severity < result.severity then result else acc
+    ),
+    events = events,
+    summaries = Seq.empty
+  )

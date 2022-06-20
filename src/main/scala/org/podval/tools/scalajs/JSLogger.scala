@@ -1,7 +1,7 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.logging.{LogLevel as GLevel}
-import org.scalajs.logging.{Level as JSLevel}
+import org.gradle.api.logging.LogLevel as GLevel
+import org.scalajs.logging.Level as JSLevel
 
 final class JSLogger(gradleLogger: org.gradle.api.logging.Logger, source: String) extends org.scalajs.logging.Logger:
 
