@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.2] - 2022-06-
+## [0.0.2] - 2022-06-21
+- running the linked code;
+- running tests;
 
 **BREAKING CHANGES:**
 - task names changed
@@ -23,12 +25,13 @@ Plugin:
 - tasks for running the JavaScript code on Node;
 - dependencies and Gradle updated;
 
-Tests:
+Testing ScalaJS:
 - depend on org.scala-js:scalajs-sbt-test-adapter;
-- depend on org.scala-sbt:test-interface
-- depend on org.scala-sbt:zinc
-- shadow a few classes from sbt (org.scala-sbt.testing, org.scala-sbt.actions);
-- tasks for testing (WIP!);
+- depend on org.scala-sbt:test-interface;
+- depend on org.scala-sbt:compiler-interface;
+- depend on org.scala-sbt:zinc (persist, core, apiinfo);
+- glue code inspired by a few classes from sbt (org.scala-sbt.testing, org.scala-sbt.actions);
+- tasks for testing;
 
 ScalaJS tutorial:
 - added sbt-based project based on it;
@@ -41,4 +44,5 @@ ScalaJS tutorial:
 - depend on org.scala-js:scalajs-test-bridge (something the plugin should add automatically);
 
 ## [0.0.1] - 2022-05-12
-- basic functionality; first release
+- first release;
+- basic functionality (ScalaJS linker);

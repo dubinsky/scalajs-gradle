@@ -1,6 +1,5 @@
 package org.podval.tools.scalajs.testing
 
-import org.gradle.api.logging.Logger
 import sbt.testing.{EventHandler, Fingerprint, OptionalThrowable, Runner, Selector, TaskDef, TestSelector,
   Event as TEvent, Status as TStatus, Task as TestTask}
 import scala.util.control.NonFatal
@@ -8,8 +7,7 @@ import scala.util.control.NonFatal
 // Note: based on sbt.TestRunner from org.scala-sbt.testing
 final class TestRunner(
   delegate: Runner,
-  listeners: Seq[TestsListener],
-  log: Logger
+  listeners: Listeners
 ):
 
   final def tasks(testDefs: Set[TestDefinition]): Array[TestTask] = delegate.tasks(
@@ -25,14 +23,14 @@ final class TestRunner(
       taskDef.explicitlySpecified,
       taskDef.selectors
     )
-    log.debug(s"Running $taskDef", null, null, null)
+    listeners.debug(s"Running $taskDef")
     val name: String = testDefinition.name
 
     def runTest(): (SuiteResult, Seq[TestTask]) =
       // here we get the results! here is where we'd pass in the event listener
       val results: scala.collection.mutable.ListBuffer[TEvent] = new scala.collection.mutable.ListBuffer[TEvent]
       val handler: EventHandler = new EventHandler { def handle(e: TEvent): Unit = { results += e } }
-      val loggers: Seq[ContentLogger] = listeners.flatMap(_.contentLogger(testDefinition))
+      val loggers: Seq[ContentLogger] = listeners.loggers(testDefinition)
       def errorEvents(e: Throwable): Array[sbt.testing.Task] =
         val taskDef: TaskDef = testTask.taskDef
         val event: TEvent = new TEvent:
@@ -55,18 +53,15 @@ final class TestRunner(
         finally
           loggers.foreach(_.flush())
       val event: TestEvent = TestEvent(results.toList)
-      safeListenersCall(_.testEvent(event))
+      listeners.safeForeach(_.testEvent(event))
       (SuiteResult(results.toList), nestedTasks.toSeq)
 
-    safeListenersCall(_.startGroup(name))
+    listeners.safeForeach(_.startGroup(name))
     try
       val (suiteResult, nestedTasks) = runTest()
-      safeListenersCall(_.endGroup(name, suiteResult.result))
+      listeners.safeForeach(_.endGroup(name, suiteResult.result))
       (suiteResult, nestedTasks)
     catch
       case NonFatal(e) =>
-        safeListenersCall(_.endGroup(name, e))
+        listeners.safeForeach(_.endGroup(name, e))
         (SuiteResult.Error, Seq.empty[TestTask])
-
-  private def safeListenersCall(call: (TestsListener) => Unit): Unit =
-    Util.safeForeach(listeners, log)(call)

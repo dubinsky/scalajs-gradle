@@ -3,8 +3,7 @@
 ## Summary ##
 
 This is a Gradle plugin for working with Scala.js.
-It supports linking ScalaJS code and running it.
-Testing is not yet supported.
+It supports linking ScalaJS code, running and testing it.
 
 ## Motivation ##
 
@@ -32,12 +31,12 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.0.1'
+  id 'org.podval.tools.scalajs' version '0.0.2'
 }
 ```
 
-Plugin will automatically apply the `scala` plugin to the project, so there is no need to manually do
-`id 'scala'` - but there is no harm in it either.
+Plugin will automatically apply the `scala` plugin to the project, so there is no need to manually list
+`id 'scala'` in the `plugins` block - but there is no harm in it either.
 
 ### ScalaJS libraries ###
 
@@ -45,7 +44,13 @@ It is the responsibility of the project using the plugin to add as dependencies:
 - Scala standard library;
 - Scala standard library compiled into ScalaJS (the same version as the above);
 - ScalaJS library;
-- ScalaJS DOM library if needed.
+- ScalaJS DOM library.
+
+For testing ScalaJS code, a dependency on the testing framework that supports ScalaJS needs to be added.
+
+Currently, the plugin requires a dependency on the scalajs-test-bridge to be added to the project
+for the testing support to work. A future version of the plugin will remove this requirement.
+
 
 For example:
 ```groovy
@@ -61,8 +66,10 @@ dependencies {
 
   // for ScalaTest tests:  
   testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 }
 ```
+
 
 ### ScalaJS compiler ###
 
@@ -99,10 +106,58 @@ tasks.withType(ScalaCompile) {
 Plugin uses hard-coded version of the ScalaJS linker and does not provide a way to change it
 (but should; see https://github.com/dubinsky/scalajs-gradle/issues/3).
 
+Following the tradition created by the sbt ScalaJS plugin, two flavours of linker configuration
+('stages') are supported:
+`FastOpt` (fast linking, normally used during development) and
+`FullOpt` (fully optimized linking, better suited for production).
+
+Fully optimized linking:
+- uses `Semantics.optimized`;
+- enables `checkIR`;
+- enables Closure Compiler (unless `moduleKind` is set to `ESModule`).
+
+
 ## Tasks ##
 
-Plugin adds to the Gradle project two new tasks: `fastLinkJS` and `fullLinkJS`.
-Both of those tasks depend on the `classes` task.
+### Linking ###
+
+Plugin adds tasks for ScalaJS linking of the main code: 
+`sjsLinkFastOpt`, `sjsLinkFullOpt` and `sjsLink`.
+The ones with the suffix configure use the corresponding flavour of the linker configuration;
+the one without the suffix uses the flavour configured by the plugin extension.
+
+Each of those tasks depends on the `classes` task to produce the `class` *and* `sjsir` files.
+
+Each of the tasks exposes a property `JSDirectory` that points to a directory
+with the resulting JavaScript, so that it can be copied where needed.
+For example:
+
+```groovy
+sjsLinkFastOpt.doLast {
+  project.sync {
+    from sjsLinkFastOpt.JSDirectory
+    into jsDirectory
+  }
+}
+```
+
+Plugin adds corresponding tasks for linking the test code:
+`sjsLinkTestFastOpt`, `sjsLinkTestFullOpt` and `sjsLinkTest`.
+Those tasks are used by the testing tasks tha the plugin adds,
+but are unlikely to be of interest on their own.
+
+### Running ###
+
+Plugin adds tasks for runnig the main code (if it is an application and not a library):
+`sjsRunFastOpt`, `sjsRunFullOpt` and `sjsRun`.
+Each of those tasks depend on corresponding `sjsLink*` task.
+
+### Testing ###
+
+Plugin adds tasks for runnig the tests:
+`sjsTestFastOpt`, `sjsTestFullOpt` and `sjsTest`.
+Each of those tasks depend on corresponding `sjsLinkTest*` task.
+
 
 ## Configuration ##
 

@@ -9,7 +9,7 @@ plugins {
 }
 
 group = 'org.podval.tools'
-version = '0.0.1'
+version = '0.0.2'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.1.3'
