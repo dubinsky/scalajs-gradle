@@ -5,13 +5,18 @@ import org.scalajs.logging.Logger
 import org.opentorah.build.Gradle.*
 
 abstract class ScalaJSTask extends DefaultTask:
+  setGroup("build")
+  setDescription(s"$flavour ScalaJS${stage.description}")
+  
+  protected def flavour: String
+
+  protected def stage: Stage
+
   protected final def extension: Extension = getProject.getExtension(classOf[Extension])
 
   protected final def info(message: String): Unit = getProject.getLogger.info(message, null, null, null)
 
   protected final def jsLogger: Logger = JSLogger(getProject.getLogger, getName)
-
-  protected def stage: Stage
 
 object ScalaJSTask:
   trait FastOpt:

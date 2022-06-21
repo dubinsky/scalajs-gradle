@@ -16,6 +16,10 @@ class TutorialTest extends AnyFunSuite:
     assert(document.querySelectorAll("p").count(_.textContent == "Hello World") == 1)
   }
 
+  test("HelloWorld failure") {
+    assert(document.querySelectorAll("p").count(_.textContent == "Hello World!!!") == 1)
+  }
+
   test("ButtonClick") {
     def messageCount =
       document.querySelectorAll("p").count(_.textContent == "You clicked the button!")

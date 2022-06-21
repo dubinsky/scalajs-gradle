@@ -12,12 +12,11 @@ final String scalaJsVersion     = '1.10.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
-  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+//  implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
+//  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+//  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
 
-  // TODO why isn't this a sjs?
-  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+//  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
   testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
 }
 
@@ -26,7 +25,7 @@ tasks.withType(ScalaCompile) {
     targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
     additionalParameters = [
       // In Scala 3 compiler, ScalaJS plugin is built in, so this is all it takes to compile to ScalaJS:
-      '-scalajs',
+//      '-scalajs',
       '-new-syntax',
       '-feature',
       '-language:strictEquality',

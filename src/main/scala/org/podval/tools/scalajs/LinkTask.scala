@@ -1,18 +1,18 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.Project
+import org.gradle.api.{Project, Task}
 import org.gradle.api.file.FileCollection
-import org.gradle.api.tasks.{Classpath, OutputDirectory, OutputFile, SourceSet, TaskAction, TaskExecutionException,
-  TaskProvider}
+import org.gradle.api.tasks.{Classpath, OutputDirectory, OutputFile, SourceSet, TaskAction, TaskExecutionException}
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
-import org.scalajs.jsenv.{Input, JSEnv}
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind,
   ModuleSplitStyle, Report, Semantics, StandardConfig}
 import org.scalajs.testing.adapter.TestAdapterInitializer
 import Util.given
 import org.gradle.api.tasks.scala.ScalaCompile
+import org.podval.tools.scalajs.dependencies.GradleUtil
+import sbt.io.IO
 import sbt.internal.inc.Analysis
 import xsbti.compile.FileAnalysisStore
 import java.io.File
@@ -23,11 +23,10 @@ import scala.jdk.CollectionConverters.*
 
 abstract class LinkTask extends ScalaJSTask:
   protected def sourceSetName: String
-  final def getSourceSet(project: Project): SourceSet = project.getSourceSet(sourceSetName)
 
-  protected def sourceSetDescription: String
-  setDescription(s"Link ScalaJS${stage.description}$sourceSetDescription")
-  setGroup("build")
+  private def sourceSet: SourceSet = getProject.getSourceSet(sourceSetName)
+  private def classesTask: Task = getProject.getClassesTask(sourceSet)
+  private def scalaCompile: ScalaCompile = GradleUtil.getScalaCompile(classesTask)
 
   private def outputFile(name: String): File = Files.file(
     getProject.getBuildDir,
@@ -37,26 +36,20 @@ abstract class LinkTask extends ScalaJSTask:
     name
   )
 
+  @Classpath final def getRuntimeClassPath: FileCollection = sourceSet.getRuntimeClasspath
   @OutputDirectory final def getJSDirectory: File = outputFile("js")
-  final def reportFile : File = outputFile("report.txt")
-
-  final def classesTask: org.gradle.api.Task = getProject.getClassesTask(getSourceSet(getProject))
-
-  @Classpath final def getRuntimeClassPath: FileCollection = getSourceSet(getProject).getRuntimeClasspath
+  @OutputFile final def getReportTextFile: File = outputFile("linking-report.txt")
+  @OutputFile final def getReportBinFile : File = outputFile("linking-report.bin")
 
   getProject.afterEvaluate { (_: Project) =>
     getDependsOn.add(classesTask)
-    getInputs.files(getRuntimeClassPath)
-    () // return Unit to help the compiler find the correct overload
+    // TODO if @Classpath def getRuntimeClassPath works, this is not needed;
+    // otherwise - remove @Classpath from it and make it private.
+    //getInputs.files(getRuntimeClassPath)
+    ()
   }
 
-  final def scalaCompile: ScalaCompile = classesTask
-    .getDependsOn
-    .asScala
-    .find(classOf[TaskProvider[ScalaCompile]].isInstance)
-    .get
-    .asInstanceOf[TaskProvider[ScalaCompile]]
-    .get
+  final def linkingReport: Option[Report] = Report.deserialize(IO.readBytes(getReportBinFile))
 
   // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
   final def scalaCompileAnalysisFile: File = Files.file(
@@ -75,7 +68,6 @@ abstract class LinkTask extends ScalaJSTask:
   protected def moduleInitializers: Seq[ModuleInitializer]
 
   @TaskAction final def execute(): Unit =
-    val outputDirectory: File = getJSDirectory
     val fullOptimization: Boolean = extension.stage == Stage.FullOpt
     val linkerConfig: StandardConfig = StandardConfig()
       .withCheckIR(fullOptimization)
@@ -87,14 +79,14 @@ abstract class LinkTask extends ScalaJSTask:
 
     info(
       s"""ScalaJSPlugin:
-         |JSDirectory = $outputDirectory
-         |ReportFile = $reportFile
+         |JSDirectory = $getJSDirectory
+         |reportFile = $getReportTextFile
          |moduleInitializers = ${moduleInitializers.map(ModuleInitializer.fingerprint).mkString(", ")}
          |linkerConfig = $linkerConfig
          |""".stripMargin,
     )
 
-    outputDirectory.mkdirs()
+    getJSDirectory.mkdirs()
 
     try
       val report: Report = Await.result(atMost = Duration.Inf, awaitable = PathIRContainer
@@ -104,23 +96,21 @@ abstract class LinkTask extends ScalaJSTask:
         .flatMap((irFiles     : Seq[IRFile]     ) => StandardImpl.linker(linkerConfig).link(
           irFiles = irFiles,
           moduleInitializers = moduleInitializers,
-          output = PathOutputDirectory(outputDirectory.toPath),
+          output = PathOutputDirectory(getJSDirectory.toPath),
           logger = jsLogger
         ))
       )
 
-      info(report.toString)
-      // TODO write binary form of the report too
-
-      Files.write(file = reportFile, content = report.toString())
+      Files.write(file = getReportTextFile, content = report.toString())
+      IO.write(getReportBinFile, Report.serialize(report))
     catch
       case e: LinkingException => throw TaskExecutionException(this, e)
 
 
 object LinkTask:
   abstract class Main extends LinkTask:
+    final override protected def flavour: String = "Link"
     final override protected def sourceSetName: String = SourceSet.MAIN_SOURCE_SET_NAME
-    final override protected def sourceSetDescription: String = ""
     final override protected def moduleInitializers: Seq[ModuleInitializer] = extension.moduleInitializers
 
   object Main:
@@ -129,8 +119,8 @@ object LinkTask:
     class Extension extends Main with ScalaJSTask.Extension
 
   abstract class Test extends LinkTask:
+    final override protected def flavour: String = "LinkTest"
     final override protected def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
-    final override protected def sourceSetDescription: String = " - test"
     // Note: configured moduleInitializers are ignored for tests
     final override protected def moduleInitializers: Seq[ModuleInitializer] = Seq(testModuleInitializer)
 

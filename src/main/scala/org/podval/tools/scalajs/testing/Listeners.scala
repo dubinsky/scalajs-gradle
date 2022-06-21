@@ -9,16 +9,14 @@ final class Listeners(
 ):
   def safeForeach(f: TestsListener => Unit): Unit =
     listeners.foreach((listener: TestsListener) =>
-      try f(listener)
-      catch
+      try f(listener) catch
         case NonFatal(e) =>
           log.trace("", e)
-          log.error(e.toString)
-          // TODO the message
+          log.error(e.toString) // TODO the message
     )
 
-  def loggers(testDefinition: TestDefinition): Seq[ContentLogger] =
-    listeners.flatMap(_.contentLogger(testDefinition))
+  def loggers(name: String): Seq[ContentLogger] =
+    listeners.flatMap(_.contentLogger(name))
 
   def debug(message: String): Unit =
-    log.debug(message, null, null, null)
+    log.info(message, null, null, null)

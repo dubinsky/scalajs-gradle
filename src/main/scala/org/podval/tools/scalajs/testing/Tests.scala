@@ -6,15 +6,22 @@ import org.scalajs.jsenv.{Input, JSEnv}
 import org.scalajs.logging.Logger as JSLogger
 import org.scalajs.testing.adapter.TestAdapter
 import sbt.internal.inc.Analysis
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, SuiteSelector}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, SuiteSelector, TaskDef}
 import xsbt.api.{Discovered, Discovery}
 import xsbti.api.{AnalyzedClass, ClassLike, Companions, Definition}
 
-// Note: based on sbt.Tests from org.scala-sbt.actions
 // Note: based on org.scalajs.sbtplugin.ScalaJSPluginInternal
+// Note: based on sbt.Tests from org.scala-sbt.actions
 // Note: based on sbt.Defaults
 // TODO report events closer to them happening?
 // TODO even with one group, fold the summaries
+// TODO use Gradle classes:
+//   org.gradle.api.tasks.testing.Test
+//   org.gradle.api.tasks.testing.TestResult
+//   org.gradle.api.tasks.testing.logging.TestLogEvent
+//   org.gradle.api.tasks.testing.report
+//   org.gradle.api.tasks.testing.results
+
 object Tests:
 
   private final class Detector(
@@ -33,11 +40,8 @@ object Tests:
     input: Input,
     analysis: Analysis,
     jsLogger: JSLogger,
-    logger: TestLogger,
-    log: Logger
+    listeners: Listeners
   ): Unit =
-    val listeners: Listeners = Listeners(Seq(logger), log)
-
     val testAdapterConfig: TestAdapter.Config = TestAdapter.Config()
       .withLogger(jsLogger)
 
@@ -49,26 +53,22 @@ object Tests:
       .loadFrameworks(frameworkNames = TestFramework.all.map(_.implClassNames.toList))
       .flatten
 
-    val frameworkRuns: Seq[FrameworkRun] =
-      for (framework: Framework, tests: Set[TestDefinition]) <-
-        framework2tests(
-          getDetectors(loadedFrameworks),
-          getDefinitions(analysis)
-        ).toList
-      yield FrameworkRun(
-        framework,
-        tests,
-        listeners
-      )
+    val frameworkRunners: Seq[(Framework, Set[TestDefinition])] = framework2tests(
+      detectors = getDetectors(loadedFrameworks).flatten,
+      definitions = getDefinitions(analysis)
+    ).toList
 
-    val task: Task[Output] =
-      (if frameworkRuns.isEmpty then Task.noop else Task(listeners.safeForeach(_.doInit())))
-        .flatMap(_ => TestRunnable.toTasks(frameworkRuns.flatMap(_.testTasks)))
-        .map(Output.processResults)
-        .flatMap((output: Output) =>
-          (if frameworkRuns.isEmpty then Task.noop else Task(listeners.safeForeach(_.doComplete(output.overall))))
-            .map(_ => output)
-        )
+    val task: Task[Output] = if frameworkRunners.isEmpty then Task(Output.empty) else
+      for
+        _ <- Task(listeners.safeForeach(_.doInit()))
+        // TODO group into framework suites?
+        results: Map[String, SuiteResult] <- TestRunnable.toTask(frameworkRunners.flatMap((framework: Framework, tests: Set[TestDefinition]) =>
+          TestRunner(framework, listeners).toRunnables(tests)
+        ))
+        output = Output.processResults(results)
+        _ <- Task(listeners.safeForeach(_.doComplete(output.overall)))
+      yield
+        output
 
     val output: Output = task.run()
 
@@ -90,31 +90,29 @@ object Tests:
       case _            => false
     }
 
-  private def getDetectors(frameworks: Seq[Framework]): Seq[Detector] =
-    val detectorOpts: Seq[Option[Detector]] =
-      for
-        framework <- frameworks
-        fingerprint <- getFingerprints(framework)
-      yield fingerprint match
-        case sub: SubclassFingerprint => Some(Detector(
-          isAnnotation = false,
-          name = sub.superclassName,
-          isModule = sub.isModule,
-          fingerprint = sub,
-          framework = framework
-        ))
-        case ann: AnnotatedFingerprint => Some(Detector(
-          isAnnotation = true,
-          name = ann.annotationName,
-          isModule = ann.isModule,
-          fingerprint = ann,
-          framework = framework
-        ))
-        case _ => None
-    detectorOpts.flatten
+  private def getDetectors(frameworks: Seq[Framework]): Seq[Option[Detector]] =
+    for
+      framework <- frameworks
+      fingerprint <- getFingerprints(framework)
+    yield fingerprint match
+      case sub: SubclassFingerprint => Some(Detector(
+        isAnnotation = false,
+        name = sub.superclassName,
+        isModule = sub.isModule,
+        fingerprint = sub,
+        framework = framework
+      ))
+      case ann: AnnotatedFingerprint => Some(Detector(
+        isAnnotation = true,
+        name = ann.annotationName,
+        isModule = ann.isModule,
+        fingerprint = ann,
+        framework = framework
+      ))
+      case _ => None
 
-  private def getFingerprints(framework: Framework): Seq[Fingerprint] =
   // TODO why is reflection used instead of the direct call?
+  private def getFingerprints(framework: Framework): Seq[Fingerprint] =
     framework.getClass.getMethod("fingerprints").invoke(framework) match
       case fingerprints: Array[Fingerprint] => fingerprints.toList
       case _                                => sys.error(s"Could not call 'fingerprints' on framework $framework")
@@ -132,11 +130,58 @@ object Tests:
           )(definitions)
         detector: Detector <- detectors.filter(_.isDetected(discovered))
       // TODO: To pass in correct explicitlySpecified and selectors
-      yield detector.framework -> new TestDefinition(
-        name = definition.name,
-        fingerprint = detector.fingerprint,
-        explicitlySpecified = false,
-        selectors = Array(new SuiteSelector)
-      )
+      yield detector.framework -> TestDefinition(TaskDef(
+        definition.name,
+        detector.fingerprint,
+        false,
+        Array(new SuiteSelector)
+      ))
 
     Collections.mapValues(result.groupBy(_._1))(_.map(_._2).toSet)
+
+//  val output = Tests.foldTasks(groupTasks, config.parallel)
+//
+//  val summaries =
+//    runners map {
+//      case (tf, r) =>
+//        Tests.Summary(frameworks(tf).name, r.done())
+//    }
+//  out.copy(summaries = summaries)
+//
+//  def foldTasks(results: Seq[Task[Output]], parallel: Boolean): Task[Output] =
+//    if (results.isEmpty) {
+//      task { Output(TestResult.Passed, Map.empty, Nil) }
+//    } else if (parallel) {
+//      reduced[Output](
+//        results.toIndexedSeq, {
+//          case (Output(v1, m1, _), Output(v2, m2, _)) =>
+//            Output(
+//              (if (severity(v1) < severity(v2)) v2 else v1): TestResult,
+//              Map((m1.toSeq ++ m2.toSeq): _*),
+//              Iterable.empty[Summary]
+//            )
+//        }
+//      )
+//    } else {
+//      def sequence(tasks: List[Task[Output]], acc: List[Output]): Task[List[Output]] =
+//        tasks match {
+//          case Nil => task(acc.reverse)
+//          case hd :: tl =>
+//            hd flatMap { out =>
+//              sequence(tl, out :: acc)
+//            }
+//        }
+//      sequence(results.toList, List()) map { ress =>
+//        val (rs, ms) = ress.unzip { e =>
+//          (e.overall, e.events)
+//        }
+//        val m = ms reduce { (m1: Map[String, SuiteResult], m2: Map[String, SuiteResult]) =>
+//          Map((m1.toSeq ++ m2.toSeq): _*)
+//        }
+//        Output(overall(rs), m, Iterable.empty)
+//      }
+//    }
+//  def overall(results: Iterable[TestResult]): TestResult =
+//    results.foldLeft(TestResult.Passed: TestResult) { (acc, result) =>
+//      if (severity(acc) < severity(result)) result else acc
+//    }

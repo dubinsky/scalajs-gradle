@@ -16,11 +16,10 @@ import Util.given
 // see https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala
 
 abstract class RunTask[T <: LinkTask](clazz: Class[T]) extends AfterLinkTask[T](clazz):
-  setDescription(s"Run ScalaJS${stage.description}")
-  setGroup("build")
+  final override protected def flavour: String = "Run"
 
   @TaskAction def execute(): Unit =
-    getProject.getLogger.lifecycle(s"Running $path on ${jsEnv.name}\n")
+    getProject.getLogger.lifecycle(s"Running $mainModulePath on ${jsEnv.name}\n")
 
     /* The list of threads that are piping output to System.out and
      * System.err. This is not an AtomicReference or any other thread-safe
@@ -46,8 +45,8 @@ abstract class RunTask[T <: LinkTask](clazz: Class[T]) extends AfterLinkTask[T](
       .withInheritOut(false)
       .withInheritErr(false)
       .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => pipeOutputThreads =
-        PipeOutputThread.pipe(out, getProject.getLogger.lifecycle) :::
-        PipeOutputThread.pipe(err, getProject.getLogger.error    )
+        PipeOutputThread.pipe(out, getProject.getLogger.lifecycle, "out:") :::
+        PipeOutputThread.pipe(err, getProject.getLogger.error    , "err:")
       )
 
     // TODO Without this delay (or with a shorter one)

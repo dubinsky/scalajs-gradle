@@ -1,20 +1,20 @@
 package org.podval.tools.scalajs
 
 import org.gradle.api.tasks.TaskAction
-import org.podval.tools.scalajs.testing.{TestLogger, Tests}
-import sbt.testing.Framework
+import org.podval.tools.scalajs.testing.{Listeners, TestLogger, Tests}
 
 abstract class TestTask[T <: LinkTask.Test](clazz: Class[T]) extends AfterLinkTask[T](clazz):
-  setDescription(s"Run ScalaJS${stage.description}")
-  setGroup("build")
-
+  final override protected def flavour: String = "Test"
+  
   @TaskAction final def execute(): Unit = Tests.run(
     jsEnv,
-    input,
+    input, // TODO is running tests really conditional on the existence of the 'main' module?
     analysis = linkTask.scalaCompileAnalysis,
     jsLogger = jsLogger,
-    logger = TestLogger(getLogger),
-    log = getLogger
+    listeners = Listeners(
+      listeners = Seq(TestLogger(getLogger)),
+      log = getLogger
+    )
   )
 
 object TestTask:

@@ -1,10 +1,10 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.Project
+import org.gradle.api.{GradleException, Project}
 import org.opentorah.util.Files
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.jsenv.{Input, JSEnv}
-import org.scalajs.linker.interface.ModuleKind
+import org.scalajs.linker.interface.{ModuleKind, Report}
 import Util.given
 import java.nio.file.Path
 
@@ -21,12 +21,13 @@ abstract class AfterLinkTask[T <: LinkTask](clazz: Class[T]) extends ScalaJSTask
 
   final protected def jsEnv: JSEnv = new JSDOMNodeJSEnv()
 
-  // TODO verify that moduleId 'main' is exist in the Linker report (as sbt plugin does);
-  // that report needs to be serialized in LinkTask and deserialized here...
-
-  final protected def path: Path = Files.file(linkTask.getJSDirectory, "main.js").toPath
+  final protected def mainModulePath: Path =
+    val report: Report = linkTask.linkingReport.get
+    val mainModule: Report.Module = report.publicModules.find(_.moduleID == "main")
+      .getOrElse(throw GradleException(s"Linking result does not have a module named 'main'. Full report:\n$report"))
+    Files.file(linkTask.getJSDirectory, mainModule.jsFileName).toPath
 
   final protected def input: Input = extension.moduleKind match
-    case ModuleKind.NoModule       => Input.Script        (path)
-    case ModuleKind.ESModule       => Input.ESModule      (path)
-    case ModuleKind.CommonJSModule => Input.CommonJSModule(path)
+    case ModuleKind.NoModule       => Input.Script        (mainModulePath)
+    case ModuleKind.ESModule       => Input.ESModule      (mainModulePath)
+    case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)

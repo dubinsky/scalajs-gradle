@@ -23,5 +23,3 @@ abstract class Extension:
   def getModuleSplitStyle: Property[String]
   
   def getPrettyPrint: Property[Boolean]
-  
-  // TODO more properties for the other withXXX()

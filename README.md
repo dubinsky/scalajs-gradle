@@ -31,28 +31,28 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.0.2'
+  id 'org.podval.tools.scalajs' version '0.0.3'
 }
 ```
 
-Plugin will automatically apply the `scala` plugin to the project, so there is no need to manually list
+Plugin will automatically apply the Scala plugin to the project, so there is no need to manually list
 `id 'scala'` in the `plugins` block - but there is no harm in it either.
+Either way, it is the responsibility of the project using the plugin to add a standard Scala library
+dependency that the Scala plugin requires.
 
-### ScalaJS libraries ###
+For testing ScalaJS code, a 'testImplementation' dependency on the testing framework that supports ScalaJS needs to be added.
 
-It is the responsibility of the project using the plugin to add as dependencies:
-- Scala standard library;
-- Scala standard library compiled into ScalaJS (the same version as the above);
+### ScalaJS dependencies ###
+
+Plugin uses the following dependencies:
+- Scala standard library compiled into ScalaJS (the same version as the normal standard Scala library;
 - ScalaJS library;
-- ScalaJS DOM library.
+- ScalaJS DOM library;
+- for Scala 2: 'scalajs-compiler' (in the 'scalaCompilerPlugins' configuration), to produce
+  `.sjsir` files in addition to the `.class` files.
+- for testing support to work: 'scalajs-test-bridge' (in the 'testImplementation' configuration);
 
-For testing ScalaJS code, a dependency on the testing framework that supports ScalaJS needs to be added.
-
-Currently, the plugin requires a dependency on the scalajs-test-bridge to be added to the project
-for the testing support to work. A future version of the plugin will remove this requirement.
-
-
-For example:
+Example with explicit dependencies for Scala 3:
 ```groovy
 final String scalaVersion       = '3.1.3'
 final String scala2versionMinor = '2.13'
@@ -64,19 +64,39 @@ dependencies {
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
   implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
 
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+
   // for ScalaTest tests:  
   testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
-  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 }
 ```
 
+Example with explicit dependencies for Scala 2:
+```groovy
+final String scalaVersion       = '2.13.8'
+final String scala2versionMinor = '2.13'
+final String scalaJsVersion     = '1.10.0'
+
+dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+  implementation "org.scala-lang:scala-library_sjs1:$scalaVersion" // TODO
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+  
+  scalaCompilerPlugins 'scalajs-compiler_$scalaVersion-1.10.0.jar'
+
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+
+  // for ScalaTest tests:  
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+}
+```
+
+Dependencies other than the standard Scala library that are not added explicitly will be added by the plugin.
+
+TODO document node install required
 
 ### ScalaJS compiler ###
-
-Plugin does not configure nor verifies configuration of the ScalaJS compiler
-(but should; see https://github.com/dubinsky/scalajs-gradle/issues/2).
-Project using the plugin is responsible for configuring the Scala compiler to produce
-`.sjsir` files in addition to the `.class` files.
 
 If the project uses Scala 3, all it takes is to pass `-scalajs` option to the Scala compiler, since
 Scala 3 compiler has ScalaJS support built in:
@@ -89,17 +109,18 @@ tasks.withType(ScalaCompile) {
 }
 ```
 
+Plugin adds this option if it is not present.
+
 If the project uses Scala 2, ScalaJS compiler plugin has to be enabled:
 ```groovy
-dependencies {
-  scalaCompilerPlugin 'scalajs-compiler_2.13.4-1.4.0.jar'
-}
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
     '-Xplugin:' + configurations.scalaCompilerPlugin.asPath
   ]
 }
 ```
+
+Plugin does this unless it detects that '-Xplugin' option exists and contains 'scalajs-compiler'.
 
 ### ScalaJS Linker ###
 
@@ -116,6 +137,17 @@ Fully optimized linking:
 - enables `checkIR`;
 - enables Closure Compiler (unless `moduleKind` is set to `ESModule`).
 
+### Node ###
+
+For running the code and tests, NodeJS has to be installed.
+Plugin assumes that the `jsdom` module is installed.
+Source map should be enabled for better traces.
+
+```shell
+$ npm install source-map-support
+$ npm init private
+$ npm install jsdom
+```
 
 ## Tasks ##
 
@@ -148,13 +180,13 @@ but are unlikely to be of interest on their own.
 
 ### Running ###
 
-Plugin adds tasks for runnig the main code (if it is an application and not a library):
+Plugin adds tasks for running the main code (if it is an application and not a library):
 `sjsRunFastOpt`, `sjsRunFullOpt` and `sjsRun`.
 Each of those tasks depend on corresponding `sjsLink*` task.
 
 ### Testing ###
 
-Plugin adds tasks for runnig the tests:
+Plugin adds tasks for running the tests:
 `sjsTestFastOpt`, `sjsTestFullOpt` and `sjsTest`.
 Each of those tasks depend on corresponding `sjsLinkTest*` task.
 
@@ -190,8 +222,6 @@ moduleInitializers {
 
 Name of the module initializer ('module1' in the example above) is ignored.
 
-## Compared to the sbt extension ##
-
 ## Credits ##
 
 - Stack Overflow [answer](https://stackoverflow.com/a/65777102/670095)
@@ -201,4 +231,6 @@ by [gzm0](https://stackoverflow.com/users/1149944/gzm0) was
 - [ScalaJS Tutorial](https://www.scala-js.org/doc/tutorial/basic/)
 - [ScalaJS CLI](https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli)
 - [ScalaJS Linker](https://github.com/scala-js/scala-js/tree/main/linker-interface)
+- [Old ScalaJS Gradle plugin](https://github.com/gtache/scalajs-gradle) by
+  [gtache](https://github.com/gtache)
 - [Implementing Scala.JS Support for Scala 3](https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html)
