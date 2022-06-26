@@ -6,8 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.3] - 2022-06-26
+## [0.0.4] - 2022-07-03
+- ScalaJS tutorial for both Scala 2 and Scala 3;
+- add correct dependencies and configuration for both Scala 3 and Scala 2;
+- using zinc configured by the Scala plugin;
+- using ScalaJS dependencies dynamically;
+- working on Gradle-ifying test listening;
+- source-map test failure messages;
 
+## [0.0.3] - 2022-06-26
 - serializing/deserializing linking report;
 - verifying that the 'main' module exists before running and testing;
 - moving towards using Gradle testing classes;

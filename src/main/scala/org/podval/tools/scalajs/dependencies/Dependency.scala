@@ -1,11 +1,11 @@
 package org.podval.tools.scalajs.dependencies
 
-import org.gradle.api.tasks.SourceSet
-import org.gradle.api.artifacts.{Configuration, Dependency as GDependency}
-import org.gradle.api.file.FileCollection
+import org.gradle.api.artifacts.{Dependency as GDependency}
+import org.gradle.api.Project
 import org.opentorah.util.Strings
 import java.io.File
 import java.util.regex.{Matcher, Pattern}
+import GradleUtil.*
 import scala.jdk.CollectionConverters.*
 
 // TODO merge into org.opentorah.build
@@ -17,9 +17,10 @@ abstract class DependencyVersion(
 
   final def dependencyNotation: String = s"${dependency.group}:$nameDependencyNotation:$version"
 
-  final def versionMinor: String = Strings.splitRight(version, '.')._1.get
-
   def nameDependencyNotation: String
+
+object DependencyVersion:
+  def getMajor(version: String): String = Strings.splitRight(version, '.')._1.get
 
 abstract class Dependency(
   val group: String,
@@ -27,10 +28,10 @@ abstract class Dependency(
 ):
   protected def namePattern: String
 
-  def getFromConfiguration(configuration: Configuration): Option[DependencyVersion] =
+  def getFromConfiguration(configurationNames: ConfigurationNames, project: Project): Option[DependencyVersion] =
     val patternCompiled: Pattern = Pattern.compile(namePattern)
     val result: Set[DependencyVersion] = for
-      dependency: GDependency <- configuration.getDependencies.asScala.toSet
+      dependency: GDependency <- project.getConfiguration(configurationNames.toAdd).getDependencies.asScala.toSet
       if dependency.getGroup == group
       matcher: Matcher = patternCompiled.matcher(dependency.getName)
       if matcher.matches
@@ -40,10 +41,10 @@ abstract class Dependency(
 
   protected def fromMatcher(matcher: Matcher, version: String): DependencyVersion
 
-  def getFromClasspath(classpath: java.lang.Iterable[File]): Option[DependencyVersion] =
+  def getFromClasspath(configurationNames: ConfigurationNames, project: Project): Option[DependencyVersion] =
     val patternCompiled: Pattern = Pattern.compile(s"$namePattern-(\\d.*).jar")
     val result: Iterable[DependencyVersion] = for
-      file: File <- classpath.asScala
+      file: File <- project.getConfiguration(configurationNames.toCheck).asScala
       matcher: Matcher = patternCompiled.matcher(file.getName)
       if matcher.matches
     yield

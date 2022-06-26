@@ -7,18 +7,17 @@ import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.opentorah.build.Gradle.*
 import scala.jdk.CollectionConverters.*
 
-// TODO merge into org.opentorah.build.Gradle
+// TODO use from org.opentorah.build.Gradle when released
 object GradleUtil:
-  def getConfiguration(project: Project, name: String): Configuration =
-    project.getConfigurations.getByName(name)
+  extension (classesTask: Task)
+    def getScalaCompile: ScalaCompile = classesTask
+      .getDependsOn
+      .asScala
+      .find(classOf[TaskProvider[ScalaCompile]].isInstance)
+      .get
+      .asInstanceOf[TaskProvider[ScalaCompile]]
+      .get
 
-  def getScalaCompile(classesTask: Task): ScalaCompile = classesTask
-    .getDependsOn
-    .asScala
-    .find(classOf[TaskProvider[ScalaCompile]].isInstance)
-    .get
-    .asInstanceOf[TaskProvider[ScalaCompile]]
-    .get
-
-  def getScalaCompile(project: Project, sourceSet: SourceSet): ScalaCompile =
-    getScalaCompile(project.getClassesTask(sourceSet))
+  extension (project: Project)
+    def getConfiguration(name: String): Configuration = project.getConfigurations.getByName(name)
+    def getScalaCompile(sourceSet: SourceSet): ScalaCompile = project.getClassesTask(sourceSet).getScalaCompile

@@ -3,18 +3,19 @@ package org.podval.tools.scalajs.dependencies
 import java.util.regex.Matcher
 
 final class Scala2DependencyVersion(
-  dependency: Scala2Dependency,
+  override val dependency: Scala2Dependency,
   version: String,
-  val scala2versionMinor: String
+  val scalaVersion: String
 ) extends DependencyVersion(
-  dependency,
-  version
+  dependency = dependency,
+  version = version
 ):
-  final override def nameDependencyNotation: String = s"${dependency.nameBase}_$scala2versionMinor"
+  final override def nameDependencyNotation: String = s"${dependency.nameBase}_$scalaVersion"
 
 open class Scala2Dependency(
   group: String,
-  nameBase: String
+  nameBase: String,
+  val isScala2versionFull: Boolean = false
 ) extends Dependency(
   group = group,
   nameBase = nameBase
@@ -22,20 +23,20 @@ open class Scala2Dependency(
   final override protected def namePattern: String = s"${nameBase}_(\\d.*)"
 
   final override protected def fromMatcher(matcher: Matcher, version: String): Scala2DependencyVersion = apply(
-    version = version,
-    scala2versionMinor = matcher.group(1)
+    scalaVersion = matcher.group(1),
+    version = version
   )
 
   final override protected def fromMatcher(matcher: Matcher): Scala2DependencyVersion = apply(
-    version = matcher.group(2),
-    scala2versionMinor = matcher.group(1)
+    scalaVersion = matcher.group(1),
+    version = matcher.group(2)
   )
 
-  final def apply(
-    version: String,
-    scala2versionMinor: String
+  def apply(
+    scalaVersion: String,
+    version: String
   ): Scala2DependencyVersion = Scala2DependencyVersion(
-    this,
-    version,
-    scala2versionMinor
+    dependency = this,
+    scalaVersion = scalaVersion,
+    version = version
   )

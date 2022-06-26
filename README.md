@@ -31,7 +31,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.0.3'
+  id 'org.podval.tools.scalajs' version '0.0.4'
 }
 ```
 
@@ -40,61 +40,8 @@ Plugin will automatically apply the Scala plugin to the project, so there is no 
 Either way, it is the responsibility of the project using the plugin to add a standard Scala library
 dependency that the Scala plugin requires.
 
-For testing ScalaJS code, a 'testImplementation' dependency on the testing framework that supports ScalaJS needs to be added.
-
-### ScalaJS dependencies ###
-
-Plugin uses the following dependencies:
-- Scala standard library compiled into ScalaJS (the same version as the normal standard Scala library;
-- ScalaJS library;
-- ScalaJS DOM library;
-- for Scala 2: 'scalajs-compiler' (in the 'scalaCompilerPlugins' configuration), to produce
-  `.sjsir` files in addition to the `.class` files.
-- for testing support to work: 'scalajs-test-bridge' (in the 'testImplementation' configuration);
-
-Example with explicit dependencies for Scala 3:
-```groovy
-final String scalaVersion       = '3.1.3'
-final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.10.0'
-
-dependencies {
-  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
-  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
-
-  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
-
-  // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
-}
-```
-
-Example with explicit dependencies for Scala 2:
-```groovy
-final String scalaVersion       = '2.13.8'
-final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.10.0'
-
-dependencies {
-  implementation "org.scala-lang:scala-library:$scalaVersion"
-  implementation "org.scala-lang:scala-library_sjs1:$scalaVersion" // TODO
-  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
-  
-  scalaCompilerPlugins 'scalajs-compiler_$scalaVersion-1.10.0.jar'
-
-  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
-
-  // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
-}
-```
-
-Dependencies other than the standard Scala library that are not added explicitly will be added by the plugin.
-
-TODO document node install required
+For testing ScalaJS code, a 'testImplementation' dependency on the testing framework that supports
+ScalaJS needs to be added.
 
 ### ScalaJS compiler ###
 
@@ -103,15 +50,27 @@ Scala 3 compiler has ScalaJS support built in:
 
 ```groovy
 tasks.withType(ScalaCompile) {
-  scalaCompileOptions.additionalParameters = [
-    '-scalajs'
-  ]
+  scalaCompileOptions.with {
+    additionalParameters = [ '-scalajs' ]
+  }
 }
 ```
 
-Plugin adds this option if it is not present.
+Plugin adds this option to the main and test Scala compilation tasks if it is not present.
 
-If the project uses Scala 2, ScalaJS compiler plugin has to be enabled:
+If the project uses Scala 2, ScalaJS compiler plugin dependency needs to be declared:
+
+```groovy
+dependencies {
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
+}
+```
+
+Plugin does this automatically unless a dependency on `scala-compiler` is declared explicitly.
+
+To enable Scala compiler plugins, their classpaths need to be given to the compiler
+via a `-Xplugin:` option. Examples of the Gradle build script code that do that abound:
+
 ```groovy
 tasks.withType(ScalaCompile) {
   scalaCompileOptions.additionalParameters = [
@@ -120,12 +79,107 @@ tasks.withType(ScalaCompile) {
 }
 ```
 
-Plugin does this unless it detects that '-Xplugin' option exists and contains 'scalajs-compiler'.
+*Note:* Such code is not needed, since Gardle Scala plugin already does this.
 
-### ScalaJS Linker ###
+### Dependencies ###
 
-Plugin uses hard-coded version of the ScalaJS linker and does not provide a way to change it
-(but should; see https://github.com/dubinsky/scalajs-gradle/issues/3).
+Plugin uses some dependencies internally:
+- ScalaJS linker;
+- ScalaJS test adapter;
+- ScalaJS JSDOM Node environment;
+- Zinc.
+
+For Scala 2, ScalaJS compiler plugin is needed.
+
+Plugin also needs some dependencies on the runtime classpath:
+- Scala standard library compiled into ScalaJS (only for Scala 3);
+- ScalaJS library;
+- ScalaJS DOM library;
+- ScalaJS test bridge.
+
+Plugin is compiled against a specific version of Zinc, but at runtime uses Zinc
+that the Scala plugin configured.
+
+Plugin is compiled against specific versions of ScalaJS and ScalaJS JSDOM Node environment,
+but uses the versions configured in the `scalajs` configuration that it creates.
+
+Plugin adds missing dependencies automatically.
+If you declare a `scalajs-library` dependency explicitly, plugin chooses the same
+version of the ScalaJS dependencies it adds
+(`scalajs-linker`, `scalajs-sbt-test-adapter`, `scalajs-test-bridge`, `scalajs-compiler`)
+will be of the same version.
+
+Example with all dependencies listed for Scala 3:
+```groovy
+final String scalaVersion       = '3.1.3'
+final String scala2versionMinor = '2.13'
+final String scalaJsVersion     = '1.10.1'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+  implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+
+  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:1.1.0"
+  
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+
+  // a test framework:  
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+}
+```
+
+And - with only the required dependencies:
+```groovy
+final String scalaVersion       = '3.1.3'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+  // a test framework:  
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+}
+```
+
+Example with explicit dependencies for Scala 2:
+```groovy
+final String scalaVersion       = '2.13.8'
+final String scala2versionMinor = '2.13'
+final String scalaJsVersion     = '1.10.1'
+
+dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+  
+  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:1.1.0"
+  
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
+
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+
+  // for ScalaTest tests:  
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+}
+```
+
+And - with only the required dependencies:
+```groovy
+final String scalaVersion       = '2.13.8'
+final String scala2versionMinor = '2.13'
+
+dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+  // a test framework:  
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.12"
+}
+```
+
+## ScalaJS Linker ##
 
 Following the tradition created by the sbt ScalaJS plugin, two flavours of linker configuration
 ('stages') are supported:
@@ -137,7 +191,7 @@ Fully optimized linking:
 - enables `checkIR`;
 - enables Closure Compiler (unless `moduleKind` is set to `ESModule`).
 
-### Node ###
+## Node ##
 
 For running the code and tests, NodeJS has to be installed.
 Plugin assumes that the `jsdom` module is installed.

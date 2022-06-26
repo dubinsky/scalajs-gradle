@@ -1,0 +1,15 @@
+target/
+.bsp/
+node_modules/
+project/project/
+project/target/
+package.json
+package-lock.json
+/dumps/
+*.class
+*.log
+.gradle/
+.idea
+build/
+*.iml
+out/
