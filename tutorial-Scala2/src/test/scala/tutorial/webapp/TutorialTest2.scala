@@ -1,9 +1,9 @@
 package tutorial.webapp
 
+import org.scalatest.funsuite.AnyFunSuite
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext._
-import org.scalatest.funsuite.AnyFunSuite
 import scala.scalajs.js
 
 class TutorialTest2 extends AnyFunSuite {

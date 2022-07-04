@@ -1,6 +1,6 @@
 plugins {
   id 'com.github.ben-manes.versions' version '0.42.0'
-  id 'org.podval.tools.scalajs' version '0.0.1'
+  id 'org.podval.tools.scalajs' version '0.1.0'
 }
 
 // There is no Java in the project :)
@@ -14,8 +14,8 @@ dependencies {
   testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.12"
 }
 
-scalajs {
-  stage            = 'FullOpt'       // one of: 'FastOpt', 'FullOpt'
+link {
+  optimization     = 'Full'          // one of: 'Fast', 'Full'
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
   prettyPrint      = false
@@ -25,5 +25,17 @@ scalajs {
       mainMethodName = 'main'
       mainMethodHasArgs = true
     }
+  }
+}
+
+linkTest {
+  optimization = 'Fast'
+}
+
+test {
+  useJUnitPlatform()
+
+  filter {
+    includeTestsMatching "tutorial.webapp.TutorialTest*"
   }
 }

@@ -1,64 +1,62 @@
 package org.podval.tools.scalajs
 
 import org.gradle.api.tasks.TaskExecutionException
-import org.gradle.api.logging.Logger
+import org.gradle.api.logging.{Logger, LogLevel as GLevel}
 import org.gradle.api.GradleException
 import org.opentorah.build.Gradle.*
+import org.opentorah.files.PipeOutputThread
 import org.opentorah.util.Files
-import org.podval.tools.scalajs.dependencies.GradleUtil.*
+import org.podval.tools.test.{SourceMapper, TestEnvironment}
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind,
   ModuleSplitStyle, Report, Semantics, StandardConfig}
+import org.scalajs.logging.Level as JSLevel
+import org.scalajs.testing.adapter.{TestAdapter, TestAdapterInitializer}
 import sbt.io.IO
-import org.scalajs.testing.adapter.TestAdapterInitializer
-import java.io.{File, InputStream}
-import java.nio.file.Path
+import sbt.testing.Framework
 import scala.concurrent.duration.Duration
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters.*
+import java.io.{File, InputStream}
+import java.nio.file.Path
 
 final class Actions(task: ScalaJSTask):
   private given CanEqual[ModuleKind, ModuleKind] = CanEqual.derived
 
+  private val linkTask: Link = task match
+    case link     : Link => link
+    case afterLink: AfterLink => afterLink.linkTask
+
   private def logger: Logger = task.getLogger
-  private lazy val jsLogger: org.scalajs.logging.Logger = JSLogger(logger, task.getName)
-
-  private val linkTask: LinkTask = task match
-    case l: LinkTask => l
-    case al: AfterLinkTask[?] => al.linkTask
-
-  private val extension: Extension = linkTask.getProject.getExtension(classOf[Extension])
-  private val moduleKind: ModuleKind = extension.getModuleKind.byName(ModuleKind.NoModule, ModuleKind.All)
-
+  private val moduleKind: ModuleKind = linkTask.getModuleKind.byName(ModuleKind.NoModule, ModuleKind.All)
   private def jsDirectory: File = linkTask.getJSDirectory
   private def reportTextFile: File = linkTask.getReportTextFile
   private def reportBinFile: File = linkTask.getReportBinFile
-
   private lazy val jsEnv: JSEnv = new JSDOMNodeJSEnv()
 
+  private lazy val jsLogger: org.scalajs.logging.Logger = new org.scalajs.logging.Logger:
+    private def logSource: String = s"ScalaJS ${task.getName}"
+    override def trace(t: => Throwable): Unit =
+      logger.error(s"$logSource Error", t)
+    override def log(level: JSLevel, message: => String): Unit =
+      logger.log(Actions.scalajs2gradleLevel(level), s"$logSource: $message")
+
   private lazy val mainModule: Report.Module =
-    val report: Report = Report
+    val result: Report.Module = Report
       .deserialize(IO.readBytes(reportBinFile))
       .get
-
-    val result: Report.Module = report
       .publicModules
       .find(_.moduleID == "main")
       // TODO is running tests really conditional on the existence of the 'main' module?
-      .getOrElse(throw GradleException(s"Linking result does not have a module named 'main'. Full report:\n$report"))
+      .getOrElse(throw GradleException(s"Linking result does not have a module named 'main'. See $reportBinFile"))
 
     require(moduleKind == result.moduleKind, s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}")
     result
 
   private lazy val mainModulePath: Path = Files.file(directory = jsDirectory, segments = mainModule.jsFileName).toPath
-
-  private def sourceMapper: SourceMapper = SourceMapper(
-    sourceMapFile = mainModule.sourceMapName.map(name => Files.file(directory = jsDirectory, segments = name)),
-    projectRootFile = linkTask.getProject.getRootDir
-  )
 
   private def input: Input = moduleKind match
     case ModuleKind.NoModule       => Input.Script        (mainModulePath)
@@ -66,17 +64,17 @@ final class Actions(task: ScalaJSTask):
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
   def link(): Unit =
-    val fullOptimization: Boolean = extension.stage == Stage.FullOpt
+    val fullOptimization: Boolean = linkTask.optimization == Link.Optimization.Full
 
     val moduleInitializers: Seq[ModuleInitializer] = linkTask match
-      case _: LinkTask.Main => extension
+      case linkMain: Link.Main => linkMain
         .getModuleInitializers
         .asScala // TODO unify with toSet() used by the DocBook plugin
         .toSeq
         .map(Actions.toModuleInitializer)
 
-      // Note: configured moduleInitializers are ignored for tests
-      case _: LinkTask.Test => Seq(ModuleInitializer.mainMethod(
+      // Note: tests use fixed entry point
+      case _: Link.Test => Seq(ModuleInitializer.mainMethod(
         TestAdapterInitializer.ModuleClassName,
         TestAdapterInitializer.MainMethodName
       ))
@@ -86,11 +84,11 @@ final class Actions(task: ScalaJSTask):
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
       .withModuleKind(moduleKind)
       .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
-      .withModuleSplitStyle(extension.getModuleSplitStyle.byName(ModuleSplitStyle.FewestModules, Actions.moduleSplitStyles))
-      .withPrettyPrint(extension.getPrettyPrint.getOrElse(false))
+      .withModuleSplitStyle(linkTask.getModuleSplitStyle.byName(ModuleSplitStyle.FewestModules, Actions.moduleSplitStyles))
+      .withPrettyPrint(linkTask.getPrettyPrint.getOrElse(false))
 
     logger.info(
-      s"""ScalaJSPlugin:
+      s"""ScalaJSPlugin ${linkTask.getName}:
          |JSDirectory = $jsDirectory
          |reportFile = $reportTextFile
          |moduleInitializers = ${moduleInitializers.map(ModuleInitializer.fingerprint).mkString(", ")}
@@ -119,7 +117,6 @@ final class Actions(task: ScalaJSTask):
     catch
       case e: LinkingException => throw TaskExecutionException(linkTask, e)
 
-  // TODO use SourceMapper to process the exceptions - if I can intercept them...
   def run(): Unit =
     logger.lifecycle(s"Running $mainModulePath on ${jsEnv.name}\n")
 
@@ -172,21 +169,27 @@ final class Actions(task: ScalaJSTask):
      */
       pipeOutputThreads.foreach(_.join)
 
-  // TODO use SourceMapper to process the exceptions
-  def test(): Unit =
-    // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
-    val scalaCompileAnalysisFile: File = Files.file(
-      directory = linkTask.getProject.getBuildDir,
-      segments  = s"tmp/scala/compilerAnalysis/${linkTask.classesTask.getScalaCompile.getName}.analysis"
+  def testEnvironment: TestEnvironment =
+    val sourceMapper: Option[SourceMapper] = mainModule
+      .sourceMapName
+      .map((name: String) => Files.file(directory = jsDirectory, segments = name))
+      .map(ClosureCompilerSourceMapper(_))
+
+    val testAdapter: TestAdapter = TestAdapter(
+      jsEnv = jsEnv,
+      input = Seq(input),
+      config = TestAdapter.Config().withLogger(jsLogger)
     )
 
-    Tests.run(
-      jsEnv = jsEnv,
-      input = input,
-      analysisFile = scalaCompileAnalysisFile,
-      jsLogger = jsLogger,
-      listeners = TestListeners(sourceMapper, logger)
-    )
+    new TestEnvironment(
+      testClassLoader = null, // Note: TestAdapter does not use testClassLoader
+      sourceMapper = sourceMapper
+    ):
+      override def loadFrameworks(descriptors: List[TestEnvironment.FrameworkDescriptor]): List[Framework] =
+        testAdapter.loadFrameworks(descriptors.map(_.implClassNames.toList)).flatten
+
+      override def close(): Unit =
+        testAdapter.close()
 
 object Actions:
   private val moduleSplitStyles: List[ModuleSplitStyle] = List(
@@ -194,10 +197,17 @@ object Actions:
     ModuleSplitStyle.SmallestModules
   )
 
-  private def toModuleInitializer(properties: ModuleInitializerProperties): ModuleInitializer =
+  private def toModuleInitializer(properties: Link.ModuleInitializerProperties): ModuleInitializer =
     val clazz : String = properties.getClassName.get
     val method: String = properties.getMainMethodName.getOrElse("main")
     // TODO use the name as the module id:
     if properties.getMainMethodHasArgs.getOrElse(false)
     then ModuleInitializer.mainMethodWithArgs(clazz, method)//.withModuleID(getName)
     else ModuleInitializer.mainMethod        (clazz, method)//.withModuleID(getName)
+
+  private given CanEqual[JSLevel, JSLevel] = CanEqual.derived
+  private def scalajs2gradleLevel(level: JSLevel): GLevel = level match
+    case JSLevel.Error => GLevel.ERROR
+    case JSLevel.Warn  => GLevel.WARN
+    case JSLevel.Info  => GLevel.INFO
+    case JSLevel.Debug => GLevel.DEBUG

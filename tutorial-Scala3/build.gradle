@@ -1,6 +1,6 @@
 plugins {
   id 'com.github.ben-manes.versions' version '0.42.0'
-  id 'org.podval.tools.scalajs' version '0.0.1'
+  id 'org.podval.tools.scalajs' version '0.1.0'
 }
 
 // There is no Java in the project :)
@@ -27,8 +27,8 @@ tasks.withType(ScalaCompile) {
   }
 }
 
-scalajs {
-  stage            = 'FullOpt'       // one of: 'FastOpt', 'FullOpt'
+link {
+  optimization     = 'Full'          // one of: 'Fast', 'Full'
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
   prettyPrint      = false

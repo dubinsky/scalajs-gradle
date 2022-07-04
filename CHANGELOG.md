@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2022-07-
+
+- testing integrated with Gradle;
+- testing integrated with IntelliJ Idea;
+- running sbt test frameworks without ScalaJS;
+- working on test filtering;
+- latest Gradle, Zinc and opentorah;
+
+**BREAKING CHANGES:**
+- no more extension;
+- task names changed;
+
 ## [0.0.4] - 2022-07-03
 - ScalaJS tutorial for both Scala 2 and Scala 3;
 - add correct dependencies and configuration for both Scala 3 and Scala 2;
