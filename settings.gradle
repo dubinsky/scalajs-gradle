@@ -9,4 +9,4 @@ dependencyResolutionManagement {
   }
 }
 
-//includeBuild '../../OpenTorah/opentorah.org'
+//includeBuild '../../../OpenTorah/opentorah.org'

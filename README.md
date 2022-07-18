@@ -6,6 +6,10 @@ This is a Gradle plugin for working with Scala.js.
 It supports linking ScalaJS code, running and testing it.
 It also supports testing normal Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
+Supports ScalaJS 1; default: 1.10.1.
+
+Requires Gradle 7.
+
 ## Motivation ##
 
 I dislike untyped languages, so if I have to write Javascript,
@@ -33,7 +37,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.1.0'
+  id 'org.podval.tools.scalajs' version '0.2.0'
 }
 ```
 
@@ -41,10 +45,6 @@ Plugin will automatically apply the Scala plugin to the project, so there is no 
 `id 'scala'` in the `plugins` block - but there is no harm in it either.
 Either way, it is the responsibility of the project using the plugin to add a standard Scala library
 dependency that the Scala plugin requires.
-
-Plugin uses Zinc internally.
-It is compiled against a specific version of Zinc, but at runtime uses Zinc
-that the Scala plugin configured.
 
 Unless ScalaJS is disabled, plugin will run in ScalaJS mode.
 To disable ScalaJS and use the plugin for testing normal Scala code with sbt-compatible testing frameworks,
@@ -79,10 +79,10 @@ At least one such framework needs to be added to the `testImplementation` config
 In the ScalaJS mode, that dependency needs to be a ScalaJS one.
 
 ScalaTest provides both flavours:
-- Scala 3, no ScalaJS: `org.scalatest:scalatest_3:3.2.12`
-- Scala 2, no ScalaJS: `org.scalatest:scalatest_2.13:3.2.12`
-- Scala 3, with ScalaJS: `org.scalatest:scalatest_sjs1_3:3.2.12`
-- Scala 2, with ScalaJS: `org.scalatest:scalatest_sjs1_2.13:3.2.12`
+- Scala 3, no ScalaJS: `org.scalatest:scalatest_3:3.2.13`
+- Scala 2, no ScalaJS: `org.scalatest:scalatest_2.13:3.2.13`
+- Scala 3, with ScalaJS: `org.scalatest:scalatest_sjs1_3:3.2.13`
+- Scala 2, with ScalaJS: `org.scalatest:scalatest_sjs1_2.13:3.2.13`
 
 Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
 in the traditional way; currently, not all configuration properties are honored.
@@ -128,10 +128,9 @@ tasks.withType(ScalaCompile) {
 Plugin adds this option to the main and test Scala compilation tasks if it is not present.
 
 If the project uses Scala 2, ScalaJS compiler plugin dependency needs to be declared:
-
 ```groovy
 dependencies {
-  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:1.10.1"
 }
 ```
 
@@ -155,7 +154,8 @@ tasks.withType(ScalaCompile) {
 Plugin uses some dependencies internally:
 - ScalaJS linker;
 - ScalaJS test adapter;
-- ScalaJS JSDOM Node environment.
+- ScalaJS JSDOM Node environment;
+- Zinc.
 
 For Scala 2, ScalaJS compiler plugin is needed.
 
@@ -168,7 +168,11 @@ Plugin also needs some dependencies on the runtime classpath:
 Plugin is compiled against specific versions of ScalaJS and ScalaJS JSDOM Node environment,
 but uses the versions configured in the `scalajs` configuration that it creates.
 
+Plugin is compiled against a specific version of Zinc, but at runtime uses the version of Zinc
+configured in the Scala plugin.
+
 Plugin adds missing dependencies automatically.
+
 If you declare a `scalajs-library` dependency explicitly, plugin chooses the same
 version of the ScalaJS dependencies it adds
 (`scalajs-linker`, `scalajs-sbt-test-adapter`, `scalajs-test-bridge`, `scalajs-compiler`)
@@ -193,7 +197,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.13"
 }
 ```
 
@@ -204,7 +208,7 @@ final String scalaVersion       = '3.1.3'
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.13"
 }
 ```
 
@@ -228,7 +232,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.12"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.13"
 }
 ```
 
@@ -240,7 +244,7 @@ final String scala2versionMinor = '2.13'
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.12"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.13"
 }
 ```
 
@@ -298,7 +302,7 @@ For `Link.Main` tasks, a list of module initializers may also be configured:
 
 ```groovy
 moduleInitializers {
-  module1 { 
+  main { 
     className = '<fully qualified class name>'
     mainMethodName = 'main'
     mainMethodHasArgs = false
@@ -307,7 +311,7 @@ moduleInitializers {
 }
 ```
 
-Name of the module initializer ('module1' in the example above) is ignored (but should not be: TODO).
+Name of the module initializer ('main' in the example above) becomes the module id.
 
 ### Running ###
 
@@ -338,9 +342,12 @@ I also looked at
 - [ScalaJS CLI](https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli)
 - [Implementing Scala.JS Support for Scala 3](https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html)
 
-### sbt ###
+Support for Scala 2.12 was [requested](https://github.com/dubinsky/scalajs-gradle/issues/9)
+by [machaval](https://github.com/machaval) - thanks for the encouragement!
 
-Basic testing functionality was [requested](https://github.com/dubinsky/scalajs-gradle/issues/7#issue-1256908039)
+### Testing ###
+
+Basic testing functionality was [requested](https://github.com/dubinsky/scalajs-gradle/issues/7)
 by [zstone1](https://github.com/zstone1) - thanks for the encouragement!
 
 To figure out how sbt itself integrates with testing frameworks, I had to untangle some sbt code, including:
@@ -353,42 +360,35 @@ Turns out, internals of sbt are a maze of twisted (code) passages, all alike, wh
 code are stored in key-value maps, and addition of such maps is used as an override mechanism.
 What a disaster!
 
-### Testing ###
-
 Just being able to run the tests with no integration with Gradle or IntelliJ Idea seemed
 suboptimal, so I decided to look into proper integrations of things like
-`org.scala-js:scalajs-sbt-test-adapter` and `org.scala-sbt:test-interface`.
+`org.scala-js:scalajs-sbt-test-adapter` and [`org.scala-sbt:test-interface`](https://github.com/sbt/test-interface).
 
 I perused code from:
 - [Gradle](https://github.com/gradle/gradle);
 - [IntelliJ Idea](https://github.com/JetBrains/intellij-community);
 - [Gradle ScalaTest plugin](https://github.com/maiflai/gradle-scalatest).
 
-This took by far the most of my time, and uncovered a number of surprises:
-- IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but *only* if the task is of type
- `org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
-  and `Test` extends `org.gradle.process.JavaForkOptions`, my test task runs in a forked JVM,
-  making debugging of my code difficult (and there seems to be no way to stop the forking).
-- IntelliJ Idea integration works only if all the events are generated by the same thread (!),
-  and since sbt's testing interface uses callback to generate some events, I had to code
-  an event queue with its own thread.
-- sbt's testing interface is supported by a number of test frameworks, and once I had
-  a Gradle/Idea integration with it in ScalaJS context, it was reasonably easy to re-use it
-  to run tests on sbt-compatible frameworks *without* any ScalaJS involved - in plain Scala projects.
+This took by far the most of my time, and uncovered a number of surprises.
 
+IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but *only* if the task is of type
+`org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
+and `Test` extends `org.gradle.process.JavaForkOptions`, my test task runs in a forked JVM,
+making debugging of my code difficult (and there seems to be no way to stop the forking).
 
-## TODO ##
+Turns out that IntelliJ Idea integration only works when all the calls to
+the IJ listener happen from the same thread
+(it probably uses some thread-local variable to set up cross-process communications).
+Since some of the calls are caused by the call-back from the sbt testing interface's
+event handler, I get "Test events were not received" in the Idea test UI.
+It would have been nice if this fact was documented somewhere :(
+I coded an event queue with its own thread, but then discovered that:
+- Gradle provides a mechanism that ensures that all the calls are made from the same thread: Actor.createActor().getProxy();
+- when tests are parallelized, MaxNParallelTestClassProcessor is used, which already does that.
 
-- try more (and add more) sbt-compatible test frameworks to shake out wrong assumptions about the
-  (not very well documented) sbt testing interface and test selectors;
-- try more complex test setups with suites and figure out what "nested tasks" are;
-- look into test tags;
-- improve filtering by test names (and enumerate the methods for frameworks that use test methods);
-- use (a wrapper for) `org.gradle.api.internal.tasks.testing.TestFramework` to deepen
-  the Gradle integration and regain parallel test execution;
-- look at the https://github.com/helmethair-co/scalatest-junit-runner;
-- apply SourceMapper to the exceptions during running the ScalaJS code - if I can intercept them;
+There are **two** testing interfaces in `org.scala-sbt:test-interface:1.0`;
+I use the one used by the ScalaJS sbt plugin - presumably the new one ;)
 
-Compare and contrast wit the ScalaTest Gradle plugin:
-- https://github.com/maiflai/gradle-scalatest/issues/69
-- https://github.com/maiflai/gradle-scalatest/issues/67
+sbt's testing interface is supported by a number of test frameworks, and once I had
+a Gradle/Idea integration with it in ScalaJS context, it was reasonably easy to re-use it
+to run tests on sbt-compatible frameworks **without** any ScalaJS involved - in plain Scala projects.

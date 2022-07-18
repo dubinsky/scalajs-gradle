@@ -1,0 +1,41 @@
+plugins {
+  id 'com.github.ben-manes.versions' version '0.42.0'
+  id 'org.podval.tools.scalajs' version '0.1.0'
+}
+
+// There is no Java in the project :)
+project.gradle.startParameter.excludedTaskNames.add('compileJava')
+
+final String scalaVersion       = '2.13.8'
+final String scala2versionMinor = '2.13'
+
+dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.13"
+}
+
+link {
+  optimization     = 'Full'          // one of: 'Fast', 'Full'
+  moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
+  moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
+  prettyPrint      = false
+  moduleInitializers {
+    main {
+      className = 'tutorial.webapp.TutorialApp'
+      mainMethodName = 'main'
+      mainMethodHasArgs = true
+    }
+  }
+}
+
+linkTest {
+  optimization = 'Fast'
+}
+
+test {
+  useJUnitPlatform()
+
+  filter {
+    includeTestsMatching "tutorial.webapp.TutorialTest*"
+  }
+}

@@ -1,0 +1,34 @@
+plugins {
+  id 'com.github.ben-manes.versions' version '0.42.0'
+  id 'org.podval.tools.scalajs' version '0.1.0'
+}
+
+// There is no Java in the project :)
+project.gradle.startParameter.excludedTaskNames.add('compileJava')
+
+final String scalaVersion = '3.1.3'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+  testImplementation "org.scalatest:scalatest_3:3.2.13"
+}
+
+tasks.withType(ScalaCompile) {
+  scalaCompileOptions.with {
+    targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
+    additionalParameters = [
+      '-new-syntax',
+      '-feature',
+      '-language:strictEquality'
+//      '-source:future'
+    ]
+  }
+}
+
+test {
+//  testLogging {
+//    events "started", "skipped", "failed"
+//  }
+//  includeTags = ['org.scalatest.tags.Slow']
+  excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.test.Tags.RequiresDb']
+}

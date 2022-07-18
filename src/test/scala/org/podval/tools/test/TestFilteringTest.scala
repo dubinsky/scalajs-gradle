@@ -65,16 +65,13 @@ import org.scalatest.funsuite.AnyFunSuite
 // Note: heavily based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcherTest
 //   see https://raw.githubusercontent.com/gradle/gradle/master/subprojects/testing-base/src/test/groovy/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcherTest.groovy
 class TestFilteringTest extends AnyFunSuite:
+
   private def checkMatch(input: String, className: String, methodName: String, expected: Boolean): Unit =
     assert(expected == TestFiltering(Set(input), Set.empty, Set.empty)
       .matchesTest(className, methodName))
 
     assert(expected == TestFiltering(Set.empty, Set.empty, Set(input))
       .matchesTest(className, methodName))
-
-//      def "knows if test matches class"() {
-//        expect: new TestSelectionMatcher(input, [], []).matchesTest(className, methodName) == match
-//                new TestSelectionMatcher([], [], input).matchesTest(className, methodName) == match
 
   test("knows if test matches class") {
     checkMatch("FooTest", "FooTest", "whatever", true)
@@ -223,70 +220,73 @@ class TestFilteringTest extends AnyFunSuite:
       ["FooTest", "Bar" ] | []               | "FooTest"  | "whatever" | true
       ["FooTest"]         | ["Bar"]          | "FooTest"  | "whatever" | false
   }
+*/
 
-  def 'can exclude as many classes as possible'() {
-      expect:
-      new TestSelectionMatcher(input, [], []).mayIncludeClass(fullQualifiedName) == maybeMatch
-      new TestSelectionMatcher([], [], input).mayIncludeClass(fullQualifiedName) == maybeMatch
+  private def checkMayInclude(input: String, className: String, expected: Boolean): Unit =
+    assert(expected == TestFiltering(Set(input), Set.empty, Set.empty)
+      .mayIncludeClass(className))
 
-      where:
-      input                             | fullQualifiedName    | maybeMatch
-      ['.']                             | 'FooTest'            | false
-      ['.FooTest.']                     | 'FooTest'            | false
-      ['FooTest']                       | 'FooTest'            | true
-      ['FooTest']                       | 'org.gradle.FooTest' | true
-      ['FooTest']                       | 'org.foo.FooTest'    | true
-      ['FooTest']                       | 'BarTest'            | false
-      ['FooTest']                       | 'org.gradle.BarTest' | false
-      ['FooTest.testMethod']            | 'FooTest'            | true
-      ['FooTest.testMethod']            | 'BarTest'            | false
-      ['FooTest.testMethod']            | 'org.gradle.FooTest' | true
-      ['FooTest.testMethod']            | 'org.gradle.BarTest' | false
-      ['org.gradle.FooTest.testMethod'] | 'FooTest'            | false
-      ['org.gradle.FooTest.testMethod'] | 'org.gradle.FooTest' | true
-      ['org.gradle.FooTest.testMethod'] | 'org.gradle.BarTest' | false
-      ['org.foo.FooTest.testMethod']    | 'org.gradle.FooTest' | false
-      ['org.foo.FooTest']               | 'org.gradle.FooTest' | false
+    assert(expected == TestFiltering(Set.empty, Set.empty, Set(input))
+      .mayIncludeClass(className))
 
-      ['*FooTest*']                     | 'org.gradle.FooTest' | true
-      ['*FooTest*']                     | 'aaa'                | true
-      ['*FooTest']                      | 'org.gradle.FooTest' | true
-      ['*FooTest']                      | 'FooTest'            | true
-      ['*FooTest']                      | 'org.gradle.BarTest' | true // org.gradle.BarTest.testFooTest
+    test("can exclude as many classes as possible") {
+      checkMayInclude(".", "FooTest", false)
+      checkMayInclude(".FooTest.", "FooTest", false)
+      checkMayInclude("FooTest", "FooTest", true)
+      checkMayInclude("FooTest", "org.gradle.FooTest", true)
+      checkMayInclude("FooTest", "org.foo.FooTest", true)
+      checkMayInclude("FooTest", "BarTest", false)
+      checkMayInclude("FooTest", "org.gradle.BarTest", false)
+      checkMayInclude("FooTest.testMethod", "FooTest", true)
+      checkMayInclude("FooTest.testMethod", "BarTest", false)
+      checkMayInclude("FooTest.testMethod", "org.gradle.FooTest", true)
+      checkMayInclude("FooTest.testMethod", "org.gradle.BarTest", false)
+      checkMayInclude("org.gradle.FooTest.testMethod", "FooTest", false)
+      checkMayInclude("org.gradle.FooTest.testMethod", "org.gradle.FooTest", true)
+      checkMayInclude("org.gradle.FooTest.testMethod", "org.gradle.BarTest", false)
+      checkMayInclude("org.foo.FooTest.testMethod", "org.gradle.FooTest", false)
+      checkMayInclude("org.foo.FooTest", "org.gradle.FooTest", false)
 
-      ['or*']                           | 'org.gradle.FooTest' | true
-      ['org*']                          | 'org.gradle.FooTest' | true
-      ['org.*']                         | 'org.gradle.FooTest' | true
-      ['org.g*']                        | 'org.gradle.FooTest' | true
-      ['org*']                          | 'FooTest'            | false
-      ['org.*']                         | 'com.gradle.FooTest' | false
-      ['org*']                          | 'com.gradle.FooTest' | false
-      ['org.*']                         | 'com.gradle.FooTest' | false
-      ['org.g*']                        | 'com.gradle.FooTest' | false
-      ['FooTest*']                      | 'FooTest'            | true
-      ['FooTest*']                      | 'org.gradle.FooTest' | true
-      ['FooTest*']                      | 'BarTest'            | false
-      ['FooTest*']                      | 'org.gradle.BarTest' | false
-      ['org.gradle.FooTest*']           | 'org.gradle.BarTest' | false
-      ['FooTest.testMethod*']           | 'FooTest'            | true
-      ['FooTest.testMethod*']           | 'org.gradle.FooTest' | true
-      ['org.foo.FooTest*']              | 'FooTest'            | false
-      ['org.foo.FooTest*']              | 'org.gradle.FooTest' | false
-      ['org.foo.*FooTest*']             | 'org.gradle.FooTest' | false
-      ['org.foo.*FooTest*']             | 'org.foo.BarTest'    | true // org.foo.BarTest.testFooTest
+      checkMayInclude("*FooTest*", "org.gradle.FooTest", true)
+      checkMayInclude("*FooTest*", "aaa", true)
+      checkMayInclude("*FooTest", "org.gradle.FooTest", true)
+      checkMayInclude("*FooTest", "FooTest", true)
+      checkMayInclude("*FooTest", "org.gradle.BarTest", true) // org.gradle.BarTest.testFooTest
 
-      ['Foo']                           | 'FooTest'            | false
-      ['org.gradle.Foo']                | 'org.gradle.FooTest' | false
-      ['org.gradle.Foo.*']              | 'org.gradle.FooTest' | false
+      checkMayInclude("or*", "org.gradle.FooTest", true)
+      checkMayInclude("org*", "org.gradle.FooTest", true)
+      checkMayInclude("org.*", "org.gradle.FooTest", true)
+      checkMayInclude("org.g*", "org.gradle.FooTest", true)
+      checkMayInclude("org*", "FooTest", false)
+      checkMayInclude("org.*", "com.gradle.FooTest", false)
+      checkMayInclude("org*", "com.gradle.FooTest", false)
+      checkMayInclude("org.*", "com.gradle.FooTest", false)
+      checkMayInclude("org.g*", "com.gradle.FooTest", false)
+      checkMayInclude("FooTest*", "FooTest", true)
+      checkMayInclude("FooTest*", "org.gradle.FooTest", true)
+      checkMayInclude("FooTest*", "BarTest", false)
+      checkMayInclude("FooTest*", "org.gradle.BarTest", false)
+      checkMayInclude("org.gradle.FooTest*", "org.gradle.BarTest", false)
+      checkMayInclude("FooTest.testMethod*", "FooTest", true)
+      checkMayInclude("FooTest.testMethod*", "org.gradle.FooTest", true)
+      checkMayInclude("org.foo.FooTest*", "FooTest", false)
+      checkMayInclude("org.foo.FooTest*", "org.gradle.FooTest", false)
+      checkMayInclude("org.foo.*FooTest*", "org.gradle.FooTest", false)
+      checkMayInclude("org.foo.*FooTest*", "org.foo.BarTest", true) // org.foo.BarTest.testFooTest
 
-      ['org.gradle.Foo$Bar.*test']      | 'Foo'                | false
-      ['org.gradle.Foo$Bar.*test']      | 'org.Foo'            | false
-      ['org.gradle.Foo$Bar.*test']      | 'org.gradle.Foo'     | true
-      ['Enclosing$Nested.test']         | "Enclosing"          | true
-      ['org.gradle.Foo$1$2.test']       | "org.gradle.Foo"     | true
-  }
+      checkMayInclude("Foo", "FooTest", false)
+      checkMayInclude("org.gradle.Foo", "org.gradle.FooTest", false)
+      checkMayInclude("org.gradle.Foo.*", "org.gradle.FooTest", false)
 
-  def 'can use multiple patterns'() {
+      checkMayInclude("org.gradle.Foo$Bar.*test", "Foo", false)
+      checkMayInclude("org.gradle.Foo$Bar.*test", "org.Foo", false)
+      checkMayInclude("org.gradle.Foo$Bar.*test", "org.gradle.Foo", true)
+      checkMayInclude("Enclosing$Nested.test", "Enclosing", true)
+      checkMayInclude("org.gradle.Foo$1$2.test", "org.gradle.Foo", true)
+    }
+
+  /*
+  def "can use multiple patterns'() {
       expect:
       new TestSelectionMatcher(pattern1, [], pattern2).mayIncludeClass(fullQualifiedName) == maybeMatch
 

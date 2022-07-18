@@ -1,13 +1,12 @@
 package org.podval.tools.test
 
 import org.podval.tools.test.TestFiltering.TestPattern
+import sbt.testing.{Selector, SuiteSelector, TestSelector, TestWildcardSelector}
 import java.util.regex.Pattern
 import scala.annotation.tailrec
 
-// TODO since there is no way to find out what tests are defined in a given suite,
-// I need to know the meaning of the inclusion patterns (and can't handle individual test exclusions).
-// TODO for frameworks where tests *sre* methods in classes that I can introspect,
-// and where I can interrogate a suite about ist tests - use that.
+  // Note: since there is no way to find out what tests are defined in a given suite,
+  // I need to know the meaning of the inclusion patterns (and can't handle individual test exclusions).
 
   // Note: heavily based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher
   //   see https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java
@@ -30,18 +29,14 @@ final class TestFiltering(
   buildScriptExcludePatterns: Set[TestPattern],
   commandLineIncludePatterns: Set[TestPattern]
 ):
-  // TODO is this the meaning?
-  def explicitlySpecified: Boolean =
-    buildScriptIncludePatterns.nonEmpty ||
-    buildScriptExcludePatterns.nonEmpty ||
-    commandLineIncludePatterns.nonEmpty
-
-  def whatToIncludeForClass(className: String): (Boolean, Seq[String]) =
-    if !explicitlySpecified
-    then (true, Seq.empty)
-    else
-//      if className == "tutorial.webapp.TutorialTest" then (false, Seq("HelloWorld failure")) else
-        (mayIncludeClass(className), Seq.empty /*TODO*/)
+  def whatToIncludeForClass(className: String): (Boolean, Array[Selector]) =
+    if !mayIncludeClass(className)
+    then (false, Array.empty)
+    else (false,
+      Array(new SuiteSelector)
+//        Seq(new TestSelector("2*2 success should work"))
+//      Seq(new TestWildcardSelector("2*2"))
+    )
 
   def matchesTest(className: String, methodName: String): Boolean =
     def matchesClassAndMethod(patterns: Set[TestPattern]): Boolean = patterns
@@ -97,9 +92,10 @@ object TestFiltering:
     private val firstWildcardIndex: Int = patternIn.indexOf('*')
 
     private val segments: Array[String] =
-      if firstWildcardIndex == -1
-      then splitPreserveAllTokens(patternIn, '.')
-      else splitPreserveAllTokens(patternIn.substring(0, firstWildcardIndex), '.')
+      splitPreserveAllTokens(
+        if firstWildcardIndex == -1 then patternIn else patternIn.substring(0, firstWildcardIndex),
+        '.'
+      )
 
     private val lastElementMatcher: LastElementMatcher =
       if firstWildcardIndex == -1
@@ -107,7 +103,9 @@ object TestFiltering:
       else new WildcardMatcher()
 
     def mayIncludeClass(fullQualifiedName: String): Boolean =
-      if patternStartsWithWildcard then true else
+      if patternStartsWithWildcard then
+        true
+      else
         val classNameArray: Array[String] =
           classNameSelector.determineTargetClassName(fullQualifiedName).split("\\.")
 
@@ -163,7 +161,8 @@ object TestFiltering:
 
   private final class WildcardMatcher extends LastElementMatcher:
     override def matches(classElement: String, patternElement: String): Boolean =
-      classElement.startsWith(patternElement) || classNameMatch(classElement, patternElement)
+      classElement.startsWith(patternElement) ||
+      classNameMatch(classElement, patternElement)
 
   // Foo can match both Foo and Foo$NestedClass
   // https://github.com/gradle/gradle/issues/5763
@@ -220,3 +219,11 @@ object TestFiltering:
     if string == null then null else
     if string.isEmpty then Array.empty
     else split(Seq.empty, string).toArray
+
+
+  def main(args: Array[String]): Unit =
+    run("org.gradle.FooTest.testMethod", "org.gradle.FooTest")
+
+  private def run(input: String, className: String): Unit =
+    TestFiltering(Set(input), Set.empty, Set.empty)
+      .mayIncludeClass(className)

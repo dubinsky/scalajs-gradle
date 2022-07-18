@@ -6,8 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2022-07-
+## [0.2.0] - 2022-07-31
+feat: Scala 2.12 support
+feat: report ignored tests
+wip: running tests in parallel
+refactor: package test functionality using Gradle test-related classes
+wip: test filtering
+refactor: use sbt Selectors in filtering tests
+wip: filtering suites based on tags
+test: move test projects into `test-projects`
+chore: latest Gradle, Zinc, opentorah, ScalaTest etc.
 
+## [0.1.0] - 2022-07-18
 - testing integrated with Gradle;
 - testing integrated with IntelliJ Idea;
 - running sbt test frameworks without ScalaJS;
