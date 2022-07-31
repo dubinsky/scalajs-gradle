@@ -32,12 +32,20 @@ object TestResultProcessorEx:
       )
     )
 
+    def failed(
+      test: Test,
+      throwable: Throwable
+    ): Unit = testResultProcessor.failure(
+      test.getId,
+      throwable
+    )
+
     def output(
-      testId: Object,
+      test: Test,
       message: String,
       isError: Boolean
     ): Unit = testResultProcessor.output(
-      testId,
+      test.getId,
       DefaultTestOutputEvent(
         if isError
         then TestOutputEvent.Destination.StdErr
@@ -45,14 +53,13 @@ object TestResultProcessorEx:
         message
       )
     )
-
-    // TODO is there a way to convey the actual LogLevel, not just isError?
+    
     def log(
-      testId: Object,
+      test: Test,
       message: String,
       logLevel: LogLevel
     ): Unit = testResultProcessor.output(
-      testId = testId,
+      test = test,
       message = message,
       isError = (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
     )

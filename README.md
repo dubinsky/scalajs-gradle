@@ -10,6 +10,11 @@ Supports ScalaJS 1; default: 1.10.1.
 
 Requires Gradle 7.
 
+Plugin is written in Scala 3.
+Scala 2.12 on the *project* classpath is supported, but not on the *buildscript* classpath;
+Gradle plugins or explicit `buildScript` additions that use Scala 2.12 (or earlier)
+will break the plugin.
+
 ## Motivation ##
 
 I dislike untyped languages, so if I have to write Javascript,
@@ -78,24 +83,33 @@ Plugin replaces the `test` task with one that supports running sbt-compatible te
 At least one such framework needs to be added to the `testImplementation` configuration.
 In the ScalaJS mode, that dependency needs to be a ScalaJS one.
 
-ScalaTest provides both flavours:
-- Scala 3, no ScalaJS: `org.scalatest:scalatest_3:3.2.13`
-- Scala 2, no ScalaJS: `org.scalatest:scalatest_2.13:3.2.13`
-- Scala 3, with ScalaJS: `org.scalatest:scalatest_sjs1_3:3.2.13`
-- Scala 2, with ScalaJS: `org.scalatest:scalatest_sjs1_2.13:3.2.13`
+Currently, the following test frameworks are supported:
+
+|Name      |Scala 3                         |ScalaJS                           |Notes                  |
+--------------------------------------------------------------------------------------------------------
+|JUnit4    |`com.github.sbt:junit-interface`| not available                    |brings in `junit:junit`|
+|ScalaTest |`org.scalatest:scalatest_3`     |`org.scalatest:scalatest_sjs1_3`  |                       |
+|ScalaCheck|`org.scalacheck:scalacheck_3`   |`org.scalacheck:scalacheck_sjs1_3`|                       |
+|Specs2    |`org.specs2:specs2-core_3`      |`org.specs2:specs2-core_sjs1_3`   |                       |
+|mUnit     |`org.scalameta:munit_3`         |`org.scalameta:munit_sjs1_3`      |brings in `junit:junit`|
+|uTest     |`com.lihaoyi:utest_3`           |`com.lihaoyi:utest_sjs1_3`        |                       |
+
+For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
+
+Multiple test frameworks can be used at the same time.
+By default, test results from all frameworks are reported together.
+To separate test results per framework, set `groupByFramework` to `true` on the appropriate test task.
 
 Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
 in the traditional way; currently, not all configuration properties are honored.
 
-Whatever Gradle-recognized test framework is applied (JUnit4, JUnit5, TestNG) will be fed appropriate data
-to produce test report. All other framework-specific configuration properties are ignored.
+Any Gradle-recognized test framework configured on the test task (JUnit4, JUnit5, TestNG) and its configuration options
+are ignored.
 
-All properties regulating parallelism of the test-running are ignored; tests are run sequentially.
+ScalaJS tests are run sequentially; Scala tests are forked/parallelized in accordance with the forking options.
 
 Class inclusion/exclusion filters are honored, but method-name-based filtering does not work,
 since in frameworks like ScalaTest individual tests are not methods.
-
-Re-running previously failed tests is currently not supported.
 
 If there is a need to have test runs with different configuration, more testing tasks can be added manually.
 
@@ -337,7 +351,7 @@ for understanding how the ScalaJS linker should be called. Thanks!
 I also looked at
 - [ScalaJS Tutorial](https://www.scala-js.org/doc/tutorial/basic/)
 - [ScalaJS Linker](https://github.com/scala-js/scala-js/tree/main/linker-interface)
-  [ScalaJS sbt plugin](https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin)
+- [ScalaJS sbt plugin](https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin)
 - [Old ScalaJS Gradle plugin](https://github.com/gtache/scalajs-gradle) by [gtache](https://github.com/gtache)
 - [ScalaJS CLI](https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli)
 - [Implementing Scala.JS Support for Scala 3](https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html)
@@ -351,10 +365,11 @@ Basic testing functionality was [requested](https://github.com/dubinsky/scalajs-
 by [zstone1](https://github.com/zstone1) - thanks for the encouragement!
 
 To figure out how sbt itself integrates with testing frameworks, I had to untangle some sbt code, including:
-- sbt.Defaults
-- org.scalajs.sbtplugin.ScalaJSPluginInternal
-- sbt.Tests
-- sbt.TestRunner
+- `sbt.Defaults`
+- `sbt.Tests`
+- `sbt.TestRunner`
+- `sbt.ForkTests`
+- `org.scalajs.sbtplugin.ScalaJSPluginInternal`
 
 Turns out, internals of sbt are a maze of twisted (code) passages, all alike, where pieces of
 code are stored in key-value maps, and addition of such maps is used as an override mechanism.
@@ -369,7 +384,18 @@ I perused code from:
 - [IntelliJ Idea](https://github.com/JetBrains/intellij-community);
 - [Gradle ScalaTest plugin](https://github.com/maiflai/gradle-scalatest).
 
-This took by far the most of my time, and uncovered a number of surprises.
+This took by far the most of my time (and takes up more than 3/4 of the plugin code), and uncovered a number of surprises.
+
+sbt's testing interface is supported by a number of test frameworks, and once I had
+a Gradle/Idea integration with it in ScalaJS context, it was reasonably easy to re-use it
+to run tests on sbt-compatible frameworks **without** any ScalaJS involved - in plain Scala projects.
+
+There are **two** testing interfaces in `org.scala-sbt:test-interface:1.0`;
+I use the one used by the ScalaJS sbt plugin - presumably the new one ;)
+
+I had to develop an approach to add dependencies dynamically,
+with correct versions and built for correct version of Scala which may be different from the one
+plugin uses (so that Scala 2.12 can be supported).
 
 IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but *only* if the task is of type
 `org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
@@ -384,11 +410,22 @@ event handler, I get "Test events were not received" in the Idea test UI.
 It would have been nice if this fact was documented somewhere :(
 I coded an event queue with its own thread, but then discovered that:
 - Gradle provides a mechanism that ensures that all the calls are made from the same thread: Actor.createActor().getProxy();
-- when tests are parallelized, MaxNParallelTestClassProcessor is used, which already does that.
+- when tests are parallelized, MaxNParallelTestClassProcessor is used, which already does that, so I do not need to.
 
-There are **two** testing interfaces in `org.scala-sbt:test-interface:1.0`;
-I use the one used by the ScalaJS sbt plugin - presumably the new one ;)
+sbt-based test discovery produces more information than just the class name:
+- fingerprint
+- selectors
+- framework that recognized the test (supporting multiple testing frameworks in the same project
+  probably is not a critical requirement, but sbt does it, so I must too ;)
 
-sbt's testing interface is supported by a number of test frameworks, and once I had
-a Gradle/Idea integration with it in ScalaJS context, it was reasonably easy to re-use it
-to run tests on sbt-compatible frameworks **without** any ScalaJS involved - in plain Scala projects.
+When tests are parallelized, I do not want to read the compiler analysis file in every test worker
+and fish for this information again; of course, the serializer Gradle installs in the connection to the
+worker does not support my needs; it also makes undocumented and not statically checked assumptions
+about test ids (always composite, both the scope and id Longs) which I do not want to conform too.
+
+So, I need to use a different serializer.
+Of course, both org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor
+and org.gradle.api.internal.tasks.testing.worker.TestWorker
+hard-code the org.gradle.api.internal.tasks.testing.worker.TestEventSerializer,
+and the only way I found to change that was
+to copy both classes in whole, translate them into Scala and change one line in each...

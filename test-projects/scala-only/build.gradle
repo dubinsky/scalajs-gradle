@@ -1,6 +1,6 @@
 plugins {
   id 'com.github.ben-manes.versions' version '0.42.0'
-  id 'org.podval.tools.scalajs' version '0.1.0'
+  id 'org.podval.tools.scalajs' version '0.2.0'
 }
 
 // There is no Java in the project :)
@@ -26,9 +26,12 @@ tasks.withType(ScalaCompile) {
 }
 
 test {
-//  testLogging {
-//    events "started", "skipped", "failed"
-//  }
+//  maxParallelForks = 2
+
+  testLogging {
+//    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
+    events "failed", "standard_error", "standard_out"
+  }
 //  includeTags = ['org.scalatest.tags.Slow']
   excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.test.Tags.RequiresDb']
 }

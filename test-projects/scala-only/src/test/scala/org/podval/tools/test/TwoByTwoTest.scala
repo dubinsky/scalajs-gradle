@@ -10,7 +10,7 @@ final class TwoByTwoTest extends AnyFlatSpec, Matchers:
   }
 
   "3*3 success" should "work" in {
-    println("--- TEST OUTPUT ---")
+    println("--- SCALA-ONLY TEST OUTPUT ---")
     3*3 shouldBe 9
   }
 

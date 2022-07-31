@@ -13,7 +13,7 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask:
 
   @TaskAction final def execute(): Unit =
     expandClassPath()
-    
+
     Link.link(
       moduleKind = Link.moduleKind(getModuleKind),
       reportBinFile = getReportBinFile,

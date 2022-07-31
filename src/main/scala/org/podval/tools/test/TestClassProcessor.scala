@@ -6,25 +6,30 @@ import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
 import org.gradle.internal.time.Clock
 import org.opentorah.build.Gradle
-import sbt.testing.{Event, EventHandler, Framework, Runner, Status, SuiteSelector, Task, TaskDef, TestSelector}
+import org.podval.tools.test.framework.FrameworkDescriptor
+import sbt.testing.{Event, EventHandler, Framework, Runner, Status, Task, TaskDef}
 import java.io.File
 import java.net.URLClassLoader
 import scala.util.control.NonFatal
 import TestResultProcessorEx.*
 
 final class TestClassProcessor(
+  groupByFramework: Boolean,
+  isForked: Boolean,
   testClassPath: Array[File],
   runningInIntelliJIdea: Boolean,
-  includeTags: Array[String],
-  excludeTags: Array[String],
+  testTagging: TestTagging,
   clock: Clock
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
 
+  // TODO we should not need to carry testClassPath all the way here and can just use own classloader - mimonafshach:
+  // - if we are running in Node, testClassLoader is ignored;
+  // - if we are not forked, TestTaskScala.loadFrameworks() already added it to the classpath on which we are running.
+  // - if we are forked, ForkingTestClassProcessor added it to the applicationClassPath on which we are running (?) - but no...
   private val testClassLoader: ClassLoader =
-    if testClassPath == null then null else
-    if !TestExecuter.doNotFork
+    if isForked
     then URLClassLoader(testClassPath.map(_.toURI.toURL))
-    else Gradle.addToClassPath(this, testClassPath.toSeq)
+    else getClass.getClassLoader
 
   import TestClassProcessor.FrameworkRun
 
@@ -33,16 +38,8 @@ final class TestClassProcessor(
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
   private def testResultProcessor: TestResultProcessor = testResultProcessorOpt.get
 
-  override def startProcessing(testResultProcessor: TestResultProcessor): Unit = testResultProcessorOpt = Some(
-    testResultProcessor
-//    if !TestExecuter.doNotFork then testResultProcessor else
-//      AttachParentTestResultProcessor(
-//        CaptureTestOutputTestResultProcessor(
-//          testResultProcessor,
-//          JULRedirector()
-//        )
-//      )
-  )
+  override def startProcessing(testResultProcessor: TestResultProcessor): Unit =
+    testResultProcessorOpt = Some(testResultProcessor)
 
   private var frameworksRuns: Seq[FrameworkRun] = Seq.empty
 
@@ -51,14 +48,12 @@ final class TestClassProcessor(
       val frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forFramework(framework)
 
       val args: Array[String] = frameworkDescriptor.args(
-        includeTags = includeTags,
-        excludeTags = excludeTags,
-        isRemote = !TestExecuter.doNotFork
+        testTagging = testTagging
       )
 
       val runner: Runner = framework.runner(
-        if TestExecuter.doNotFork then args else Array.empty,
-        args, //if TestExecuter.doNotFork then Array.empty else args,
+        args,
+        Array.empty,
         testClassLoader
       )
 
@@ -86,22 +81,16 @@ final class TestClassProcessor(
     for frameworkRun: FrameworkRun <- frameworksRuns do
       val summary: String = frameworkRun.runner.done()
       testResultProcessor.log(
-        testId = FrameworkTest.id(frameworkRun.framework),
-        message = s"${frameworkRun.framework.name}: $summary",
+        test = RootTest.forFramework(frameworkRun.framework, groupByFramework),
+        message = s"${frameworkRun.framework.name}:\n$summary",
         logLevel = LogLevel.INFO
       )
 
   override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit =
-    val test: TestClass = testClassRunInfo.asInstanceOf[TestClass]
-    val taskDef: TaskDef = TaskDef(
-      test.getClassName,
-      test.fingerprint,
-      test.explicitlySpecified,
-      test.selectors.toArray
-    )
+    val test: TaskDefTest = testClassRunInfo.asInstanceOf[TaskDefTest]
 
-    val tasks: Array[Task] = getRunner(test.framework).tasks(Array(taskDef))
-    require(tasks.nonEmpty, s"Rejected test: $test")
+    val tasks: Array[Task] = getRunner(test.framework).tasks(Array(test.taskDef))
+    require(tasks.nonEmpty   , s"Rejected test: $test")
     require(tasks.length == 1, s"Multi-task test: $test")
     run(
       test = test,
@@ -109,59 +98,62 @@ final class TestClassProcessor(
     )
 
   private def run(
-    test: TestClass,
+    test: TaskDefTest,
     task: Task
   ): Unit =
+    var testCompleted: Boolean = false
+
     val idGenerator: IdGenerator[?] = CompositeIdGenerator(test.getId, new LongIdGenerator)
 
-    // Note: for individual tests, we reconstruct 'started' and 'completed' events
     val eventHandler: EventHandler = (event: Event) =>
-      val endTime: Long = clock.getCurrentTime
-      require(event.fullyQualifiedName == test.getClassName)
-      val testSelector: TestSelector = event.selector.asInstanceOf[TestSelector]
-      val method: TestMethod = TestMethod(
-        parent = test,
-        id = idGenerator.generateId,
-        methodName = testSelector.testName,
-        selectors = Array(testSelector),
-        fingerprint = event.fingerprint
+      val eventTest: TaskDefTest = test.thisOrNested(
+        mustBeNested = false,
+        idGenerator = idGenerator,
+        taskDef = TaskDef(
+          event.fullyQualifiedName,
+          event.fingerprint,
+          false,
+          Array(event.selector)
+        )
       )
-      testResultProcessor.started(
-        test = method,
+
+      val eventIsAboutNestedTest: Boolean = eventTest ne test
+
+      val endTime: Long = clock.getCurrentTime
+
+      // Note: for implied eventTest we reconstruct the 'started' event
+      if eventIsAboutNestedTest then testResultProcessor.started(
+        test = eventTest,
         startTime = endTime - event.duration
       )
-      if event.throwable.isDefined then testResultProcessor.failure(
-        method.getId,
-        event.throwable.get
+
+      if event.throwable.isDefined then testResultProcessor.failed(
+        test = eventTest,
+        throwable = event.throwable.get
       )
+
       testResultProcessor.completed(
-        test = method,
+        test = eventTest,
         endTime = endTime,
         resultType = TestClassProcessor.fromStatus(event.status)
       )
 
-    val tags: Set[String] = task.tags.toSet
+      if !eventIsAboutNestedTest then testCompleted = true
 
-    val allowedByTags: Boolean =
-      (includeTags.isEmpty || tags.exists(includeTags.contains)) && !tags.exists(excludeTags.contains)
+    val startTime: Long = clock.getCurrentTime
+    testResultProcessor.started(
+      test = test,
+      startTime = startTime
+    )
 
-    if !allowedByTags then
-      // skipped test
-      testResultProcessor.started(
-        test = test,
-        startTime = clock.getCurrentTime
-      )
+    // skipped test
+    if !testTagging.allowed(task.tags) then
       testResultProcessor.completed(
         test = test,
-        endTime = clock.getCurrentTime,
+        endTime = startTime,
         resultType = ResultType.SKIPPED
       )
     else
-      testResultProcessor.started(
-        test = test,
-        startTime = clock.getCurrentTime
-      )
-
       val testLogger: TestLogger = TestLogger(
         testResultProcessor = testResultProcessor,
         test = test,
@@ -176,34 +168,29 @@ final class TestClassProcessor(
               Array(testLogger)
             ).toSeq
           catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
-            testResultProcessor.failure(test.getId, throwable)
+            testResultProcessor.failed(
+              test = test,
+              throwable = throwable
+            )
             Seq.empty
-          finally
-            // Note: I think there is no equivalent for this in Gradle...
-            ()
 
-        // Node: no idea what nested tasks are; assuming they are Suites.
         for (task: Task, index: Int) <- nestedTasks.zipWithIndex do run(
           task = task,
-          test = TestClass(
-            parentId = test.getId,
-            id = idGenerator.generateId,
-            framework = test.framework,
-            className = test.getClassName + "-" + index,
-            fingerprint = test.fingerprint,
-            explicitlySpecified = test.explicitlySpecified,
-            selectors = Array(new SuiteSelector)
+          test = test.thisOrNested(
+            mustBeNested = true,
+            idGenerator = idGenerator,
+            taskDef = task.taskDef // TODO test.getClassName + "-" + index?
           )
         )
       finally
-        testResultProcessor.completed(
+        if !testCompleted then testResultProcessor.completed(
           test = test,
           endTime = clock.getCurrentTime
         )
 
 object TestClassProcessor:
 
-  class FrameworkRun(
+  private class FrameworkRun(
     val framework: Framework,
     val runner: Runner
   )

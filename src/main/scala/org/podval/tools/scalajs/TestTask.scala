@@ -1,17 +1,17 @@
 package org.podval.tools.scalajs
 
 import org.opentorah.util.Files
-import org.podval.tools.test.{FrameworkDescriptor, SourceMapper, TestEnvironment}
+import org.podval.tools.test.{SourceMapper, TestEnvironment}
+import org.podval.tools.test.framework.FrameworkDescriptor
 import org.scalajs.testing.adapter.TestAdapter
 import sbt.testing.Framework
-import java.io.File
 
 abstract class TestTask extends org.podval.tools.test.TestTask with AfterLinkTask:
   final override protected def flavour: String = "Test"
   final override protected def linkTaskClass: Class[LinkTask.Test] = classOf[LinkTask.Test]
 
-  // Note: TestAdapter does not use testClassLoader
-  final override protected def testClassPath: Array[File] = null
+  // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
+  final override protected def canFork: Boolean = false
 
   final override protected def sourceMapper: Option[SourceMapper] = createAfterLink
     .mainModule
@@ -30,7 +30,7 @@ abstract class TestTask extends org.podval.tools.test.TestTask with AfterLinkTas
 
     new TestEnvironment:
       override def loadFrameworks(descriptors: List[FrameworkDescriptor]): List[Framework] = testAdapter
-        .loadFrameworks(descriptors.map(descriptor => List(descriptor.implementationClassName)))
+        .loadFrameworks(descriptors.map((descriptor: FrameworkDescriptor) => List(descriptor.implementationClassName)))
         .flatten
 
       override def close(): Unit =

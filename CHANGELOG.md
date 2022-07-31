@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2022-08-14
+chore: cleanup
+feat: run Scala-only tests in parallel
+feat: added groupByFramework option to the test task
+feat: support ScalaCheck
+feat: support uTest
+feat: support specs2
+feat: support MUnit
+feat: support JUnit4
+build: use the plugin for plugin tests
+
+Release theme: forking
+
+To make serialization work, my own:
+- TestSerializerRegistry
+- ForkingTestClassProcessor
+- WorkerTestClassProcessor
+- TestWorker.
+
+ScalaCheck *does* produce nested tasks - adjusted TestClassProcessor to handle them.
+
 ## [0.2.0] - 2022-07-31
 feat: Scala 2.12 support
 feat: report ignored tests

@@ -1,32 +1,32 @@
 package org.podval.tools.test
 
 import org.gradle.api.Action
-import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestResultProcessor, TestClassProcessor as GTestClassProcessor}
+import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestClassProcessor as GTestClassProcessor, TestResultProcessor}
 import org.gradle.api.internal.tasks.testing.processors.{MaxNParallelTestClassProcessor, RestartEveryNTestClassProcessor,
   RunPreviousFailedFirstTestClassProcessor}
-import org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor
 import org.gradle.api.internal.DocumentationRegistry
+import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.logging.Logging
 import org.gradle.internal.Factory
+import org.gradle.internal.actor.{Actor, ActorFactory}
+import org.gradle.internal.service.{DefaultServiceRegistry, ServiceRegistry}
+import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
-import org.gradle.api.internal.classpath.ModuleRegistry
-import org.gradle.internal.actor.{Actor, ActorFactory}
-import org.gradle.internal.service.ServiceRegistry
-import org.gradle.internal.time.Clock
+import org.gradle.process.JavaForkOptions
 import org.opentorah.build.Gradle
 import org.opentorah.util.Files
+import org.podval.tools.test.framework.FrameworkDescriptor
 import sbt.testing.Framework
 import java.io.File
+import java.net.URL
 import scala.jdk.CollectionConverters.*
+import TestResultProcessorEx.*
 
-// Note: I am following the lead of the org.gradle.api.tasks.testing.Test
-// and separating the TestExecuter from the TestTask -
-// maybe it will help with the classpath disaster...
-// Note: I probably do not need to be too careful with using only Java types when creating ForkingTestClassProcessor -
-// this stuff does not get serialized...
+// Note: I am following the lead of the org.gradle.api.tasks.testing.Test and separating the TestExecuter from the TestTask.
 final class TestExecuter(
-  testClassPath: Array[File],
+  groupByFramework: Boolean,
+  canFork: Boolean,
   sourceMapper: Option[SourceMapper],
   testEnvironment: TestEnvironment,
   scalaCompileAnalysisFile: File,
@@ -39,12 +39,8 @@ final class TestExecuter(
   maxWorkerCount: Int,
   clock: Clock,
   documentationRegistry: DocumentationRegistry,
-  includes: Set[String],
-  excludes: Set[String],
-  commandLineIncludes: Set[String],
-  includeTags: Array[String],
-  excludeTags: Array[String],
-  serviceRegistry: ServiceRegistry // TODO remove when parallelization works
+  testFiltering: TestFiltering,
+  testTagging: TestTagging
 ) extends org.gradle.api.internal.tasks.testing.TestExecuter[JvmTestExecutionSpec]:
 
   private var testClassProcessorOpt: Option[GTestClassProcessor] = None
@@ -56,160 +52,168 @@ final class TestExecuter(
     gTestResultProcessor: TestResultProcessor
   ): Unit =
 
-    val testClassProcessor: GTestClassProcessor = createTestClassProcessor(
-      testExecutionSpec = testExecutionSpec,
-      testClassPath = testClassPath
+    val maxParallelForks: Int =
+      val maxParallelForks: Int = testExecutionSpec.getMaxParallelForks
+      if maxParallelForks <= maxWorkerCount then maxParallelForks else
+        Logging.getLogger(classOf[TestExecuter])
+          .info(s"${testExecutionSpec.getPath}.maxParallelForks ($maxParallelForks) is larger than max-workers ($maxWorkerCount), forcing it to $maxWorkerCount",
+            null, null, null
+          )
+        maxWorkerCount
+
+    val shouldFork: Boolean = maxParallelForks > 1
+
+    if shouldFork && !canFork then Logging.getLogger(classOf[TestExecuter])
+      .info(s"Can not fork tests; maxParallelForks setting ($maxParallelForks) ignored", null, null, null)
+
+    val isForked: Boolean = canFork & shouldFork
+
+    val testClassPath: Iterable[File] = testExecutionSpec.getClasspath.asScala
+
+    val testClassProcessor: GTestClassProcessor =
+      if !isForked then TestClassProcessor(
+        groupByFramework = groupByFramework,
+        isForked = false,
+        testClassPath = testClassPath.toArray,
+        runningInIntelliJIdea = runningInIntelliJIdea,
+        testTagging = testTagging,
+        clock = clock
+      ) else createForkingTestClassProcessor(
+        testClassPath = testClassPath,
+        applicationModulePath = testExecutionSpec.getModulePath.asScala, // Note: empty
+        previousFailedTestClasses = testExecutionSpec.getPreviousFailedTestClasses,
+        maxParallelForks = maxParallelForks,
+        forkEvery = testExecutionSpec.getForkEvery,
+        forkOptions = testExecutionSpec.getJavaForkOptions
+      )
+
+    val testResultProcessor: TestResultProcessor = SourceMappingTestResultProcessor(
+      gTestResultProcessor,
+      sourceMapper
     )
 
     testClassProcessorOpt = Some(testClassProcessor)
 
-    val loadedFrameworks: List[Framework] = testEnvironment.loadAllFrameworks
+    val resultProcessorActor: Option[Actor] =
+      if isForked
+      then None // MaxNParallelTestClassProcessor used by the createForkingTestClassProcessor wraps resultProcessor in an Actor already.
+      else Some(actorFactory.createActor(testResultProcessor))
 
-    val testClassScanner: TestClassScanner = TestClassScanner(
-      loadedFrameworks = loadedFrameworks,
-      analysisFile = scalaCompileAnalysisFile,
-      includes = includes,
-      excludes = excludes,
-      commandLineIncludes = commandLineIncludes,
-      testClassProcessor = testClassProcessor
+    run(
+      loadedFrameworks = testEnvironment.loadAllFrameworks,
+      testClassProcessor = testClassProcessor,
+      testResultProcessor = resultProcessorActor.fold(testResultProcessor)(_.getProxy(classOf[TestResultProcessor]))
     )
 
-    val testResultProcessor: TestResultProcessor =
-      SourceMappingTestResultProcessor(
-        gTestResultProcessor,
-        sourceMapper
-      )
-
-    // TODO remove when everything is parallelized: MaxNParallelTestClassProcessor wraps resultProcessor in an Actor already...
-    val (resultProcessorActor: Option[Actor], resultProcessor: TestResultProcessor) =
-      if !TestExecuter.doNotFork then (None, testResultProcessor) else
-        val actor: Actor = actorFactory.createActor(testResultProcessor)
-        (Some(actor), actor.getProxy(classOf[TestResultProcessor]))
-
-    TestRoot(
-      testEnvironment = testEnvironment,
-      loadedFrameworks = loadedFrameworks,
-      testClassScanner = testClassScanner,
-      testClassProcessor = testClassProcessor,
-      testResultProcessor = resultProcessor,
-      clock = clock,
-      sbtClassPath = sbtClassPath,
-      workerLeaseService = workerLeaseService
-    ).run()
-
-    // TODO MaxNParallelTestClassProcessor uses CompositeStoppable
     resultProcessorActor.foreach(_.stop())
 
-  private def createTestClassProcessor(
-    testExecutionSpec: JvmTestExecutionSpec,
-    testClassPath: Array[File]
+  private def createForkingTestClassProcessor(
+    testClassPath: Iterable[File],
+    applicationModulePath: Iterable[File],
+    previousFailedTestClasses: java.util.Set[String],
+    maxParallelForks: Int,
+    forkEvery: Long,
+    forkOptions: JavaForkOptions
   ): GTestClassProcessor =
     val workerTestClassProcessorFactory: WorkerTestClassProcessorFactory = WorkerTestClassProcessorFactory(
-      testClassPath = testClassPath,
+      groupByFramework = groupByFramework,
+      testClassPath = testClassPath.toArray,
       runningInIntelliJIdea = runningInIntelliJIdea,
-      includeTags = includeTags,
-      excludeTags = excludeTags
+      testTagging = testTagging
     )
 
-    if TestExecuter.doNotFork then workerTestClassProcessorFactory.create(serviceRegistry) else
-      val forkingProcessorFactory: Factory[GTestClassProcessor] = () => ForkingTestClassProcessor(
-        workerLeaseService,
-        workerProcessFactory,
-        workerTestClassProcessorFactory,
-        testExecutionSpec.getJavaForkOptions,
-        TestExecuter.immutableCopy(testExecutionSpec.getClasspath),
-        TestExecuter.immutableCopy(testExecutionSpec.getModulePath),
-        testWorkerImplementationModules,
-        workerConfigurationAction,
-        moduleRegistry,
-        documentationRegistry
-      )
+    // Note: here I make sure that my classes are on the worker's classpath(s);
+    // it would be nice to add what I need as modules, but as far as I can tell,
+    // those are only looked up in some Gradle module registry.
+    // testExecutionSpec.getClasspath contains the testing frameworks.
 
-      val reforkingProcessorFactory: Factory[GTestClassProcessor] = () => RestartEveryNTestClassProcessor(
-        forkingProcessorFactory,
-        testExecutionSpec.getForkEvery
-      )
+    // The only thing remaining is to figure out to which classpath to add what I need
+    // (application or implementation) and how to share it so that I stop getting
+    // ClassNotFound but do not start getting CanNotCast ;)
 
-  //    new PatternMatchTestClassProcessor(
-  //      testFilter,
-  //      new RunPreviousFailedFirstTestClassProcessor(
-  //        testExecutionSpec.getPreviousFailedTestClasses,
-      MaxNParallelTestClassProcessor(
-        getMaxParallelForks(testExecutionSpec),
-        reforkingProcessorFactory,
-        actorFactory
-      )
-  //      )
-  //    )
+    // nothing added: CNF org.podval.tools.test.TestWorker
+    //   add org.podval.tools.scalajs to the applicationClassPath: same
+    //     add org.podval.tools.test to sharedPackages: CNF org.gradle.api.Action
+    //       it seems that Gradle classes from the implementation classpath
+    //       are not available on the application classpath
+    //       XXX
+    //   add org.podval.tools.scalajs to the implementationClassPath: CNF scala.CanEqual
+    //     add scala3-library and scala-library to the implementationClassPath: CNF sbt.testing.Fingerprint
+    //       add test-interface to the applicationClassPath and sbt.testing to the sharedPackages: CNF org.scalatest.tools.Framework
+    //         add org.scalatest.tools to the sharedPackages
 
-  private def getMaxParallelForks(testExecutionSpec: JvmTestExecutionSpec): Int =
-    val maxParallelForks: Int = testExecutionSpec.getMaxParallelForks
-    if maxParallelForks <= maxWorkerCount then maxParallelForks else
-      Logging.getLogger(classOf[TestExecuter])
-        .info(s"${testExecutionSpec.getPath}.maxParallelForks ($maxParallelForks) is larger than max-workers ($maxWorkerCount), forcing it to $maxWorkerCount",
-        null, null, null
-        )
-      maxWorkerCount
-
-  // Note: here I make sure that my classes are on the worker's classpath.
-  // Note: I am not clear on what the ForkingTestClassProcessor does with its classPath parameter...
-  // Note: it would be nice to add what I need as modules, but as far as I can tell,
-  // those are only looked up in some Gradle module registry...
-  private val testWorkerImplementationModules: java.util.List[String] = java.util.Collections.emptyList[String]
-  private val workerConfigurationAction: Action[WorkerProcessBuilder] = (builder: WorkerProcessBuilder) =>
-    // If I do nothing, I get ClassNotFoundException for org.podval.tools.test.TestClassProcessorFactory.
-    // Apparently, I need to add the plugin classes to some classpath...
-    // When I do this:
-
-//    val applicationClasspath: List[String] = List(
-//      "org.podval.tools.scalajs"
-//    )
-//    builder.applicationClasspath(applicationClasspath.map(TestExecuter.artifactUrl).map(Files.url2file).asJava)
-//    builder.sharedPackages(
-//      "org.podval.tools.test",
-////      "org.gradle.api.internal.tasks.testing"
-//    )
-
-    // I no longer get ClassNotFoundException for org.podval.tools.test.TestClassProcessorFactory,
-    // but I do get it for the base class org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory -
-    // even though ForkingTestClassProcessor.getTestWorkerImplementationClasspath()
-    // includes the module where that class resides ("gradle-testing-base")
-    // so setImplementationClasspath() should include it.
-    //
-    // Documentation for WorkerProcessSettings (from which WorkerProcessBuilder is derived) says:
-    //   A worker process can optionally specify an application classpath.
-    //   The classes of this classpath are loaded into an isolated ClassLoader,
-    //   which is made visible to the worker action ClassLoader.
-    //   Only the packages specified in the set of shared packages are visible to the worker action ClassLoader.
-    //
-    // It seems that the classes I add via applicationClasspath() are visible to the implementation
-    // (and the action if I make them shared), but the implementation classes are not visible to the action?
-    //
-    // Since:
-    // - I can't find the modules to use testWorkerImplementationModules;
-    // - I can't make applicationClasspath() work;
-    // - setImplementationClasspath() is used by the ForkingTestClassProcessor,
-    //   and since getTestWorkerImplementationClasspath() is not public and
-    //   there is no WorkerProcessBuilder.getImplementationClasspath(), I can't augment it;
-    //
-    // I resort to using setImplementationModulePath().
-    // By now ForkingTestClassProcessor.forkProcess() already called it with an empty list of Urls
-    // resulting from the empty list of module names that I give to it in testWorkerImplementationModules.
-    // So whatever I set via an setImplementationModulePath() call here wins :)
-
-    // test-interface
-    val implementationClassPath: List[String] = List(
+    val implementationClassPath: List[URL] = List(
       "org.podval.tools.scalajs",
       "scala3-library",
       "scala-library"
+    ).map(TestExecuter.findOnClassPath)
+
+    val applicationClassPath: List[File] = testClassPath.toList ++ List(
+      "test-interface"
+    ).map(TestExecuter.findOnClassPath).map(Files.url2file)
+
+    val sharedPackages: List[String] = List(
+      "sbt.testing"
+    ) ++ FrameworkDescriptor.all.flatMap(_.sharedPackages)
+
+    val forkingProcessorFactory: Factory[GTestClassProcessor] = () => ForkingTestClassProcessor(
+      workerThreadRegistry = workerLeaseService,
+      workerFactory = workerProcessFactory,
+      processorFactory = workerTestClassProcessorFactory,
+      options = forkOptions,
+      applicationClassPath = applicationClassPath,
+      applicationModulePath = applicationModulePath,
+      implementationClassPath = implementationClassPath,
+      implementationModules = List.empty,
+      sharedPackages = sharedPackages,
+      moduleRegistry = moduleRegistry,
+      documentationRegistry = documentationRegistry
     )
-    builder.setImplementationModulePath(
-      implementationClassPath.map((name: String) => Gradle.findOnClasPath(TestExecuter, name)).asJava
+
+    val reforkingProcessorFactory: Factory[GTestClassProcessor] = () => RestartEveryNTestClassProcessor(
+      forkingProcessorFactory,
+      forkEvery
     )
-//    builder.setUseLegacyAddOpens(true)
+
+    // Note: not wrapping in new PatternMatchTestClassProcessor(testFilter, _) since I do my own filtering.
+    RunPreviousFailedFirstTestClassProcessor(
+      previousFailedTestClasses,
+      MaxNParallelTestClassProcessor(
+        maxParallelForks,
+        reforkingProcessorFactory,
+        actorFactory
+      )
+    )
+
+  private def run(
+    loadedFrameworks: List[Framework],
+    testClassProcessor: GTestClassProcessor,
+    testResultProcessor: TestResultProcessor
+  ): Unit =
+    val startTime: Long = clock.getCurrentTime
+    testResultProcessor.started(RootTest, startTime)
+    val frameworkTests: List[FrameworkTest] = loadedFrameworks.map(RootTest.forFramework)
+    if groupByFramework then frameworkTests.foreach(testResultProcessor.started(_, startTime))
+
+    try
+      testClassProcessor.startProcessing(testResultProcessor)
+      try
+        Gradle.addToClassPath(this, sbtClassPath)
+        TestClassScanner.run(
+          groupByFramework = groupByFramework,
+          loadedFrameworks = loadedFrameworks,
+          analysisFile = scalaCompileAnalysisFile,
+          testClassProcessor = testClassProcessor,
+          testFiltering = testFiltering
+        )
+      finally
+      // Release worker lease while waiting for tests to complete
+        workerLeaseService.blocking(() => testClassProcessor.stop())
+    finally
+      val endTime: Long = clock.getCurrentTime
+      if groupByFramework then frameworkTests.foreach(testResultProcessor.completed(_, endTime))
+      testResultProcessor.completed(RootTest, endTime)
+      testEnvironment.close()
 
 object TestExecuter:
-  // TODO make this an option on the TestTask class - unless one is already there ;)
-  val doNotFork: Boolean = true
-
-  private def immutableCopy(iterable: java.lang.Iterable[? <: File]): java.lang.Iterable[File] = Set.from(iterable.asScala).asJava
+  private def findOnClassPath(name: String): URL = Gradle.findOnClasPath(TestExecuter, name)

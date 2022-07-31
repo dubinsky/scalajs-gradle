@@ -47,4 +47,4 @@ final class AfterLink(
   lazy val jsLogger: org.scalajs.logging.Logger = ScalaJSLogger(taskName, logger)
 
   // Note: if moved into the caller breaks class loading
-  lazy val jsEnv: JSEnv = new JSDOMNodeJSEnv()
+  lazy val jsEnv: JSEnv = new JSDOMNodeJSEnv

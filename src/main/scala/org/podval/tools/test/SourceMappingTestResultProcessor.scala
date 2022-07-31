@@ -17,6 +17,5 @@ final class SourceMappingTestResultProcessor(
   override def output(testId: Object, event: TestOutputEvent): Unit =
     delegate.output(testId, event)
 
-  //  def failure(testId: Any, result: TestFailure): Unit
   override def failure(testId: Object, throwable: Throwable): Unit =
     delegate.failure(testId, sourceMapper.fold(throwable)(_.sourceMap(throwable)))

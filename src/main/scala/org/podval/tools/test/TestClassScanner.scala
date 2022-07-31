@@ -1,32 +1,30 @@
 package org.podval.tools.test
 
-import org.gradle.internal.id.{IdGenerator, LongIdGenerator}
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
+import org.gradle.internal.id.{IdGenerator, LongIdGenerator}
 import sbt.internal.inc.Analysis
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, Selector, SubclassFingerprint}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, Selector, SubclassFingerprint, TaskDef}
 import xsbt.api.{Discovered, Discovery}
 import xsbti.api.{ClassLike, Companions, Definition}
 import xsbti.compile.FileAnalysisStore
 import java.io.File
 
-final class TestClassScanner(
-  loadedFrameworks: Seq[Framework],
-  analysisFile: File,
-  includes: Set[String],
-  excludes: Set[String],
-  commandLineIncludes: Set[String],
-  testClassProcessor: TestClassProcessor
-) extends Runnable:
-
-  import TestClassScanner.Detector
-
-  private val testFiltering: TestFiltering = TestFiltering(
-    includes = includes,
-    excludes = excludes,
-    commandLineIncludes = commandLineIncludes
+object TestClassScanner:
+  private final class Detector(
+    val isAnnotation: Boolean,
+    val name: String,
+    val isModule: Boolean,
+    val fingerprint: Fingerprint,
+    val framework: Framework
   )
 
-  override def run(): Unit =
+  def run(
+    groupByFramework: Boolean,
+    loadedFrameworks: Seq[Framework],
+    analysisFile: File,
+    testFiltering: TestFiltering,
+    testClassProcessor: TestClassProcessor
+  ): Unit =
 
     val detectors: Seq[Detector] =
       val detectorOpts: Seq[Option[Detector]] = for
@@ -97,23 +95,15 @@ final class TestClassScanner(
       if selectors.nonEmpty
     do
       val framework: Framework = detector.framework
-      val test: TestClass = TestClass(
-        parentId = FrameworkTest.id(framework),
-        id = idGenerator.generateId,
+      val test: TaskDefTest = TaskDefTest(
+        getParentId = RootTest.forFramework(framework, groupByFramework).getId,
+        getId = idGenerator.generateId,
         framework = framework,
-        className = className,
-        fingerprint = detector.fingerprint,
-        explicitlySpecified = explicitlySpecified,
-        selectors = selectors
+        taskDef = TaskDef(
+          className,
+          detector.fingerprint,
+          explicitlySpecified,
+          selectors
+        )
       )
       testClassProcessor.processTestClass(test)
-
-object TestClassScanner:
-
-  private final class Detector(
-    val isAnnotation: Boolean,
-    val name: String,
-    val isModule: Boolean,
-    val fingerprint: Fingerprint,
-    val framework: Framework
-  )

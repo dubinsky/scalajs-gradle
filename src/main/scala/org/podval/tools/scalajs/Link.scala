@@ -5,9 +5,9 @@ import org.gradle.api.provider.Property
 import org.gradle.api.GradleException
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
+import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind,
   ModuleSplitStyle, Report, Semantics, StandardConfig}
-import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.testing.adapter.TestAdapterInitializer
 import sbt.io.IO
 import java.io.File

@@ -16,9 +16,9 @@ trait AfterLinkTask extends ScalaJSTask:
     expandClassPath()
 
     AfterLink(
-      linkTask.getModuleKind,
-      linkTask.getReportBinFile,
-      linkTask.getJSDirectory,
-      getName,
-      getLogger
+      moduleKindProperty = linkTask.getModuleKind,
+      reportBinFile = linkTask.getReportBinFile,
+      jsDirectory = linkTask.getJSDirectory,
+      taskName = getName,
+      logger = getLogger
     )
