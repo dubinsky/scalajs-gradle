@@ -6,15 +6,12 @@ import sbt.testing.{Fingerprint, Framework}
 
 final class FrameworkSerializer extends Serializer[Framework]:
   override def write(encoder: Encoder, value: Framework): Unit =
-    encoder.writeString(FrameworkDescriptor.forFramework(value).implementationClassName)
+    encoder.writeString(FrameworkDescriptor.forFramework(value).name)
 
   override def read(decoder: Decoder): Framework =
-    FrameworkSerializer.instantiate(decoder.readString)
+    FrameworkDescriptor.forName(decoder.readString).instantiate
 
 object FrameworkSerializer:
-  def instantiate(className: String): Framework =
-    Class.forName(className).getConstructor().newInstance().asInstanceOf[Framework]
-
   def equal(left: Framework, right: Framework): Boolean =
     left.name == right.name &&
     left.fingerprints.length == right.fingerprints.length &&

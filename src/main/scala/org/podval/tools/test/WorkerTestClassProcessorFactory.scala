@@ -9,15 +9,28 @@ final class WorkerTestClassProcessorFactory(
   groupByFramework: Boolean,
   testClassPath: Array[File],
   runningInIntelliJIdea: Boolean,
-  testTagging: TestTagging
+  testTagsFilter: TestTagsFilter
 ) extends org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory
   with Serializable:
 
-  override def create(serviceRegistry: ServiceRegistry): TestClassProcessor = TestClassProcessor(
-    groupByFramework = groupByFramework,
+  override def create(serviceRegistry: ServiceRegistry): TestClassProcessor = create(
     isForked = true,
+    clock = serviceRegistry.get(classOf[Clock])
+  )
+
+  def create(clock: Clock): TestClassProcessor = create(
+    isForked = false,
+    clock = clock
+  )
+
+  private def create(
+    isForked: Boolean,
+    clock: Clock
+  ): TestClassProcessor = TestClassProcessor(
+    isForked = isForked,
+    clock = clock,
+    groupByFramework = groupByFramework,
     testClassPath = testClassPath,
     runningInIntelliJIdea = runningInIntelliJIdea,
-    testTagging = testTagging,
-    clock = serviceRegistry.get(classOf[Clock])
+    testTagsFilter = testTagsFilter
   )

@@ -35,7 +35,7 @@ class TestSerializerRegistryTest extends AnyFlatSpec, Matchers:
     val value: TaskDefTest = TaskDefTest(
       getParentId = "ScalaTest",
       getId = java.lang.Long.valueOf(1),
-      framework = FrameworkSerializer.instantiate(ScalaTest.implementationClassName),
+      framework = ScalaTest.instantiate,
       taskDef = TaskDef(
         "X",
         AnnotatedFingerprintImpl(

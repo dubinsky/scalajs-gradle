@@ -3,13 +3,14 @@ package org.podval.tools.test
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.internal.id.{IdGenerator, LongIdGenerator}
 import sbt.internal.inc.Analysis
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, Selector, SubclassFingerprint, TaskDef}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, Selector, SubclassFingerprint, SuiteSelector, TaskDef,
+  TestSelector, TestWildcardSelector}
 import xsbt.api.{Discovered, Discovery}
 import xsbti.api.{ClassLike, Companions, Definition}
 import xsbti.compile.FileAnalysisStore
 import java.io.File
 
-object TestClassScanner:
+object TestScanner:
   private final class Detector(
     val isAnnotation: Boolean,
     val name: String,
@@ -22,7 +23,7 @@ object TestClassScanner:
     groupByFramework: Boolean,
     loadedFrameworks: Seq[Framework],
     analysisFile: File,
-    testFiltering: TestFiltering,
+    testFilter: TestFilter,
     testClassProcessor: TestClassProcessor
   ): Unit =
 
@@ -78,7 +79,7 @@ object TestClassScanner:
     val idGenerator: IdGenerator[?] = new LongIdGenerator
 
     for
-      (definition: Definition, discovered: Discovered) <-
+      case (definition: Definition, discovered: Discovered) <-
         Discovery(
           detectors.filter(detector => !detector.isAnnotation).map(_.name).toSet,
           detectors.filter(detector =>  detector.isAnnotation).map(_.name).toSet
@@ -91,9 +92,21 @@ object TestClassScanner:
           (if detector.isAnnotation then discovered.annotations else discovered.baseClasses).contains(detector.name)
         )
       className: String = definition.asInstanceOf[ClassLike].name
-      (explicitlySpecified: Boolean, selectors: Array[Selector]) = testFiltering.whatToIncludeForClass(className)
-      if selectors.nonEmpty
+      case matches: TestFilter.Matches <- testFilter.matchesClass(className)
     do
+      val explicitlySpecified: Boolean = matches match
+        case TestFilter.Matches.Suite(explicitlySpecified) => explicitlySpecified
+        case _ => true
+
+      val selectors: Array[Selector] = matches match
+        case TestFilter.Matches.Suite(_) =>
+          Array(new SuiteSelector)
+        case TestFilter.Matches.Tests(testNames, testWildCards) =>
+          testNames.toArray.map(TestSelector(_)) ++ testWildCards.toArray.map(TestWildcardSelector(_))
+
+      require(!matches.isEmpty)
+      require(selectors.nonEmpty)
+
       val framework: Framework = detector.framework
       val test: TaskDefTest = TaskDefTest(
         getParentId = RootTest.forFramework(framework, groupByFramework).getId,

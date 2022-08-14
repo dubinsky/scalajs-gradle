@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.test.TestTagging
+import org.podval.tools.test.TestTagsFilter
+import sbt.testing.Framework
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
 abstract class FrameworkDescriptor(
@@ -13,8 +14,21 @@ abstract class FrameworkDescriptor(
   )
 
   def args(
-    testTagging: TestTagging
+    testTagsFilter: TestTagsFilter
   ): Array[String]
+
+  private def newInstance: Any = Class.forName(implementationClassName).getConstructor().newInstance()
+
+  def instantiate: Framework = newInstance.asInstanceOf[Framework]
+
+  def maybeInstantiate: Option[Framework] =
+    try newInstance match
+      case framework: Framework => Some(framework)
+      case other =>
+        println(s"--- ${other.getClass.getName} is not an SBT framework")
+        None
+    catch
+      case _: ClassNotFoundException => None
 
 object FrameworkDescriptor:
 

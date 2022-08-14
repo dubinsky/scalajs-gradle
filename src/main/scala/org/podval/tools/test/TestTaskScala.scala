@@ -3,7 +3,6 @@ package org.podval.tools.test
 import org.opentorah.build.Gradle
 import org.podval.tools.test.framework.FrameworkDescriptor
 import sbt.testing.Framework
-import java.io.File
 import scala.jdk.CollectionConverters.*
 
 abstract class TestTaskScala extends TestTask:
@@ -16,16 +15,4 @@ abstract class TestTaskScala extends TestTask:
 
     override def loadFrameworks(descriptors: List[FrameworkDescriptor]): List[Framework] =
       Gradle.addToClassPath(this, getClasspath.asScala)
-
-      for
-        descriptor <- descriptors
-        framework <-
-          try Class.forName(descriptor.implementationClassName).getConstructor().newInstance() match
-            case framework: Framework => Some(framework)
-            case other =>
-              getLogger.error(s"--- ${other.getClass.getName} is not an SBT framework")
-              None
-          catch
-            case _: ClassNotFoundException => None
-      yield
-        framework
+      descriptors.flatMap(_.maybeInstantiate)

@@ -42,7 +42,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.2.0'
+  id 'org.podval.tools.scalajs' version '0.4.0'
 }
 ```
 

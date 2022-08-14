@@ -1,14 +1,15 @@
 package org.podval.tools.test
 
-import org.gradle.api.internal.classpath.{Module, ModuleRegistry}
 import org.gradle.api.internal.DocumentationRegistry
-import org.gradle.api.internal.tasks.testing.{TestClassRunInfo, TestResultProcessor}
+import org.gradle.api.internal.classpath.{Module, ModuleRegistry}
+import org.gradle.api.internal.tasks.testing.{TestResultProcessor, TestClassRunInfo}
 import org.gradle.api.internal.tasks.testing.worker.RemoteTestClassProcessor
 import org.gradle.internal.remote.ObjectConnection
 import org.gradle.internal.work.{WorkerLeaseRegistry, WorkerThreadRegistry}
 import org.gradle.process.internal.worker.{WorkerProcess, WorkerProcessBuilder, WorkerProcessFactory}
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.ExecException
+import org.opentorah.build.Gradle
 import java.io.File
 import java.net.URL
 import java.util.concurrent.locks.{Lock, ReentrantLock}
@@ -21,7 +22,7 @@ import scala.jdk.CollectionConverters.*
 // - use Scala types for parameters and internally;
 // - clean up parameter names;
 // - make configuration process more straightforward (no Actions, just parameters).
-class ForkingTestClassProcessor(
+final class ForkingTestClassProcessor(
   workerThreadRegistry: WorkerThreadRegistry,
   workerFactory: WorkerProcessFactory,
   processorFactory: WorkerTestClassProcessorFactory,

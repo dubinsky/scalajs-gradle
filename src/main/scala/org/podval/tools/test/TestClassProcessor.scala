@@ -18,7 +18,7 @@ final class TestClassProcessor(
   isForked: Boolean,
   testClassPath: Array[File],
   runningInIntelliJIdea: Boolean,
-  testTagging: TestTagging,
+  testTagsFilter: TestTagsFilter,
   clock: Clock
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
 
@@ -48,7 +48,7 @@ final class TestClassProcessor(
       val frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forFramework(framework)
 
       val args: Array[String] = frameworkDescriptor.args(
-        testTagging = testTagging
+        testTagsFilter = testTagsFilter
       )
 
       val runner: Runner = framework.runner(
@@ -147,7 +147,7 @@ final class TestClassProcessor(
     )
 
     // skipped test
-    if !testTagging.allowed(task.tags) then
+    if !testTagsFilter.allowed(task.tags) then
       testResultProcessor.completed(
         test = test,
         endTime = startTime,

@@ -70,7 +70,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
           )
       )
 
-      // TODO provide just one method in OpenTorah
+      // TODO use applyToProject() when it is released
       requirements.foreach(_.applyToConfiguration(project))
       requirements.foreach(_.applyToClassPath(project))
 
