@@ -70,7 +70,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
           )
       )
 
-      // TODO use applyToProject() when it is released
+      // TODO use DependencyRequirement.applyToProject(requirements, project) when it is released
       requirements.foreach(_.applyToConfiguration(project))
       requirements.foreach(_.applyToClassPath(project))
 

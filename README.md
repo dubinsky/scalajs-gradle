@@ -6,7 +6,9 @@ This is a Gradle plugin for working with Scala.js.
 It supports linking ScalaJS code, running and testing it.
 It also supports testing normal Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
-Supports ScalaJS 1; default: 1.10.1.
+Supports ScalaJS 1; default: 1.11.0.
+
+NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
 Requires Gradle 7.
 
@@ -144,7 +146,7 @@ Plugin adds this option to the main and test Scala compilation tasks if it is no
 If the project uses Scala 2, ScalaJS compiler plugin dependency needs to be declared:
 ```groovy
 dependencies {
-  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:1.10.1"
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:1.11.0"
 }
 ```
 
@@ -196,13 +198,13 @@ Example with all dependencies listed for Scala 3:
 ```groovy
 final String scalaVersion       = '3.1.3'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.10.1'
+final String scalaJsVersion     = '1.11.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.3.0"
 
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -230,12 +232,12 @@ Example with explicit dependencies for Scala 2:
 ```groovy
 final String scalaVersion       = '2.13.8'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.10.1'
+final String scalaJsVersion     = '1.11.0'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.2.0"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.3.0"
   
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"

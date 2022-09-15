@@ -248,4 +248,4 @@ object TestTask:
     result
 
   private def findOnClassPath(name: String): URL =
-    Gradle.findOnClasPath(TestTask, name)
+    Gradle.findOnClassPath(TestTask, name)

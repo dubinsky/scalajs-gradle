@@ -3,7 +3,7 @@ package org.podval.tools.scalajs
 import org.gradle.api.{DefaultTask, NamedDomainObjectContainer, Project}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.{Classpath, Input, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
+import org.gradle.api.tasks.{Classpath, Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
 import java.io.File
@@ -62,7 +62,7 @@ object LinkTask:
   abstract class Main extends LinkTask:
     final override protected def flavour: String = "Link"
     final override protected def sourceSetName: String = SourceSet.MAIN_SOURCE_SET_NAME
-    @Input @Optional def getModuleInitializers: NamedDomainObjectContainer[ModuleInitializerProperties]
+    @Nested def getModuleInitializers: NamedDomainObjectContainer[ModuleInitializerProperties]
 
   abstract class Test extends LinkTask:
     final override protected def flavour: String = "LinkTest"
