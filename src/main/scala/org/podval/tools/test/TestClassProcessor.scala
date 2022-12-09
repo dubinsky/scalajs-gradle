@@ -2,6 +2,7 @@ package org.podval.tools.test
 
 import org.gradle.api.internal.tasks.testing.{TestClassRunInfo, TestResultProcessor}
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.testing.TestFailure
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
 import org.gradle.internal.time.Clock
@@ -12,6 +13,7 @@ import java.io.File
 import java.net.URLClassLoader
 import scala.util.control.NonFatal
 import TestResultProcessorEx.*
+import java.lang.reflect.Field
 
 final class TestClassProcessor(
   groupByFramework: Boolean,
@@ -129,7 +131,7 @@ final class TestClassProcessor(
 
       if event.throwable.isDefined then testResultProcessor.failed(
         test = eventTest,
-        throwable = event.throwable.get
+        testFailure = TestClassProcessor.throwableToTestFailure(event.throwable.get)
       )
 
       testResultProcessor.completed(
@@ -170,7 +172,7 @@ final class TestClassProcessor(
           catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
             testResultProcessor.failed(
               test = test,
-              throwable = throwable
+              testFailure = TestFailure.fromTestFrameworkFailure(throwable)
             )
             Seq.empty
 
@@ -204,3 +206,24 @@ object TestClassProcessor:
     case Status.Ignored  => ResultType.SKIPPED
     case Status.Canceled => ResultType.SKIPPED
     case Status.Pending  => ResultType.SKIPPED
+
+  // Note: translated from org.gradle.api.internal.tasks.testing.junit.JUnitTestEventAdapter
+  // TODO add handling of exceptions thrown by other frameworks - and use the fields/methods only dynamically!
+  // According to https://junit.org/junit4/javadoc/latest/overview-tree.html, JUnit assertion failures can be expressed with the following exceptions:
+  // - java.lang.AssertionError: general assertion errors, i.e. test code contains assert statements
+  // - org.junit.ComparisonFailure: when assertEquals (and similar assertion) fails; test code can throw it directly
+  // - junit.framework.ComparisonFailure: for older JUnit tests using JUnit 3.x fixtures
+  // All assertion errors are subclasses of the AssertionError class. If the received failure is not an instance of AssertionError then it is categorized as a framework failure.
+  private def throwableToTestFailure(throwable: Throwable) = throwable match
+//    case comparisonFailure: org.junit.ComparisonFailure => TestFailure.fromTestAssertionFailure(comparisonFailure, comparisonFailure.getExpected, comparisonFailure.getActual)
+//    case comparisonFailure: junit.framework.ComparisonFailure => TestFailure.fromTestAssertionFailure(comparisonFailure, getValueOfStringField("fExpected", comparisonFailure), getValueOfStringField("fActual", comparisonFailure))
+    case assertionError: AssertionError => TestFailure.fromTestAssertionFailure(assertionError, null, null)
+    case error => TestFailure.fromTestFrameworkFailure(error)
+
+  private def getValueOfStringField(name: String, comparisonFailure: junit.framework.ComparisonFailure): String =
+    try
+      val f: Field = comparisonFailure.getClass.getDeclaredField(name)
+      f.setAccessible(true)
+      f.get(comparisonFailure).asInstanceOf[String]
+    catch
+      case _: Exception => null

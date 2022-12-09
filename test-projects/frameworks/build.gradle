@@ -1,24 +1,24 @@
 plugins {
-  id 'com.github.ben-manes.versions' version '0.42.0'
-  id 'org.podval.tools.scalajs' version '0.4.0'
+  id 'com.github.ben-manes.versions' version '0.44.0'
+  id 'org.podval.tools.scalajs' version '0.4.2'
 }
 
 // There is no Java in the project :)
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
-final String scalaVersion = '3.2.0'
+final String scalaVersion = '3.2.1'
 
 dependencies {
-  zinc "org.scala-sbt:zinc_2.13:1.7.1"
+  zinc "org.scala-sbt:zinc_2.13:1.8.0"
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
-  testImplementation "org.scalatest:scalatest_3:3.2.13"
-  testImplementation "org.scalacheck:scalacheck_3:1.16.0"
+  testImplementation "org.scalatest:scalatest_3:3.2.14"
+  testImplementation "org.scalacheck:scalacheck_3:1.17.0"
   testImplementation "com.lihaoyi:utest_3:0.8.1"
-  testImplementation "org.specs2:specs2-core_3:5.0.7"
+  testImplementation "org.specs2:specs2-core_3:5.2.0"
   testImplementation "org.scalameta:munit_3:0.7.29"              // Note: brings in junit:junit:4.13.2
   testImplementation "com.github.sbt:junit-interface:0.13.3"     // Note: brings in junit:junit:4.13.2
-  testImplementation "net.aichler:jupiter-interface:0.11.0"      // Note: brings in org.junit.jupiter:junit-jupiter-engine
+  testImplementation "net.aichler:jupiter-interface:0.11.1"      // Note: brings in org.junit.jupiter:junit-jupiter-engine
                                                                  // Note: brings in org.junit.platform:junit-platform-launcher
 }
 
@@ -35,6 +35,7 @@ tasks.withType(ScalaCompile) {
 }
 
 test {
+// TODO parallelized tests no longer stop in Gradle 7.6:
   maxParallelForks = 2
 
   testLogging {

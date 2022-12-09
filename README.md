@@ -6,11 +6,11 @@ This is a Gradle plugin for working with Scala.js.
 It supports linking ScalaJS code, running and testing it.
 It also supports testing normal Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
-Supports ScalaJS 1; default: 1.11.0.
+Supports ScalaJS 1; default version: 1.12.0.
 
 NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
-Requires Gradle 7.
+Requires Gradle 7.6.
 
 Plugin is written in Scala 3.
 Scala 2.12 on the *project* classpath is supported, but not on the *buildscript* classpath;
@@ -44,7 +44,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.4.0'
+  id 'org.podval.tools.scalajs' version '0.4.2'
 }
 ```
 
@@ -87,14 +87,14 @@ In the ScalaJS mode, that dependency needs to be a ScalaJS one.
 
 Currently, the following test frameworks are supported:
 
-|Name      |Scala 3                         |ScalaJS                           |Notes                  |
---------------------------------------------------------------------------------------------------------
-|JUnit4    |`com.github.sbt:junit-interface`| not available                    |brings in `junit:junit`|
-|ScalaTest |`org.scalatest:scalatest_3`     |`org.scalatest:scalatest_sjs1_3`  |                       |
-|ScalaCheck|`org.scalacheck:scalacheck_3`   |`org.scalacheck:scalacheck_sjs1_3`|                       |
-|Specs2    |`org.specs2:specs2-core_3`      |`org.specs2:specs2-core_sjs1_3`   |                       |
-|mUnit     |`org.scalameta:munit_3`         |`org.scalameta:munit_sjs1_3`      |brings in `junit:junit`|
-|uTest     |`com.lihaoyi:utest_3`           |`com.lihaoyi:utest_sjs1_3`        |                       |
+| Name       | Scala 3                          | ScalaJS                            | Notes                   |
+|------------|----------------------------------|------------------------------------|-------------------------|
+| JUnit4     | `com.github.sbt:junit-interface` | not available                      | brings in `junit:junit` |
+| ScalaTest  | `org.scalatest:scalatest_3`      | `org.scalatest:scalatest_sjs1_3`   |                         |
+| ScalaCheck | `org.scalacheck:scalacheck_3`    | `org.scalacheck:scalacheck_sjs1_3` |                         |
+| Specs2     | `org.specs2:specs2-core_3`       | `org.specs2:specs2-core_sjs1_3`    |                         |
+| mUnit      | `org.scalameta:munit_3`          | `org.scalameta:munit_sjs1_3`       | brings in `junit:junit` |
+| uTest      | `com.lihaoyi:utest_3`            | `com.lihaoyi:utest_sjs1_3`         |                         |
 
 For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
 
@@ -213,7 +213,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.13"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.14"
 }
 ```
 
@@ -224,13 +224,13 @@ final String scalaVersion       = '3.1.3'
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.13"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.14"
 }
 ```
 
 Example with explicit dependencies for Scala 2:
 ```groovy
-final String scalaVersion       = '2.13.8'
+final String scalaVersion       = '2.13.10'
 final String scala2versionMinor = '2.13'
 final String scalaJsVersion     = '1.11.0'
 
@@ -248,19 +248,19 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.13"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.14"
 }
 ```
 
 And - with only the required dependencies:
 ```groovy
-final String scalaVersion       = '2.13.8'
+final String scalaVersion       = '2.13.10'
 final String scala2versionMinor = '2.13'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.13"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.14"
 }
 ```
 
@@ -323,7 +323,7 @@ moduleInitializers {
     mainMethodName = 'main'
     mainMethodHasArgs = false
   }
-  ...
+  //...
 }
 ```
 

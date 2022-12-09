@@ -145,7 +145,11 @@ final class ForkingTestClassProcessor(
       "kryo",
       "commons-lang",
       "junit",
-      "javax.inject"
+      "javax.inject",
+      // Note: test parallelization breaks without this starting with Gradle 7.6:
+      // java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite;
+      // with it, the tests run but never terminate if parallelized...
+      "groovy"
     ).map(moduleRegistry.getExternalModule)
   )
 

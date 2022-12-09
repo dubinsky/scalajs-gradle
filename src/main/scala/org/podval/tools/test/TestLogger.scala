@@ -1,6 +1,7 @@
 package org.podval.tools.test
 
 import org.gradle.api.internal.tasks.testing.TestResultProcessor
+import org.gradle.api.tasks.testing.TestFailure
 import org.gradle.api.logging.LogLevel
 import TestResultProcessorEx.*
 
@@ -18,5 +19,6 @@ final class TestLogger(
   override def warn (message: String): Unit = log(LogLevel.WARN , message)
   override def info (message: String): Unit = log(LogLevel.INFO , message)
   override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
-  override def trace(throwable: Throwable): Unit = testResultProcessor.failed(test = test, throwable = throwable)
+  override def trace(throwable: Throwable): Unit =
+    testResultProcessor.failed(test = test, TestFailure.fromTestFrameworkFailure(throwable))
   override def ansiCodesSupported: Boolean = useColours

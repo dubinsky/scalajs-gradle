@@ -2,7 +2,7 @@ package org.podval.tools.test
 
 import org.gradle.api.internal.tasks.testing.{DefaultTestOutputEvent, TestCompleteEvent, TestResultProcessor, TestStartEvent}
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.tasks.testing.TestOutputEvent
+import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
 import org.gradle.api.tasks.testing.TestResult.ResultType
 
 object TestResultProcessorEx:
@@ -34,10 +34,10 @@ object TestResultProcessorEx:
 
     def failed(
       test: Test,
-      throwable: Throwable
+      testFailure: TestFailure
     ): Unit = testResultProcessor.failure(
       test.getId,
-      throwable
+      testFailure
     )
 
     def output(
