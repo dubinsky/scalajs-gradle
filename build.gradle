@@ -2,14 +2,12 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'org.podval.tools.scalajs' version '0.4.2'
-  id 'java-gradle-plugin'
-  id 'maven-publish'
   id 'signing'
-  id 'com.gradle.plugin-publish' version '0.20.0'
+  id 'com.gradle.plugin-publish' version '1.1.0'
 }
 
 group = 'org.podval.tools'
-version = '0.4.2'
+version = '0.4.3'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.2.1'
@@ -84,7 +82,6 @@ final String gitHubRepository = "dubinsky/scalajs-gradle"
 final String gitHubRepositoryUrl = "https://github.com/$gitHubRepository"
 final String orgName = 'Podval Group'
 final String orgUrl = 'https://www.podval.org'
-final List<String> projectTags = ['Scala', 'ScalaJS', 'sbt', 'testing', 'ScalaTest']
 
 publishing {
   repositories {
@@ -149,32 +146,16 @@ signing {
 }
 
 gradlePlugin {
+  website = gitHubRepositoryUrl
+  vcsUrl  = gitHubRepositoryUrl //.git' ?
   plugins {
     scalajs {
       id = 'org.podval.tools.scalajs'
       implementationClass = 'org.podval.tools.scalajs.ScalaJSPlugin'
-    }
-  }
-}
-
-pluginBundle {
-  website = gitHubRepositoryUrl
-  vcsUrl  = gitHubRepositoryUrl //.git' ?
-
-  plugins {
-    scalajs {
       displayName = project.description
       description = project.description
-      tags        = projectTags
+      tags.set(['Scala', 'ScalaJS', 'sbt', 'testing', 'ScalaTest'])
     }
-  }
-
-  // If you have an existing plugin deployed to MavenCentral and would like to keep
-  // your existing group ID and artifact ID for continuity, you can specify
-  // them here (needs manual approval on first publication).
-  mavenCoordinates {
-    groupId    = project.group
-    artifactId = project.name
   }
 }
 
