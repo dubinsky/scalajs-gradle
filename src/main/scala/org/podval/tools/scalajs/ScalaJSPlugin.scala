@@ -5,7 +5,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
-import org.opentorah.build.{Configurations, DependencyRequirement, DependencyVersion, ScalaLibrary}
+import org.opentorah.build.{Configurations, DependencyRequirement, ScalaLibrary}
 import org.opentorah.build.Gradle.*
 import org.podval.tools.test.{Sbt, TestTaskScala}
 import java.io.File
@@ -70,9 +70,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
           )
       )
 
-      // TODO use DependencyRequirement.applyToProject(requirements, project) when it is released
-      requirements.foreach(_.applyToConfiguration(project))
-      requirements.foreach(_.applyToClassPath(project))
+      DependencyRequirement.applyToProject(requirements, project)
 
       if !isScalaJSDisabled && projectScalaLibrary.isScala3 then
         ScalaJSPlugin.configureScalaCompile(project, SourceSet.MAIN_SOURCE_SET_NAME)

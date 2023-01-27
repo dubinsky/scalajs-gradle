@@ -6,7 +6,7 @@ This is a Gradle plugin for working with Scala.js.
 It supports linking ScalaJS code, running and testing it.
 It also supports testing normal Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
-Supports ScalaJS 1; default version: 1.12.0.
+Supports ScalaJS 1; default version: 1.13.0.
 
 NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
@@ -16,6 +16,8 @@ Plugin is written in Scala 3.
 Scala 2.12 on the *project* classpath is supported, but not on the *buildscript* classpath;
 Gradle plugins or explicit `buildScript` additions that use Scala 2.12 (or earlier)
 will break the plugin.
+
+Gradle build file snippets below use the Groovy syntax, not the Kotlin one.
 
 ## Motivation ##
 
@@ -213,7 +215,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.14"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.15"
 }
 ```
 
@@ -224,7 +226,7 @@ final String scalaVersion       = '3.1.3'
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.14"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.15"
 }
 ```
 
@@ -248,7 +250,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.14"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.15"
 }
 ```
 
@@ -260,7 +262,7 @@ final String scala2versionMinor = '2.13'
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.14"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.15"
 }
 ```
 

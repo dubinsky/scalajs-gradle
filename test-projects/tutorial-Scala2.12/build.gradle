@@ -12,7 +12,7 @@ final String scala2versionMinor = '2.12'
 dependencies {
   zinc "org.scala-sbt:zinc_2.13:1.8.0"
   implementation "org.scala-lang:scala-library:$scalaVersion"
-  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.14"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.15"
 }
 
 link {

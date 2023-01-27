@@ -20,6 +20,9 @@ object TestResultProcessorEx:
       )
     )
 
+    // TODO At the end, I get:
+    //    Could not dispatch message [MethodInvocation method: completed(SBT Tests, org.gradle.api.internal.tasks.testing.TestCompleteEvent@...)].
+
     def completed(
       test: Test,
       endTime: Long,
@@ -40,6 +43,8 @@ object TestResultProcessorEx:
       testFailure
     )
 
+    // TODO to remove the prefix, indent and the channel from what gets printed, I'll need to log the output directly
+    // instead of going through the testResultProcessor...
     def output(
       test: Test,
       message: String,
@@ -53,7 +58,7 @@ object TestResultProcessorEx:
         message
       )
     )
-    
+
     def log(
       test: Test,
       message: String,

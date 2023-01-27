@@ -1,6 +1,6 @@
 package org.podval.tools.test
 
-import org.gradle.api.internal.tasks.testing.{TestClassRunInfo, TestResultProcessor}
+import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFailureDetails, TestClassRunInfo, TestResultProcessor}
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.testing.TestFailure
 import org.gradle.api.tasks.testing.TestResult.ResultType
@@ -35,8 +35,6 @@ final class TestClassProcessor(
 
   import TestClassProcessor.FrameworkRun
 
-  private given CanEqual[Framework, Framework] = CanEqual.derived
-
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
   private def testResultProcessor: TestResultProcessor = testResultProcessorOpt.get
 
@@ -46,7 +44,7 @@ final class TestClassProcessor(
   private var frameworksRuns: Seq[FrameworkRun] = Seq.empty
 
   private def getRunner(framework: Framework): Runner = synchronized {
-    frameworksRuns.find(_.framework == framework).map(_.runner).getOrElse {
+    frameworksRuns.find(_.framework eq framework).map(_.runner).getOrElse {
       val frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forFramework(framework)
 
       val args: Array[String] = frameworkDescriptor.args(
@@ -92,11 +90,32 @@ final class TestClassProcessor(
     val test: TaskDefTest = testClassRunInfo.asInstanceOf[TaskDefTest]
 
     val tasks: Array[Task] = getRunner(test.framework).tasks(Array(test.taskDef))
-    require(tasks.nonEmpty   , s"Rejected test: $test")
-    require(tasks.length == 1, s"Multi-task test: $test")
-    run(
+    if tasks.isEmpty then fail(test, "test rejected by the framework") else
+    if tasks.length > 1 then fail(test, s"""multi-task test: ${tasks.mkString("Array(", ", ", ")")}""") else
+      run(
+        test = test,
+        task = tasks.head
+      )
+
+  private def fail(test: TaskDefTest, message: String): Unit =
+    testResultProcessor.started(
       test = test,
-      task = tasks.head
+      startTime = clock.getCurrentTime
+    )
+    testResultProcessor.failed(
+      test = test,
+      testFailure = DefaultTestFailure(
+        null,
+        DefaultTestFailureDetails(
+          message,
+          test.getTestClassName,
+          null,
+          false,
+          null,
+          null
+        ),
+        null
+      )
     )
 
   private def run(

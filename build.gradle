@@ -10,14 +10,14 @@ group = 'org.podval.tools'
 version = '0.4.3'
 description = 'Gradle plugin for ScalaJS'
 
-final String scalaVersion       = '3.2.1'
+final String scalaVersion       = '3.2.2'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.12.0'
+final String scalaJsVersion     = '1.13.0'
 final String sbtVersion         = '1.8.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  implementation 'org.opentorah:opentorah-util:0.10.5'
+  implementation 'org.opentorah:opentorah-util:0.10.7'
   implementation 'org.scala-sbt:test-interface:1.0'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
@@ -31,10 +31,16 @@ dependencies {
 
   compileOnly 'junit:junit:4.13.2'
 
-  testImplementation "org.scalatest:scalatest_3:3.2.14"
+  testImplementation "org.scalatest:scalatest_3:3.2.15"
 }
 
-tasks.withType(ScalaCompile) {
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(11)
+  }
+}
+
+tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {
     targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
     additionalParameters = [
@@ -46,9 +52,6 @@ tasks.withType(ScalaCompile) {
   }
 }
 
-// There is no Java in the project :)
-project.gradle.startParameter.excludedTaskNames.add('compileJava')
-
 jar {
   manifest {
     attributes(
@@ -58,12 +61,12 @@ jar {
   }
 }
 
-task sourcesJar(type: Jar) {
+tasks.register('sourcesJar', Jar) {
   from sourceSets.main.allSource
   archiveClassifier.set('sources')
 }
 
-task scaladocJar(type: Jar) {
+tasks.register('scaladocJar', Jar) {
   from scaladoc.destinationDir
   archiveClassifier.set('scaladoc')
 }
@@ -72,7 +75,7 @@ scaladocJar.dependsOn scaladoc
 // There is no Java in the project :)
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 // but Maven Central requires javadoc JAR...
-task javadocJar(type: Jar) {
+tasks.register('javadocJar', Jar) {
   from javadoc.destinationDir
   archiveClassifier.set('javadoc')
 }
@@ -141,8 +144,11 @@ publishing {
 }
 
 signing {
-  useInMemoryPgpKeys(findProperty('gnupg.dub-podval-org.key'), findProperty('gnupg.dub-podval-org.password'))
   sign publishing.publications.library
+  useInMemoryPgpKeys(
+    findProperty('gnupg.dub-podval-org.key').toString(),
+    findProperty('gnupg.dub-podval-org.password').toString()
+  )
 }
 
 gradlePlugin {
@@ -159,12 +165,12 @@ gradlePlugin {
   }
 }
 
-task uploadLibrary
+tasks.register('uploadLibrary')
 uploadLibrary.description('Upload artifacts')
 uploadLibrary.group('publishing')
 uploadLibrary.dependsOn(publishLibraryPublicationToMavenCentralRepository)
 
-task upload
+tasks.register('upload')
 upload.description('Upload artifacts and plugins')
 upload.group('publishing')
 upload.dependsOn(uploadLibrary)
