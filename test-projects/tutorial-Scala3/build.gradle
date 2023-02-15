@@ -16,7 +16,6 @@ dependencies {
 
 tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {
-    targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
     additionalParameters = [
       // In Scala 3 compiler, ScalaJS plugin is built in, so this is all it takes to compile to ScalaJS:
 //      '-scalajs',

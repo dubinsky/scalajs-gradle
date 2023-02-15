@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2023-02-19
+fix: "Could not dispatch message" caused by the presence of a test classes with no tests in them.cleanup: ForkingTestClassProcessor
+fix: tests fail to terminate when parallelized caused by the missing `TestFailureSerializer`
+feat: take Gradle log level into account when processing test output
+cleanup: consolidated test output processing in TestClassProcessor
+cleanup: factored out FrameworkRuns
+cleanup: removed TestResultProcessorEx
+chore: Gradle 8.0.1
+
 ## [0.4.3] - 2023-01-28
 chore: latest Gradle plugin publishing plugin
 chore: dependency updates

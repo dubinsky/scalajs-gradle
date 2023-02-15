@@ -78,12 +78,11 @@ object TestScanner:
 
     val idGenerator: IdGenerator[?] = new LongIdGenerator
 
-    // TODO do I need to order the tests by the fully qualified class name?
     for
       case (definition: Definition, discovered: Discovered) <-
         Discovery(
-          detectors.filter(detector => !detector.isAnnotation).map(_.name).toSet,
-          detectors.filter(detector =>  detector.isAnnotation).map(_.name).toSet
+          detectors.filter((detector: Detector) => !detector.isAnnotation).map(_.name).toSet,
+          detectors.filter((detector: Detector) =>  detector.isAnnotation).map(_.name).toSet
         )(
           definitions
         )

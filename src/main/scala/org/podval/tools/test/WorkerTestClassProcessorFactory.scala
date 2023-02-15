@@ -1,5 +1,6 @@
 package org.podval.tools.test
 
+import org.gradle.api.logging.LogLevel
 import org.gradle.internal.service.ServiceRegistry
 import org.gradle.internal.time.Clock
 import java.io.File
@@ -9,7 +10,8 @@ final class WorkerTestClassProcessorFactory(
   groupByFramework: Boolean,
   testClassPath: Array[File],
   runningInIntelliJIdea: Boolean,
-  testTagsFilter: TestTagsFilter
+  testTagsFilter: TestTagsFilter,
+  logLevelEnabled: LogLevel
 ) extends org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory
   with Serializable:
 
@@ -27,10 +29,14 @@ final class WorkerTestClassProcessorFactory(
     isForked: Boolean,
     clock: Clock
   ): TestClassProcessor = TestClassProcessor(
-    isForked = isForked,
+    frameworkRuns = FrameworkRuns(
+      isForked,
+      testClassPath,
+      testTagsFilter
+    ),
     clock = clock,
     groupByFramework = groupByFramework,
-    testClassPath = testClassPath,
     runningInIntelliJIdea = runningInIntelliJIdea,
-    testTagsFilter = testTagsFilter
+    testTagsFilter = testTagsFilter,
+    logLevelEnabled = logLevelEnabled
   )

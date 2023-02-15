@@ -4,7 +4,8 @@
 
 This is a Gradle plugin for working with Scala.js.
 It supports linking ScalaJS code, running and testing it.
-It also supports testing normal Scala code (no ScalaJS) using sbt-compatible testing frameworks.
+
+This plugin also supports testing plain Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
 Supports ScalaJS 1; default version: 1.13.0.
 
@@ -18,6 +19,8 @@ Gradle plugins or explicit `buildScript` additions that use Scala 2.12 (or earli
 will break the plugin.
 
 Gradle build file snippets below use the Groovy syntax, not the Kotlin one.
+
+Gradle daemon does not feel changes to the test classes and needs to be stopped for those changes to be reflected in the build (TODO does this have anything to do with this plugin?). 
 
 ## Motivation ##
 
@@ -62,7 +65,7 @@ put the following into the `gradle.properties` file of the project:
 org.podval.tools.scalajs.disabled=true
 ```
 
-In addition, the *presence* on the [Gradle ScalaTest plugin](https://github.com/maiflai/gradle-scalatest)'s `mode`
+In addition, the *presence* of the [Gradle ScalaTest plugin](https://github.com/maiflai/gradle-scalatest)'s `mode`
 property also disables ScalaJS:
 ```properties
 com.github.maiflai.gradle-scalatest.mode = ...
@@ -121,8 +124,22 @@ For plain Scala projects (no ScalaJS), the type of the test task is `org.podval.
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
 For ScalaJS projects the type is `org.podval.tools.scalajs.Test`.
-Such test tasks has to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
+Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
+
+### Output ###
+
+Handling of the test events and output is configured in the [`test.testLogging`](https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.logging.TestLoggingContainer.html).
+Indenting of the output is hard-coded in the [`TestEventLogger.onOutput()`](https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/TestEventLogger.java#L63);
+addition of the test name and the name of the output stream at the top of each indented batch (output of the same test) is hard-coded in the [`AbstractTestLogger.logEvent()`](https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/AbstractTestLogger.java#L51).
+
+None of this applies when running in the IntelliJ Idea: in `addTestListener.groovy`, it [suppresses](https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L30) the output and error events and [adds](https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L29) its own test and output listener [`IJTestEventLogger`](https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy) that does no batching, indenting or adding.
+
+Test counts are printed after the run by the `TestCountLogger` - if there are failing tests. IntelliJ Idea also print the counts in its test UI.
+
+If no tests were found (there are none or all were filtered out), 
+Gradle outputs an error message "No tests found for given includes";
+this message can be suppressed by setting `test.filter.    failOnNoMatchingTests = false`.
 
 ## ScalaJS ##
 
@@ -192,13 +209,12 @@ configured in the Scala plugin.
 Plugin adds missing dependencies automatically.
 
 If you declare a `scalajs-library` dependency explicitly, plugin chooses the same
-version of the ScalaJS dependencies it adds
-(`scalajs-linker`, `scalajs-sbt-test-adapter`, `scalajs-test-bridge`, `scalajs-compiler`)
-will be of the same version.
+version for the ScalaJS dependencies it adds
+(`scalajs-linker`, `scalajs-sbt-test-adapter`, `scalajs-test-bridge`, `scalajs-compiler`).
 
 Example with all dependencies listed for Scala 3:
 ```groovy
-final String scalaVersion       = '3.1.3'
+final String scalaVersion       = '3.2.2'
 final String scala2versionMinor = '2.13'
 final String scalaJsVersion     = '1.11.0'
 

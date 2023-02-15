@@ -10,10 +10,12 @@ import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestExecuter
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.internal.tasks.testing.processors.{MaxNParallelTestClassProcessor, RestartEveryNTestClassProcessor,
   RunPreviousFailedFirstTestClassProcessor}
+import org.gradle.api.logging.{LogLevel, Logger}
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.provider.{Property, SetProperty}
 import org.gradle.api.tasks.{Classpath, Input, Optional, SourceSet}
 import org.gradle.api.tasks.testing.{AbstractTestTask, Test, TestListener}
+import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.Factory
 import org.gradle.internal.actor.{Actor, ActorFactory}
 import org.gradle.internal.event.ListenerBroadcast
@@ -30,7 +32,6 @@ import java.lang.reflect.Field
 import java.net.URL
 import scala.jdk.CollectionConverters.*
 import sbt.testing.Framework
-import TestResultProcessorEx.*
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
@@ -71,18 +72,22 @@ abstract class TestTask extends Test:
       val shouldFork: Boolean = maxParallelForks > 1
       if shouldFork && !canFork then getLogger.info(s"Can not fork tests; maxParallelForks setting ($maxParallelForks) ignored", null, null, null)
       val isForked: Boolean = canFork & shouldFork
+      val logLevelEnabled: LogLevel = TestTask.getLogLevelEnabled(getLogger)
+
+      getLogger.lifecycle(s"TestTask: isForked=$isForked")
 
       val groupByFramework: Boolean = getGroupByFramework.toOption.getOrElse(false)
       val testClassPath: Array[File] = testExecutionSpec.getClasspath.asScala.toArray
 
-      val workerTestClassProcessorFactory = WorkerTestClassProcessorFactory(
+      val workerTestClassProcessorFactory: WorkerTestClassProcessorFactory = WorkerTestClassProcessorFactory(
         groupByFramework = groupByFramework,
         runningInIntelliJIdea = TestTask.runningInIntelliJIdea(TestTask.this),
         testClassPath = testClassPath,
         testTagsFilter = TestTagsFilter(
           include = getIncludeTags.get.asScala.toArray,
           exclude = getExcludeTags.get.asScala.toArray
-        )
+        ),
+        logLevelEnabled = logLevelEnabled
       )
 
       val testClassProcessor: GTestClassProcessor = if !isForked then workerTestClassProcessorFactory.create(
@@ -198,9 +203,9 @@ abstract class TestTask extends Test:
     val testResultProcessor: TestResultProcessor =
       resultProcessorActor.fold(testResultProcessorRaw)(_.getProxy(classOf[TestResultProcessor]))
 
-    testResultProcessor.started(RootTest, startTime)
+    RootTest.started(startTime, testResultProcessor)
     val frameworkTests: List[FrameworkTest] = loadedFrameworks.map(RootTest.forFramework)
-    if groupByFramework then frameworkTests.foreach(testResultProcessor.started(_, startTime))
+    if groupByFramework then frameworkTests.foreach(_.started(startTime, testResultProcessor))
 
     try
       testClassProcessor.startProcessing(testResultProcessor)
@@ -226,8 +231,8 @@ abstract class TestTask extends Test:
         getServices.get(classOf[WorkerLeaseService]).blocking(() => testClassProcessor.stop())
     finally
       val endTime: Long = clock.getCurrentTime
-      if groupByFramework then frameworkTests.foreach(testResultProcessor.completed(_, endTime))
-      testResultProcessor.completed(RootTest, endTime)
+      if groupByFramework then frameworkTests.foreach(_.completed(endTime, ResultType.SUCCESS, testResultProcessor))
+      RootTest.completed(endTime, ResultType.SUCCESS, testResultProcessor)
       resultProcessorActor.foreach(_.stop())
       testEnvironment.close()
 
@@ -242,6 +247,7 @@ object TestTask:
       .get(task)
       .asInstanceOf[ListenerBroadcast[TestListener]]
       .visitListeners((testListener: TestListener) =>
+        // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
         if testListener.getClass.getName == "IJTestEventLogger$1" then result = true
       )
 
@@ -249,3 +255,15 @@ object TestTask:
 
   private def findOnClassPath(name: String): URL =
     Gradle.findOnClassPath(TestTask, name)
+
+  // TODO replace with Gradle.getLogLevelEnabled(Logger) once opentorah.util is released
+  private val levels: Seq[LogLevel] = Seq(
+    LogLevel.DEBUG,
+    LogLevel.INFO,
+    LogLevel.LIFECYCLE,
+    LogLevel.WARN,
+    LogLevel.QUIET,
+    LogLevel.ERROR
+  )
+  def getLogLevelEnabled(logger: Logger): LogLevel = levels.find(logger.isEnabled).get
+

@@ -53,3 +53,6 @@ final class JUnit4Test /*AssertTests*/:
 
   @Test def testAssertTrue(): Unit =
     assertTrue("failure - should be true", true)
+
+  @Test def failure(): Unit =
+    assertTrue("failure - should be true", false)

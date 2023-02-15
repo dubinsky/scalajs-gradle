@@ -1,39 +1,23 @@
 package org.podval.tools.test
 
-import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFailureDetails, TestClassRunInfo, TestResultProcessor}
+import org.gradle.api.internal.tasks.testing.{DefaultTestOutputEvent, TestClassRunInfo, TestResultProcessor}
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.tasks.testing.TestFailure
+import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
 import org.gradle.internal.time.Clock
-import org.opentorah.build.Gradle
-import org.podval.tools.test.framework.FrameworkDescriptor
-import sbt.testing.{Event, EventHandler, Framework, Runner, Status, Task, TaskDef}
-import java.io.File
-import java.net.URLClassLoader
+import sbt.testing.{Event, EventHandler, Status, Task, TaskDef}
 import scala.util.control.NonFatal
-import TestResultProcessorEx.*
 import java.lang.reflect.Field
 
 final class TestClassProcessor(
+  frameworkRuns: FrameworkRuns,
   groupByFramework: Boolean,
-  isForked: Boolean,
-  testClassPath: Array[File],
   runningInIntelliJIdea: Boolean,
   testTagsFilter: TestTagsFilter,
-  clock: Clock
+  clock: Clock,
+  logLevelEnabled: LogLevel
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
-
-  // TODO we should not need to carry testClassPath all the way here and can just use own classloader - mimonafshach:
-  // - if we are running in Node, testClassLoader is ignored;
-  // - if we are not forked, TestTaskScala.loadFrameworks() already added it to the classpath on which we are running.
-  // - if we are forked, ForkingTestClassProcessor added it to the applicationClassPath on which we are running (?) - but no...
-  private val testClassLoader: ClassLoader =
-    if isForked
-    then URLClassLoader(testClassPath.map(_.toURI.toURL))
-    else getClass.getClassLoader
-
-  import TestClassProcessor.FrameworkRun
 
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
   private def testResultProcessor: TestResultProcessor = testResultProcessorOpt.get
@@ -41,81 +25,36 @@ final class TestClassProcessor(
   override def startProcessing(testResultProcessor: TestResultProcessor): Unit =
     testResultProcessorOpt = Some(testResultProcessor)
 
-  private var frameworksRuns: Seq[FrameworkRun] = Seq.empty
-
-  private def getRunner(framework: Framework): Runner = synchronized {
-    frameworksRuns.find(_.framework eq framework).map(_.runner).getOrElse {
-      val frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forFramework(framework)
-
-      val args: Array[String] = frameworkDescriptor.args(
-        testTagsFilter = testTagsFilter
-      )
-
-      val runner: Runner = framework.runner(
-        args,
-        Array.empty,
-        testClassLoader
-      )
-
-      val run: FrameworkRun = FrameworkRun(
-        framework = framework,
-        runner = runner
-      )
-
-      frameworksRuns = frameworksRuns :+ run
-
-      runner
-    }
-  }
-
   /**
    * Stops any pending or asynchronous processing immediately.
    * Any test class assigned to this processor, but not yet run will not have results in the output.
    */
+  // TODO implement
   override def stopNow(): Unit = stop()
 
   /**
    * Completes any pending or asynchronous processing. Blocks until all processing is complete.
    */
   override def stop(): Unit =
-    for frameworkRun: FrameworkRun <- frameworksRuns do
+    for frameworkRun: FrameworkRuns.Run <- frameworkRuns.getRuns do
       val summary: String = frameworkRun.runner.done()
-      testResultProcessor.log(
+      output(
         test = RootTest.forFramework(frameworkRun.framework, groupByFramework),
-        message = s"${frameworkRun.framework.name}:\n$summary",
-        logLevel = LogLevel.INFO
+        message = s"${frameworkRun.framework.name} summary:\n$summary",
+        logLevel = LogLevel.INFO //.LIFECYCLE
       )
 
   override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit =
     val test: TaskDefTest = testClassRunInfo.asInstanceOf[TaskDefTest]
-
-    val tasks: Array[Task] = getRunner(test.framework).tasks(Array(test.taskDef))
-    if tasks.isEmpty then fail(test, "test rejected by the framework") else
-    if tasks.length > 1 then fail(test, s"""multi-task test: ${tasks.mkString("Array(", ", ", ")")}""") else
-      run(
-        test = test,
-        task = tasks.head
-      )
-
-  private def fail(test: TaskDefTest, message: String): Unit =
-    testResultProcessor.started(
+    val tasks: Array[Task] = frameworkRuns.getRunner(test.framework).tasks(Array(test.taskDef))
+    // For test classes that do not have tests, empty tasks array is returned;
+    // there is no need nor point to report such an occurrence:
+    // nothing shows up un the Idea's test tree.
+    // I never saw ScalaTest (the only framework I use) return more than one task,
+    // so I do not yet know how would that be reported by Gradle/Idea.
+    for task: Task <- tasks do run(
       test = test,
-      startTime = clock.getCurrentTime
-    )
-    testResultProcessor.failed(
-      test = test,
-      testFailure = DefaultTestFailure(
-        null,
-        DefaultTestFailureDetails(
-          message,
-          test.getTestClassName,
-          null,
-          false,
-          null,
-          null
-        ),
-        null
-      )
+      task = task
     )
 
   private def run(
@@ -143,53 +82,33 @@ final class TestClassProcessor(
       val endTime: Long = clock.getCurrentTime
 
       // Note: for implied eventTest we reconstruct the 'started' event
-      if eventIsAboutNestedTest then testResultProcessor.started(
-        test = eventTest,
-        startTime = endTime - event.duration
-      )
+      if eventIsAboutNestedTest then eventTest.started(endTime - event.duration, testResultProcessor)
 
-      if event.throwable.isDefined then testResultProcessor.failed(
+      if event.throwable.isDefined then failed(
         test = eventTest,
         testFailure = TestClassProcessor.throwableToTestFailure(event.throwable.get)
       )
 
-      testResultProcessor.completed(
-        test = eventTest,
-        endTime = endTime,
-        resultType = TestClassProcessor.fromStatus(event.status)
-      )
+      eventTest.completed(endTime, TestClassProcessor.fromStatus(event.status), testResultProcessor)
 
       if !eventIsAboutNestedTest then testCompleted = true
 
     val startTime: Long = clock.getCurrentTime
-    testResultProcessor.started(
-      test = test,
-      startTime = startTime
-    )
+    test.started(startTime, testResultProcessor)
 
     // skipped test
     if !testTagsFilter.allowed(task.tags) then
-      testResultProcessor.completed(
-        test = test,
-        endTime = startTime,
-        resultType = ResultType.SKIPPED
-      )
+      test.completed(startTime, ResultType.SKIPPED, testResultProcessor)
     else
-      val testLogger: TestLogger = TestLogger(
-        testResultProcessor = testResultProcessor,
-        test = test,
-        useColours = !runningInIntelliJIdea
-      )
-
       try
         val nestedTasks: Seq[Task] =
           try
             task.execute(
               eventHandler,
-              Array(testLogger)
+              Array(testLogger(test))
             ).toSeq
           catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
-            testResultProcessor.failed(
+            failed(
               test = test,
               testFailure = TestFailure.fromTestFrameworkFailure(throwable)
             )
@@ -204,17 +123,52 @@ final class TestClassProcessor(
           )
         )
       finally
-        if !testCompleted then testResultProcessor.completed(
-          test = test,
-          endTime = clock.getCurrentTime
-        )
+        if !testCompleted then test.completed(clock.getCurrentTime, ResultType.SUCCESS, testResultProcessor)
+
+  private def testLogger(test: TaskDefTest): sbt.testing.Logger = new sbt.testing.Logger:
+    private def log(logLevel: LogLevel, message: String): Unit = output(
+      test = test,
+      message = message,
+      logLevel = logLevel
+    )
+
+    // TODO I do not see any issues with the colors on in Idea when the output is delivered through
+    // the proper channels, so there seems to be no need for "!runningInIntelliJIdea" here
+    // when running ScalaTest - but MUnit's and UTest's output gets garbled with the color escape sequences
+    // even *with* the flag...
+    override def ansiCodesSupported: Boolean = true
+    override def error(message: String): Unit = log(LogLevel.ERROR, message)
+    override def warn(message: String): Unit = log(LogLevel.WARN, message)
+    override def info(message: String): Unit = log(LogLevel.INFO, message)
+    override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
+    override def trace(throwable: Throwable): Unit = failed(test = test, TestFailure.fromTestFrameworkFailure(throwable))
+
+  private given CanEqual[LogLevel, LogLevel] = CanEqual.derived
+  private def output(
+    test: Test,
+    message: String,
+    logLevel: LogLevel
+  ): Unit =
+    val isEnabled: Boolean = !runningInIntelliJIdea || (logLevel.ordinal >= logLevelEnabled.ordinal)
+    if isEnabled then testResultProcessor.output(
+      test.getId,
+      DefaultTestOutputEvent(
+        if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
+        then TestOutputEvent.Destination.StdErr
+        else TestOutputEvent.Destination.StdOut,
+        s"$message\n"
+      )
+    )
+
+  private def failed(
+    test: Test,
+    testFailure: TestFailure
+  ): Unit = testResultProcessor.failure(
+    test.getId,
+    testFailure
+  )
 
 object TestClassProcessor:
-
-  private class FrameworkRun(
-    val framework: Framework,
-    val runner: Runner
-  )
 
   private given CanEqual[Status, Status] = CanEqual.derived
   private def fromStatus(status: Status): ResultType = status match

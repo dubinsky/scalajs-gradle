@@ -77,6 +77,6 @@ object SourceMapper:
     try
       val out = java.io.StringWriter()
       throwable.printStackTrace(java.io.PrintWriter(out))
-      out.toString()
+      out.toString
     catch
       case t: Exception => stacktraceOf(t)

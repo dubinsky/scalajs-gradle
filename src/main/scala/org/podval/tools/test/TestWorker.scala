@@ -56,6 +56,7 @@ final class TestWorker(
           try
             runQueue.take().run()
           finally
+            // Reset the thread name if the action changes it (e.g. if a test sets the thread name without resetting it afterwards)
             TestWorker.setThreadName()
       catch case e: InterruptedException => throw UncheckedException.throwAsUncheckedException(e)
     finally
@@ -108,6 +109,7 @@ final class TestWorker(
       processor.processTestClass(testClass)
     catch case e: AccessControlException => throw e
     finally
+      // Clean the interrupted status
       Thread.interrupted()
   )
 
@@ -116,6 +118,8 @@ final class TestWorker(
       processor.stop()
     finally
       state = State.STOPPED
+      // Clean the interrupted status
+      // because some test class processors do work here, e.g. JUnitPlatform
       Thread.interrupted()
   )
 

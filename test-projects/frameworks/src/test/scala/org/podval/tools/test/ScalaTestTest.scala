@@ -3,7 +3,7 @@ package org.podval.tools.test
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class ScalaTestTest extends AnyFlatSpec, Matchers:
+final class ScalaTestTest extends AnyFlatSpec, Matchers:
   "2*2 success" should "pass" in {
     2 * 2 shouldBe 4
   }

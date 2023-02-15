@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'org.podval.tools'
-version = '0.4.3'
+version = '0.4.4'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.2.2'
@@ -17,7 +17,7 @@ final String sbtVersion         = '1.8.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  implementation 'org.opentorah:opentorah-util:0.10.7'
+  implementation 'org.opentorah:opentorah-util:0.10.8'
   implementation 'org.scala-sbt:test-interface:1.0'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
@@ -42,7 +42,6 @@ java {
 
 tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {
-    targetCompatibility = '' // TODO remove when https://youtrack.jetbrains.com/issue/SCL-18813 is fixed
     additionalParameters = [
       '-new-syntax',
       '-feature',

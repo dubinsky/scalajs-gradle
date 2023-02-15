@@ -37,7 +37,7 @@ object FrameworkDescriptor:
     ScalaCheck,
     Specs2,
     JUnit4,
-    JUnit5,
+//    JUnit5,
     MUnit,
     UTest
   )

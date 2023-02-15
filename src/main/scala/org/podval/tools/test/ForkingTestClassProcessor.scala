@@ -14,6 +14,7 @@ import java.io.File
 import java.net.URL
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 import scala.jdk.CollectionConverters.*
+import ForkingTestClassProcessor.Remote
 
 // Note: translated from org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor and modified to:
 // - use my TestSerializerRegistry instead of org.gradle.api.internal.tasks.testing.worker.TestEventSerializer;
@@ -37,43 +38,31 @@ final class ForkingTestClassProcessor(
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
   private val lock: Lock = ReentrantLock()
 
-  private var resultProcessor: TestResultProcessor = _
-  private var remoteProcessor: RemoteTestClassProcessor = _
-  private var workerProcess: WorkerProcess = _
-  private var completion: WorkerLeaseRegistry.WorkerLeaseCompletion = _
-  private var stoppedNow: Boolean = _
-
-  override def startProcessing(resultProcessor: TestResultProcessor): Unit =
-    this.resultProcessor = resultProcessor
-
-  override def processTestClass(testClass: TestClassRunInfo): Unit =
+  private def withLock(body: => Unit): Unit =
     lock.lock()
     try
-      if stoppedNow then return
-
-      if remoteProcessor == null then
-        completion = workerThreadRegistry.startWorker()
-
-        try
-          this.remoteProcessor = forkProcess
-        catch case e: RuntimeException =>
-          completion.leaseFinish()
-          completion = null
-          throw e
-
-      remoteProcessor.processTestClass(testClass)
+      body
     finally
       lock.unlock()
 
+  private var resultProcessor: Option[TestResultProcessor] = None
+  private var remote: Option[Remote] = None
+  private var stoppedNow: Boolean = false
+
+  override def startProcessing(resultProcessor: TestResultProcessor): Unit =
+    this.resultProcessor = Some(resultProcessor)
+
+  override def processTestClass(testClass: TestClassRunInfo): Unit = withLock(
+    if !stoppedNow then
+      if remote.isEmpty then remote = Some(createRemote)
+      remote.get.remoteProcessor.processTestClass(testClass)
+  )
+
   override def stop(): Unit =
     try
-      if remoteProcessor != null then
-        lock.lock()
-        try
-          if !stoppedNow then remoteProcessor.stop()
-        finally
-          lock.unlock()
-        workerProcess.waitForStop()
+      for remote: Remote <- remote do
+        withLock(if !stoppedNow then remote.remoteProcessor.stop())
+        remote.workerProcess.waitForStop()
     catch case e: ExecException =>
       if !stoppedNow then throw ExecException(
         s"""${e.getMessage}
@@ -83,20 +72,39 @@ final class ForkingTestClassProcessor(
         e.getCause
       )
     finally
-      if completion != null then completion.leaseFinish()
+      for remote: Remote <- remote do remote.completion.leaseFinish()
 
-  override def stopNow(): Unit =
-    lock.lock()
+  override def stopNow(): Unit = withLock {
+    stoppedNow = true
+    for remote: Remote <- remote do remote.workerProcess.stopNow()
+  }
+
+  private def createRemote: Remote =
+    val completion: WorkerLeaseRegistry.WorkerLeaseCompletion = workerThreadRegistry.startWorker()
     try
-      stoppedNow = true
-      if remoteProcessor != null then workerProcess.stopNow()
-    finally
-      lock.unlock()
+      val workerProcess: WorkerProcess = createWorkerProcess
+      workerProcess.start()
 
-  private def forkProcess: RemoteTestClassProcessor =
+      val remoteProcessor: RemoteTestClassProcessor = ForkingTestClassProcessor.createRemoteProcessor(
+        workerProcess,
+        resultProcessor.get
+      )
+
+      Remote(
+        workerProcess,
+        remoteProcessor,
+        completion
+      )
+    catch case e: RuntimeException =>
+      completion.leaseFinish()
+      throw e
+
+  private def createWorkerProcess: WorkerProcess =
     val builder: WorkerProcessBuilder = workerFactory.create(TestWorker(processorFactory))
     builder.setBaseName("Gradle Test Executor")
-    builder.setImplementationClasspath((getImplementationClasspath ++ implementationClassPath).asJava)
+    builder.setImplementationClasspath(
+      (ForkingTestClassProcessor.getImplementationClasspath(moduleRegistry) ++ implementationClassPath).asJava
+    )
     builder.setImplementationModulePath(
       ForkingTestClassProcessor.getUrls(implementationModules.map(moduleRegistry.getExternalModule)).asJava
     )
@@ -106,8 +114,19 @@ final class ForkingTestClassProcessor(
     builder.getJavaCommand.jvmArgs("-Dorg.gradle.native=false")
     builder.sharedPackages(sharedPackages.asJava)
 
-    workerProcess = builder.build()
-    workerProcess.start()
+    builder.build()
+
+object ForkingTestClassProcessor:
+  private final class Remote(
+    val workerProcess: WorkerProcess,
+    val remoteProcessor: RemoteTestClassProcessor,
+    val completion: WorkerLeaseRegistry.WorkerLeaseCompletion
+  )
+
+  private def createRemoteProcessor(
+    workerProcess: WorkerProcess,
+    resultProcessor: TestResultProcessor
+  ): RemoteTestClassProcessor =
     val connection: ObjectConnection = workerProcess.getConnection
     connection.useParameterSerializers(TestSerializerRegistry.create)
     connection.addIncoming(classOf[TestResultProcessor], resultProcessor)
@@ -116,27 +135,40 @@ final class ForkingTestClassProcessor(
     remoteProcessor.startProcessing()
     remoteProcessor
 
-  private def getImplementationClasspath: List[URL] = ForkingTestClassProcessor.getUrls(
+  private def getUrls(modules: List[Module]): List[URL] = modules
+    .flatMap(_.getImplementationClasspath.getAsURLs.asScala)
+
+  private def getImplementationClasspath(moduleRegistry: ModuleRegistry): List[URL] = getUrls(
     List(
       "gradle-core-api",
-      "gradle-worker-processes",
       "gradle-core",
       "gradle-logging",
       "gradle-logging-api",
       "gradle-messaging",
-      "gradle-files",
-      "gradle-file-temp",
-      "gradle-hashing",
       "gradle-base-services",
       "gradle-enterprise-logging",
       "gradle-enterprise-workers",
       "gradle-cli",
+      "gradle-wrapper-shared",
       "gradle-native",
+      "gradle-dependency-management",
+      "gradle-workers",
+      "gradle-worker-processes",
+      "gradle-process-services",
+      "gradle-persistent-cache",
+      "gradle-model-core",
+      "gradle-jvm-services",
+      "gradle-files",
+      "gradle-file-collections",
+      "gradle-file-temp",
+      "gradle-hashing",
+      "gradle-snapshots",
+      "gradle-base-annotations",
+      "gradle-build-operations",
+
       "gradle-testing-base",
       "gradle-testing-jvm",
-      "gradle-testing-junit-platform",
-      "gradle-process-services",
-      "gradle-build-operations"
+      "gradle-testing-junit-platform"
     ).map(moduleRegistry.getModule) ++
     List(
       "slf4j-api",
@@ -144,15 +176,24 @@ final class ForkingTestClassProcessor(
       "native-platform",
       "kryo",
       "commons-lang",
-      "junit",
+      "guava",
       "javax.inject",
       // Note: test parallelization breaks without this starting with Gradle 7.6:
-      // java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite;
-      // with it, the tests run but never terminate if parallelized...
-      "groovy"
+      //   java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
+      "groovy",
+      "groovy-ant",
+      "groovy-json",
+      "groovy-xml",
+      "asm",
+      "javax.inject",
+      "junit"
     ).map(moduleRegistry.getExternalModule)
   )
 
-object ForkingTestClassProcessor:
-  private def getUrls(modules: List[Module]): List[URL] = modules
-    .flatMap(_.getImplementationClasspath.getAsURLs.asScala)
+//"gradle-language-java"
+//"gradle-language-jvm"
+//"gradle-worker"
+//"groovy-templates"
+//"gradle-platform-base"
+
+
