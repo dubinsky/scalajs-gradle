@@ -2,14 +2,13 @@ package org.podval.tools.test.serializer
 
 import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFailureDetails}
 import org.gradle.api.tasks.testing.TestFailure
-import org.gradle.internal.serialize.{Decoder, Encoder, Serializer}
+import org.gradle.internal.serialize.{BaseSerializerFactory, Decoder, Encoder, Serializer}
 import scala.jdk.CollectionConverters.*
 
-final class TestFailureSerializer(
-  throwableSerializer: Serializer[Throwable]
-) extends Serializer[TestFailure]:
+final class DefaultTestFailureSerializer extends Serializer[DefaultTestFailure]:
+  private val throwableSerializer: Serializer[Throwable] = new BaseSerializerFactory().getSerializerFor(classOf[Throwable])
 
-  override def write(encoder: Encoder, value: TestFailure): Unit =
+  override def write(encoder: Encoder, value: DefaultTestFailure): Unit =
     throwableSerializer.write(encoder, value.getRawFailure)
     encoder.writeNullableString(value.getDetails.getMessage)
     encoder.writeString(value.getDetails.getClassName)
@@ -18,9 +17,9 @@ final class TestFailureSerializer(
     encoder.writeNullableString(value.getDetails.getExpected)
     encoder.writeNullableString(value.getDetails.getActual)
     encoder.writeSmallInt(value.getCauses.size)
-    for cause <- value.getCauses.asScala do write(encoder, cause)
+    for cause <- value.getCauses.asScala do write(encoder, cause.asInstanceOf[DefaultTestFailure])
 
-  override def read(decoder: Decoder): TestFailure =
+  override def read(decoder: Decoder): DefaultTestFailure =
     val rawFailure: Throwable = throwableSerializer.read(decoder)
     val message: String = decoder.readNullableString()
     val className: String = decoder.readString()

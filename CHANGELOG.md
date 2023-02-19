@@ -5,6 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+fix: handle parentId for the nested tasks correctly (ScalaCheck uses them)
+cleanup: do not include parentId in the TestStartEvent
+cleanup: removed TaskDefTest.parentId
+cleanup: get rootTestSuiteId to the TestClassProcessor
+change: removed `groupByFramework` as not feasible
+chore: update ScalaJS DOM library
+cleanup: TestClassProcessor.handleEvent()
+cleanup: unfolded creation of the test events
+cleanup: use Gradle's classes DefaultTest[Class|Method]Descriptor in test events instead of TaskDefTest
+cleanup: all test ids are composite of any length, not just 2 as Gradle's serializer does
+cleanup: duplicate all TestEventSerializer's serializers - but with my id serializer
+cleanup: no disambiguation needed in the TestSerializerRegistry
+cleanup: folded Test into TaskDefTest, removed RootTest and SyntheticTest
+cleanup: packaged proxying of the test events in the non-forking scenario into SingleThreddingTestResultProcessor
+cleanup: use Gradle's TestMainAction and WorkerTestClassProcessor
+cleanup: packaged TestScanner as a TestFrameworkDetector
+cleanup: boiled down the differences between Gradle's ForkingTestClassProcessor and mine to overridable methods
+cleanup: boiled down the differences between Gradle's TestWorker and mine to overridable methods
+cleanup: introduced TestFramework
+cleanup: minimized the differences between Gradle's TestExecuter and mine; further work is needed for the non-forking scenario
+cleanup: preparing to start testing with the modified Gradle
 
 ## [0.4.4] - 2023-02-19
 fix: "Could not dispatch message" caused by the presence of a test classes with no tests in them.cleanup: ForkingTestClassProcessor

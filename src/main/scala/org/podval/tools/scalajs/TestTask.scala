@@ -13,13 +13,13 @@ abstract class TestTask extends org.podval.tools.test.TestTask with AfterLinkTas
   // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
   final override protected def canFork: Boolean = false
 
-  final override protected def sourceMapper: Option[SourceMapper] = createAfterLink
+  final override def sourceMapper: Option[SourceMapper] = createAfterLink
     .mainModule
     .sourceMapName
     .map((name: String) => Files.file(directory = linkTask.getJSDirectory, segments = name))
     .map(ClosureCompilerSourceMapper(_))
 
-  final override protected def testEnvironment: TestEnvironment =
+  final override def testEnvironment: TestEnvironment =
     val afterLink: AfterLink = createAfterLink
 
     val testAdapter: TestAdapter = TestAdapter(

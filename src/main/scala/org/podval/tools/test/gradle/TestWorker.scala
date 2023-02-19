@@ -1,16 +1,18 @@
-package org.podval.tools.test
+package org.podval.tools.test.gradle
 
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.{TestClassProcessor, TestClassRunInfo, TestResultProcessor,
   WorkerTestClassProcessorFactory}
-import org.gradle.api.internal.tasks.testing.worker.RemoteTestClassProcessor
+import org.gradle.api.internal.tasks.testing.worker.{RemoteTestClassProcessor, TestEventSerializer, WorkerTestClassProcessor}
 import org.gradle.internal.UncheckedException
 import org.gradle.internal.actor.ActorFactory
 import org.gradle.internal.actor.internal.DefaultActorFactory
+import org.gradle.internal.Cast
 import org.gradle.internal.concurrent.{DefaultExecutorFactory, ExecutorFactory, Stoppable}
 import org.gradle.internal.dispatch.ContextClassLoaderProxy
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
 import org.gradle.internal.remote.ObjectConnection
+import org.gradle.internal.serialize.SerializerRegistry
 import org.gradle.internal.service.{DefaultServiceRegistry, ServiceRegistry}
 import org.gradle.internal.time.Clock
 import org.gradle.process.internal.worker.WorkerProcessContext
@@ -19,10 +21,7 @@ import java.io.Serializable
 import java.security.AccessControlException
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue}
 
-// Note: translated from org.gradle.api.internal.tasks.testing.worker.TestWorker and modified:
-// - to use my TestSerializerRegistry instead of org.gradle.api.internal.tasks.testing.worker.TestEventSerializer;
-// - to use my WorkerTestClassProcessor instead of org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor;
-final class TestWorker(
+class TestWorker(
   factory: WorkerTestClassProcessorFactory
 ) extends Action[WorkerProcessContext]
   with RemoteTestClassProcessor
@@ -52,32 +51,42 @@ final class TestWorker(
 
     try
       try
-        while state != State.STOPPED do
-          try
-            runQueue.take().run()
-          finally
-            // Reset the thread name if the action changes it (e.g. if a test sets the thread name without resetting it afterwards)
-            TestWorker.setThreadName()
+        while state != State.STOPPED do executeAndMaintainThreadName(runQueue.take())
       catch case e: InterruptedException => throw UncheckedException.throwAsUncheckedException(e)
     finally
       TestWorker.logger.info(s"${workerProcessContext.getDisplayName} finished executing tests.")
 
+      // In the event that the main thread exits with an uncaught exception, stop processing
+      // and clear out the run queue to unblock any running communication threads
       synchronized {
         state = State.STOPPED
         runQueue.clear()
       }
 
       if System.getSecurityManager != securityManager then
-        try System.setSecurityManager(securityManager)
+        try
+          // Reset security manager the tests seem to have installed
+          System.setSecurityManager(securityManager)
         catch case e: SecurityException => TestWorker.logger.warn("Unable to reset SecurityManager. Continuing anyway...", e)
 
       testServices.close()
+
+  // Reset the thread name if the action changes it (e.g. if a test sets the thread name without resetting it afterwards)
+  private def executeAndMaintainThreadName(action: Runnable): Unit =
+    try action.run() finally TestWorker.setThreadName()
 
   private def startReceivingTests(
     workerProcessContext: WorkerProcessContext,
     testServices: ServiceRegistry
   ): Unit =
-    val targetProcessor: TestClassProcessor = WorkerTestClassProcessor(factory.create(testServices))
+    val idGenerator: IdGenerator[AnyRef] = Cast.uncheckedNonnullCast(testServices.get(classOf[IdGenerator[AnyRef]]))
+
+    val targetProcessor: TestClassProcessor = WorkerTestClassProcessor(
+      factory.create(testServices),
+      idGenerator.generateId(),
+      workerProcessContext.getDisplayName,
+      testServices.get(classOf[Clock])
+    )
 
     val proxy: ContextClassLoaderProxy[TestClassProcessor] = ContextClassLoaderProxy[TestClassProcessor](
       classOf[TestClassProcessor],
@@ -89,11 +98,14 @@ final class TestWorker(
 
     val serverConnection: ObjectConnection = workerProcessContext.getServerConnection
 
-    serverConnection.useParameterSerializers(TestSerializerRegistry.create)
+    serverConnection.useParameterSerializers(createParameterSerializers)
 
     resultProcessor = serverConnection.addOutgoing(classOf[TestResultProcessor])
     serverConnection.addIncoming(classOf[RemoteTestClassProcessor], this)
     serverConnection.connect()
+
+  // TODO Gradle PR
+  protected def createParameterSerializers: SerializerRegistry = TestEventSerializer.create
 
   override def startProcessing(): Unit = submitToRun(() =>
     if state != State.INITIALIZING
@@ -136,20 +148,19 @@ object TestWorker:
   private val logger: Logger = LoggerFactory.getLogger(classOf[TestWorker])
 
   private val WORKER_ID_SYS_PROPERTY: String = "org.gradle.test.worker"
-  val WORKER_TMPDIR_SYS_PROPERTY: String = "org.gradle.internal.worker.tmpdir" // TODO not used in the original either?
+  val WORKER_TMPDIR_SYS_PROPERTY: String = "org.gradle.internal.worker.tmpdir" // TODO not used in the original either...
   private val WORK_THREAD_NAME: String = "Test worker"
 
   private def setThreadName(): Unit = Thread.currentThread.setName(TestWorker.WORK_THREAD_NAME)
 
   private class TestFrameworkServiceRegistry(workerProcessContext: WorkerProcessContext) extends DefaultServiceRegistry:
-    protected def createClock: Clock =
-      workerProcessContext.getServiceRegistry.get(classOf[Clock])
+    protected def createClock: Clock = workerProcessContext.getServiceRegistry.get(classOf[Clock])
 
-//    protected def createIdGenerator: IdGenerator[Object] =
-//      CompositeIdGenerator(
-//        workerProcessContext.getWorkerId,
-//        new LongIdGenerator
-//      )
+    protected def createIdGenerator: IdGenerator[AnyRef] =
+      CompositeIdGenerator(
+        workerProcessContext.getWorkerId,
+        new LongIdGenerator
+      )
 
     protected def createExecutorFactory: ExecutorFactory =
       new DefaultExecutorFactory

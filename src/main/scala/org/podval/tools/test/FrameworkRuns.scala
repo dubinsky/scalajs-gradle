@@ -38,13 +38,8 @@ final class FrameworkRuns(
         Array.empty,
         testClassLoader
       )
-
-      val run: Run = Run(
-        framework = framework,
-        runner = runner
-      )
-
-      frameworksRuns = frameworksRuns :+ run
+      
+      frameworksRuns = frameworksRuns :+ Run(framework, runner)
 
       runner
     }

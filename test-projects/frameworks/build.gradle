@@ -35,14 +35,14 @@ tasks.withType(ScalaCompile).configureEach {
 }
 
 test {
-// TODO parallelized tests no longer stop in Gradle 7.6:
   maxParallelForks = 2
-  groupByFramework = true
 
-//  testLogging {
+  testLogging {
+    events "started", "skipped", "failed", "passed"
 //    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
 //    events "failed", "standard_error", "standard_out"
-//  }
+    displayGranularity = 0
+  }
 
 //  includeTags = ['org.scalatest.tags.Slow']
   excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.test.Tags.RequiresDb']

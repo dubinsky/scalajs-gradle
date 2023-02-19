@@ -104,8 +104,6 @@ Currently, the following test frameworks are supported:
 For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
 
 Multiple test frameworks can be used at the same time.
-By default, test results from all frameworks are reported together.
-To separate test results per framework, set `groupByFramework` to `true` on the appropriate test task.
 
 Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
 in the traditional way; currently, not all configuration properties are honored.
@@ -200,17 +198,20 @@ Plugin also needs some dependencies on the runtime classpath:
 - ScalaJS DOM library;
 - ScalaJS test bridge.
 
+Plugin adds missing dependencies automatically.
+
 Plugin is compiled against specific versions of ScalaJS and ScalaJS JSDOM Node environment,
 but uses the versions configured in the `scalajs` configuration that it creates.
 
 Plugin is compiled against a specific version of Zinc, but at runtime uses the version of Zinc
 configured in the Scala plugin.
 
-Plugin adds missing dependencies automatically.
-
 If you declare a `scalajs-library` dependency explicitly, plugin chooses the same
 version for the ScalaJS dependencies it adds
 (`scalajs-linker`, `scalajs-sbt-test-adapter`, `scalajs-test-bridge`, `scalajs-compiler`).
+
+Plugin uses version 2.4.0 of the ScalaJS DOM library (`scalajs-dom`) - unless a different version
+is configured explicitly.
 
 Example with all dependencies listed for Scala 3:
 ```groovy
@@ -222,7 +223,7 @@ dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.3.0"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.4.0"
 
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -237,7 +238,7 @@ dependencies {
 
 And - with only the required dependencies:
 ```groovy
-final String scalaVersion       = '3.1.3'
+final String scalaVersion       = '3.2.2'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
@@ -255,7 +256,7 @@ final String scalaJsVersion     = '1.11.0'
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.3.0"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.4.0"
   
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -289,9 +290,9 @@ Plugin assumes that the `jsdom` module is installed.
 Source map should be enabled for better traces.
 
 ```shell
-$ npm install source-map-support
 $ npm init private
 $ npm install jsdom
+$ npm install source-map-support
 ```
 
 ### Linking ###
@@ -420,7 +421,7 @@ plugin uses (so that Scala 2.12 can be supported).
 IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but *only* if the task is of type
 `org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
 and `Test` extends `org.gradle.process.JavaForkOptions`, my test task runs in a forked JVM,
-making debugging of my code difficult (and there seems to be no way to stop the forking).
+making debugging of my code difficult.
 
 Turns out that IntelliJ Idea integration only works when all the calls to
 the IJ listener happen from the same thread

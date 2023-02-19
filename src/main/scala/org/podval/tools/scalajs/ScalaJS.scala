@@ -20,7 +20,7 @@ object ScalaJS:
 
   object DomSJS:
     val nameBase: String = "scalajs-dom_sjs1"
-    val versionDefault: String = "2.3.0"
+    val versionDefault: String = "2.4.0"
 
     object Scala2 extends Scala2Dependency(group = group, nameBase = nameBase)
     object Scala3 extends Scala3Dependency(group = group, nameBase = nameBase)

@@ -1,22 +1,24 @@
 package org.podval.tools.test
 
-import org.gradle.api.internal.tasks.testing.{DefaultTestOutputEvent, TestClassRunInfo, TestResultProcessor}
+import org.gradle.api.internal.tasks.testing.{DefaultTestMethodDescriptor, DefaultTestOutputEvent, TestClassRunInfo,
+  TestCompleteEvent, TestDescriptorInternal, TestResultProcessor, TestStartEvent}
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
+import org.gradle.internal.id.{CompositeIdGenerator, LongIdGenerator}
 import org.gradle.internal.time.Clock
-import sbt.testing.{Event, EventHandler, Status, Task, TaskDef}
+import org.podval.tools.test.serializer.TaskDefSerializer
+import sbt.testing.{Event, EventHandler, Selector, Status, Task, TaskDef}
 import scala.util.control.NonFatal
 import java.lang.reflect.Field
 
 final class TestClassProcessor(
   frameworkRuns: FrameworkRuns,
-  groupByFramework: Boolean,
   runningInIntelliJIdea: Boolean,
   testTagsFilter: TestTagsFilter,
   clock: Clock,
-  logLevelEnabled: LogLevel
+  logLevelEnabled: LogLevel,
+  rootTestSuiteId: AnyRef
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
 
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
@@ -39,8 +41,10 @@ final class TestClassProcessor(
     for frameworkRun: FrameworkRuns.Run <- frameworkRuns.getRuns do
       val summary: String = frameworkRun.runner.done()
       output(
-        test = RootTest.forFramework(frameworkRun.framework, groupByFramework),
+        testId = rootTestSuiteId,
         message = s"${frameworkRun.framework.name} summary:\n$summary",
+        // TODO if this is LIFECYCLE, everything hangs even though rootTestSuiteId is supplied - because it is a String?!
+        // how about making it nullable, use the null - and remove the rootTestSuiteId?
         logLevel = LogLevel.INFO //.LIFECYCLE
       )
 
@@ -52,82 +56,90 @@ final class TestClassProcessor(
     // nothing shows up un the Idea's test tree.
     // I never saw ScalaTest (the only framework I use) return more than one task,
     // so I do not yet know how would that be reported by Gradle/Idea.
-    for task: Task <- tasks do run(
-      test = test,
-      task = task
-    )
+    for task: Task <- tasks do run(null, test, task)
 
   private def run(
+    parentId: AnyRef,
     test: TaskDefTest,
     task: Task
   ): Unit =
-    var testCompleted: Boolean = false
+    var isTestCompleted: Boolean = false
 
-    val idGenerator: IdGenerator[?] = CompositeIdGenerator(test.getId, new LongIdGenerator)
-
-    val eventHandler: EventHandler = (event: Event) =>
-      val eventTest: TaskDefTest = test.thisOrNested(
-        mustBeNested = false,
-        idGenerator = idGenerator,
-        taskDef = TaskDef(
-          event.fullyQualifiedName,
-          event.fingerprint,
-          false,
-          Array(event.selector)
-        )
-      )
-
-      val eventIsAboutNestedTest: Boolean = eventTest ne test
-
-      val endTime: Long = clock.getCurrentTime
-
-      // Note: for implied eventTest we reconstruct the 'started' event
-      if eventIsAboutNestedTest then eventTest.started(endTime - event.duration, testResultProcessor)
-
-      if event.throwable.isDefined then failed(
-        test = eventTest,
-        testFailure = TestClassProcessor.throwableToTestFailure(event.throwable.get)
-      )
-
-      eventTest.completed(endTime, TestClassProcessor.fromStatus(event.status), testResultProcessor)
-
-      if !eventIsAboutNestedTest then testCompleted = true
+    val idGenerator: CompositeIdGenerator = CompositeIdGenerator(test.id, new LongIdGenerator)
 
     val startTime: Long = clock.getCurrentTime
-    test.started(startTime, testResultProcessor)
+    testResultProcessor.started(test.toTestDescriptorInternal, TestStartEvent(startTime, parentId))
 
     // skipped test
     if !testTagsFilter.allowed(task.tags) then
-      test.completed(startTime, ResultType.SKIPPED, testResultProcessor)
+      testResultProcessor.completed(test.id, TestCompleteEvent(startTime, ResultType.SKIPPED))
     else
       try
         val nestedTasks: Seq[Task] =
           try
             task.execute(
-              eventHandler,
+              (event: Event) =>
+                if isTestCompleted then throw IllegalStateException(s"Received event for a completed test $test")
+                isTestCompleted = !handleEvent(test, event, idGenerator),
               Array(testLogger(test))
             ).toSeq
           catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
-            failed(
-              test = test,
-              testFailure = TestFailure.fromTestFrameworkFailure(throwable)
-            )
+            testResultProcessor.failure(test.id, TestFailure.fromTestFrameworkFailure(throwable))
             Seq.empty
 
-        for (task: Task, index: Int) <- nestedTasks.zipWithIndex do run(
-          task = task,
-          test = test.thisOrNested(
-            mustBeNested = true,
-            idGenerator = idGenerator,
-            taskDef = task.taskDef // TODO test.getClassName + "-" + index?
+        for task: Task <- nestedTasks do
+          val taskDef: TaskDef = task.taskDef
+          test.verifyCanHaveNestedTest(taskDef)
+          val nestedTest: TaskDefTest = TaskDefTest(
+            id = idGenerator.generateId,
+            framework = test.framework,
+            taskDef = taskDef
           )
-        )
+          run(test.id, nestedTest, task)
       finally
-        if !testCompleted then test.completed(clock.getCurrentTime, ResultType.SUCCESS, testResultProcessor)
+        if !isTestCompleted then
+          testResultProcessor.completed(test.id, TestCompleteEvent(clock.getCurrentTime, ResultType.SUCCESS))
+
+  private def handleEvent(
+    test: TaskDefTest,
+    event: Event,
+    idGenerator: CompositeIdGenerator
+  ): Boolean =
+    val endTime: Long = clock.getCurrentTime
+    val selector: Selector = event.selector
+    val className: String = event.fullyQualifiedName
+
+    val taskDef: TaskDef = TaskDef(
+      className,
+      event.fingerprint,
+      false,
+      Array(selector)
+    )
+
+    val isNestedTest: Boolean = !TaskDefSerializer.equal(test.taskDef, taskDef)
+
+    val eventTest: TestDescriptorInternal =
+      if !isNestedTest then test.toTestDescriptorInternal else
+        test.verifyCanHaveNestedTest(taskDef)
+        val nestedTest: DefaultTestMethodDescriptor = DefaultTestMethodDescriptor(
+          idGenerator.generateId(),
+          className,
+          TaskDefTest.methodName(selector).get
+        )
+        // Note: for implied eventTest we reconstruct the 'started' event
+        testResultProcessor.started(nestedTest, TestStartEvent(endTime - event.duration, test.id))
+        nestedTest
+
+    if event.throwable.isDefined then
+      testResultProcessor.failure(eventTest.getId, TestClassProcessor.throwableToTestFailure(event.throwable.get))
+
+    testResultProcessor.completed(eventTest.getId, TestCompleteEvent(endTime, TestClassProcessor.fromStatus(event.status)))
+
+    isNestedTest
 
   private def testLogger(test: TaskDefTest): sbt.testing.Logger = new sbt.testing.Logger:
     private def log(logLevel: LogLevel, message: String): Unit = output(
-      test = test,
+      testId = test.id,
       message = message,
       logLevel = logLevel
     )
@@ -141,17 +153,20 @@ final class TestClassProcessor(
     override def warn(message: String): Unit = log(LogLevel.WARN, message)
     override def info(message: String): Unit = log(LogLevel.INFO, message)
     override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
-    override def trace(throwable: Throwable): Unit = failed(test = test, TestFailure.fromTestFrameworkFailure(throwable))
+    override def trace(throwable: Throwable): Unit =
+      testResultProcessor.failure(test.id, TestFailure.fromTestFrameworkFailure(throwable))
 
   private given CanEqual[LogLevel, LogLevel] = CanEqual.derived
   private def output(
-    test: Test,
+    testId: AnyRef,
     message: String,
     logLevel: LogLevel
   ): Unit =
-    val isEnabled: Boolean = !runningInIntelliJIdea || (logLevel.ordinal >= logLevelEnabled.ordinal)
+    val isEnabled: Boolean =
+      (!runningInIntelliJIdea && testId != null && !testId.isInstanceOf[String]) ||
+      (logLevel.ordinal >= logLevelEnabled.ordinal)
     if isEnabled then testResultProcessor.output(
-      test.getId,
+      testId,
       DefaultTestOutputEvent(
         if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
         then TestOutputEvent.Destination.StdErr
@@ -159,14 +174,6 @@ final class TestClassProcessor(
         s"$message\n"
       )
     )
-
-  private def failed(
-    test: Test,
-    testFailure: TestFailure
-  ): Unit = testResultProcessor.failure(
-    test.getId,
-    testFailure
-  )
 
 object TestClassProcessor:
 

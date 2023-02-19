@@ -42,5 +42,4 @@ link {
 }
 
 test {
-  useTestNG()
 }

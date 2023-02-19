@@ -3,10 +3,9 @@ package org.podval.tools.test.serializer
 import org.gradle.internal.serialize.{Decoder, Encoder, Serializer}
 import sbt.testing.{Fingerprint, Selector, TaskDef}
 
-final class TaskDefSerializer(
-  fingerprintSerializer: FingerprintSerializer,
-  selectorsSerializer: ArraySerializer[Selector]
-) extends Serializer[TaskDef]:
+final class TaskDefSerializer extends Serializer[TaskDef]:
+  private val fingerprintSerializer: FingerprintSerializer = new FingerprintSerializer
+  private val selectorsSerializer: ArraySerializer[Selector] = ArraySerializer[Selector](new SelectorSerializer)
 
   override def write(encoder: Encoder, value: TaskDef): Unit =
     encoder.writeString(value.fullyQualifiedName)

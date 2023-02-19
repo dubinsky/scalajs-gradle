@@ -1,41 +1,37 @@
-package org.podval.tools.test
+package org.podval.tools.test.gradle
 
+import org.gradle.api.Action
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.classpath.{Module, ModuleRegistry}
-import org.gradle.api.internal.tasks.testing.{TestResultProcessor, TestClassRunInfo}
-import org.gradle.api.internal.tasks.testing.worker.RemoteTestClassProcessor
+import org.gradle.api.internal.tasks.testing.{TestClassProcessor, TestClassRunInfo, TestResultProcessor,
+  WorkerTestClassProcessorFactory}
+import org.gradle.api.internal.tasks.testing.worker.{RemoteTestClassProcessor, TestEventSerializer, TestWorker}
 import org.gradle.internal.remote.ObjectConnection
+import org.gradle.internal.serialize.SerializerRegistry
 import org.gradle.internal.work.{WorkerLeaseRegistry, WorkerThreadRegistry}
-import org.gradle.process.internal.worker.{WorkerProcess, WorkerProcessBuilder, WorkerProcessFactory}
+import org.gradle.process.internal.worker.{WorkerProcess, WorkerProcessBuilder, WorkerProcessContext, WorkerProcessFactory}
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.ExecException
-import org.opentorah.build.Gradle
 import java.io.File
 import java.net.URL
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 import scala.jdk.CollectionConverters.*
 import ForkingTestClassProcessor.Remote
 
-// Note: translated from org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor and modified to:
-// - use my TestSerializerRegistry instead of org.gradle.api.internal.tasks.testing.worker.TestEventSerializer;
-// - use my TestWorker instead of org.gradle.api.internal.tasks.testing.worker.TestWorker
-//   (so that it can substitute my TestSerializerRegistry on the other end)
-// - use Scala types for parameters and internally;
-// - clean up parameter names;
-// - make configuration process more straightforward (no Actions, just parameters).
-final class ForkingTestClassProcessor(
+// TODO Gradle PR: in org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor, introduce
+//   createTestWorker
+//   createParameterSerializers
+class ForkingTestClassProcessor(
   workerThreadRegistry: WorkerThreadRegistry,
   workerFactory: WorkerProcessFactory,
   processorFactory: WorkerTestClassProcessorFactory,
-  options: JavaForkOptions,
-  applicationClassPath: Iterable[File],
-  applicationModulePath: Iterable[File],
-  implementationClassPath: List[URL],
-  implementationModules: List[String],
-  sharedPackages: List[String],
+  javaForkingOptions: JavaForkOptions,
+  applicationClassPath: java.lang.Iterable[File],
+  applicationModulePath: java.lang.Iterable[File],
+  buildConfigAction: Action[WorkerProcessBuilder],
   moduleRegistry: ModuleRegistry,
   documentationRegistry: DocumentationRegistry
-) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
+) extends TestClassProcessor:
   private val lock: Lock = ReentrantLock()
 
   private def withLock(body: => Unit): Unit =
@@ -85,7 +81,7 @@ final class ForkingTestClassProcessor(
       val workerProcess: WorkerProcess = createWorkerProcess
       workerProcess.start()
 
-      val remoteProcessor: RemoteTestClassProcessor = ForkingTestClassProcessor.createRemoteProcessor(
+      val remoteProcessor: RemoteTestClassProcessor = createRemoteProcessor(
         workerProcess,
         resultProcessor.get
       )
@@ -100,21 +96,35 @@ final class ForkingTestClassProcessor(
       throw e
 
   private def createWorkerProcess: WorkerProcess =
-    val builder: WorkerProcessBuilder = workerFactory.create(TestWorker(processorFactory))
+    val builder: WorkerProcessBuilder = workerFactory.create(createTestWorker(processorFactory))
     builder.setBaseName("Gradle Test Executor")
-    builder.setImplementationClasspath(
-      (ForkingTestClassProcessor.getImplementationClasspath(moduleRegistry) ++ implementationClassPath).asJava
-    )
-    builder.setImplementationModulePath(
-      ForkingTestClassProcessor.getUrls(implementationModules.map(moduleRegistry.getExternalModule)).asJava
-    )
-    builder.applicationClasspath(applicationClassPath.asJava)
-    builder.applicationModulePath(applicationModulePath.asJava)
-    options.copyTo(builder.getJavaCommand)
+    builder.setImplementationClasspath(ForkingTestClassProcessor.getTestWorkerImplementationClasspath(moduleRegistry).asJava)
+    builder.applicationClasspath(applicationClassPath)
+    builder.applicationModulePath(applicationModulePath)
+    javaForkingOptions.copyTo(builder.getJavaCommand)
     builder.getJavaCommand.jvmArgs("-Dorg.gradle.native=false")
-    builder.sharedPackages(sharedPackages.asJava)
+    buildConfigAction.execute(builder)
 
     builder.build()
+
+  private def createRemoteProcessor(
+    workerProcess: WorkerProcess,
+    resultProcessor: TestResultProcessor
+  ): RemoteTestClassProcessor =
+    val connection: ObjectConnection = workerProcess.getConnection
+    connection.useParameterSerializers(createParameterSerializers)
+    connection.addIncoming(classOf[TestResultProcessor], resultProcessor)
+    val remoteProcessor: RemoteTestClassProcessor = connection.addOutgoing(classOf[RemoteTestClassProcessor])
+    connection.connect()
+    remoteProcessor.startProcessing()
+    remoteProcessor
+
+  // TODO Gradle PR
+  protected def createTestWorker(processorFactory: WorkerTestClassProcessorFactory): Action[WorkerProcessContext] =
+    new TestWorker(processorFactory)
+
+  // TODO Gradle PR
+  protected def createParameterSerializers: SerializerRegistry = TestEventSerializer.create
 
 object ForkingTestClassProcessor:
   private final class Remote(
@@ -123,52 +133,30 @@ object ForkingTestClassProcessor:
     val completion: WorkerLeaseRegistry.WorkerLeaseCompletion
   )
 
-  private def createRemoteProcessor(
-    workerProcess: WorkerProcess,
-    resultProcessor: TestResultProcessor
-  ): RemoteTestClassProcessor =
-    val connection: ObjectConnection = workerProcess.getConnection
-    connection.useParameterSerializers(TestSerializerRegistry.create)
-    connection.addIncoming(classOf[TestResultProcessor], resultProcessor)
-    val remoteProcessor: RemoteTestClassProcessor = connection.addOutgoing(classOf[RemoteTestClassProcessor])
-    connection.connect()
-    remoteProcessor.startProcessing()
-    remoteProcessor
-
   private def getUrls(modules: List[Module]): List[URL] = modules
     .flatMap(_.getImplementationClasspath.getAsURLs.asScala)
 
-  private def getImplementationClasspath(moduleRegistry: ModuleRegistry): List[URL] = getUrls(
+  private def getTestWorkerImplementationClasspath(moduleRegistry: ModuleRegistry): List[URL] = getUrls(
     List(
       "gradle-core-api",
+      "gradle-worker-processes",
       "gradle-core",
       "gradle-logging",
       "gradle-logging-api",
       "gradle-messaging",
+      "gradle-files",
+      "gradle-file-temp",
+      "gradle-hashing",
       "gradle-base-services",
       "gradle-enterprise-logging",
       "gradle-enterprise-workers",
       "gradle-cli",
-      "gradle-wrapper-shared",
       "gradle-native",
-      "gradle-dependency-management",
-      "gradle-workers",
-      "gradle-worker-processes",
-      "gradle-process-services",
-      "gradle-persistent-cache",
-      "gradle-model-core",
-      "gradle-jvm-services",
-      "gradle-files",
-      "gradle-file-collections",
-      "gradle-file-temp",
-      "gradle-hashing",
-      "gradle-snapshots",
-      "gradle-base-annotations",
-      "gradle-build-operations",
-
       "gradle-testing-base",
-      "gradle-testing-jvm",
-      "gradle-testing-junit-platform"
+      "gradle-testing-jvm-infrastructure",
+      "gradle-testing-junit-platform",
+      "gradle-process-services",
+      "gradle-build-operations"
     ).map(moduleRegistry.getModule) ++
     List(
       "slf4j-api",
@@ -176,24 +164,6 @@ object ForkingTestClassProcessor:
       "native-platform",
       "kryo",
       "commons-lang",
-      "guava",
-      "javax.inject",
-      // Note: test parallelization breaks without this starting with Gradle 7.6:
-      //   java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
-      "groovy",
-      "groovy-ant",
-      "groovy-json",
-      "groovy-xml",
-      "asm",
-      "javax.inject",
-      "junit"
+      "javax.inject"
     ).map(moduleRegistry.getExternalModule)
   )
-
-//"gradle-language-java"
-//"gradle-language-jvm"
-//"gradle-worker"
-//"groovy-templates"
-//"gradle-platform-base"
-
-

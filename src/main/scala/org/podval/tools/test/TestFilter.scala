@@ -1,5 +1,8 @@
 package org.podval.tools.test
 
+import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
+import scala.jdk.CollectionConverters.*
+
 // Note: since there is no way to find out what tests are defined in a given suite,
 // I need to know the meaning of the inclusion patterns (and can't handle individual test exclusions).
 
@@ -61,6 +64,12 @@ final class TestFilter(
 
 object TestFilter:
 
+  def apply(defaultTestFilter: DefaultTestFilter): TestFilter = TestFilter(
+    includes = defaultTestFilter.getIncludePatterns.asScala.toSet,
+    excludes = defaultTestFilter.getExcludePatterns.asScala.toSet,
+    commandLineIncludes = defaultTestFilter.getCommandLineIncludePatterns.asScala.toSet
+  )
+  
   def apply(
     includes: Set[String],
     excludes: Set[String],
