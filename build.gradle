@@ -20,6 +20,9 @@ dependencies {
   implementation 'org.opentorah:opentorah-util:0.10.8'
   implementation 'org.scala-sbt:test-interface:1.0'
 
+  // TODO get rid of this when I switch to Gradle's DefaultTestExecuter (which uses ImmutableList)
+  implementation 'com.google.guava:guava:31.1-jre'
+
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 
   // Note: transitive dependencies: zinc-persist -> zinc-core -> zinc-apiinfo, io, compiler-interface
@@ -29,6 +32,7 @@ dependencies {
   compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:1.1.0"
 
+  // TODO remove and make dynamic
   compileOnly 'junit:junit:4.13.2'
 
   testImplementation "org.scalatest:scalatest_3:3.2.15"

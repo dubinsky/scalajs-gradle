@@ -36,6 +36,7 @@ import scala.jdk.CollectionConverters.*
 /**
  * The default test class scanner factory.
  */
+// TODO switch to extendable Gradle class org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter once it is released
 class DefaultTestExecuter(
   workerFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,
@@ -86,6 +87,9 @@ class DefaultTestExecuter(
           ImmutableList.copyOf(testExecutionSpec.getClasspath),
           ImmutableList.copyOf(testExecutionSpec.getModulePath)
         )
+
+    //    println(testWorkerModulePath.asScala.mkString("----- TestExecuter testWorkerModulePath:\n", "\n", "\n-----"))
+    //    println(testWorkerClassPath .asScala.mkString("----- TestExecuter testWorkerClassPath :\n", "\n", "\n-----"))
 
     val forkingProcessorFactory: Factory[TestClassProcessor] = new Factory[TestClassProcessor]:
       override def create: TestClassProcessor =

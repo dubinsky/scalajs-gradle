@@ -4,11 +4,13 @@ import org.gradle.StartParameter
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.DocumentationRegistry
+import org.gradle.api.internal.classpath.ModuleRegistry
+import org.gradle.api.internal.tasks.testing.TestResultProcessor
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.logging.{Logger, LogLevel}
+import org.gradle.api.logging.{LogLevel, Logger}
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.provider.{Property, SetProperty}
-import org.gradle.api.tasks.{Classpath, Input, Optional, SourceSet}
+import org.gradle.api.tasks.{Classpath, Input, SourceSet}
 import org.gradle.api.tasks.testing.{AbstractTestTask, Test, TestListener}
 import org.gradle.internal.event.ListenerBroadcast
 import org.gradle.internal.time.Clock
@@ -16,7 +18,6 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.opentorah.build.Gradle
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
-
 import java.io.File
 import java.lang.reflect.Field
 import scala.jdk.CollectionConverters.*
@@ -41,11 +42,17 @@ abstract class TestTask extends Test:
 
   private def createTestFramework: TestFramework =
     TestFramework(
-      this,
-      getModuleRegistry,
-      getFilter.asInstanceOf[DefaultTestFilter],
-      TestTask.getLogLevelEnabled(getLogger),
-      maxWorkerCount
+      task = this,
+      canFork = canFork,
+      logLevelEnabled = TestTask.getLogLevelEnabled(getLogger),
+      testFilter = getFilter.asInstanceOf[DefaultTestFilter],
+      maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
+      clock = getServices.get(classOf[Clock]),
+      workerProcessFactory = getProcessBuilderFactory,
+      actorFactory = getActorFactory,
+      workerLeaseService = getServices.get(classOf[WorkerLeaseService]),
+      moduleRegistry = getModuleRegistry,
+      documentationRegistry = getServices.get(classOf[DocumentationRegistry])
     )
 
   final override def executeTests(): Unit =
@@ -59,16 +66,8 @@ abstract class TestTask extends Test:
       // TODO why am I not getting a call from the CompositeStoppable in the Gradle's Test task even when the tests succeed?
       getTestFramework.close()
 
-  final override def createTestExecuter: TestExecuter = TestExecuter(
-    workerProcessFactory = getProcessBuilderFactory,
-    actorFactory = getActorFactory,
-    moduleRegistry = getModuleRegistry,
-    workerLeaseService = getServices.get(classOf[WorkerLeaseService]),
-    maxWorkerCount = maxWorkerCount,
-    clock = getServices.get(classOf[Clock]),
-    documentationRegistry = getServices.get(classOf[DocumentationRegistry]),
-    testFilter = getFilter.asInstanceOf[DefaultTestFilter]
-  )
+  // TODO verify before the cast - and maybe degrade to the super.createTestExecuter() ;)
+  final override def createTestExecuter: org.podval.tools.test.gradle.DefaultTestExecuter = getTestFramework.asInstanceOf[TestFramework].createTestExecuter
 
   protected def canFork: Boolean
 
@@ -92,8 +91,6 @@ abstract class TestTask extends Test:
     include = getIncludeTags.get.asScala.toArray,
     exclude = getExcludeTags.get.asScala.toArray
   )
-
-  private def maxWorkerCount: Int = getServices.get(classOf[StartParameter]).getMaxWorkerCount
 
   // Note: this gets into the TestExecutionSpec
   override def getMaxParallelForks: Int =

@@ -1,11 +1,19 @@
 package org.podval.tools.test
 
 import org.gradle.api.Action
+import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.classpath.{Module, ModuleRegistry}
-import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestClassProcessor}
+import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestClassProcessor, TestResultProcessor}
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.logging.LogLevel
-import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
+import org.gradle.internal.actor.ActorFactory
+import org.gradle.internal.id.CompositeIdGenerator.CompositeId
+import org.gradle.internal.serialize.SerializerRegistry
+import org.gradle.internal.time.Clock
+import org.gradle.internal.work.WorkerLeaseService
+import org.gradle.process.JavaForkOptions
+import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder, WorkerProcessContext,
+  WorkerProcessFactory}
 import org.opentorah.build.Gradle
 import org.opentorah.util.Files
 import org.podval.tools.test.framework.FrameworkDescriptor
@@ -16,10 +24,16 @@ import scala.jdk.CollectionConverters.*
 
 class TestFramework(
   task: TestTask,
-  moduleRegistry: ModuleRegistry,
-  testFilter: DefaultTestFilter,
+  canFork: Boolean,
   logLevelEnabled: LogLevel,
+  testFilter: DefaultTestFilter,
   maxWorkerCount: Int,
+  clock: Clock,
+  workerProcessFactory: WorkerProcessFactory,
+  actorFactory: ActorFactory,
+  workerLeaseService: WorkerLeaseService,
+  moduleRegistry: ModuleRegistry,
+  documentationRegistry: DocumentationRegistry
 ) extends org.gradle.api.internal.tasks.testing.TestFramework:
 
   override def copyWithFilters(newTestFilters: org.gradle.api.tasks.testing.TestFilter): TestFramework =
@@ -28,75 +42,163 @@ class TestFramework(
   // Note: when TestFramework constructor gets called, classPath does not yet have ScalaJS classes,
   // so this gets retrieved from the task
   private var testEnvironmentOpt: Option[TestEnvironment] = None
-  lazy val sourceMapper: Option[SourceMapper] = task.sourceMapper
+  private def getTestEnvironment: TestEnvironment =
+    if testEnvironmentOpt.isEmpty then testEnvironmentOpt = Some(task.testEnvironment)
+    testEnvironmentOpt.get
+
+  private var detectorOpt: Option[TestFrameworkDetector] = None
 
   override def getDetector: TestFrameworkDetector =
-    if testEnvironmentOpt.isEmpty then testEnvironmentOpt = Some(task.testEnvironment)
-    TestFrameworkDetector(
-      filesToAddToClassPath = task.filesToAddToClassPath,
-      loadedFrameworks = testEnvironmentOpt.get.loadAllFrameworks,
-      analysisFile = task.analysisFile,
-      testFilter = TestFilter(testFilter)
+    if detectorOpt.isEmpty then detectorOpt = Some(
+      TestFrameworkDetector(
+        filesToAddToClassPath = task.filesToAddToClassPath,
+        loadedFrameworks = getTestEnvironment.loadAllFrameworks,
+        analysisFile = task.analysisFile,
+        testFilter = TestFilter(testFilter)
+      )
     )
+    detectorOpt.get
 
   override def close(): Unit =
-    // TODO dispose of the detector
+    detectorOpt = None
     testEnvironmentOpt.foreach(_.close())
     ()
 
   override def getOptions: TestFrameworkOptions =
     new TestFrameworkOptions // TODO move my options into this
 
-  // Note: this back-channel delivers the parameter needed for the getProcessorFactory() call
+  // Note: capture the parameter needed for the getProcessorFactory() call in the execute() call
   private var testExecutionSpecOpt: Option[JvmTestExecutionSpec] = None
-  def withTestExecutionSpec(value: JvmTestExecutionSpec): Unit = testExecutionSpecOpt = Some(value)
+
   override def getProcessorFactory: WorkerTestClassProcessorFactory =
-    val testExecutionSpec: JvmTestExecutionSpec = testExecutionSpecOpt.get
-    val maxParallelForks: Int = Math.min(testExecutionSpec.getMaxParallelForks, maxWorkerCount)
     WorkerTestClassProcessorFactory(
-      isForked = maxParallelForks > 1,
+      isForked = canFork,
       runningInIntelliJIdea = TestTask.runningInIntelliJIdea(task),
-      testClassPath = testExecutionSpec.getClasspath.asScala.toArray,
+      // TODO augment as in the Action below?
+      testClassPath = testExecutionSpecOpt.get.getClasspath.asScala.toArray,
       testTagsFilter = task.testTagsFilter,
       logLevelEnabled = logLevelEnabled,
-      rootTestSuiteId = testExecutionSpec.getPath // code duplication with the DefaultTestExecuter
+      rootTestSuiteId = testExecutionSpecOpt.get.getPath // code duplication with the DefaultTestExecuter
     )
 
-  // Note: here I make sure that my classes are on the worker's classpath(s);
-  // it would be nice to add what I need as modules, but as far as I can tell,
-  // those are only looked up in some Gradle module registry.
-  // testExecutionSpec.getClasspath contains the testing frameworks.
+  def createTestExecuter: org.podval.tools.test.gradle.DefaultTestExecuter = new org.podval.tools.test.gradle.DefaultTestExecuter(
+    workerProcessFactory,
+    actorFactory,
+    moduleRegistry,
+    workerLeaseService,
+    maxWorkerCount,
+    clock = clock,
+    documentationRegistry,
+    testFilter
+  ):
+    override def execute(
+      testExecutionSpec: JvmTestExecutionSpec,
+      testResultProcessor: TestResultProcessor
+    ): Unit =
+      // TODO verify testExecutionSpec.isScanForTestClasses == true
+      testExecutionSpecOpt = Some(testExecutionSpec)
 
-  // The only thing remaining is to figure out to which classpath to add what I need
-  // (application or implementation) and how to share it so that I stop getting
-  // ClassNotFound but do not start getting CanNotCast ;)
+      val testResultProcessorEffective: TestResultProcessor =
+        SourceMappingTestResultProcessor(
+          TracingTestResultProcessor(
+            testResultProcessor,
+            clock,
+            isEnabled = false
+          ),
+          task.sourceMapper
+        )
 
-  // nothing added: CNF org.podval.tools.test.gradle.TestWorker
-  //   add org.podval.tools.scalajs to the applicationClassPath: same
-  //     add org.podval.tools.test to sharedPackages: CNF org.gradle.api.Action
-  //       it seems that Gradle classes from the implementation classpath
-  //       are not available on the application classpath
-  //       XXX
-  //   add org.podval.tools.scalajs to the implementationClassPath: CNF scala.CanEqual
-  //     add scala3-library and scala-library to the implementationClassPath: CNF sbt.testing.Fingerprint
-  //       add test-interface to the applicationClassPath and sbt.testing to the sharedPackages: CNF org.scalatest.tools.Framework
-  //         add org.scalatest.tools to the sharedPackages
+      super.execute(testExecutionSpec, testResultProcessorEffective)
 
-  // TODO look into this some more - maybe some of this (e.g., groovy) can be handled via normal mechanisms
-  // like getTestWorkerApplicationClasses()
+    override protected def createTestClassProcessor(
+      workerLeaseService: WorkerLeaseService,
+      workerProcessFactory: WorkerProcessFactory,
+      workerTestClassProcessorFactory: org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory,
+      javaForkOptions: JavaForkOptions,
+      applicationClassPath: java.util.List[File],
+      applicationModulePath: java.util.List[File],
+      workerConfigurationAction: Action[WorkerProcessBuilder],
+      moduleRegistry: ModuleRegistry,
+      documentationRegistry: DocumentationRegistry
+    ): org.gradle.api.internal.tasks.testing.TestClassProcessor =
+    // TODO ScalaJS tests must be run in the same JVM where they are discovered,
+    // so I need to make sure nothing is forked.
+    // This is a *serious* deviation from the DefaultTestExecuter -
+    // unless I can push it down into the createTestClassProcessor()?
+      if !canFork then
+        // Note: emulating the nesting of the tests in suits like in the
+        // TestWorker.startReceivingTests() called from TestWorker.execute()
+        // that is used by the ForkingTestClassProcessor...
+        // TODO call start/completed on the suite!
+        // TODO factor out into NonForkingWorkerTestClassProcessor
+        val workerSuiteId: AnyRef = CompositeId(0L, 0L)
+        val workerDisplayName: String = "Non-forking WorkerTestClassProcessor"
+        org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor(
+          // TODO pass in a registry with the clock?
+          workerTestClassProcessorFactory.asInstanceOf[WorkerTestClassProcessorFactory].create(clock),
+          workerSuiteId,
+          workerDisplayName,
+          clock
+        )
+      else
+        new
+      // TODO switch to extendable Gradle class once it is released
+        org.podval.tools.test.gradle
+        //org.gradle.api.internal.tasks.testing.worker
+        .ForkingTestClassProcessor(
+          workerLeaseService,
+          workerProcessFactory,
+          workerTestClassProcessorFactory,
+          javaForkOptions,
+          applicationClassPath,
+          applicationModulePath,
+          workerConfigurationAction,
+          moduleRegistry,
+          documentationRegistry
+        ):
+          override protected def createParameterSerializers: SerializerRegistry = TestSerializerRegistry.create
+
+          override protected def createTestWorker(
+            processorFactory: org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory
+          ): Action[WorkerProcessContext] = new
+            // TODO switch to extendable Gradle class once it is released
+              org.podval.tools.test.gradle
+              //org.gradle.api.internal.tasks.testing.worker
+              .TestWorker(processorFactory):
+            override protected def createParameterSerializers: SerializerRegistry = TestSerializerRegistry.create
+
+  // TODO
+  //  ApplicationClassesInSystemClassLoaderWorkerImplementationFactory
+  //  DefaultWorkerProcessBuilder
+
+  // TODO I need to make sure that the plugin classes themselves are on the worker's classpath(s).
+  // If I add "org.podval.tools.scalajs" jar to the *implementation* classpath everything works,
+  // but feels unclean (and I have to use reflection to do it).
+  //
+  // If I add the jar to the *application* classpath, I start getting ClassNotFoundException and have to:
+  // - add Gradle modules to the application classpath:
+  //   "gradle-base-services",    // Action
+  //   "gradle-testing-base",     // RemoteTestClassProcessor
+  //   "gradle-worker-processes", // WorkerProcessContext
+  //   "gradle-messaging",        // SerializerRegistry
+  //   "gradle-logging-api",      // LogLevel
+  //   "gradle-logging",          // OutputEventListener
+  //   "gradle-process-services", // JvmMemoryStatusListener
+  // - share "org.gradle" packages with the implementation classpath
+  // - add external modules to the application classpath:
+  //   "slf4j-api",               // org.slf4j.LoggerFactory
+  // and after all that I still get ClassNotFoundException for:
+  //   org.gradle.internal.logging.text.StyledTextOutput
+  //   org.gradle.internal.nativeintegration.console.ConsoleMetaData
+  // ... so this does not seem worth it :(
 
   private val implementationClassPathAdditions: TestFramework.ClassPathAdditions = TestFramework.ClassPathAdditions(
     gradleModules = List(
     ),
     externalModules = List(
-      // Note: without this, starting with Gradle 7.6 I get
-      //   java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
-      "groovy"
     ),
     jars = List(
-      "org.podval.tools.scalajs",
-      "scala3-library",
-      "scala-library"
+      "org.podval.tools.scalajs"
     ),
     modulePath = List(
     )
@@ -106,10 +208,13 @@ class TestFramework(
     gradleModules = List(
     ),
     externalModules = List(
+      // Without this, starting with Gradle 7.6 I get:
+      //   java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
+      "groovy"
     ),
     jars = List(
-      // TODO "frameworks" test project works without this, but "scala-only" does not, although both are pure Scala...
-      // TODO "scala-only" fails to run any tests: ScalaTest throws IllegalArgumentException!!!
+      // TODO the jar should be on the classpath, but if I do not add it here, scala-only test project breaks...
+      // I guess some test frameworks bring it in and some do not, but I have it as an explicit dependency!!!
       "test-interface"
     ),
     modulePath = List(
@@ -118,8 +223,20 @@ class TestFramework(
 
   private val sharedPackages: List[String] =
     List(
-      "sbt.testing"
+      // Scala 3 and Scala 2 libraries; jars themselves are already on the classpath
+      "scala",
+
+      // "test-interface"; jar itself is already on the classpath
+      "sbt.testing",
+
+      // "groovy" external module added to the applicationClassPath
+      "org.codehaus.groovy",
+
+      // TODO I probably do not need this, but would if the jar was added to the application classpath...
+      "org.podval.tools.test",
+      "org.podval.tools.scalajs"
     ) ++
+    // testing framework jars themselves are already on the classpath
     FrameworkDescriptor.all.flatMap(_.sharedPackages)
 
   override def getUseDistributionDependencies: Boolean = true
@@ -127,6 +244,9 @@ class TestFramework(
   override def getTestWorkerApplicationModules: java.util.List[String] = applicationClassPathAdditions.modulePath.asJava
 
   override def getWorkerConfigurationAction: Action[WorkerProcessBuilder] = (builderInterface: WorkerProcessBuilder) =>
+//    println(testExecutionSpecOpt.get.getModulePath.asScala.mkString("----- TestFramework modulePath:\n", "\n", "\n-----"))
+//    println(testExecutionSpecOpt.get.getClasspath .asScala.mkString("----- TestFramework classPath :\n", "\n", "\n-----"))
+
     def findOnClassPath(names: List[String]): List[URL] = names.map(Gradle.findOnClassPath(TestFramework, _))
     def getGradleModules(names: List[String]): List[URL] = toUrls(names.map(moduleRegistry.getModule))
     def getExternalModules(names: List[String]): List[URL] = toUrls(names.map(moduleRegistry.getExternalModule))

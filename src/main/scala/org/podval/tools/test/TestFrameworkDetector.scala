@@ -11,7 +11,7 @@ import xsbt.api.{Discovered, Discovery}
 import xsbti.api.{ClassLike, Companions, Definition}
 import xsbti.compile.FileAnalysisStore
 import java.io.File
-
+import scala.jdk.CollectionConverters.*
 
 object TestFrameworkDetector:
   private final class Detector(
@@ -33,8 +33,12 @@ final class TestFrameworkDetector(
   testFilter: TestFilter
 ) extends org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector:
 
-  override def setTestClasses(testClasses: java.util.List[File]): Unit = ()
-  override def setTestClasspath(classpath: java.util.List[File]): Unit = ()
+  override def setTestClasses(testClasses: java.util.List[File]): Unit =
+//    println(testClasses.asScala.mkString("----- TestFrameworkDetector.setTestClasses", "\n", "\n-----"))
+    ()
+  override def setTestClasspath(classpath: java.util.List[File]): Unit =
+//    println(classpath.asScala.mkString("----- TestFrameworkDetector.setTestClasspath", "\n", "\n-----"))
+    ()
 
   private var testClassProcessor: Option[TestClassProcessor] = None
   override def startDetection(testClassProcessor: TestClassProcessor): Unit =
@@ -48,6 +52,7 @@ final class TestFrameworkDetector(
 
   private def run(): Unit =
     // TODO classpath comment on the need - if needed ;)
+//    println(filesToAddToClassPath.mkString("----- TestFrameworkDetector.run addToClassPath", "\n", "\n-----"))
     Gradle.addToClassPath(this, filesToAddToClassPath)
 
     val detectors: Seq[Detector] =
