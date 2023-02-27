@@ -34,8 +34,6 @@ linkTest {
 }
 
 test {
-//  useJUnitPlatform()
-
   filter {
     includeTestsMatching "tutorial.webapp.TutorialTest*"
   }

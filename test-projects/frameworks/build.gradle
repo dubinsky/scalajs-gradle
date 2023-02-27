@@ -17,6 +17,7 @@ dependencies {
   testImplementation "com.lihaoyi:utest_3:0.8.1"
   testImplementation "org.specs2:specs2-core_3:5.2.0"
   testImplementation "org.scalameta:munit_3:0.7.29"              // Note: brings in junit:junit:4.13.2
+  // TODO document this dependency!
   testImplementation "com.github.sbt:junit-interface:0.13.3"     // Note: brings in junit:junit:4.13.2
   testCompileOnly    "net.aichler:jupiter-interface:0.11.1"      // Note: not supported (see framework.JUnit5), thus not on the test runtime classpath
                                                                  // Note: brings in org.junit.jupiter:junit-jupiter-engine
@@ -38,14 +39,16 @@ test {
   maxParallelForks = 2
 
   testLogging {
-    events "started", "skipped", "failed", "passed"
+//    events "started", "skipped", "failed", "passed"
 //    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
 //    events "failed", "standard_error", "standard_out"
     displayGranularity = 0
   }
 
-//  includeTags = ['org.scalatest.tags.Slow']
-  excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.test.Tags.RequiresDb']
+  useSbt {
+//    includeTags = ['org.scalatest.tags.Slow']
+    excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.testing.Tags.RequiresDb']
+  }
 
   filter {
     failOnNoMatchingTests = false

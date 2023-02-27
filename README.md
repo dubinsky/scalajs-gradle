@@ -20,7 +20,8 @@ will break the plugin.
 
 Gradle build file snippets below use the Groovy syntax, not the Kotlin one.
 
-Gradle daemon does not feel changes to the test classes and needs to be stopped for those changes to be reflected in the build (TODO does this have anything to do with this plugin?). 
+Gradle daemon does not feel changes to the test classes and needs to be stopped for those changes to be reflected
+in the build (TODO does this have anything to do with this plugin?). 
 
 ## Motivation ##
 
@@ -49,7 +50,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.4.2'
+  id 'org.podval.tools.scalajs' version '0.4.5'
 }
 ```
 
@@ -59,7 +60,7 @@ Either way, it is the responsibility of the project using the plugin to add a st
 dependency that the Scala plugin requires.
 
 Unless ScalaJS is disabled, plugin will run in ScalaJS mode.
-To disable ScalaJS and use the plugin for testing normal Scala code with sbt-compatible testing frameworks,
+To disable ScalaJS and use the plugin for testing plain Scala code with sbt-compatible testing frameworks,
 put the following into the `gradle.properties` file of the project:
 ```properties
 org.podval.tools.scalajs.disabled=true
@@ -108,6 +109,10 @@ Multiple test frameworks can be used at the same time.
 Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
 in the traditional way; currently, not all configuration properties are honored.
 
+Plugin introduces its own Gradle test framework: `useSbt`.
+Plugin auto-applies this Gradle test framework to each test task.
+Re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
+
 Any Gradle-recognized test framework configured on the test task (JUnit4, JUnit5, TestNG) and its configuration options
 are ignored.
 
@@ -116,9 +121,19 @@ ScalaJS tests are run sequentially; Scala tests are forked/parallelized in accor
 Class inclusion/exclusion filters are honored, but method-name-based filtering does not work,
 since in frameworks like ScalaTest individual tests are not methods.
 
+Tests can be filtered by tags, for example:
+```groovy
+test {
+  useSbt {
+    includeTags = ['org.scalatest.tags.Slow']
+    excludeTags = ['com.mycompany.tags.DbTest', 'com.mycompany.tags.RequiresDb']
+  }
+}
+```
+
 If there is a need to have test runs with different configuration, more testing tasks can be added manually.
 
-For plain Scala projects (no ScalaJS), the type of the test task is `org.podval.tools.test.ScalaTestTask`.
+For plain Scala projects (no ScalaJS), the type of the test task is `org.podval.tools.testing.TestTaskScala`.
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
 For ScalaJS projects the type is `org.podval.tools.scalajs.Test`.
@@ -137,7 +152,7 @@ Test counts are printed after the run by the `TestCountLogger` - if there are fa
 
 If no tests were found (there are none or all were filtered out), 
 Gradle outputs an error message "No tests found for given includes";
-this message can be suppressed by setting `test.filter.    failOnNoMatchingTests = false`.
+this message can be suppressed by setting `test.filter.failOnNoMatchingTests = false`.
 
 ## ScalaJS ##
 
@@ -203,7 +218,7 @@ Plugin adds missing dependencies automatically.
 Plugin is compiled against specific versions of ScalaJS and ScalaJS JSDOM Node environment,
 but uses the versions configured in the `scalajs` configuration that it creates.
 
-Plugin is compiled against a specific version of Zinc, but at runtime uses the version of Zinc
+Plugin is compiled against a specific version of Zinc, but at runtime uses Zinc
 configured in the Scala plugin.
 
 If you declare a `scalajs-library` dependency explicitly, plugin chooses the same
@@ -286,7 +301,7 @@ dependencies {
 ### Node ###
 
 For running the code and tests, NodeJS has to be installed.
-Plugin assumes that the `jsdom` module is installed.
+Plugin assumes that the `jsdom` module is installed (it is required for `org.scala-js:scalajs-env-jsdom-nodejs`).
 Source map should be enabled for better traces.
 
 ```shell
@@ -385,14 +400,14 @@ by [machaval](https://github.com/machaval) - thanks for the encouragement!
 Basic testing functionality was [requested](https://github.com/dubinsky/scalajs-gradle/issues/7)
 by [zstone1](https://github.com/zstone1) - thanks for the encouragement!
 
-To figure out how sbt itself integrates with testing frameworks, I had to untangle some sbt code, including:
+To figure out how `sbt` itself integrates with testing frameworks, I had to untangle some `sbt` code, including:
 - `sbt.Defaults`
 - `sbt.Tests`
 - `sbt.TestRunner`
 - `sbt.ForkTests`
 - `org.scalajs.sbtplugin.ScalaJSPluginInternal`
 
-Turns out, internals of sbt are a maze of twisted (code) passages, all alike, where pieces of
+Turns out, internals of `sbt` are a maze of twisted (code) passages, all alike, where pieces of
 code are stored in key-value maps, and addition of such maps is used as an override mechanism.
 What a disaster!
 
@@ -405,7 +420,7 @@ I perused code from:
 - [IntelliJ Idea](https://github.com/JetBrains/intellij-community);
 - [Gradle ScalaTest plugin](https://github.com/maiflai/gradle-scalatest).
 
-This took by far the most of my time (and takes up more than 3/4 of the plugin code), and uncovered a number of surprises.
+This took _by far_ the most of my time (and takes up more than 3/4 of the plugin code), and uncovered a number of surprises.
 
 sbt's testing interface is supported by a number of test frameworks, and once I had
 a Gradle/Idea integration with it in ScalaJS context, it was reasonably easy to re-use it
@@ -432,6 +447,7 @@ It would have been nice if this fact was documented somewhere :(
 I coded an event queue with its own thread, but then discovered that:
 - Gradle provides a mechanism that ensures that all the calls are made from the same thread: Actor.createActor().getProxy();
 - when tests are parallelized, MaxNParallelTestClassProcessor is used, which already does that, so I do not need to.
+I packaged adding Gradle's proxying as a `SingleThreddingTestResultProcessor` - but somehow thing work now even without it...
 
 sbt-based test discovery produces more information than just the class name:
 - fingerprint
@@ -440,13 +456,70 @@ sbt-based test discovery produces more information than just the class name:
   probably is not a critical requirement, but sbt does it, so I must too ;)
 
 When tests are parallelized, I do not want to read the compiler analysis file in every test worker
-and fish for this information again; of course, the serializer Gradle installs in the connection to the
-worker does not support my needs; it also makes undocumented and not statically checked assumptions
-about test ids (always composite, both the scope and id Longs) which I do not want to conform too.
+and fish for this information again. For a while, I used modified serializer to get additional information
+obtained during test discovery to the worker; of course, serializer is hard-coded in the Gradle code,
+so to use mine I had to modify three Gradle files...
+I even made a [pull request](https://github.com/gradle/gradle/pull/24088) to add flexibility
+in this regard to Gradle.
+But then I realized that I can encode additional information I need to get to the worker in the test class name!
+So now there is only one Gradle file that I need to modify: `DefaultTestExecuter`.
+Modification needed is - not to fork the JVM when running ScalaJS tests (they have to run in the same JVM
+where the test frameworks were loaded).
 
-So, I need to use a different serializer.
-Of course, both org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor
-and org.gradle.api.internal.tasks.testing.worker.TestWorker
-hard-code the org.gradle.api.internal.tasks.testing.worker.TestEventSerializer,
-and the only way I found to change that was
-to copy both classes in whole, translate them into Scala and change one line in each...
+org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer
+seems to make a decision which serializer registry to use based on the
+outcome of the `SerializerRegistry.canSerialize()` call
+for the class of the first parameter of a method;
+test id is the first parameter of the `TestResultProcessor.output()`, `completed()` and `failure()` calls.
+Without some hackery like registering a serializer for `AnyRef` and disambiguating
+in the `SerializerRegistry.build()` call,
+neither `null` nor `String` are going to work as ids.
+
+This is probably the reason why Gradle:
+- makes all test ids `CompositeIdGenerator.CompositeId`
+- registers a `Serializer[CompositeIdGenerator.CompositeId]` in `TestEventSerializer`.
+
+Gradle just wants to attract attention to its `TestEventSerializer`, so it registers
+serializers for the types of the first parameters of all methods - including the test ids ;)
+
+And since the minimum of composed is two, Gradle uses test ids that are composite of two Longs.
+
+AbstractTestTask installs `StateTrackingTestResultProcessor`
+which keeps track of all tests that are executing in all `TestWorker`s.
+That means that test ids must be scoped per `TestWorker`.
+Each `TestWorker` has an `idGenerator` which it uses to generate `WorkerTestClassProcessor.workerSuiteId`;
+that same `idGenerator` can be used to generate sequential ids for the tests in the worker,
+satisfying the uniqueness requirements - and resulting in the test ids always being
+a composite of exactly two *Longs*!
+
+## TestDescriptor hierarchy
+
+```scala
+org.gradle.api.tasks.testing.TestDescriptor
+  org.gradle.api.internal.tasks.testing.TestDescriptorInternal     // adds id
+    org.gradle.api.internal.tasks.testing.DecoratingTestDescriptor // attaches parent
+      // above is used by org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
+      // and org.gradle.api.internal.tasks.testing.logging.TestWorkerProgressListener
+      // set up in org.gradle.api.tasks.testing.AbstractTestTask
+    org.gradle.api.internal.tasks.testing.TestDescriptorInternal.UnknownTestDescriptor
+      // above is used by org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
+      // in cases that should not happen
+    org.gradle.api.internal.tasks.testing.AbstractTestDescriptor   // getParent -> null
+      org.gradle.api.internal.tasks.testing.DefaultTestDescriptor
+        // above is used by org.gradle.api.internal.tasks.testing.junit.JUnitTestEventAdapter
+        // and org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+        org.gradle.api.internal.tasks.testing.DefaultTestMethodDescriptor
+          // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+      org.gradle.api.internal.tasks.testing.DefaultTestSuiteDescriptor
+        // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+        org.gradle.api.internal.tasks.testing.processors.TestMainAction.RootTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor.WorkerTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.DefaultNestedTestSuiteDescriptor
+          // above is used in org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+        org.gradle.api.internal.tasks.testing.DefaultTestClassDescriptor
+          // above is used in
+          // org.gradle.api.internal.tasks.testing.logging.TestWorkerProgressListener
+          // org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+          // org.gradle.api.internal.tasks.testing.junit.TestClassExecutionEventGenerator
+          // org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+```

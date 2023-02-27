@@ -6,58 +6,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2023-03-07
+- build: automated test-projects tests
+- fix: set `NODE_PATH` to point to `node_module` under the project root so that ScalaJS tests run
+- feat: introduced `TestTask.useSbt` amd moved include/exclude tags into the `TestFrameworkOptions` closure
+- cleanup: add `test-interface` to the `testImplementation` configuration when running plain Scala; then, there is no need to add the jar in the `TestFramework`'s `Action`
+- cleanup: package structure
+- cleanup: set test ids in the `TestClassProcessor`; use a placeholder for `rootTestSuiteId` and fix it up in `FixUpRootTestOutputTestResultProcessor`
+- cleanup: switched from serializers to writers: deleted all serializers, serializer registry, `ForkingTestClassProcessor` and `TestWorker`
+- cleanup: `AnalysisDetector`/`TestClass`
+- cleanup: `sbt` configuration removed; `zinc` is used instead
+- feat: ZIOTest
+- feat: converting framework-specific exceptions to TestFailures
+- chore: Gradle 8.0.2 and its DefaultTestExecuter
+
 ## [0.4.5] - 2023-02-26
-change: removed `groupByFramework` as not feasible
-chore: update ScalaJS DOM library
-fix: handle parentId for the nested tasks correctly (ScalaCheck uses them)
-cleanup: no TestStartEvent.parentId
-cleanup: no TaskDefTest.parentId
-cleanup: get rootTestSuiteId to the TestClassProcessor
-cleanup: all test ids are composite of any length, not just 2 as Gradle's serializer does
-cleanup: replicated all TestEventSerializer's serializers - but with my id serializer
-cleanup: no disambiguation needed in the TestSerializerRegistry
-cleanup: packaged proxying of the test events in the non-forking scenario into SingleThreddingTestResultProcessor
-cleanup: introduced TestFramework
-cleanup: packaged TestScanner as a TestFrameworkDetector
-cleanup: use Gradle's DefaultTest[Class|Method]Descriptor in test events instead of TaskDefTest
-cleanup: use Gradle's TestMainAction and WorkerTestClassProcessor
-cleanup: boiled down the differences between Gradle's ForkingTestClassProcessor and mine to overridable methods
-cleanup: boiled down the differences between Gradle's TestWorker and mine to overridable methods
-cleanup: boiled down the differences between Gradle's DafultTestExecuter and mine to overridable methods
-cleanup: tested with the modified Gradle
+- change: removed `groupByFramework` as not feasible
+- chore: update ScalaJS DOM library
+- fix: handle parentId for the nested tasks correctly (ScalaCheck uses them)
+- cleanup: no TestStartEvent.parentId
+- cleanup: no TaskDefTest.parentId
+- cleanup: get rootTestSuiteId to the TestClassProcessor
+- cleanup: all test ids are composite of any length, not just 2 as Gradle's serializer does
+- cleanup: replicated all TestEventSerializer's serializers - but with my id serializer
+- cleanup: no disambiguation needed in the TestSerializerRegistry
+- cleanup: packaged proxying of the test events in the non-forking scenario into SingleThreddingTestResultProcessor
+- cleanup: introduced TestFramework
+- cleanup: packaged TestScanner as a TestFrameworkDetector
+- cleanup: use Gradle's DefaultTest[Class|Method]Descriptor in test events instead of TaskDefTest
+- cleanup: use Gradle's TestMainAction and WorkerTestClassProcessor
+- cleanup: boiled down the differences between Gradle's ForkingTestClassProcessor and mine to overridable methods
+- cleanup: boiled down the differences between Gradle's TestWorker and mine to overridable methods
+- cleanup: boiled down the differences between Gradle's DafultTestExecuter and mine to overridable methods
+- cleanup: tested with the modified Gradle
 
 ## [0.4.4] - 2023-02-19
-fix: "Could not dispatch message" caused by the presence of a test classes with no tests in them.cleanup: ForkingTestClassProcessor
-fix: tests fail to terminate when parallelized caused by the missing `TestFailureSerializer`
-feat: take Gradle log level into account when processing test output
-cleanup: consolidated test output processing in TestClassProcessor
-cleanup: factored out FrameworkRuns
-cleanup: removed TestResultProcessorEx
-chore: Gradle 8.0.1
+- fix: "Could not dispatch message" caused by the presence of a test classes with no tests in them.cleanup: ForkingTestClassProcessor
+- fix: tests fail to terminate when parallelized caused by the missing `TestFailureSerializer`
+- feat: take Gradle log level into account when processing test output
+- cleanup: consolidated test output processing in TestClassProcessor
+- cleanup: factored out FrameworkRuns
+- cleanup: removed TestResultProcessorEx
+- chore: Gradle 8.0.1
 
 ## [0.4.3] - 2023-01-28
-chore: latest Gradle plugin publishing plugin
-chore: dependency updates
+- chore: latest Gradle plugin publishing plugin
+- chore: dependency updates
 
 ## [0.4.2] - 2022-12-19
-chore: Gradle 7.6 compatibility
-chore: update to the latest Scala, ScalaJS, ScalaTest, ScalaCheck, sbt
+- chore: Gradle 7.6 compatibility
+- chore: update to the latest Scala, ScalaJS, ScalaTest, ScalaCheck, sbt
 
 ## [0.4.1] - 2022-09-15
-chore: dependency updates
-bug: fixed a Gradle issue with ModuleInitializers
-docs: documented NodeJS version compatibility
+- chore: dependency updates
+- bug: fixed a Gradle issue with ModuleInitializers
+- docs: documented NodeJS version compatibility
 
 ## [0.3.0] - 2022-08-14
-chore: cleanup
-feat: run Scala-only tests in parallel
-feat: added groupByFramework option to the test task
-feat: support ScalaCheck
-feat: support uTest
-feat: support specs2
-feat: support MUnit
-feat: support JUnit4
-build: use the plugin for plugin tests
+- chore: cleanup
+- feat: run Scala-only tests in parallel
+- feat: added groupByFramework option to the test task
+- feat: support ScalaCheck
+- feat: support uTest
+- feat: support specs2
+- feat: support MUnit
+- feat: support JUnit4
+- build: use the plugin for plugin tests
 
 Release theme: forking
 
@@ -70,15 +84,15 @@ To make serialization work, my own:
 ScalaCheck *does* produce nested tasks - adjusted TestClassProcessor to handle them.
 
 ## [0.2.0] - 2022-07-31
-feat: Scala 2.12 support
-feat: report ignored tests
-wip: running tests in parallel
-refactor: package test functionality using Gradle test-related classes
-wip: test filtering
-refactor: use sbt Selectors in filtering tests
-wip: filtering suites based on tags
-test: move test projects into `test-projects`
-chore: latest Gradle, Zinc, opentorah, ScalaTest etc.
+- feat: Scala 2.12 support
+- feat: report ignored tests
+- wip: running tests in parallel
+- refactor: package test functionality using Gradle test-related classes
+- wip: test filtering
+- refactor: use sbt Selectors in filtering tests
+- wip: filtering suites based on tags
+- test: move test projects into `test-projects`
+- chore: latest Gradle, Zinc, opentorah, ScalaTest etc.
 
 ## [0.1.0] - 2022-07-18
 - testing integrated with Gradle;

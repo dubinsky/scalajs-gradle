@@ -1,12 +1,12 @@
 package org.podval.tools.scalajs
 
 import org.opentorah.util.Files
-import org.podval.tools.test.{SourceMapper, TestEnvironment}
-import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.testing.framework.FrameworkDescriptor
+import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
 import org.scalajs.testing.adapter.TestAdapter
 import sbt.testing.Framework
 
-abstract class TestTask extends org.podval.tools.test.TestTask with AfterLinkTask:
+abstract class TestTask extends org.podval.tools.testing.task.TestTask with AfterLinkTask:
   final override protected def flavour: String = "Test"
   final override protected def linkTaskClass: Class[LinkTask.Test] = classOf[LinkTask.Test]
 

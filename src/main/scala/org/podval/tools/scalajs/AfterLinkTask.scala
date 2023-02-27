@@ -1,6 +1,7 @@
 package org.podval.tools.scalajs
 
 import org.gradle.api.GradleException
+import java.io.File
 import scala.jdk.CollectionConverters.*
 
 trait AfterLinkTask extends ScalaJSTask:
@@ -15,10 +16,13 @@ trait AfterLinkTask extends ScalaJSTask:
   protected def createAfterLink: AfterLink =
     expandClassPath()
 
+    val nodePath: String = File(getProject.getProjectDir, "node_modules").getAbsolutePath
+
     AfterLink(
       moduleKindProperty = linkTask.getModuleKind,
       reportBinFile = linkTask.getReportBinFile,
       jsDirectory = linkTask.getJSDirectory,
       taskName = getName,
-      logger = getLogger
+      logger = getLogger, // TODO DO NOT PASS THE LOGGER IN?
+      nodePath = nodePath
     )

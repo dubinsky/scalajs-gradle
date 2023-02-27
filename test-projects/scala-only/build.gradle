@@ -17,9 +17,9 @@ dependencies {
 tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {
     additionalParameters = [
-            '-new-syntax',
-            '-feature',
-            '-language:strictEquality'
+      '-new-syntax',
+      '-feature',
+      '-language:strictEquality'
 //      '-source:future'
     ]
   }
@@ -30,8 +30,11 @@ test {
 
   testLogging {
 //    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
-    events "failed", "standard_error", "standard_out"
+//    events "failed", "standard_error", "standard_out"
   }
+
+  useSbt {
 //  includeTags = ['org.scalatest.tags.Slow']
-  excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.test.Tags.RequiresDb']
+    excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.testing.Tags.RequiresDb']
+  }
 }

@@ -16,7 +16,8 @@ final class AfterLink(
   reportBinFile: File,
   jsDirectory: File,
   taskName: String,
-  logger: Logger
+  logger: Logger,
+  nodePath: String
 ):
   private given CanEqual[ModuleKind, ModuleKind] = CanEqual.derived
 
@@ -33,7 +34,7 @@ final class AfterLink(
     require(moduleKind == result.moduleKind, s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}")
     result
 
-  lazy val mainModulePath: Path = Files.file(
+  private lazy val mainModulePath: Path = Files.file(
     directory = jsDirectory,
     segments = mainModule.jsFileName
   ).toPath
@@ -47,4 +48,6 @@ final class AfterLink(
   lazy val jsLogger: org.scalajs.logging.Logger = ScalaJSLogger(taskName, logger)
 
   // Note: if moved into the caller breaks class loading
-  lazy val jsEnv: JSEnv = new JSDOMNodeJSEnv
+  lazy val jsEnv: JSEnv = JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config().withEnv(Map(
+    "NODE_PATH" -> nodePath
+  )))

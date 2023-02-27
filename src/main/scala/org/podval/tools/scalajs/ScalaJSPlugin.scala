@@ -5,9 +5,9 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
-import org.opentorah.build.{Configurations, DependencyRequirement, ScalaLibrary}
+import org.opentorah.build.{Configurations, DependencyRequirement, ScalaLibrary, SimpleDependency}
 import org.opentorah.build.Gradle.*
-import org.podval.tools.test.{Sbt, TestTaskScala}
+import org.podval.tools.testing.task.TestTaskScala
 import java.io.File
 import scala.jdk.CollectionConverters.*
 
@@ -17,16 +17,10 @@ final class ScalaJSPlugin extends Plugin[Project]:
 
     project.getPluginManager.apply(classOf[org.gradle.api.plugins.scala.ScalaPlugin])
 
-    ScalaJSPlugin.createInternalConfiguraton(
-      project,
-      name = Sbt.configurationName,
-      description = "sbt dependencies used by the ScalaJS plugin."
-    )
-
     if isScalaJSDisabled then
       project.getTasks.replace("test", classOf[TestTaskScala])
     else
-      ScalaJSPlugin.createInternalConfiguraton(
+      ScalaJSPlugin.createInternalConfiguration(
         project,
         name = ScalaJS.configurationName,
         description = "ScalaJS dependencies used by the ScalaJS plugin."
@@ -46,16 +40,10 @@ final class ScalaJSPlugin extends Plugin[Project]:
       val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(collectClassPath(getClass.getClassLoader))
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(implementation)
 
-      val sbtVersion: String = Sbt.ZincPersist
-        .getFromClassPath(project.getConfiguration(ScalaBasePlugin.ZINC_CONFIGURATION_NAME).asScala)
-        .get
-        .version
-
-      val requirements: Seq[DependencyRequirement] = ScalaJSPlugin.sbtPluginRequirements(
-        pluginScalaLibrary = pluginScalaLibrary,
-        sbtVersion = sbtVersion
-      ) ++ (
-        if isScalaJSDisabled then Seq.empty else
+      val requirements: Seq[DependencyRequirement] =
+        if isScalaJSDisabled then
+          ScalaJSPlugin.testInterfaceRequirements(pluginScalaLibrary)
+        else
           val scalaJSVersion: String = ScalaJS.Library.getFromConfiguration(implementation)
             .map(_.version)
             .getOrElse(ScalaJS.versionDefault)
@@ -68,7 +56,6 @@ final class ScalaJSPlugin extends Plugin[Project]:
             projectScalaLibrary = projectScalaLibrary,
             scalaJSVersion = scalaJSVersion
           )
-      )
 
       DependencyRequirement.applyToProject(requirements, project)
 
@@ -89,7 +76,7 @@ object ScalaJSPlugin:
     Option(project.findProperty(maiflaiProperty )).isDefined ||
     Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
 
-  private def createInternalConfiguraton(
+  private def createInternalConfiguration(
     project: Project,
     name: String,
     description: String
@@ -113,22 +100,23 @@ object ScalaJSPlugin:
         .getScalaCompileOptions
         .setAdditionalParameters((parameters :+ "-scalajs").asJava)
 
-  // for the plugin classPath
-  private def sbtPluginRequirements(
-    pluginScalaLibrary: ScalaLibrary,
-    sbtVersion: String
-  ): Seq[DependencyRequirement] =
-    val sbt: Configurations = Configurations.forName(Sbt.configurationName)
-
-    Seq(
-      DependencyRequirement(
-        dependency = Sbt.ZincPersist,
-        version = sbtVersion,
-        scalaLibrary = pluginScalaLibrary,
-        reason = "because it is needed for interfacing with sbt",
-        configurations = sbt
-      )
+  // for the test implementation classpath
+  private def testInterfaceRequirements(
+   pluginScalaLibrary: ScalaLibrary
+ ): Seq[DependencyRequirement] = Seq(
+    DependencyRequirement(
+      dependency = SimpleDependency(group = "org.scala-sbt", nameBase = "test-interface"),
+      version = "1.0",
+      scalaLibrary = pluginScalaLibrary,
+      reason =
+        """
+          |because some test frameworks (ScalaTest :)) do not bring it in in,
+          |and it needs to be on the testImplementation classpath;
+          |when using ScalaJS, org.scala-js:scalajs-sbt-test-adapter brings it into the scalajs configuration
+          |""".stripMargin,
+      configurations = Configurations.testImplementation
     )
+  )
 
   // for the plugin classPath
   private def scalaJSPluginRequirements(
