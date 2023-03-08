@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7] - 2023-03-13
+- fix: do not specify success for the overall task completion in `TestClassProcessor.run()`
+- fix: remove class name prefix from the test method names returned by `JUnit4` and `MUnit`
+- fix: do not use `event.fullyQualifiedName` and `event.fingerprint`, lest Gradle interpret methods as classes
+- feat: explicit `TestEnvironment.loadFrameworks(testClassPath)`
+- feat: made running of the frameworks possible during test detection
+- feat: made running Scala tests without forking possible
+- cleanup: replaced `sbt.IO` calls
+- cleanup: minimized classpath expansion
+- cleanup: `TestClass` vs `TaskDefTestSpec`
+- cleanup: dissolved `TaskDefTest`
+- cleanup: updated to the latest Gradle's `DefaultTestExecuter`
+- cleanup: processing test files one-by-one in the `TestFrameworkDetector`
+- cleanup: delay some parameters of the `TestFramework`
+
 ## [0.4.6] - 2023-03-07
 - build: automated test-projects tests
 - fix: set `NODE_PATH` to point to `node_module` under the project root so that ScalaJS tests run

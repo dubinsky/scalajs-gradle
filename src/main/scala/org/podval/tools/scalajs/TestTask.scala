@@ -2,9 +2,10 @@ package org.podval.tools.scalajs
 
 import org.opentorah.util.Files
 import org.podval.tools.testing.framework.FrameworkDescriptor
-import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
+import org.podval.tools.testing.task.{SourceMapper, TestEnvironment}
 import org.scalajs.testing.adapter.TestAdapter
 import sbt.testing.Framework
+import java.io.File
 
 abstract class TestTask extends org.podval.tools.testing.task.TestTask with AfterLinkTask:
   final override protected def flavour: String = "Test"
@@ -13,25 +14,22 @@ abstract class TestTask extends org.podval.tools.testing.task.TestTask with Afte
   // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
   final override protected def canFork: Boolean = false
 
-  final override def sourceMapper: Option[SourceMapper] = createAfterLink
+  final override protected def sourceMapper: Option[SourceMapper] = afterLink
     .mainModule
     .sourceMapName
     .map((name: String) => Files.file(directory = linkTask.getJSDirectory, segments = name))
     .map(ClosureCompilerSourceMapper(_))
 
-  final override def testEnvironment: TestEnvironment =
-    val afterLink: AfterLink = createAfterLink
-
-    val testAdapter: TestAdapter = TestAdapter(
+  final override protected def testEnvironment: TestEnvironment = new TestEnvironment:
+    private val testAdapter: TestAdapter = TestAdapter(
       jsEnv = afterLink.jsEnv,
       input = Seq(afterLink.input),
       config = TestAdapter.Config().withLogger(afterLink.jsLogger)
     )
 
-    new TestEnvironment:
-      override def loadFrameworks(descriptors: List[FrameworkDescriptor]): List[Framework] = testAdapter
-        .loadFrameworks(descriptors.map((descriptor: FrameworkDescriptor) => List(descriptor.implementationClassName)))
-        .flatten
+    override def loadFrameworks(testClassPath: Iterable[File]): List[Framework] = testAdapter
+      .loadFrameworks(FrameworkDescriptor.all.map((descriptor: FrameworkDescriptor) => List(descriptor.implementationClassName)))
+      .flatten
 
-      override def close(): Unit =
-        testAdapter.close()
+    override def close(): Unit =
+      testAdapter.close()

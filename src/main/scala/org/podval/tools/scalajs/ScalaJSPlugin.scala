@@ -20,11 +20,10 @@ final class ScalaJSPlugin extends Plugin[Project]:
     if isScalaJSDisabled then
       project.getTasks.replace("test", classOf[TestTaskScala])
     else
-      ScalaJSPlugin.createInternalConfiguration(
-        project,
-        name = ScalaJS.configurationName,
-        description = "ScalaJS dependencies used by the ScalaJS plugin."
-      )
+      val scalaJS: Configuration = project.getConfigurations.create(ScalaJS.configurationName)
+      scalaJS.setVisible(false)
+      scalaJS.setCanBeConsumed(false)
+      scalaJS.setDescription("ScalaJS dependencies used by the ScalaJS plugin.")
 
       val link: LinkTask.Main     = project.getTasks.create ("link"    , classOf[LinkTask.Main])
       val run : RunTask           = project.getTasks.create ("run"     , classOf[RunTask      ])
@@ -75,17 +74,6 @@ object ScalaJSPlugin:
   private def isScalaJSDisabled(project: Project): Boolean =
     Option(project.findProperty(maiflaiProperty )).isDefined ||
     Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
-
-  private def createInternalConfiguration(
-    project: Project,
-    name: String,
-    description: String
-  ): Configuration =
-    val result: Configuration = project.getConfigurations.create(name)
-    result.setVisible(false)
-    result.setCanBeConsumed(false)
-    result.setDescription(description)
-    result
 
   private def configureScalaCompile(project: Project, sourceSetName: String): Unit =
     val scalaCompile: ScalaCompile = project.getScalaCompile(sourceSetName)

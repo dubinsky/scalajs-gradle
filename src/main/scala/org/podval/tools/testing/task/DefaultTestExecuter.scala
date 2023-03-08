@@ -85,7 +85,9 @@ class DefaultTestExecuter(
       if !testExecutionSpec.isScanForTestClasses || testFramework.getDetector == null then None else Some {
         val result: TestFrameworkDetector = testFramework.getDetector
         result.setTestClasses(java.util.ArrayList[File](testExecutionSpec.getTestClassesDirs.getFiles))
-        // TODO uncomment when Gradle stabilizes result.setTestClasspath(classpath.getApplicationClasspath)
+        // TODO [classpath] switch to classpath.getApplicationClasspath() without reflection - when it actually starts working ;)
+        val applicationClassPath = classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
+        result.setTestClasspath(applicationClassPath)
         result
       }
 

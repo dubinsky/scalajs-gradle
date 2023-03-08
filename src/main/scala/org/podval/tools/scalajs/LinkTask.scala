@@ -7,12 +7,18 @@ import org.gradle.api.tasks.{Classpath, Input, Nested, Optional, OutputDirectory
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
 import java.io.File
+import scala.jdk.CollectionConverters.*
 
 sealed abstract class LinkTask extends DefaultTask with ScalaJSTask:
   setGroup("build")
 
   @TaskAction final def execute(): Unit =
-    expandClassPath()
+    // Needed to access ScalaJS linking functionality in Link
+    // Note: Dynamically-loaded classes are can only be loaded after they are added to the classpath,
+    // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
+    // So, dynamically-loaded classes are mentioned indirectly, in separate classes like Link and AfterLink.
+    // It seems that expanding the classpath once, here, is enough for the AfterLink to work.
+    addToClassPath(this, getProject.getConfiguration(ScalaJS.configurationName).asScala)
 
     Link.link(
       moduleKind = Link.moduleKind(getModuleKind),
@@ -51,7 +57,7 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask:
     setDescription(s"$flavour ScalaJS${optimization.description}")
   )
 
-  final def optimization: Optimization = getOptimization.byName(Optimization.Fast, Optimization.values.toList)
+  private def optimization: Optimization = getOptimization.byName(Optimization.Fast, Optimization.values.toList)
   @Input @Optional def getOptimization: Property[String]
   @Input @Optional def getModuleKind: Property[String]
   @Input @Optional def getModuleSplitStyle: Property[String]

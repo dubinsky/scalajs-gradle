@@ -1,10 +1,10 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.testing.worker.TestTagsFilter
-import sbt.testing.Framework
-import java.io.File
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
+// TODO [frameworks] document (and auto-add) Framework implementations
+// that are separate from the test frameworks (JUnit 4)
 abstract class FrameworkDescriptor(
   val name: String,
   val implementationClassName: String
@@ -18,18 +18,13 @@ abstract class FrameworkDescriptor(
     testTagsFilter: TestTagsFilter
   ): Array[String]
 
-  def instantiate: Framework = newInstance.asInstanceOf[Framework]
-
-  def newInstance: AnyRef = Class.forName(
-      implementationClassName,
-      true,
-      getClass.getClassLoader
-    )
-    .getConstructor()
+  def newInstance: AnyRef = Class.forName(implementationClassName)
+    .getDeclaredConstructor()
     .newInstance()
 
 object FrameworkDescriptor:
 
+  // TODO [frameworks] split into Scala/ScalaJS
   val all: List[FrameworkDescriptor] = List(
     ScalaTest,
     ScalaCheck,

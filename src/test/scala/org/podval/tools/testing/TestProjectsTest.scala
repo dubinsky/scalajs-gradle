@@ -5,43 +5,6 @@ import org.testng.annotations.Test
 class TestProjectsTest:
   import TestProject.*
 
-  // TODO I double-discover nested suites!!!
-  /*
-  --- TEST RESULTS ---
-  23: org.podval.tools.testing.JUnit4Test.failure failed=1 skipped=0
-    22: org.podval.tools.testing.JUnit4Test.failure resultType=FAILURE
-  37: org.podval.tools.testing.JUnit4Test.testAssertSame failed=0 skipped=0
-    36: org.podval.tools.testing.JUnit4Test.testAssertSame resultType=SUCCESS
-  15: org.podval.tools.testing.JUnit4Test.testAssertNotNull failed=0 skipped=0
-    14: org.podval.tools.testing.JUnit4Test.testAssertNotNull resultType=SUCCESS
-  39: org.podval.tools.testing.JUnit4Test.testAssertTrue failed=0 skipped=0
-    38: org.podval.tools.testing.JUnit4Test.testAssertTrue resultType=SUCCESS
-  35: org.podval.tools.testing.JUnit4Test.testAssertNull failed=0 skipped=0
-    34: org.podval.tools.testing.JUnit4Test.testAssertNull resultType=SUCCESS
-  27: org.podval.tools.testing.JUnit4Test.testAssertThatBothContainsString failed=0 skipped=0
-    26: org.podval.tools.testing.JUnit4Test.testAssertThatBothContainsString resultType=SUCCESS
-  17: org.podval.tools.testing.JUnit4Test.testAssertNotSame failed=0 skipped=0
-    16: org.podval.tools.testing.JUnit4Test.testAssertNotSame resultType=SUCCESS
-  21: org.podval.tools.testing.JUnit4Test.testAssertThatEveryItemContainsString failed=0 skipped=0
-    20: org.podval.tools.testing.JUnit4Test.testAssertThatEveryItemContainsString resultType=SUCCESS
-  33: org.podval.tools.testing.JUnit4Test.testAssertThatHamcrestCoreMatchers failed=0 skipped=0
-    32: org.podval.tools.testing.JUnit4Test.testAssertThatHamcrestCoreMatchers resultType=SUCCESS
-  29: org.podval.tools.testing.JUnit4Test.testAssertEquals failed=0 skipped=0
-    28: org.podval.tools.testing.JUnit4Test.testAssertEquals resultType=SUCCESS
-  31: org.podval.tools.testing.JUnit4Test.testAssertArrayEquals failed=0 skipped=0
-    30: org.podval.tools.testing.JUnit4Test.testAssertArrayEquals resultType=SUCCESS
-  25: org.podval.tools.testing.JUnit4Test.testAssertFalse failed=0 skipped=0
-    24: org.podval.tools.testing.JUnit4Test.testAssertFalse resultType=SUCCESS
-  13: org.podval.tools.testing.JUnit4Test failed=0 skipped=0
-  19: org.podval.tools.testing.JUnit4Test.testAssertThatHasItems failed=0 skipped=0
-    18: org.podval.tools.testing.JUnit4Test.testAssertThatHasItems resultType=SUCCESS
-
-  49: org.podval.tools.testing.MUnitTest failed=0 skipped=0
-  48: org.podval.tools.testing.MUnitTest.2=2 failed=0 skipped=0
-    47: org.podval.tools.testing.MUnitTest.2=2 resultType=SUCCESS
-  46: org.podval.tools.testing.MUnitTest.42 != 43 failed=1 skipped=0
-    45: org.podval.tools.testing.MUnitTest.42 != 43 resultType=FAILURE
-  */
   @Test def frameworks(): Unit =
     forProject("frameworks",
       forClass(className = "org.podval.tools.testing.ScalaTestTest", failed=1, skipped=1,
@@ -69,9 +32,17 @@ class TestProjectsTest:
         failed("test3"),
       ),
 
-      forClass(className = "org.podval.tools.testing.JUnit4Test.testAssertThatHasItems", failed = 0, skipped = 0,
-        passed("org.podval.tools.testing.JUnit4Test.testAssertThatHasItems")
+      forClass(className = "org.podval.tools.testing.JUnit4Test", failed = 1, skipped = 0,
+        passed("testAssertNotNull"),
+        passed("testAssertNotSame"),
+        passed("testAssertThatHasItems"),
+        failed("failure"),
       ),
+
+      forClass(className = "org.podval.tools.testing.MUnitTest", failed = 1, skipped = 0,
+        failed("42 != 43"),
+        passed("2=2"),
+      )
     )
 
   @Test def scalaOnly(): Unit =

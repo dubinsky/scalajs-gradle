@@ -11,10 +11,10 @@ Supports ScalaJS 1; default version: 1.13.0.
 
 NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
-Requires Gradle 7.6.
+Plugin requires Gradle 8.0.2.
 
 Plugin is written in Scala 3.
-Scala 2.12 on the *project* classpath is supported, but not on the *buildscript* classpath;
+Scala 2.12 on the *project* classpath is supported, but not on the *buildScript* classpath;
 Gradle plugins or explicit `buildScript` additions that use Scala 2.12 (or earlier)
 will break the plugin.
 
@@ -50,7 +50,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.4.5'
+  id 'org.podval.tools.scalajs' version '0.4.6'
 }
 ```
 
@@ -58,6 +58,11 @@ Plugin will automatically apply the Scala plugin to the project, so there is no 
 `id 'scala'` in the `plugins` block - but there is no harm in it either.
 Either way, it is the responsibility of the project using the plugin to add a standard Scala library
 dependency that the Scala plugin requires.
+
+Plugin forces resolution of the `implementation` and `testImplementation` configurations
+and some others and must be thus applied *after* any plugins that add dependencies to those configurations.
+One such plugin is the Gradle Plugin Portal Publishing Plugin, which applies Gradle Plugin Plugin,
+which adds dependencies to configurations.
 
 Unless ScalaJS is disabled, plugin will run in ScalaJS mode.
 To disable ScalaJS and use the plugin for testing plain Scala code with sbt-compatible testing frameworks,
@@ -113,8 +118,8 @@ Plugin introduces its own Gradle test framework: `useSbt`.
 Plugin auto-applies this Gradle test framework to each test task.
 Re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
 
-Any Gradle-recognized test framework configured on the test task (JUnit4, JUnit5, TestNG) and its configuration options
-are ignored.
+File-name based test scan is not supported by this plugin;
+`isScanForTestClasses` must be at its default value `true`.
 
 ScalaJS tests are run sequentially; Scala tests are forked/parallelized in accordance with the forking options.
 
@@ -371,6 +376,16 @@ The task automatically depends on the `link` task.
 Additional tasks of type `org.podval.tools.scalajs.Run` can be added manually;
 their dependency on a corresponding `Link.Main` task must be set manually too.
 
+## Possible Improvements (TODO)
+
+Relax the restrictions on the plugin application order.
+
+When I apply the plugin to `opentorah-util`, I get:
+> Could not generate a decorated class for type ScalaJSPlugin.
+> Class Not Found: org/opentorah/build/DependencyVersion
+
+Clean up adding the plugin classes to the worker's classpath (and possibly reflective access to the
+implementation classpath).
 
 ## Notes and Credits ##
 
@@ -422,6 +437,7 @@ I perused code from:
 
 This took _by far_ the most of my time (and takes up more than 3/4 of the plugin code), and uncovered a number of surprises.
 
+#### sbt test interface
 sbt's testing interface is supported by a number of test frameworks, and once I had
 a Gradle/Idea integration with it in ScalaJS context, it was reasonably easy to re-use it
 to run tests on sbt-compatible frameworks **without** any ScalaJS involved - in plain Scala projects.
@@ -429,15 +445,18 @@ to run tests on sbt-compatible frameworks **without** any ScalaJS involved - in 
 There are **two** testing interfaces in `org.scala-sbt:test-interface:1.0`;
 I use the one used by the ScalaJS sbt plugin - presumably the new one ;)
 
+#### Dynamic Dependencies
 I had to develop an approach to add dependencies dynamically,
 with correct versions and built for correct version of Scala which may be different from the one
 plugin uses (so that Scala 2.12 can be supported).
 
+#### Running in IntelliJ Idea
 IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but *only* if the task is of type
 `org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
 and `Test` extends `org.gradle.process.JavaForkOptions`, my test task runs in a forked JVM,
 making debugging of my code difficult.
 
+#### Proxying Test Events
 Turns out that IntelliJ Idea integration only works when all the calls to
 the IJ listener happen from the same thread
 (it probably uses some thread-local variable to set up cross-process communications).
@@ -449,6 +468,7 @@ I coded an event queue with its own thread, but then discovered that:
 - when tests are parallelized, MaxNParallelTestClassProcessor is used, which already does that, so I do not need to.
 I packaged adding Gradle's proxying as a `SingleThreddingTestResultProcessor` - but somehow thing work now even without it...
 
+#### Additional Test Information
 sbt-based test discovery produces more information than just the class name:
 - fingerprint
 - selectors
@@ -466,7 +486,8 @@ So now there is only one Gradle file that I need to modify: `DefaultTestExecuter
 Modification needed is - not to fork the JVM when running ScalaJS tests (they have to run in the same JVM
 where the test frameworks were loaded).
 
-org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer
+#### Test Ids and Serialization
+`org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer` 
 seems to make a decision which serializer registry to use based on the
 outcome of the `SerializerRegistry.canSerialize()` call
 for the class of the first parameter of a method;
@@ -492,7 +513,29 @@ that same `idGenerator` can be used to generate sequential ids for the tests in 
 satisfying the uniqueness requirements - and resulting in the test ids always being
 a composite of exactly two *Longs*!
 
-## TestDescriptor hierarchy
+Because tests are scoped by the workers, it does not seem possible to group test results by framework.
+
+#### Framework Peculiarities
+
+##### JUnit4
+JUnit4 (and MUnit which seems to be base on JUnit4) report incorrect class and method names for test method events:
+both are `<class name>.<method name>`; method names like this just look stupid, but class names look
+like new classes to Gradle, so test report is corrupted. I had to work around it.
+
+##### JUnit5
+Comment on the JupiterTestFingerprint.annotationName() says:
+> return The name of this class. This is to ensure that SBT does not find
+> any tests so that we can use JUnit Jupiter's test discovery mechanism.
+
+Well, mission accomplished: my test scanner does not find any tests, and since
+I have no idea what "JUnit Jupiter's test discovery mechanism" is,
+I get the Gradle message "No tests found for given includes".
+So, no JUnit5 support for now :(
+
+I *might* try to use framework-specific test discovery instead of the Scala Analysis one in the Scala-only setting,
+but it is not a priority :)
+
+#### TestDescriptor hierarchy
 
 ```scala
 org.gradle.api.tasks.testing.TestDescriptor

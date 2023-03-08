@@ -42,6 +42,7 @@ test {
 //    events "started", "skipped", "failed", "passed"
 //    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
 //    events "failed", "standard_error", "standard_out"
+//    events "standard_error", "standard_out"
     displayGranularity = 0
   }
 

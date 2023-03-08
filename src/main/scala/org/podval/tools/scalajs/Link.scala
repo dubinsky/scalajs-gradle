@@ -9,7 +9,6 @@ import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind,
   ModuleSplitStyle, Report, Semantics, StandardConfig}
 import org.scalajs.testing.adapter.TestAdapterInitializer
-import sbt.io.IO
 import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -27,7 +26,7 @@ object Link:
     reportBinFile: File,
     jsDirectory: File,
     taskName: String,
-    logger: Logger,
+    logger: Logger, // TODO do not pass the logger in!
     runtimeClassPath: java.util.Set[File],
     moduleInitializerProperties: Option[java.util.Set[ModuleInitializerProperties]],
     fullOptimization: Boolean,
@@ -80,7 +79,8 @@ object Link:
       )
 
       Files.write(file = reportTextFile, content = report.toString())
-      IO.write(reportBinFile, Report.serialize(report))
+      // TODO use Files.writeFile() when it is released
+      java.nio.file.Files.write(java.nio.file.Paths.get(reportBinFile.toURI), Report.serialize(report))
     catch
       case e: LinkingException => throw GradleException("ScalaJS link error", e)
 

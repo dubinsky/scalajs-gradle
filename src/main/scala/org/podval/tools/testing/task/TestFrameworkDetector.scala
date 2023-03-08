@@ -2,42 +2,57 @@ package org.podval.tools.testing.task
 
 import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
-import org.podval.tools.testing.worker.TaskDefTest
-import sbt.testing.{Selector, SuiteSelector, TaskDef, TestSelector, TestWildcardSelector}
+import org.podval.tools.testing.serializer.TaskDefTestSpec
+import org.podval.tools.testing.worker.TestTagsFilter
+import sbt.testing.{Framework, Selector, SuiteSelector, TaskDef, TestSelector, TestWildcardSelector}
 import java.io.File
 import scala.jdk.CollectionConverters.*
 
-// TODO [detection]
-// - look at test discovery in ScalaJS and sbt
-// - integrate with AbstractTestFrameworkDetector
-// - deal with double-discovery and NestedXXXSelector
 final class TestFrameworkDetector(
-  analysisTestClasses: Seq[TestClass],
-  testFilter: TestFilter
+  testEnvironment: TestEnvironment,
+  analysisFile: File,
+  testFilter: TestFilter,
+  testTagsFilter: TestTagsFilter
 ) extends org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector:
 
-  override def setTestClasses(testClasses: java.util.List[File]): Unit =
-//    println(testClasses.asScala.mkString("----- TestFrameworkDetector.setTestClasses", "\n", "\n-----"))
-    ()
-  override def setTestClasspath(classpath: java.util.List[File]): Unit =
-//    println(classpath.asScala.mkString("----- TestFrameworkDetector.setTestClasspath", "\n", "\n-----"))
-    ()
+  def close(): Unit = testEnvironment.close()
+
+  private var testClasses: Option[List[File]] = None
+  override def setTestClasses(value: java.util.List[File]): Unit = testClasses = Some(value.asScala.toList)
+
+  private var testClassPath: Option[List[File]] = None
+  override def setTestClasspath(value: java.util.List[File]): Unit = testClassPath = Some(value.asScala.toList)
 
   private var testClassProcessor: Option[TestClassProcessor] = None
-  override def startDetection(testClassProcessor: TestClassProcessor): Unit =
-    this.testClassProcessor = Some(testClassProcessor)
+  private var loadedFrameworks: Option[List[Framework]] = None
+  override def startDetection(value: TestClassProcessor): Unit =
+    testClassProcessor = Some(value)
+    val loadedFrameworks: List[Framework] = testEnvironment.loadFrameworks(testClassPath.get)
+    // The rest of the code assumes that the Framework is uniquely identified by its name:
+    require(loadedFrameworks.map(_.name).toSet.size == loadedFrameworks.size, "Different frameworks with the same name!")
+    this.loadedFrameworks = Some(loadedFrameworks)
 
-  private var done: Boolean = false
-  override def processTestClass(testClassFile: RelativeFile): Boolean =
-    if !done then run()
-    done = true
-    true
+  private lazy val testClassesDetected: Seq[TestClass] = AnalysisDetector.detectTests(
+    loadedFrameworks.get,
+    analysisFile
+  )
 
-  private def run(): Unit =
-    for
-      testClass: TestClass <- analysisTestClasses
-      case matches: TestFilter.Matches <- testFilter.matchesClass(testClass.className)
-    do
+  // Note: called by org.gradle.api.internal.tasks.testing.detection.DefaultTestClassScanner
+  override def processTestClass(relativeFile: RelativeFile): Boolean =
+    val classFilePath: String = relativeFile.getFile.getAbsolutePath
+    val testClass: Option[TestClass] = testClassesDetected
+      .find(_.classFilePath == classFilePath)
+      .flatMap(filter)
+
+    testClass.foreach((testClass: TestClass) => testClassProcessor.get.processTestClass(TaskDefTestSpec(
+      framework = Right(testClass.framework),
+      taskDef = testClass.taskDef
+    )))
+
+    testClass.isDefined
+
+  private def filter(testClass: TestClass): Option[TestClass] =
+    for matches: TestFilter.Matches <- testFilter.matchesClass(testClass.taskDef.fullyQualifiedName) yield
       val explicitlySpecified: Boolean = matches match
         case TestFilter.Matches.Suite(explicitlySpecified) => explicitlySpecified
         case _ => true
@@ -51,15 +66,23 @@ final class TestFrameworkDetector(
       require(!matches.isEmpty)
       require(selectors.nonEmpty)
 
-      val test: TaskDefTest = TaskDefTest(
-        id = null,
-        framework = Right(testClass.framework),
+      TestClass(
+        sourceFilePath = testClass.sourceFilePath,
+        classFilePath = testClass.classFilePath,
+        framework = testClass.framework,
         taskDef = TaskDef(
-          testClass.className,
-          testClass.fingerprint,
+          testClass.taskDef.fullyQualifiedName,
+          testClass.taskDef.fingerprint,
           explicitlySpecified,
           selectors
         )
       )
 
-      testClassProcessor.get.processTestClass(test)
+// TODO [detection] run test classes through the Frameworks here like sbt does?
+//    for (frameworkName: String, tests: Seq[TestClass]) <- testClassesRaw.groupBy(_.framework.name) do
+//      require(tests.nonEmpty)
+//      val runner: Runner = TestClassProcessor.runner(tests.head.framework, testTagsFilter)
+//      val taskDefs: Seq[TaskDef] = for testClass: TestClass <- tests yield testClass.taskDef
+//      val tasks: Array[Task] = runner.tasks(taskDefs.toArray)
+//      ???
+//      runner.done()

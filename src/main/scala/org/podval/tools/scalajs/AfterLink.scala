@@ -7,7 +7,6 @@ import org.opentorah.util.Files
 import org.scalajs.jsenv.{Input, JSEnv}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.linker.interface.{ModuleKind, Report}
-import sbt.io.IO
 import java.io.File
 import java.nio.file.Path
 
@@ -25,11 +24,11 @@ final class AfterLink(
 
   val mainModule: Report.Module =
     val result: Report.Module = Report
-      .deserialize(IO.readBytes(reportBinFile))
+      .deserialize(Files.readFile(reportBinFile))
       .get
       .publicModules
       .find(_.moduleID == "main")
-      .getOrElse(throw GradleException(s"Linking result does not have a module named 'main'. See $reportBinFile"))
+      .getOrElse(throw GradleException(s"Linking report does not have a module named 'main'. See $reportBinFile"))
 
     require(moduleKind == result.moduleKind, s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}")
     result

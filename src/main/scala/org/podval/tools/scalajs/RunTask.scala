@@ -14,8 +14,6 @@ class RunTask extends DefaultTask with AfterLinkTask:
   final override protected def linkTaskClass: Class[LinkTask.Main] = classOf[LinkTask.Main]
 
   @TaskAction final def execute(): Unit =
-    val afterLink: AfterLink = createAfterLink
-
     getLogger.lifecycle(s"Running $afterLink.mainModulePath on ${afterLink.jsEnv.name}\n")
 
     /* The list of threads that are piping output to System.out and

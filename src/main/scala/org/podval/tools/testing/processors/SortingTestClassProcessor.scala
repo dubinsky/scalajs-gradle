@@ -2,8 +2,7 @@ package org.podval.tools.testing.processors
 
 import org.gradle.api.internal.tasks.testing.{TestClassRunInfo, TestResultProcessor}
 
-// TODO try using this :)
-// the only place I can wrap this around the delegate
+// Note: The only place I can wrap this around the delegate
 // in a way that does not interfere with the RunPreviousFailedFirstTestClassProcessor
 // is in the TestFrameworkDetector.startDetection()
 class SortingTestClassProcessor(

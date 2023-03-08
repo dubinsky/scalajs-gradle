@@ -1,10 +1,10 @@
 package org.podval.tools.testing.task
 
-import sbt.testing.{ Fingerprint, Framework}
+import sbt.testing.{Framework, TaskDef}
 
 class TestClass(
-  val className: String,
-  val sourceFilePath: String,
+  val sourceFilePath: String,  // TODO remove?
+  val classFilePath: String,
   val framework: Framework,
-  val fingerprint: Fingerprint
+  val taskDef: TaskDef
 )

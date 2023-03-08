@@ -1,11 +1,11 @@
 package org.podval.tools.testing.task
 
-import org.podval.tools.testing.worker.TaskDefTest
 import sbt.internal.inc.{Analysis, Relations}
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, SuiteSelector, TaskDef}
 import xsbt.api.{Discovered, Discovery}
 import xsbti.api.{ClassLike, Companions, Definition}
 import xsbti.compile.FileAnalysisStore
+import xsbti.VirtualFileRef
 import java.io.File
 
 object AnalysisDetector:
@@ -41,9 +41,9 @@ object AnalysisDetector:
           companions.classApi,
           companions.objectApi
         ) ++
-          companions.classApi.structure.declared.toSeq ++
-          companions.classApi.structure.inherited.toSeq ++
-          companions.objectApi.structure.declared.toSeq ++
+          companions.classApi .structure.declared .toSeq ++
+          companions.classApi .structure.inherited.toSeq ++
+          companions.objectApi.structure.declared .toSeq ++
           companions.objectApi.structure.inherited.toSeq
       )
       .filter {
@@ -74,7 +74,7 @@ object AnalysisDetector:
 
       detectorOpts.flatten
 
-    val all: Seq[TestClass] = for
+    for
       case (definition: Definition, discovered: Discovered) <-
         Discovery(
           detectors.filter((detector: Detector) => !detector.isAnnotation).map(_.name).toSet,
@@ -89,14 +89,21 @@ object AnalysisDetector:
         )
     yield
       val className: String = definition.asInstanceOf[ClassLike].name
+      val sourceFile: VirtualFileRef = relations.definesClass(className).head
+      // Note: is this how I get the class file path?!
+      val dollar: String = if !discovered.isModule then "" else "$"
+      val classFileName: String = className.replace('.', '/') + dollar + ".class"
+      val classFilePath: String = relations.products(sourceFile).map(_.id).find(_.endsWith(classFileName)).get
+
       TestClass(
-        className = className,
-        sourceFilePath = relations.definesClass(className).head.id,
+        sourceFilePath = sourceFile.id,
+        classFilePath = classFilePath,
         framework = detector.framework,
-        fingerprint = detector.fingerprint
+        taskDef = TaskDef(
+          className,
+          detector.fingerprint,
+          false,
+          Array(new SuiteSelector)
+        )
       )
-
-    // TODO [discovery] call tasks() with all tests for a given framework (SuiteSelector, explicitly = false)
-
-    all
 

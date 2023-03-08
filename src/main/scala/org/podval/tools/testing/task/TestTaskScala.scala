@@ -1,19 +1,25 @@
 package org.podval.tools.testing.task
 
-import org.opentorah.build.Configurations
 import org.podval.tools.testing.framework.FrameworkDescriptor
+import org.opentorah.build.Gradle.*
 import sbt.testing.Framework
+import java.io.File
 
 abstract class TestTaskScala extends TestTask:
   setDescription(s"Test using sbt frameworks")
   final override protected def canFork: Boolean = true
-  final override def sourceMapper: Option[SourceMapper] = None
 
-  final override def testEnvironment: TestEnvironment = new TestEnvironment:
+  final override protected def sourceMapper: Option[SourceMapper] = None
+
+  final override protected def testEnvironment: TestEnvironment = new TestEnvironment:
     override def close(): Unit = ()
 
-    override def loadFrameworks(descriptors: List[FrameworkDescriptor]): List[Framework] =
-      Util.addConfigurationToClassPath(TestTaskScala.this, Configurations.testImplementation.classPath)
+    override def loadFrameworks(testClassPath: Iterable[File]): List[Framework] =
+      // Note: this is the only way I know to:
+      // - instantiate test frameworks from a classloader that has them and
+      // - return sbt.testing.Framework used elsewhere, instead of something loaded from a different classloader
+      //  (and thus can not be cast)
+      addToClassPath(TestTaskScala.this, testClassPath)
 
       def maybeInstantiate(descriptor: FrameworkDescriptor): Option[Framework] =
         val result: Option[Framework] =
@@ -30,6 +36,4 @@ abstract class TestTaskScala extends TestTask:
 
         result
 
-      descriptors.flatMap(maybeInstantiate)
-
-
+      FrameworkDescriptor.all.flatMap(maybeInstantiate)

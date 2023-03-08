@@ -6,7 +6,7 @@ import org.gradle.internal.actor.{Actor, ActorFactory}
 
 // MaxNParallelTestClassProcessor used when forking wraps resultProcessor in an Actor already,
 // bot when not - this is can be used to do it to ensure that all the calls come from the same thread.
-// TODO So far, even without it things seem to work... strange!
+// Note: So far, even without it things seem to work... strange!
 class SingleThreddingTestResultProcessor(
   testResultProcessor: TestResultProcessor,
   actorFactory: ActorFactory
