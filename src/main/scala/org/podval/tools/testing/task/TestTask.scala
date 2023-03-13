@@ -8,7 +8,7 @@ import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.testing.{AbstractTestTask, Test, TestListener}
-import org.gradle.api.tasks.{Classpath, SourceSet}
+import org.gradle.api.tasks.{Classpath, SourceSet, TaskAction}
 import org.gradle.api.{Action, Project}
 import org.gradle.internal.event.ListenerBroadcast
 import org.gradle.internal.time.Clock
@@ -25,6 +25,13 @@ import scala.jdk.CollectionConverters.*
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
 abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
+
+  // Note: Deferring creation of the test framework by using
+  // `getTestFrameworkProperty.convention(project.provider(() => createTestFramework))` did not work out,
+  // nor did the approach that would result in creating the test framework twice when it is set explicitly in the build file:
+  // `getTestFrameworkProperty.convention(createTestFramework)`.
+  // So, I am sticking with pre-applying the test framework at the task creation time;
+  // options seem to work...
   useSbt()
 
   private def sourceSet: SourceSet = getProject.getSourceSet(SourceSet.TEST_SOURCE_SET_NAME)
@@ -35,7 +42,7 @@ abstract class TestTask extends Test:
     ()
   )
 
-  final def useSbt(@DelegatesTo(classOf[TestFrameworkOptions]) testFrameworkConfigure: Closure[_]): Unit =
+  final def useSbt(@DelegatesTo(classOf[TestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
     useSbt(ConfigureUtil.configureUsing(testFrameworkConfigure))
 
   final def useSbt(testFrameworkConfigure: Action[TestFrameworkOptions]): Unit =
@@ -67,21 +74,25 @@ abstract class TestTask extends Test:
       segments = s"tmp/scala/compilerAnalysis/${getProject.getScalaCompile(sourceSet).getName}.analysis"
     )
 
-  final override def createTestExecuter: TestExecuter =
-    require(getTestFramework.isInstanceOf[TestFramework], "Only useSbt test Gradle test framework is supported by this plugin!")
-    require(isScanForTestClasses, "File-name based test scan is not supported by this plugin!")
-    TestExecuter(
-      canFork = canFork,
-      sourceMapper = sourceMapper,
-      testFilter = getFilter.asInstanceOf[DefaultTestFilter],
-      maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
-      clock = getServices.get(classOf[Clock]),
-      workerProcessFactory = getProcessBuilderFactory,
-      actorFactory = getActorFactory,
-      workerLeaseService = getServices.get(classOf[WorkerLeaseService]),
-      moduleRegistry = getModuleRegistry,
-      documentationRegistry = getServices.get(classOf[DocumentationRegistry])
-    )
+  @TaskAction override def executeTests(): Unit =
+    // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
+    // best be done with this here, before `super.createTestExecuter()` is called.
+    require(getTestFramework.isInstanceOf[TestFramework], s"Only useSbt Gradle test framework is supported by this plugin - not $testFramework!")
+    require(isScanForTestClasses, "File-name based test scan is not supported by this plugin, `isScanForTestClasses` must be `true`!")
+    super.executeTests()
+
+  final override def createTestExecuter: TestExecuter = TestExecuter(
+    canFork = canFork,
+    sourceMapper = sourceMapper,
+    testFilter = getFilter.asInstanceOf[DefaultTestFilter],
+    maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
+    clock = getServices.get(classOf[Clock]),
+    workerProcessFactory = getProcessBuilderFactory,
+    actorFactory = getActorFactory,
+    workerLeaseService = getServices.get(classOf[WorkerLeaseService]),
+    moduleRegistry = getModuleRegistry,
+    documentationRegistry = getServices.get(classOf[DocumentationRegistry])
+  )
 
   protected def canFork: Boolean
 

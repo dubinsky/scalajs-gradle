@@ -1,9 +1,10 @@
 package org.podval.tools.testing.task
 
 import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFailureDetails}
-import org.gradle.api.tasks.testing.{TestExecutionException, TestFailure}
+import org.gradle.api.tasks.testing.{TestExecutionException, TestFailure, TestFailureDetails}
 import org.gradle.internal.serialize.PlaceholderExceptionSupport
 import org.opentorah.util.Strings
+import org.podval.tools.testing.exceptions.ExceptionConverter
 
 abstract class SourceMapper:
   import SourceMapper.Mapping
@@ -38,17 +39,17 @@ abstract class SourceMapper:
         s" ($filePath:${mapping.line}:${mapping.column})"
       }
 
-    val message: String = Option(testFailure.getDetails.getMessage).getOrElse(s"$throwable was thrown")
+    val details: TestFailureDetails = testFailure.getDetails
+    val message: String = Option(details.getMessage).getOrElse(s"$throwable was thrown")
 
-    // TODO do not wrap?
-    val throwableMapped: TestExecutionException = new TestExecutionException(
-      s"$message$location",
-      throwable.getCause
-    )
-
+    // TODO Gradle's org.gradle.internal.serialize.ExceptionPlaceholder serializes exceptions with lots of details;
+    // org.scalajs.testing.common.Serializer.ThrowableSerializer - not so much: they all become
+    // "org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3";
+    // since source mapping is used only for ScalaJS, there is no point trying to preserve the original
+    // exception here: it is already lost...
+    // So, I might as well just wrap what remains in:
+    val throwableMapped: Throwable = TestExecutionException(s"$message$location", throwable.getCause)
     throwableMapped.setStackTrace(mappings.map(_._2))
-
-    val details = testFailure.getDetails
 
     // Note: copied stuff from DefaultTestFailure
     DefaultTestFailure(

@@ -3,7 +3,7 @@ package org.podval.tools.testing.results
 import org.gradle.api.internal.tasks.testing.{TestCompleteEvent, TestDescriptorInternal, TestResultProcessor, TestStartEvent}
 import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
-import org.podval.tools.testing.worker.TaskDefEx
+import org.podval.tools.testing.worker.TestClassProcessor
 
 class FixUpRootTestOutputTestResultProcessor(
   delegate: TestResultProcessor
@@ -21,9 +21,9 @@ class FixUpRootTestOutputTestResultProcessor(
   override def output(testId: AnyRef, event: TestOutputEvent): Unit =
     given CanEqual[CompositeId, CompositeId] = CanEqual.derived
     val testIdEffective: AnyRef =
-      if testId.asInstanceOf[CompositeId] != TaskDefEx.rootTestSuiteIdPlaceholder
+      if testId.asInstanceOf[CompositeId] != TestClassProcessor.rootTestSuiteIdPlaceholder
       then testId
-      else rootId
+      else rootId.get
     delegate.output(testIdEffective, event)
 
   override def failure(testId: AnyRef, failure: TestFailure): Unit =

@@ -34,7 +34,7 @@ test {
   }
 
   useSbt {
-//  includeTags = ['org.scalatest.tags.Slow']
+//    includeTags = ['org.scalatest.tags.Slow']
     excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.testing.Tags.RequiresDb']
   }
 }

@@ -3,11 +3,11 @@ plugins {
   id 'scala'
   id 'signing'
   id 'com.gradle.plugin-publish' version '1.1.0'
-  id 'org.podval.tools.scalajs' version '0.4.6' // Note: must be applied *after* Plugin Portal Plugin
+  id 'org.podval.tools.scalajs' version '0.4.7' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
-version = '0.4.7'
+version = '0.4.8'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.2.2'
@@ -19,7 +19,7 @@ dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.8'
+  implementation 'org.opentorah:opentorah-util:0.10.9'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 

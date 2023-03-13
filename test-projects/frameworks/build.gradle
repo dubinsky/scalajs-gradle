@@ -12,16 +12,14 @@ dependencies {
   zinc "org.scala-sbt:zinc_2.13:1.8.0"
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
-  testImplementation "org.scalatest:scalatest_3:3.2.15"
-  testImplementation "org.scalacheck:scalacheck_3:1.17.0"
-  testImplementation "com.lihaoyi:utest_3:0.8.1"
-  testImplementation "org.specs2:specs2-core_3:5.2.0"
-  testImplementation "org.scalameta:munit_3:0.7.29"              // Note: brings in junit:junit:4.13.2
-  // TODO document this dependency!
-  testImplementation "com.github.sbt:junit-interface:0.13.3"     // Note: brings in junit:junit:4.13.2
-  testCompileOnly    "net.aichler:jupiter-interface:0.11.1"      // Note: not supported (see framework.JUnit5), thus not on the test runtime classpath
-                                                                 // Note: brings in org.junit.jupiter:junit-jupiter-engine
-                                                                 // Note: brings in org.junit.platform:junit-platform-launcher
+  testImplementation 'org.scalatest:scalatest_3:3.2.15'
+  testImplementation 'org.scalacheck:scalacheck_3:1.17.0'
+  testImplementation 'com.lihaoyi:utest_3:0.8.1'
+  testImplementation 'org.specs2:specs2-core_3:5.2.0'
+  testImplementation 'org.scalameta:munit_3:0.7.29'
+  testImplementation 'com.github.sbt:junit-interface:0.13.3'
+  testCompileOnly    'net.aichler:jupiter-interface:0.11.1'
+  testImplementation 'dev.zio:zio-test-sbt_3:2.0.10'
 }
 
 tasks.withType(ScalaCompile).configureEach {
@@ -40,7 +38,7 @@ test {
 
   testLogging {
 //    events "started", "skipped", "failed", "passed"
-//    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
+    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"
 //    events "failed", "standard_error", "standard_out"
 //    events "standard_error", "standard_out"
     displayGranularity = 0
@@ -48,7 +46,7 @@ test {
 
   useSbt {
 //    includeTags = ['org.scalatest.tags.Slow']
-    excludeTags = ['com.mycompany.tags.DbTest', 'org.podval.tools.testing.Tags.RequiresDb']
+//    excludeTags = ['org.podval.tools.testing.Tags.RequiresDb']
   }
 
   filter {

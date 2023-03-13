@@ -9,4 +9,4 @@ object UTest extends FrameworkDescriptor(
   name = "utest",
   implementationClassName = "utest.runner.Framework"
 ):
-  override def args(testTagsFilter: TestTagsFilter): Array[String] = Array.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

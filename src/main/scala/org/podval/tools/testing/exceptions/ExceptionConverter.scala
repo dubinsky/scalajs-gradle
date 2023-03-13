@@ -7,19 +7,15 @@ import org.gradle.api.tasks.testing.TestFailure
 // exception class names can not be in those objects for the same reason.
 // see org.gradle.api.internal.tasks.testing.junit.JUnitTestEventAdapter
 trait ExceptionConverter:
-  def convert(throwable: Throwable): TestFailure
+  def toTestFailure(throwable: Throwable): TestFailure
 
-object ExceptionConverter extends ExceptionConverter:
-  // TODO
-  // - com.intellij.rt.execution.junit.FileComparisonFailure`
-  // - `junit.framework.AssertionFailedError`
-  override def convert(throwable: Throwable): TestFailure =
-    val converter: ExceptionConverter = throwable.getClass.getName match
-      case "org.junit.ComparisonFailure"       => OrgJUnitComparisonFailureConverter
-      case "junit.framework.ComparisonFailure" => JUnitFrameworkComparisonFailureConverter
-      case "munit.ComparisonFailException"     => MUnitComparisonFailExceptionConverter
-      case "java.lang.AssertionError"          => JavaLangAssertionErrorConverter
+object ExceptionConverter:
+  private def converter(throwable: Throwable): ExceptionConverter = throwable.getClass.getName match
+    case "org.junit.ComparisonFailure"       => OrgJUnitComparisonFailureConverter
+    case "junit.framework.ComparisonFailure" => JUnitFrameworkComparisonFailureConverter
+    case "munit.ComparisonFailException"     => MUnitComparisonFailExceptionConverter
+    case "java.lang.AssertionError"          => JavaLangAssertionErrorConverter
+    case _                                   => DefaultConverter
 
-      case _                                   => FrameworkFailureConverter
-
-    converter.convert(throwable)
+  def toTestFailure(throwable: Throwable): TestFailure =
+    converter(throwable).toTestFailure(throwable)

@@ -5,6 +5,8 @@ import scala.jdk.CollectionConverters.*
 
 // TODO copy the contents of lists to prevent modifications from affecting this
 class TestFrameworkOptions extends org.gradle.api.tasks.testing.TestFrameworkOptions:
+  override def toString: String = s"TestFrameworkOptions(includeTags=$includeTags, excludeTags=$excludeTags)"
+
   private var includeTags: Set[String] = Set.empty
   private var excludeTags: Set[String] = Set.empty
 

@@ -1,7 +1,8 @@
 package org.podval.tools.testing.worker
 
-import org.gradle.api.internal.tasks.testing.{DefaultTestMethodDescriptor, DefaultTestOutputEvent, TestClassRunInfo,
-  TestCompleteEvent, TestDescriptorInternal, TestResultProcessor, TestStartEvent, WorkerTestClassProcessorFactory}
+import org.gradle.api.internal.tasks.testing.{DefaultTestClassDescriptor, DefaultTestMethodDescriptor,
+  DefaultTestOutputEvent, TestClassRunInfo, TestCompleteEvent, TestDescriptorInternal, TestResultProcessor,
+  TestStartEvent, WorkerTestClassProcessorFactory}
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
@@ -12,8 +13,9 @@ import org.gradle.internal.time.Clock
 import org.podval.tools.testing.exceptions.ExceptionConverter
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.serializer.{TaskDefTestSpec, TaskDefTestSpecWriter}
-import sbt.testing.{Event, Framework, NestedTestSelector, OptionalThrowable, Runner, Selector, Status, Task, TaskDef,
-  TestSelector}
+import sbt.testing.{AnnotatedFingerprint, Event, Fingerprint, Framework, NestedSuiteSelector, NestedTestSelector,
+  OptionalThrowable, Runner, Selector, Status, SubclassFingerprint, SuiteSelector, Task, TaskDef, TestSelector,
+  TestWildcardSelector}
 import java.io.File
 import java.net.URLClassLoader
 import scala.util.control.NonFatal
@@ -25,6 +27,8 @@ final class TestClassProcessor(
   idGenerator: IdGenerator[AnyRef],
   clock: Clock,
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
+
+  private val reportEvents: Boolean = false
 
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
   private def testResultProcessor: TestResultProcessor = testResultProcessorOpt.get
@@ -61,13 +65,8 @@ final class TestClassProcessor(
    */
   override def stop(): Unit =
     for (frameworkName: String, runner: Runner) <- runners.toSeq do
-      // TODO [output] according to the Runner documentation, summary returned was already sent to the logger?
       val summary: String = runner.done()
-      output(
-        testId = TaskDefEx.rootTestSuiteIdPlaceholder,
-        message = s"$frameworkName summary:\n$summary",
-        logLevel = LogLevel.LIFECYCLE
-      )
+      output(message = s"$frameworkName summary:\n$summary")
 
   /**
    * Stops any pending or asynchronous processing immediately.
@@ -78,57 +77,58 @@ final class TestClassProcessor(
     stoppedNow = true
     stop()
 
-  override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit =
-    if !stoppedNow then
-      val taskDefTestSpec: TaskDefTestSpec = TaskDefTestSpecWriter.read(testClassRunInfo)
+  override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
+    val taskDefTestSpec: TaskDefTestSpec = TaskDefTestSpecWriter.read(testClassRunInfo)
+
+    // Note: tasks() can take more that one taskDef, but I feed them in one by one:
+    val tasks: Array[Task] = getRunner(taskDefTestSpec.framework).tasks(Array(taskDefTestSpec.taskDef))
+
+    // Note: task.taskDef: Returns the TaskDef that was used to request this Task.
+
+    if reportEvents then
       val taskDef: TaskDef = taskDefTestSpec.taskDef
-
-      // Note: tasks() can take more that one taskDef, but I feed them in one by one:
-      val tasks: Array[Task] = getRunner(taskDefTestSpec.framework).tasks(Array(taskDef))
-
       val (same: Array[Task], different: Array[Task]) =
-        tasks.partition((task: Task) => TaskDefEx.taskDefsEqual(taskDef, task.taskDef))
+        tasks.partition((task: Task) => TestClassProcessor.taskDefsEqual(taskDef, task.taskDef))
 
       def out(message: String): Unit =
-        ()
-//        val frameworkName: String = taskDefTestSpec.framework.fold(identity, _.name)
-//        output(
-//          testId = TaskDefEx.rootTestSuiteIdPlaceholder, // TODO does not work: before root?!
-//          logLevel = LogLevel.LIFECYCLE,
-//          message = s"--- $frameworkName $message"
-//        )
+        val frameworkName: String = taskDefTestSpec.framework.fold(identity, _.name)
+        output(s"--- $frameworkName $message")
 
-      val taskDefString = TaskDefEx.toString(taskDef)
+      val taskDefString = TestClassProcessor.toString(taskDef)
       if same.length > 1 then out(s"--- MULTIPLE TASKS FOR THE $taskDefString") else
         if different.isEmpty then
           if same.isEmpty
           then out(s"REJECTED $taskDefString")
           else out(s"ACCEPTED $taskDefString")
         else
-          val differentStr: String = different.map(_.taskDef).map(TaskDefEx.toString).mkString("\n")
+          val differentStr: String = different.map(_.taskDef).map(TestClassProcessor.toString).mkString("\n")
           if same.isEmpty
           then out(s"REPLACED $taskDefString with: $differentStr")
           else out(s"ADDED TO $taskDefString: $differentStr")
 
-      // For test classes that do not have tests, empty tasks array is returned;
-      // there is no need nor point to report such an occurrence:
-      // nothing shows up un the Idea's test tree.
-      // I never saw ScalaTest (the only framework I use) return more than one task,
-      // so I do not yet know how would that be reported by Gradle/Idea.
-      for task: Task <- tasks do run(null, task)
+    for task: Task <- tasks do
+      val selector: Selector = TestClassProcessor.getSelector(task.taskDef)
+      run(
+        parentId = null,
+        selector = if TestClassProcessor.isMethod(selector) then new SuiteSelector else selector,
+        task = task
+      )
 
   private def run(
     parentId: AnyRef,
+    selector: Selector,
     task: Task
   ): Unit =
-    require(task.taskDef.selectors.length == 1, s"--- MORE THAN ONE SELECTOR FOR THE TASK!")
-
-    val testId: AnyRef = idGenerator.generateId()
-
+    val startTime: Long = clock.getCurrentTime
     var isTestCompleted: Boolean = false
 
-    val startTime: Long = clock.getCurrentTime
-    testResultProcessor.started(TaskDefEx.toTestDescriptorInternal(testId, task.taskDef), TestStartEvent(startTime, parentId))
+    val testId: AnyRef = idGenerator.generateId()
+    val className: String = task.taskDef.fullyQualifiedName
+    if reportEvents then output(s"--- TestClassProcessor.run($className, $selector)")
+    testResultProcessor.started(
+      TestClassProcessor.testDescriptorInternal(testId, className, selector),
+      TestStartEvent(startTime, parentId)
+    )
 
     val isAllowed: Boolean =
       val tags: Array[String] = task.tags
@@ -144,77 +144,58 @@ final class TestClassProcessor(
           try
             task.execute(
               (event: Event) =>
-                if isTestCompleted then
-                  throw IllegalStateException(s"Received event for a completed test ${TaskDefEx.toString(task.taskDef)}")
-                isTestCompleted = !handleEvent(testId, task.taskDef, event),
+                require(!isTestCompleted, s"Received event for a completed test ${TestClassProcessor.toString(task.taskDef)}")
+                isTestCompleted = handleEvent(
+                  testId,
+                  className,
+                  selector,
+                  event
+                ),
               Array(testLogger(testId))
             ).toSeq
           catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
             testResultProcessor.failure(testId, TestFailure.fromTestFrameworkFailure(throwable))
             Seq.empty
 
-        // Note: ScalaCheck does individual test methods as nested tasks
         for nestedTask: Task <- nestedTasks do
-//          output(
-//            testId = TaskDefEx.rootTestSuiteIdPlaceholder,
-//            logLevel = LogLevel.LIFECYCLE,
-//            message = s"----- GOT NESTED TASK FOR ${TaskDefEx.toString(task.taskDef)}: ${TaskDefEx.toString(nestedTask.taskDef)}"
-//          )
-          TaskDefEx.verifyCanHaveNestedTest(task.taskDef, nestedTask.taskDef)
-          run(testId, nestedTask)
+          if reportEvents then output(s"----- GOT NESTED TASK FOR $className $selector: ${TestClassProcessor.toString(nestedTask.taskDef)}")
+          run(
+            parentId = testId,
+            selector = TestClassProcessor.verifyCanHaveNestedTest(selector, TestClassProcessor.getSelector(nestedTask.taskDef)),
+            task = nestedTask
+          )
       finally
-        if !isTestCompleted then
-          testResultProcessor.completed(testId, TestCompleteEvent(clock.getCurrentTime))
+        if !isTestCompleted then testResultProcessor.completed(testId, TestCompleteEvent(clock.getCurrentTime))
 
   private def handleEvent(
     testId: AnyRef,
-    taskDef: TaskDef,
+    className: String,
+    selector: Selector,
     event: Event
   ): Boolean =
     val endTime: Long = clock.getCurrentTime
+    val resultType: ResultType = TestClassProcessor.toResultType(event.status)
 
-    // Note: Assuming that if the event is for the taskDef, selector is the same,
-    // and if not - it is a *test method* in the same class;
-    // MUnit and JUnit4 set both the event's fullyQualifiedName and the selector
-    // to something like <class name>.<method name>, which confuses Gradle into thinking
-    // that that is a new class name, since the event fingerprint says so...
-    val isNestedTest: Boolean = !taskDef.selectors.head.equals(event.selector) // not !TaskDefEx.taskDefsEqual(taskDef, nestedTaskDef)
-    val eventTest: TestDescriptorInternal =
-      if !isNestedTest then TaskDefEx.toTestDescriptorInternal(testId, taskDef) else
-        def cleanUpName(name: String): String =
-          if name.startsWith(taskDef.fullyQualifiedName+".") then name.substring(taskDef.fullyQualifiedName.length+1) else name
-
-        val selector: Selector = event.selector match
-          case testSelector      : TestSelector       => TestSelector      (                            cleanUpName(testSelector      .testName))
-          case nestedTestSelector: NestedTestSelector => NestedTestSelector(nestedTestSelector.suiteId, cleanUpName(nestedTestSelector.testName))
-          // nothing else is possible ;)
-
-        val nestedTaskDef: TaskDef = TaskDef(
-          taskDef.fullyQualifiedName, // not event.fullyQualifiedName
-          taskDef.fingerprint,        // not event.fingerprint
-          false,
-          Array(selector)
-        )
-
-//        output(
-//          testId = TaskDefEx.rootTestSuiteIdPlaceholder,
-//          logLevel = LogLevel.LIFECYCLE,
-//          message = s"----- GOT NESTED EVENT FOR ${TaskDefEx.toString(taskDef)}: ${TaskDefEx.toString(nestedTaskDef)}"
-//        )
-        TaskDefEx.verifyCanHaveNestedTest(taskDef, nestedTaskDef)
-        val nestedTestId: AnyRef = idGenerator.generateId()
-        val nestedTest: TestDescriptorInternal = TaskDefEx.toTestDescriptorInternal(nestedTestId, nestedTaskDef)
-        // Note: for implied eventTest we reconstruct the 'started' event
-        testResultProcessor.started(nestedTest, TestStartEvent(endTime - event.duration, testId))
-        nestedTest
+    // Note: Assuming that if the event is for the testId, selector is the same,
+    // and if not - it is a *test method* in the same class.
+    val isSameTest: Boolean = TestClassProcessor.selectorsEqual(selector, event.selector)
+    if reportEvents then output(s"----- GOT EVENT FOR $className $selector: ${event.fullyQualifiedName} ${event.selector} $resultType; isSameTest=$isSameTest")
+    val eventTestId: AnyRef = if isSameTest then testId else
+      val nestedTestId: AnyRef = idGenerator.generateId()
+      // Note: reconstruct implied 'started' event
+      testResultProcessor.started(
+        TestClassProcessor.testDescriptorInternal(nestedTestId, className, TestClassProcessor.verifyCanHaveNestedTest(selector, event.selector)),
+        TestStartEvent(endTime - event.duration, testId)
+      )
+      nestedTestId
 
     TestClassProcessor.toOption(event.throwable).foreach((throwable: Throwable) =>
-      testResultProcessor.failure(eventTest.getId, ExceptionConverter.convert(throwable))
+      testResultProcessor.failure(eventTestId, ExceptionConverter.toTestFailure(throwable))
     )
 
-    testResultProcessor.completed(eventTest.getId, TestCompleteEvent(endTime, TestClassProcessor.toResultType(event.status)))
+    testResultProcessor.completed(eventTestId, TestCompleteEvent(endTime, resultType))
 
-    isNestedTest
+    isSameTest
 
   private def testLogger(testId: AnyRef): sbt.testing.Logger = new sbt.testing.Logger:
     private def log(logLevel: LogLevel, message: String): Unit = output(
@@ -223,17 +204,19 @@ final class TestClassProcessor(
       logLevel = logLevel
     )
 
-    // TODO [output] I do not see any issues with the colors on in Idea when the output is delivered through
-    // the proper channels, so there seems to be no need for "!runningInIntelliJIdea" here
-    // when running ScalaTest - but MUnit's and UTest's output gets garbled with the color escape sequences
-    // even *with* the flag...
     override def ansiCodesSupported: Boolean = true
     override def error(message: String): Unit = log(LogLevel.ERROR, message)
-    override def warn(message: String): Unit = log(LogLevel.WARN, message)
-    override def info(message: String): Unit = log(LogLevel.INFO, message)
+    override def warn (message: String): Unit = log(LogLevel.WARN , message)
+    override def info (message: String): Unit = log(LogLevel.INFO , message)
     override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
     override def trace(throwable: Throwable): Unit =
       testResultProcessor.failure(testId, TestFailure.fromTestFrameworkFailure(throwable))
+
+  private def output(message: String): Unit = output(
+    testId = TestClassProcessor.rootTestSuiteIdPlaceholder,
+    logLevel = LogLevel.LIFECYCLE,
+    message = message
+  )
 
   private given CanEqual[LogLevel, LogLevel] = CanEqual.derived
   private def output(
@@ -253,6 +236,11 @@ final class TestClassProcessor(
     )
 
 object TestClassProcessor:
+  // Note: Since I can not use the real `rootTestSuiteId` that `DefaultTestExecuter` supplies to the `TestMainAction` -
+  // because it is a `String` - and I am not keen on second-guessing what it is anyway,
+  // I use a placeholder id and change it to the real one in `FixUpRootTestOutputTestResultProcessor`.
+  val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
+
   // Note: this one is Java-serialized, so I am using serializable types for parameters
   final class Factory(
     testTagsFilter: TestTagsFilter,
@@ -268,20 +256,99 @@ object TestClassProcessor:
       clock = serviceRegistry.get(classOf[Clock])
     )
 
-  def runner(framework: Framework, testTagsFilter: TestTagsFilter): Runner =
+  private def runner(framework: Framework, testTagsFilter: TestTagsFilter): Runner =
     val frameworkName: String = framework.name
-    val args: Array[String] = FrameworkDescriptor(frameworkName).args(testTagsFilter)
+    val args: Seq[String] = FrameworkDescriptor(frameworkName).args(testTagsFilter)
     // Note: we are running the runner in *this* JVM, so remote arguments are not used?
-    val remoteArgs: Array[String] = Array.empty
+    val remoteArgs: Seq[String] = Seq.empty
     val frameworkClassLoader: ClassLoader = framework.getClass.getClassLoader
-    framework.runner(args, remoteArgs, frameworkClassLoader)
+    framework.runner(args.toArray, remoteArgs.toArray, frameworkClassLoader)
 
-  def toOption(optionalThrowable: OptionalThrowable): Option[Throwable] =
+  private def getSelector(taskDef: TaskDef): Selector =
+    require(taskDef.selectors.length == 1, "Exactly one Selector is required")
+    taskDef.selectors.head
+
+  // Note: in reality, an individual test is not always a method (e.g., in ScalaTest), but compared to a class it is :)
+  private def verifyCanHaveNestedTest(selector: Selector, nestedSelector: Selector): Selector =
+    require(!TestClassProcessor.isMethod(selector), s"Method tests like $selector can not have nested tests like $nestedSelector")
+    require(TestClassProcessor.isMethod(nestedSelector), s"Only method tests can be nested, not $nestedSelector")
+    nestedSelector
+
+  private def testDescriptorInternal(
+    testId: AnyRef,
+    className: String,
+    selector: Selector,
+  ): TestDescriptorInternal =
+    // MUnit and JUnit4 set both the event's fullyQualifiedName and the selector
+    // to something like <class name>.<method name>, which confuses Gradle into thinking
+    // that that is a new class name, since the event fingerprint says so...
+    val methodName: Option[String] = selector match
+      case testSelector: TestSelector => Some(testSelector.testName)
+      case nestedTestSelector: NestedTestSelector => Some(nestedTestSelector.testName)
+      case _ => None
+
+    methodName match
+      case None => DefaultTestClassDescriptor(testId, className)
+      case Some(methodName) => DefaultTestMethodDescriptor(testId, className, methodName.stripPrefix(className + "."))
+
+  private def isMethod(selector: Selector): Boolean = selector match
+    case _: TestSelector | _: NestedTestSelector | _: TestWildcardSelector => true
+    case _ => false
+
+  private def taskDefsEqual(left: TaskDef, right: TaskDef): Boolean =
+    left.fullyQualifiedName == right.fullyQualifiedName &&
+    fingerprintsEqual(left.fingerprint, right.fingerprint) &&
+    left.explicitlySpecified == right.explicitlySpecified &&
+    left.selectors.length == right.selectors.length &&
+    left.selectors.zip(right.selectors).forall((left: Selector, right: Selector) => selectorsEqual(left, right))
+
+  // Note: I can't rely on all the frameworks providing equals() on their Fingerprint implementations...
+  private def fingerprintsEqual(left: Fingerprint, right: Fingerprint): Boolean = (left, right) match
+    case (left: AnnotatedFingerprint, right: AnnotatedFingerprint) =>
+      left.annotationName == right.annotationName &&
+      left.isModule == right.isModule
+    case (left: SubclassFingerprint, right: SubclassFingerprint) =>
+      left.superclassName == right.superclassName &&
+      left.isModule == right.isModule &&
+      left.requireNoArgConstructor == right.requireNoArgConstructor
+    case _ => false
+
+  // Selector subclasses are final and override equals(),
+  // so `left.equals(right)` should work just fine,
+  // but with ScalaCheck running on ScalaJS (but not plain Scala)
+  // I get TestSelector(String.startsWith) != TestSelector(String.startsWith) -
+  // for every test method, even other than `String.startsWith`, so...
+  private def selectorsEqual(left: Selector, right: Selector): Boolean =
+    val result: Boolean = (left, right) match
+      case (_: SuiteSelector, _: SuiteSelector) => true
+      case (left: NestedSuiteSelector, right: NestedSuiteSelector) => left.suiteId == right.suiteId
+      case (left: TestSelector, right: TestSelector) => left.testName == right.testName
+      case (left: NestedTestSelector, right: NestedTestSelector) => (left.suiteId == right.suiteId) && left.testName == right.testName()
+      case (left: TestWildcardSelector, right: TestWildcardSelector) => left.testWildcard == right.testWildcard
+      case _ => false
+
+//    require(result == left.equals(right),
+//      s"--- SELECTOR COMPARISON DISCREPANCY: $left [${left.getClass}] and $right [${right.getClass}]"
+//    )
+
+    result
+
+  def toString(taskDef: TaskDef): String =
+    def className(isModule: Boolean): String = taskDef.fullyQualifiedName + (if isModule then "$" else "")
+
+    val name: String = taskDef.fingerprint match
+      case annotated: AnnotatedFingerprint => s"@${annotated.annotationName} ${className(annotated.isModule)}"
+      case subclass : SubclassFingerprint  => s"${className(subclass.isModule)} extends ${subclass.superclassName}"
+
+    val selectors: String = taskDef.selectors.map(_.toString).mkString("[", ", ", "]")
+
+    s"$name selectors=$selectors explicitlySpecified=${taskDef.explicitlySpecified}"
+
+  private def toOption(optionalThrowable: OptionalThrowable): Option[Throwable] =
     if optionalThrowable.isEmpty then None else Some(optionalThrowable.get)
 
   private given CanEqual[Status, Status] = CanEqual.derived
-
-  def toResultType(status: Status): ResultType = status match
+  private def toResultType(status: Status): ResultType = status match
     case Status.Success  => ResultType.SUCCESS
     case Status.Error    => ResultType.FAILURE
     case Status.Failure  => ResultType.FAILURE

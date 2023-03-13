@@ -36,4 +36,4 @@ abstract class TestTaskScala extends TestTask:
 
         result
 
-      FrameworkDescriptor.all.flatMap(maybeInstantiate)
+      FrameworkDescriptor.scalaSupported.flatMap(maybeInstantiate)

@@ -2,6 +2,7 @@ package org.podval.tools.testing.task
 
 import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
+import org.gradle.api.logging.{Logger, Logging}
 import org.podval.tools.testing.serializer.TaskDefTestSpec
 import org.podval.tools.testing.worker.TestTagsFilter
 import sbt.testing.{Framework, Selector, SuiteSelector, TaskDef, TestSelector, TestWildcardSelector}
@@ -14,6 +15,8 @@ final class TestFrameworkDetector(
   testFilter: TestFilter,
   testTagsFilter: TestTagsFilter
 ) extends org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector:
+
+  private val logger: Logger = Logging.getLogger(classOf[TestFrameworkDetector])
 
   def close(): Unit = testEnvironment.close()
 
@@ -44,10 +47,14 @@ final class TestFrameworkDetector(
       .find(_.classFilePath == classFilePath)
       .flatMap(filter)
 
-    testClass.foreach((testClass: TestClass) => testClassProcessor.get.processTestClass(TaskDefTestSpec(
-      framework = Right(testClass.framework),
-      taskDef = testClass.taskDef
-    )))
+    testClass.foreach {(testClass: TestClass) =>
+      val taskDefStr: String = org.podval.tools.testing.worker.TestClassProcessor.toString(testClass.taskDef)
+      logger.info(s"TestFramework.processTestClass($taskDefStr)", null, null, null)
+      testClassProcessor.get.processTestClass(TaskDefTestSpec(
+        framework = Right(testClass.framework),
+        taskDef = testClass.taskDef
+      ))
+    }
 
     testClass.isDefined
 
@@ -78,7 +85,7 @@ final class TestFrameworkDetector(
         )
       )
 
-// TODO [detection] run test classes through the Frameworks here like sbt does?
+//    Note: I could run test classes through the Frameworks here like sbt does - but why?
 //    for (frameworkName: String, tests: Seq[TestClass]) <- testClassesRaw.groupBy(_.framework.name) do
 //      require(tests.nonEmpty)
 //      val runner: Runner = TestClassProcessor.runner(tests.head.framework, testTagsFilter)

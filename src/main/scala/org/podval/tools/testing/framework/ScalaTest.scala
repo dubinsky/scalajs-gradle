@@ -12,12 +12,6 @@ object ScalaTest extends FrameworkDescriptor(
 ):
   override def args(
     testTagsFilter: TestTagsFilter
-  ): Array[String] =
-    def option(name: String, values: Seq[String]): Seq[String] =
-      values.flatMap((value: String) => Seq(name, value))
-
-    val result: Seq[String] =
-      option("-n", testTagsFilter.include.toSeq) ++
-      option("-l", testTagsFilter.exclude.toSeq)
-
-    result.toArray
+  ): Seq[String] =
+    FrameworkDescriptor.listOfOptions("-n", testTagsFilter.include) ++
+    FrameworkDescriptor.listOfOptions("-l", testTagsFilter.exclude)

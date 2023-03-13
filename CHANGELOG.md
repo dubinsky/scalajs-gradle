@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8] - 2023-03-20
+- feat: `node` extension
+- feat: `node` and `npm` tasks
+- feat: auto-install `NodeJS`
+- feat: initialize Node project and install modules
+- feat: `ZIO Test` support
+- fix: running single test method needs to be wrapped in the implied suite
+- fix: explicit `selectorsEqual()`
+- fix: `FixUpRootTestOutputTestResultProcessor`
+- test: tests for the assorted frameworks on ScalaJS
+- cleanup: all ScalaJS code is in the `ScalaJS` subclasses
+- cleanup: unfolded `TaskDefEx` into `TestClassProcessor`
+- chore: latest `opentorah-util`
+
 ## [0.4.7] - 2023-03-13
 - fix: do not specify success for the overall task completion in `TestClassProcessor.run()`
 - fix: remove class name prefix from the test method names returned by `JUnit4` and `MUnit`

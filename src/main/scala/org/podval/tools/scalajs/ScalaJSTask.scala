@@ -6,3 +6,5 @@ trait ScalaJSTask extends Task:
   setDescription(s"$flavour ScalaJS")
 
   protected def flavour: String
+
+  protected final def setUpNodeProject(): Unit = NodeExtension.get(getProject).setUpNodeProject(List("jsdom"))

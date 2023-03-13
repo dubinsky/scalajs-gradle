@@ -43,6 +43,18 @@ It so transpired that the plugin supports running tests using sbt-compatible tes
 in a way integrated with Gradle and IntelliJ Idea **with or without** ScalaJS.
 For plain Scala projects, ScalaJS support can be disabled.
 
+For years, I used [Gradle ScalaTest plugin](https://github.com/maiflai/gradle-scalatest)
+to run my Scala Tests. Thank you, [maiflai](https://github.com/maiflai)!
+Since my plugin integrates with Gradle - and through it, with IntelliJ Idea - some of the 
+issues that maiflai's plugin has my does not:
+[Test events were not received](https://github.com/maiflai/gradle-scalatest/issues/67),
+[ASCII Control Characters Printed](https://github.com/maiflai/gradle-scalatest/issues/69).
+I never tried an alternative ScalaTest integration 
+[calatest-junit-runner](https://github.com/helmethair-co/scalatest-junit-runner),
+and if you need `JUnit5` that is probably a way to go, since my plugin does not support `JUnit5`
+(it does support `ScalaJS` though :).
+
+
 ## Applying to a Gradle project ##
 
 Plugin is [published](https://plugins.gradle.org/plugin/org.podval.tools.scalajs)
@@ -50,7 +62,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.4.6'
+  id 'org.podval.tools.scalajs' version '0.4.7'
 }
 ```
 
@@ -82,6 +94,7 @@ the ScalaTest one ;)
 
 ## Testing ##
 
+
 Test runs are integrated with Gradle:
 - test counts are logged;
 - test reports are generated;
@@ -98,14 +111,18 @@ In the ScalaJS mode, that dependency needs to be a ScalaJS one.
 
 Currently, the following test frameworks are supported:
 
-| Name       | Scala 3                          | ScalaJS                            | Notes                   |
-|------------|----------------------------------|------------------------------------|-------------------------|
-| JUnit4     | `com.github.sbt:junit-interface` | not available                      | brings in `junit:junit` |
-| ScalaTest  | `org.scalatest:scalatest_3`      | `org.scalatest:scalatest_sjs1_3`   |                         |
-| ScalaCheck | `org.scalacheck:scalacheck_3`    | `org.scalacheck:scalacheck_sjs1_3` |                         |
-| Specs2     | `org.specs2:specs2-core_3`       | `org.specs2:specs2-core_sjs1_3`    |                         |
-| mUnit      | `org.scalameta:munit_3`          | `org.scalameta:munit_sjs1_3`       | brings in `junit:junit` |
-| uTest      | `com.lihaoyi:utest_3`            | `com.lihaoyi:utest_sjs1_3`         |                         |
+| Name       | group:artifact                   | Notes                                             |
+|------------|----------------------------------|---------------------------------------------------|
+| JUnit4     | `com.github.sbt:junit-interface` | brings in `junit:junit`; does not support ScalaJS |
+| ScalaTest  | `org.scalatest:scalatest_3`      |                                                   |
+| ScalaCheck | `org.scalacheck:scalacheck_3`    |                                                   |
+| Specs2     | `org.specs2:specs2-core_3`       |                                                   |
+| mUnit      | `org.scalameta:munit_3`          | brings in `junit:junit`; does support ScalaJS?!   |
+| uTest      | `com.lihaoyi:utest_3`            |                                                   |
+| ZIO Test   | `dev.zio:zio-test-sbt_3`         | tests are `objects`, not `classes`                |
+
+For ScalaJS, artifact is suffixed with `_sjs1`; for instance, `org.scalatest:scalatest_sjs1_3` instead of
+`org.scalatest:scalatest_3`.
 
 For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
 
@@ -305,15 +322,39 @@ dependencies {
 
 ### Node ###
 
-For running the code and tests, NodeJS has to be installed.
-Plugin assumes that the `jsdom` module is installed (it is required for `org.scala-js:scalajs-env-jsdom-nodejs`).
-Source map should be enabled for better traces.
+For running the code and tests, NodeJS has to be available.
 
+In ScalaJS mode, plugin adds `node` extension to the project.
+This extension can be used to specify the version of NodeJS to use and Node modules to install.
+This extension can be retrieved by calling `NodeExtension.get(project)`.
+
+If `build.gradle` specifies a version of NodeJS to be used via `node.version="..."`,
+plugin will install the specified version under `~/.gradle/nodejs` and use it;
+if version of NodeJS is not specified, "ambient" NodeJS will be used.
+
+Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands using the same version of NodeJS;
+those tasks can be used from the command line like this:
 ```shell
-$ npm init private
-$ npm install jsdom
-$ npm install source-map-support
-```
+./gradlew npm --npm-arguments 'version'
+./gradlew node --node-arguments '...'
+ ```
+
+Node extension also exposes methods `npm(arguments)` and `node(arguments)`
+which can be used in - say - `doFirst` blocks of your project.
+
+ScalaJS does not support versions of NodeJS newer than "16.19.1", so none of the "17.9.1", "18.15.0", "19.8.1".
+I do not know anything about NodeJS, and find this surprising - but I am sure there is a good
+technical or political reason for this ;)
+
+Node modules for the project are in the `node_modules` directory in the project root.
+
+Before executing `run` or `test` tasks, if `package.json` file does not exist, plugin runs `npm init private`.
+
+Plugin installs `jsdom` Node modules required for `org.scala-js:scalajs-env-jsdom-nodejs`
+
+Plugin also installs any modules specified in the `node.modules = [..., ...]`.
+To get better traces, one can add `source-map-support` module.
+
 
 ### Linking ###
 
@@ -375,17 +416,6 @@ The task automatically depends on the `link` task.
 
 Additional tasks of type `org.podval.tools.scalajs.Run` can be added manually;
 their dependency on a corresponding `Link.Main` task must be set manually too.
-
-## Possible Improvements (TODO)
-
-Relax the restrictions on the plugin application order.
-
-When I apply the plugin to `opentorah-util`, I get:
-> Could not generate a decorated class for type ScalaJSPlugin.
-> Class Not Found: org/opentorah/build/DependencyVersion
-
-Clean up adding the plugin classes to the worker's classpath (and possibly reflective access to the
-implementation classpath).
 
 ## Notes and Credits ##
 
@@ -516,13 +546,14 @@ a composite of exactly two *Longs*!
 Because tests are scoped by the workers, it does not seem possible to group test results by framework.
 
 #### Framework Peculiarities
-
-##### JUnit4
 JUnit4 (and MUnit which seems to be base on JUnit4) report incorrect class and method names for test method events:
 both are `<class name>.<method name>`; method names like this just look stupid, but class names look
 like new classes to Gradle, so test report is corrupted. I had to work around it.
 
-##### JUnit5
+MUnit (but not JUnit4!) and UTest write to standard output/error instead of logging via supplied sbt logger,
+so their output does not go through my `TestClassProcessor.output()`;
+do I need to modify capturing to get their output?
+
 Comment on the JupiterTestFingerprint.annotationName() says:
 > return The name of this class. This is to ensure that SBT does not find
 > any tests so that we can use JUnit Jupiter's test discovery mechanism.
@@ -534,6 +565,55 @@ So, no JUnit5 support for now :(
 
 I *might* try to use framework-specific test discovery instead of the Scala Analysis one in the Scala-only setting,
 but it is not a priority :)
+
+ScalaCheck processes test *methods* as nested tasks; other frameworks just run them and report the results
+via event handler. UTest uses `NestedTestSelector` for this, while others use `TestSelector`.
+ScalaCheck reports test suite completion via event handler, unlike others ;)
+ScalaTest does not return nested tasks for nested suites (or anything, according to the documentation
+of its Runner); events for the tests in the nested suites have `NetsedTestSelector`.
+
+When tagging classes used for inclusion/exclusion are not available, MUnit crashes with a `ClassNotFound` -
+but `ScalaTest` does not.
+
+#### TODO
+
+How is MUnit, that is JUnit4-based, supported by ScalaJS - and JUnit4 itself is not?
+
+Test test filtering.
+
+Document what Test configuration methods are honoured.
+
+Document inability to debug ScalaJS code or tests.
+
+Fine-tune the stack traces.
+
+from https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala#L267
+> selectors will always at least have one SuiteSelector, according to javadoc of TaskDef
+
+and:
+> In new Framework API, it is now a specified behavior that Framework's runner method will be called
+> to get a Runner instance once per project run.
+
+According to the Runner documentation (?), summary returned was already sent to the logger? Runner.done():
+> The test framework may send a summary (i.e., a message giving total tests succeeded, failed, and so on)
+> to the user via a log message. If so, it should return the summary from done.
+> If not, it should return an empty string.
+> The client may use the return value of done to decide whether to display its own summary message.
+
+Relax the restrictions on the plugin application order.
+
+I may want to try replacing AnalysisDetector with reading the class files.
+
+When I apply the plugin to `opentorah-util`, I get:
+> Could not generate a decorated class for type ScalaJSPlugin.
+> Class Not Found: org/opentorah/build/DependencyVersion
+
+Clean up adding the plugin classes to the worker's classpath (and possibly reflective access to the
+implementation classpath).
+
+Add new tags to the plugin's portal page: manually at https://github.com/gradle/plugin-portal-requests !
+
+Look at Gradle's new test hotness: JVM test suite plugin.
 
 #### TestDescriptor hierarchy
 

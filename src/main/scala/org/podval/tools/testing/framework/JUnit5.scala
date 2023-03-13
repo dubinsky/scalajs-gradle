@@ -9,4 +9,4 @@ object JUnit5 extends FrameworkDescriptor(
   name = "Jupiter",
   implementationClassName = "net.aichler.jupiter.api.JupiterFramework"
 ):
-  override def args(testTagsFilter: TestTagsFilter): Array[String] = Array.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

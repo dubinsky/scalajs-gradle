@@ -11,4 +11,4 @@ object MUnit extends FrameworkDescriptor(
   name = "munit",
   implementationClassName = "munit.Framework"
 ):
-  override def args(testTagsFilter: TestTagsFilter): Array[String] = Array.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

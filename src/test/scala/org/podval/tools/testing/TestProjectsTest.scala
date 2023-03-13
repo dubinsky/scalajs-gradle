@@ -42,7 +42,55 @@ class TestProjectsTest:
       forClass(className = "org.podval.tools.testing.MUnitTest", failed = 1, skipped = 0,
         failed("42 != 43"),
         passed("2=2"),
+      ),
+
+      forClass(className = "org.podval.tools.testing.ZIOTestTest", failed = 2, skipped = 0,
+        passed("some suite - passing test"),
+        passed("some suite - passing test assertTrue"),
+        failed("some suite - failing test"),
+        failed("some suite - failing test assertTrue"),
       )
+    )
+
+  @Test def frameworksScalaJS(): Unit =
+    forProject("frameworks-scalajs",
+      forClass(className = "org.podval.tools.testing.ScalaTestTest", failed = 1, skipped = 1,
+        passed("2*2 success should pass"),
+        failed("2*2 failure should fail"),
+        skipped("2*2 failure should be ignored")
+      ),
+
+      forClass("org.podval.tools.testing.ScalaCheckTest", failed = 1, skipped = 0,
+        passed("String.startsWith"),
+        failed("String.concatenate"),
+        passed("String.substring")
+      ),
+
+      forClass("org.podval.tools.testing.Spec2Test", failed = 1, skipped = 0,
+        passed("contain 11 characters"),
+        passed("start with 'Hello'"),
+        passed("end with 'world'"),
+        failed("fail to end with 'xxx'")
+      ),
+
+      forClass("org.podval.tools.testing.UTestTest", failed = 2, skipped = 0,
+        failed("test1"),
+        passed("test2"),
+        failed("test3"),
+      ),
+
+      forClass(className = "org.podval.tools.testing.MUnitTest", failed = 1, skipped = 0,
+        failed("42 != 43"),
+        passed("2=2"),
+      ),
+
+      // TODO no events from ZIO Test!
+//      forClass(className = "org.podval.tools.testing.ZIOTestTest", failed = 2, skipped = 0,
+//        passed("some suite - passing test"),
+//        passed("some suite - passing test assertTrue"),
+//        failed("some suite - failing test"),
+//        failed("some suite - failing test assertTrue"),
+//      )
     )
 
   @Test def scalaOnly(): Unit =

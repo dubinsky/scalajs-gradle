@@ -150,7 +150,6 @@ class TestFramework(
     ()
 
 object TestFramework:
-  // TODO Gradle PR: introduce method to avoid the use of reflection
   private val implementationClassPath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
   implementationClassPath.setAccessible(true)
 

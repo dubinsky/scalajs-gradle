@@ -11,4 +11,4 @@ object Specs2 extends FrameworkDescriptor(
   name = "specs2",
   implementationClassName = "org.specs2.runner.Specs2Framework"
 ):
-  override def args(testTagsFilter: TestTagsFilter): Array[String] = Array.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

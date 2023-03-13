@@ -10,4 +10,8 @@ object JUnit4 extends FrameworkDescriptor(
   name = "JUnit",
   implementationClassName = "com.novocode.junit.JUnitFramework"
 ):
-  override def args(testTagsFilter: TestTagsFilter): Array[String] = Array.empty
+  override def isScalaJSSupported: Boolean = false
+
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
+    FrameworkDescriptor.listOption("--include-categories", testTagsFilter.include) ++
+    FrameworkDescriptor.listOption("--exclude-categories", testTagsFilter.exclude)
