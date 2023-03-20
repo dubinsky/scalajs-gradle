@@ -7,6 +7,7 @@ import scala.jdk.CollectionConverters.*
 class TestFrameworkOptions extends org.gradle.api.tasks.testing.TestFrameworkOptions:
   override def toString: String = s"TestFrameworkOptions(includeTags=$includeTags, excludeTags=$excludeTags)"
 
+  // Note: Gradle Option annotation does not work here to allow setting those from the command line
   private var includeTags: Set[String] = Set.empty
   private var excludeTags: Set[String] = Set.empty
 

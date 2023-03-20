@@ -31,7 +31,8 @@ final class TestFrameworkDetector(
   override def startDetection(value: TestClassProcessor): Unit =
     testClassProcessor = Some(value)
     val loadedFrameworks: List[Framework] = testEnvironment.loadFrameworks(testClassPath.get)
-    // The rest of the code assumes that the Framework is uniquely identified by its name:
+    // Check uniqueness; implementation class can not be used since in ScalaJS mode they all are
+    // org.scalajs.testing.adapter.FrameworkAdapter
     require(loadedFrameworks.map(_.name).toSet.size == loadedFrameworks.size, "Different frameworks with the same name!")
     this.loadedFrameworks = Some(loadedFrameworks)
 
@@ -47,7 +48,7 @@ final class TestFrameworkDetector(
       .find(_.classFilePath == classFilePath)
       .flatMap(filter)
 
-    testClass.foreach {(testClass: TestClass) =>
+    testClass.foreach { (testClass: TestClass) =>
       val taskDefStr: String = org.podval.tools.testing.worker.TestClassProcessor.toString(testClass.taskDef)
       logger.info(s"TestFramework.processTestClass($taskDefStr)", null, null, null)
       testClassProcessor.get.processTestClass(TaskDefTestSpec(

@@ -5,20 +5,22 @@ import org.podval.tools.testing.worker.TestTagsFilter
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
 abstract class FrameworkDescriptor(
   val name: String,
-  val implementationClassName: String
+  val displayName: String,
+  val group: String,
+  val artifact: String,
+  val versionDefault: String,
+  val className: String,
+  val sharedPackages: List[String]
 ) derives CanEqual:
   def isScalaSupported: Boolean = true
   def isScalaJSSupported: Boolean = true
-
-  final def sharedPackages: List[String] = List(
-    implementationClassName.substring(0, implementationClassName.lastIndexOf('.'))
-  )
-
+  def isScalaDependency: Boolean = true
+  
   def args(
     testTagsFilter: TestTagsFilter
   ): Seq[String]
 
-  final def newInstance: AnyRef = Class.forName(implementationClassName)
+  final def newInstance: AnyRef = Class.forName(className)
     .getDeclaredConstructor()
     .newInstance()
 
@@ -29,7 +31,7 @@ object FrameworkDescriptor:
     ScalaCheck,
     Specs2,
     JUnit4,
-////    JUnit5,
+    JUnit5,
     MUnit,
     UTest,
     ZIOTest

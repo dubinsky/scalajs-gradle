@@ -42,27 +42,20 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
   def link(): Unit =
     val reportTextFile: File = linkTask.getReportTextFile
 
+    // Note: tests use fixed entry point
     val moduleInitializers: Seq[ModuleInitializer] = linkTask
       .moduleInitializerProperties
       .map(_.map(ScalaJS.toModuleInitializer))
-      .getOrElse(
-        // Note: tests use fixed entry point
-        Seq(ModuleInitializer.mainMethod(
-          TestAdapterInitializer.ModuleClassName,
-          TestAdapterInitializer.MainMethodName
-        ))
-      )
+      .getOrElse(Seq(ScalaJS.testAdapterInitializer))
 
-    // Note: if moved into the caller breaks class loading
-    val linkerConfig: StandardConfig =
-      val fullOptimization: Boolean = linkTask.optimization == Optimization.Full
-      StandardConfig()
-        .withCheckIR(fullOptimization)
-        .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
-        .withModuleKind(moduleKind)
-        .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
-        .withModuleSplitStyle(linkTask.getModuleSplitStyle.byName(ModuleSplitStyle.FewestModules, ScalaJS.moduleSplitStyles))
-        .withPrettyPrint(linkTask.getPrettyPrint.getOrElse(false))
+    val fullOptimization: Boolean = linkTask.optimization == Optimization.Full
+    val linkerConfig: StandardConfig = StandardConfig()
+      .withCheckIR(fullOptimization)
+      .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
+      .withModuleKind(moduleKind)
+      .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
+      .withModuleSplitStyle(linkTask.getModuleSplitStyle.byName(ModuleSplitStyle.FewestModules, ScalaJS.moduleSplitStyles))
+      .withPrettyPrint(linkTask.getPrettyPrint.getOrElse(false))
 
     logger.info(
       s"""ScalaJSPlugin ${task.getName}:
@@ -110,11 +103,11 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
   ).toPath
 
   private def input: Input = moduleKind match
-    case ModuleKind.NoModule       => Input.Script(mainModulePath)
-    case ModuleKind.ESModule       => Input.ESModule(mainModulePath)
+    case ModuleKind.NoModule       => Input.Script        (mainModulePath)
+    case ModuleKind.ESModule       => Input.ESModule      (mainModulePath)
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
-  private lazy val jsEnv: JSEnv =
+  private def mkJsEnv: JSEnv =
     val node: Node = NodeExtension.get(task.getProject).node
     JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
       .withExecutable(node.installation.nodeExec.getAbsolutePath)
@@ -122,6 +115,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
     )
 
   def run(): Unit =
+    val jsEnv: JSEnv = mkJsEnv
     logger.lifecycle(s"Running $mainModulePath on ${jsEnv.name}\n")
 
     /* The list of threads that are piping output to System.out and
@@ -149,7 +143,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
       .withInheritErr(false)
       .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => pipeOutputThreads =
         PipeOutputThread.pipe(out, logger.lifecycle, "out: ") :::
-        PipeOutputThread.pipe(err, logger.error, "err: ")
+        PipeOutputThread.pipe(err, logger.error    , "err: ")
       )
 
     // TODO Without this delay (or with a shorter one)
@@ -175,12 +169,12 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
 
   def sourceMapper: Option[SourceMapper] = mainModule
     .sourceMapName
-    .map((name: String) => Files.file(directory = jsDirectory, segments = name))
+    .map((name: String) => Files.file(jsDirectory, name))
     .map(ClosureCompilerSourceMapper(_))
 
-  lazy val testEnvironment: TestEnvironment = new TestEnvironment:
+  def testEnvironment: TestEnvironment = new TestEnvironment:
     private val testAdapter: TestAdapter = TestAdapter(
-      jsEnv = jsEnv,
+      jsEnv = mkJsEnv,
       input = Seq(input),
       config = TestAdapter.Config().withLogger(jsLogger)
     )
@@ -188,7 +182,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
     override def loadFrameworks(testClassPath: Iterable[File]): List[Framework] = testAdapter
       .loadFrameworks(FrameworkDescriptor
         .scalaJSSupported
-        .map((descriptor: FrameworkDescriptor) => List(descriptor.implementationClassName))
+        .map((descriptor: FrameworkDescriptor) => List(descriptor.className))
       )
       .flatten
 
@@ -209,6 +203,11 @@ object ScalaJS:
       then ModuleInitializer.mainMethodWithArgs(clazz, method)
       else ModuleInitializer.mainMethod(clazz, method)
     result.withModuleID(properties.getName)
+
+  private def testAdapterInitializer: ModuleInitializer = ModuleInitializer.mainMethod(
+    TestAdapterInitializer.ModuleClassName,
+    TestAdapterInitializer.MainMethodName
+  )
 
   private given CanEqual[JSLevel, JSLevel] = CanEqual.derived
 

@@ -6,9 +6,15 @@ import org.podval.tools.testing.worker.TestTagsFilter
 // https://github.com/etorreborre/specs2
 // https://github.com/etorreborre/specs2/blob/main/core/shared/src/main/scala/org/specs2/runner/Specs2Framework.scala
 // Specs (org.specs.runner.SpecsFramework) is deprecated; use Specs2.
-// brings in test-interface
 object Specs2 extends FrameworkDescriptor(
   name = "specs2",
-  implementationClassName = "org.specs2.runner.Specs2Framework"
+  displayName = "Spec2",
+  group = "org.specs2",
+  artifact = "specs2-core",
+  versionDefault = "5.2.0",
+  className = "org.specs2.runner.Specs2Framework",
+  sharedPackages = List("org.specs2.runner") // TODO more?
 ):
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
+    FrameworkDescriptor.listOption("include", testTagsFilter.include) ++
+    FrameworkDescriptor.listOption("exclude", testTagsFilter.exclude)

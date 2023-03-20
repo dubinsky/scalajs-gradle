@@ -11,9 +11,9 @@ import scala.jdk.CollectionConverters.*
 
 final class ScalaJSPlugin extends Plugin[Project]:
   override def apply(project: Project): Unit =
-    val isScalaJSDisabled: Boolean = ScalaJSPlugin.isScalaJSDisabled(project)
-
     project.getPluginManager.apply(classOf[org.gradle.api.plugins.scala.ScalaPlugin])
+
+    val isScalaJSDisabled: Boolean = ScalaJSPlugin.isScalaJSDisabled(project)
 
     if isScalaJSDisabled then
       project.getTasks.replace("test", classOf[TestTaskScala])

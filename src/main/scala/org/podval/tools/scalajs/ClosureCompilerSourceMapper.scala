@@ -1,6 +1,7 @@
 package org.podval.tools.scalajs
 
 import com.google.debugging.sourcemap.SourceMapConsumerV3
+import com.google.debugging.sourcemap.proto.Mapping.OriginalMapping
 import org.opentorah.util.Files
 import org.podval.tools.testing.task.SourceMapper
 import java.io.File
@@ -14,13 +15,13 @@ final class ClosureCompilerSourceMapper(sourceMapFile: File) extends SourceMappe
       result.parse(Files.read(sourceMapFile).mkString("\n"))
       consumer = Some(result)
 
-    consumer.fold(None)((consumer: SourceMapConsumerV3) =>
-      Option(consumer.getMappingForLine(line, column))
-        .map((result: com.google.debugging.sourcemap.proto.Mapping.OriginalMapping) =>
-          SourceMapper.Mapping(
-            file = result.getOriginalFile,
-            line = result.getLineNumber,
-            column = result.getColumnPosition
-          )
-        )
-    )
+    Option(consumer.get.getMappingForLine(line, column))
+      .map(ClosureCompilerSourceMapper.repackage)
+
+object ClosureCompilerSourceMapper:
+  private def repackage(result: OriginalMapping): SourceMapper.Mapping = SourceMapper.Mapping(
+    file = result.getOriginalFile,
+    line = result.getLineNumber,
+    column = result.getColumnPosition
+  )
+  

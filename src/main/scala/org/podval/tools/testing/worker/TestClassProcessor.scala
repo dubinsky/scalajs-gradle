@@ -41,25 +41,25 @@ final class TestClassProcessor(
   private def getRunner(testFramework: Either[String, Framework]): Runner = synchronized {
     val frameworkName: String = testFramework.fold(identity, _.name)
     runners.getOrElse(frameworkName, {
+      val framework: Framework = testFramework match
+        case Right(framework) =>
+          // not forking: just use the framework and its classloader
+          framework
+        case Left(frameworkName) =>
+          // forking: instantiate
+          FrameworkDescriptor(frameworkName)
+            .newInstance
+            .asInstanceOf[Framework]
+          
       val runner: Runner = TestClassProcessor.runner(
-        getFramework(testFramework),
+        framework,
         testTagsFilter
       )
       runners = runners.updated(frameworkName, runner)
       runner
     })
   }
-
-  private def getFramework(testFramework: Either[String, Framework]): Framework = testFramework match
-    case Right(framework) =>
-      // not forking: just use the framework and its classloader
-      framework
-    case Left(frameworkName) =>
-      // forking: instantiate
-      FrameworkDescriptor(frameworkName)
-        .newInstance
-        .asInstanceOf[Framework]
-
+  
   /**
    * Completes any pending or asynchronous processing. Blocks until all processing is complete.
    */
@@ -94,7 +94,7 @@ final class TestClassProcessor(
         val frameworkName: String = taskDefTestSpec.framework.fold(identity, _.name)
         output(s"--- $frameworkName $message")
 
-      val taskDefString = TestClassProcessor.toString(taskDef)
+      val taskDefString: String = TestClassProcessor.toString(taskDef)
       if same.length > 1 then out(s"--- MULTIPLE TASKS FOR THE $taskDefString") else
         if different.isEmpty then
           if same.isEmpty
@@ -130,8 +130,14 @@ final class TestClassProcessor(
       TestStartEvent(startTime, parentId)
     )
 
+    // Note: this should probably be removed:
+    // if I supply correct arguments to the frameworks, they do the tag filtering.
+    // Also:
+    // - ScalaTest does not have suite tagging and does not return nested tasks for methods,
+    //   so I am not get any tags from it even if I do not supply the arguments
     val isAllowed: Boolean =
       val tags: Array[String] = task.tags
+//      if tags.nonEmpty then output(s"--- got tags for $className $selector: " + tags.mkString("[", ", ", "]"))
       def isListed(list: Array[String]): Boolean = tags.exists(list.contains)
       (testTagsFilter.include.isEmpty || isListed(testTagsFilter.include)) && !isListed(testTagsFilter.exclude)
 
@@ -161,7 +167,7 @@ final class TestClassProcessor(
           if reportEvents then output(s"----- GOT NESTED TASK FOR $className $selector: ${TestClassProcessor.toString(nestedTask.taskDef)}")
           run(
             parentId = testId,
-            selector = TestClassProcessor.verifyCanHaveNestedTest(selector, TestClassProcessor.getSelector(nestedTask.taskDef)),
+            selector = TestClassProcessor.verifyCanNest(selector, TestClassProcessor.getSelector(nestedTask.taskDef)),
             task = nestedTask
           )
       finally
@@ -184,7 +190,7 @@ final class TestClassProcessor(
       val nestedTestId: AnyRef = idGenerator.generateId()
       // Note: reconstruct implied 'started' event
       testResultProcessor.started(
-        TestClassProcessor.testDescriptorInternal(nestedTestId, className, TestClassProcessor.verifyCanHaveNestedTest(selector, event.selector)),
+        TestClassProcessor.testDescriptorInternal(nestedTestId, className, TestClassProcessor.verifyCanNest(selector, event.selector)),
         TestStartEvent(endTime - event.duration, testId)
       )
       nestedTestId
@@ -217,14 +223,13 @@ final class TestClassProcessor(
     logLevel = LogLevel.LIFECYCLE,
     message = message
   )
-
-  private given CanEqual[LogLevel, LogLevel] = CanEqual.derived
   private def output(
     testId: AnyRef,
     message: String,
     logLevel: LogLevel
   ): Unit =
     val isEnabled: Boolean = !runningInIntelliJIdea || (logLevel.ordinal >= logLevelEnabled.ordinal)
+    given CanEqual[LogLevel, LogLevel] = CanEqual.derived
     if isEnabled then testResultProcessor.output(
       testId,
       DefaultTestOutputEvent(
@@ -259,6 +264,7 @@ object TestClassProcessor:
   private def runner(framework: Framework, testTagsFilter: TestTagsFilter): Runner =
     val frameworkName: String = framework.name
     val args: Seq[String] = FrameworkDescriptor(frameworkName).args(testTagsFilter)
+//    println(s"--- ARGS: $args")
     // Note: we are running the runner in *this* JVM, so remote arguments are not used?
     val remoteArgs: Seq[String] = Seq.empty
     val frameworkClassLoader: ClassLoader = framework.getClass.getClassLoader
@@ -269,7 +275,7 @@ object TestClassProcessor:
     taskDef.selectors.head
 
   // Note: in reality, an individual test is not always a method (e.g., in ScalaTest), but compared to a class it is :)
-  private def verifyCanHaveNestedTest(selector: Selector, nestedSelector: Selector): Selector =
+  private def verifyCanNest(selector: Selector, nestedSelector: Selector): Selector =
     require(!TestClassProcessor.isMethod(selector), s"Method tests like $selector can not have nested tests like $nestedSelector")
     require(TestClassProcessor.isMethod(nestedSelector), s"Only method tests can be nested, not $nestedSelector")
     nestedSelector

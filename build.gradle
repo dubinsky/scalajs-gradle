@@ -3,11 +3,11 @@ plugins {
   id 'scala'
   id 'signing'
   id 'com.gradle.plugin-publish' version '1.1.0'
-  id 'org.podval.tools.scalajs' version '0.4.7' // Note: must be applied *after* Plugin Portal Plugin
+  id 'org.podval.tools.scalajs' version '0.4.8' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
-version = '0.4.8'
+version = '0.4.9'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.2.2'
@@ -43,10 +43,16 @@ dependencies {
 
   testImplementation 'org.scalatest:scalatest_3:3.2.15'
 
-  // Used for running the GradleRunner tests in the testNg task -
-  // and to compare my integration with Gradle and Idea with the real one :)
-  testImplementation 'org.testng:testng:7.7.1'
+  // TODO - was...
+//  // Used for running the GradleRunner tests in the testNg task -
+//  // and to compare my integration with Gradle and Idea with the real one :)
+//  testImplementation 'org.testng:testng:7.7.1'
 }
+
+//tasks.register('testNg', Test) {
+//  setGroup("verification")
+//  useTestNG()
+//}
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(11)
 
@@ -59,11 +65,6 @@ tasks.withType(ScalaCompile).configureEach {
 //      '-source:future'
     ]
   }
-}
-
-tasks.register('testNg', Test) {
-  setGroup("verification")
-  useTestNG()
 }
 
 jar {

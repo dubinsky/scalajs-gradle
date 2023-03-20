@@ -2,97 +2,234 @@ package org.podval.tools.testing
 
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
-import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.gradle.testkit.runner.{BuildResult, GradleRunner}
+import org.gradle.testkit.runner.GradleRunner
+import org.opentorah.build.Dependency
 import org.opentorah.util.Files
-import java.io.File
+import org.podval.tools.testing.framework.FrameworkDescriptor
 import scala.jdk.CollectionConverters.*
+import java.io.File
+
+final class TestProject(projectDir: File):
+  private def gradleRunner: GradleRunner = GradleRunner.create().withProjectDir(projectDir)
+
+  def test(commandLineIncludeTestNames: Seq[String]): (List[TestClassResult], String) =
+    val testsArgument: List[String] =
+      if commandLineIncludeTestNames.isEmpty
+      then List.empty
+      else List("--tests", commandLineIncludeTestNames.mkString("\"", ", ", "\""))
+
+    // Note: I assume that there are failing tests among the tests being tested
+    val testOutput: String = gradleRunner
+      .withArguments((List("clean", "test") ++ testsArgument).asJava)
+      .buildAndFail
+      .getOutput
+
+    val testResults: List[TestClassResult] = TestProject.readTestClassResults(projectDir)
+
+    (testResults, testOutput)
+
+  def run: String = gradleRunner
+    .withArguments("run")
+    .build
+    .getOutput
 
 object TestProject:
-  private def root: File =
-  // .../build/resources/test/org/podval/tools/test/anchor.txt
-    Files.url2file(getClass.getResource("anchor.txt"))
-      .getParentFile
-      .getParentFile
-      .getParentFile
-      .getParentFile
-      .getParentFile
-      .getParentFile
-      .getParentFile
-      .getParentFile
-
-  private def run(name: String): List[TestClassResult] =
-    val projectDir: File = Files.file(root, "test-projects", name)
-    val result: BuildResult = GradleRunner
-      .create
-      .withProjectDir(projectDir)
-      .withArguments("clean", "test")
-      .buildAndFail()
-
-    //    println(s"--- OUTPUT OF THE TEST PROJECT $name ---")
-    //    println(result.getOutput)
-    //    println("--- ---")
-
-    val binaryTestReportDir = Files.file(projectDir, "build", "test-results", "test", "binary")
-    //    println(s"BINARY TEST REPORT DIR: $binaryTestReportDir")
+  private def readTestClassResults(projectDir: File): List[TestClassResult] =
+    val binaryTestReportDir: File = Files.file(projectDir, "build", "test-results", "test", "binary")
     val testResults: TestResultSerializer = TestResultSerializer(binaryTestReportDir)
-
     var classResults: List[TestClassResult] = List.empty
     val visitor: Action[TestClassResult] = (result: TestClassResult) => classResults = result +: classResults
     testResults.read(visitor)
     classResults
 
-  def forClass(
-    className: String,
-    failed: Int,
-    skipped: Int,
-    methods: MethodExpectation*
-  ): ClassExpectation = new ClassExpectation(
-    className,
-    failed,
-    skipped,
-    methods
+  private def dumpTestClassResults(results: List[TestClassResult]): List[String] = (
+    for result: TestClassResult <- results yield
+      val classSummary: String = s"${result.getId}: ${result.getClassName} failed=${result.getFailuresCount} skipped=${result.getSkippedCount}"
+      val methodResults: List[String] = for result: TestMethodResult <- result.getResults.asScala.toList yield
+        s"  ${result.getId}: ${result.getName} resultType=${result.getResultType}"
+      List(classSummary) ++ methodResults
+    ).flatten
+
+  private def root: File = Files.url2file(getClass.getResource("anchor.txt"))
+    .getParentFile // testing
+    .getParentFile // tools
+    .getParentFile // podval
+    .getParentFile // org
+    .getParentFile // test
+    .getParentFile // resources
+    .getParentFile // build
+    .getParentFile
+
+  def existingProject(projectName: String): TestProject = TestProject(Files.file(
+    root,
+    "test-projects",
+    projectName
+  ))
+
+  private def scalaFile(projectDir: File, isTest: Boolean, name: String): File = Files.file(
+    projectDir,
+    "src",
+    if isTest then "test" else "main",
+    "scala",
+    "org",
+    "podval",
+    "tools",
+    "testing",
+    s"$name.scala"
   )
 
-  class ClassExpectation(
-    val className: String,
-    val failed: Int,
-    val skipped: Int,
-    val methods: Seq[MethodExpectation]
-  )
+  final def writeProject(
+    projectName: Seq[String],
+    platform: Platform,
+    mainSources: Seq[SourceFile],
+    testSources: Seq[SourceFile],
+    frameworks: Seq[FrameworkDescriptor],
+    includeTestNames: Seq[String],
+    excludeTestNames: Seq[String],
+    includeTags: Seq[String],
+    excludeTags: Seq[String],
+    maxParallelForks: Int,
+    mainClassName: Option[String]
+  ): TestProject =
+    val projectNameString: String = projectName.mkString("-")
+    val projectDir: File = Files.file(
+      root,
+      Seq("build", "test-projects") ++ projectName ++ Seq(projectNameString)*
+    )
 
-  def passed (methodName: String): MethodExpectation = MethodExpectation(methodName, ResultType.SUCCESS)
-  def failed (methodName: String): MethodExpectation = MethodExpectation(methodName, ResultType.FAILURE)
-  def skipped(methodName: String): MethodExpectation = MethodExpectation(methodName, ResultType.SKIPPED)
+    Files.write(Files.file(projectDir, "gradle.properties"),
+      gradleProperties(platform.isScalaJSDisabled))
 
-  class MethodExpectation(
-    val methodName: String,
-    val resultType: ResultType
-  )
+    Files.write(Files.file(projectDir, "settings.gradle"),
+      settingsGradle(projectNameString, pluginProjectDir = root))
 
-  given CanEqual[ResultType, ResultType] = CanEqual.derived
+    writeSources(projectDir, mainSources, isTest = false)
+    writeSources(projectDir, testSources, isTest = true)
 
-  def forProject(
-    project: String,
-    classes: ClassExpectation*
-  ): Unit =
-    val results: List[TestClassResult] = run(project)
+    Files.write(Files.file(projectDir, "build.gradle"),
+      buildGradle(
+        nodeVersion = platform.getNodeVersion,
+        scalaLibrary = platform.scalaLibrary,
+        frameworks = frameworks.map(platform.toDependency),
+        includeTestNames = includeTestNames,
+        excludeTestNames = excludeTestNames,
+        includeTags = includeTags,
+        excludeTags = excludeTags,
+        maxParallelForks = maxParallelForks,
+        link = if platform.isScalaJSDisabled then ""else link(mainClassName)
+      )
+    )
 
-    def getForClass(name: String): TestClassResult = results.find(_.getClassName == name).get
+    TestProject(projectDir)
 
-    //    println("--- TEST RESULTS ---")
-    //    for result: TestClassResult <- results do
-    //      println(s"${result.getId}: ${result.getClassName} failed=${result.getFailuresCount} skipped=${result.getSkippedCount}")
-    //      for result: TestMethodResult <- result.getResults.asScala do
-    //        println(s"  ${result.getId}: ${result.getName} resultType=${result.getResultType}")
-    //    println("--- ---")
+  private def writeSources(projectDir: File, sources: Seq[SourceFile], isTest: Boolean): Unit =
+    for sourceFile: SourceFile <- sources do
+      val content: String = sourceFile.content
+      val contentEffective: String =
+        if content.contains("package ")
+        then content
+        else s"package ${ForClass.testingPackage}\n\n" + content
 
-    for classExpectation: ClassExpectation <- classes do
-      val testClassResult: TestClassResult = getForClass(classExpectation.className)
-      require(testClassResult.getFailuresCount == classExpectation.failed)
-      require(testClassResult.getSkippedCount  == classExpectation.skipped)
+      Files.write(scalaFile(projectDir, isTest, sourceFile.name), contentEffective)
 
-      val testMethodResults: List[TestMethodResult] = testClassResult.getResults.asScala.toList
-      for methodExpectation: MethodExpectation <- classExpectation.methods do
-        val testMethodResult: TestMethodResult = testMethodResults.find(_.getName == methodExpectation.methodName).get
-        require(testMethodResult.getResultType == methodExpectation.resultType)
+  private def gradleProperties(isScalaJSDisabled: Boolean): String =
+    s"""org.podval.tools.scalajs.disabled=$isScalaJSDisabled
+       |""".stripMargin
+
+  private def settingsGradle(projectName: String, pluginProjectDir: File): String =
+    s"""pluginManagement {
+       |  repositories {
+       |    mavenCentral()
+       |    gradlePluginPortal()
+       |    maven {
+       |      url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+       |    }
+       |  }
+       |}
+       |
+       |dependencyResolutionManagement {
+       |  repositories {
+       |    mavenCentral()
+       |    maven {
+       |      url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+       |    }
+       |  }
+       |}
+       |
+       |rootProject.name = '$projectName'
+       |
+       |includeBuild '${pluginProjectDir.getAbsolutePath}'
+       |""".stripMargin
+
+  private def buildGradle(
+    nodeVersion: Option[String],
+    scalaLibrary: Dependency.WithVersion,
+    frameworks: Seq[Dependency.WithVersion],
+    includeTestNames: Seq[String],
+    excludeTestNames: Seq[String],
+    includeTags: Seq[String],
+    excludeTags: Seq[String],
+    maxParallelForks: Int,
+    link: String
+  ): String =
+    val nodeVersionString: String = nodeVersion.fold("")((nodeVersion: String) => s"node.version = '$nodeVersion'\n")
+    val includeTestNamesString: String = includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")
+    val excludeTestNamesString: String = excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")
+    val includeTagsString: String = includeTags.map(string => s"'$string'").mkString("[", ", ", "]")
+    val excludeTagsString: String = excludeTags.map(string => s"'$string'").mkString("[", ", ", "]")
+
+    val frameworksString: String = (
+      for framework: Dependency.WithVersion <- frameworks yield
+        s"  testImplementation '${framework.dependencyNotation}'"
+      ).mkString("\n")
+
+    s"""plugins {
+       |  id 'org.podval.tools.scalajs' version '0.0.0'
+       |}
+       |
+       |// There is no Java in the project :)
+       |project.gradle.startParameter.excludedTaskNames.add('compileJava')
+       |
+       |dependencies {
+       |  zinc "org.scala-sbt:zinc_2.13:1.8.0"
+       |  implementation '${scalaLibrary.dependencyNotation}'
+       |$frameworksString
+       |}
+       |
+       |$nodeVersionString
+       |$link
+       |
+       |test {
+       |  filter {
+       |$includeTestNamesString
+       |$excludeTestNamesString
+       |    failOnNoMatchingTests = false
+       |  }
+       |  useSbt {
+       |    includeTags = $includeTagsString
+       |    excludeTags = $excludeTagsString
+       |  }
+       |  maxParallelForks = $maxParallelForks
+       |}
+       |""".stripMargin
+
+  private def link(mainClassName: Option[String]): String =
+    val moduleInitializerString: String = mainClassName.fold("")(moduleInitializer)
+    s"""link {
+       |  optimization     = 'Full'          // one of: 'Fast', 'Full'
+       |  moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
+       |  moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
+       |  prettyPrint      = false
+       |$moduleInitializerString
+       |}
+       |""".stripMargin
+
+  private def moduleInitializer(mainClassName: String): String =
+    s"""moduleInitializers {
+       |    main {
+       |      className = '${ForClass.testingPackage}.$mainClassName'
+       |      mainMethodName = 'main'
+       |      mainMethodHasArgs = true
+       |    }
+       |  }
+       |""".stripMargin

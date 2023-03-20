@@ -8,7 +8,12 @@ import org.podval.tools.testing.worker.TestTagsFilter
 // DOES NOT bring in test-interface (in non-ScalaJS variant)!
 object ScalaTest extends FrameworkDescriptor(
   name = "ScalaTest",
-  implementationClassName = "org.scalatest.tools.Framework"
+  displayName = "ScalaTest",
+  group = "org.scalatest",
+  artifact = "scalatest",
+  versionDefault = "3.2.15",
+  className = "org.scalatest.tools.Framework",
+  sharedPackages = List("org.scalatest.tools")  // TODO more?
 ):
   override def args(
     testTagsFilter: TestTagsFilter

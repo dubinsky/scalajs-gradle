@@ -1,7 +1,8 @@
 package org.podval.tools.scalajs
 
 import org.gradle.api.artifacts.Configuration
-import org.opentorah.build.{Configurations, DependencyRequirement, Scala2Dependency, Scala3Dependency, ScalaDependencyRequirement, ScalaLibrary}
+import org.opentorah.build.{Configurations, DependencyRequirement, Scala2Dependency, Scala3Dependency, 
+  ScalaDependencyRequirement, ScalaLibrary}
 
 object ScalaJSDependencies:
   val configurationName: String = "scalajs"

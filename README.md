@@ -114,10 +114,10 @@ Currently, the following test frameworks are supported:
 | Name       | group:artifact                   | Notes                                             |
 |------------|----------------------------------|---------------------------------------------------|
 | JUnit4     | `com.github.sbt:junit-interface` | brings in `junit:junit`; does not support ScalaJS |
-| ScalaTest  | `org.scalatest:scalatest_3`      |                                                   |
-| ScalaCheck | `org.scalacheck:scalacheck_3`    |                                                   |
-| Specs2     | `org.specs2:specs2-core_3`       |                                                   |
 | mUnit      | `org.scalameta:munit_3`          | brings in `junit:junit`; does support ScalaJS?!   |
+| ScalaCheck | `org.scalacheck:scalacheck_3`    |                                                   |
+| ScalaTest  | `org.scalatest:scalatest_3`      |                                                   |
+| Specs2     | `org.specs2:specs2-core_3`       |                                                   |
 | uTest      | `com.lihaoyi:utest_3`            |                                                   |
 | ZIO Test   | `dev.zio:zio-test-sbt_3`         | tests are `objects`, not `classes`                |
 
@@ -545,6 +545,12 @@ a composite of exactly two *Longs*!
 
 Because tests are scoped by the workers, it does not seem possible to group test results by framework.
 
+#### Testing the Tests
+
+I coded a neat way to test the plugin itself and 
+various features of the various frameworks and their support by the plugin:
+Fixture, Feature, ForClass, GroupingFuncSpec, Platform, SourceFile, TestProject.
+
 #### Framework Peculiarities
 JUnit4 (and MUnit which seems to be base on JUnit4) report incorrect class and method names for test method events:
 both are `<class name>.<method name>`; method names like this just look stupid, but class names look
@@ -579,11 +585,13 @@ but `ScalaTest` does not.
 
 How is MUnit, that is JUnit4-based, supported by ScalaJS - and JUnit4 itself is not?
 
-Test test filtering.
+Test test filtering. For example, why supplying `--tests "*"` is NOT the same as not supplying any?
 
 Document what Test configuration methods are honoured.
 
 Document inability to debug ScalaJS code or tests.
+
+Generate the framework table programmatically.
 
 Fine-tune the stack traces.
 
@@ -614,6 +622,14 @@ implementation classpath).
 Add new tags to the plugin's portal page: manually at https://github.com/gradle/plugin-portal-requests !
 
 Look at Gradle's new test hotness: JVM test suite plugin.
+
+#### Test Tagging
+
+- ScalaTest:
+  - tests are taggable, but not suites?
+  - test exclusion works, test inclusion does not: nothing runs
+- ScalaCheck:
+  - no tagging
 
 #### TestDescriptor hierarchy
 

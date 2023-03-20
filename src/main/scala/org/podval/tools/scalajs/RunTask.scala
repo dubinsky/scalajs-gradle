@@ -30,11 +30,12 @@ object RunTask:
     // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
     final override protected def canFork: Boolean = false
 
+    private var scalaJS: Option[ScalaJS] = None
     @TaskAction override def executeTests(): Unit =
       setUpNodeProject()
+      scalaJS = Some(ScalaJS(task = this, linkTask))
       super.executeTests()
+      scalaJS = None
 
-    // TODO this can go away if sourceMapper moves into the TestEnvironment
-    private lazy val testScalaJS: ScalaJS = ScalaJS(task = this, linkTask)
-    final override protected def sourceMapper: Option[SourceMapper] = testScalaJS.sourceMapper
-    final override protected def testEnvironment: TestEnvironment = testScalaJS.testEnvironment
+    final override protected def sourceMapper: Option[SourceMapper] = scalaJS.get.sourceMapper
+    final override protected def testEnvironment: TestEnvironment = scalaJS.get.testEnvironment

@@ -79,7 +79,6 @@ abstract class NodeExtension @Inject(project: Project):
     log(s"Output: [$output]\n")
     output
 
-  // TODO move into opentorah's Node
   final def setUpNodeProject(requiredModules: List[String]): Unit =
     val nodeExtension: NodeExtension = NodeExtension.get(project)
     val node: Node = nodeExtension.node
@@ -90,7 +89,6 @@ abstract class NodeExtension @Inject(project: Project):
     if !isProjectSetUp then nodeExtension.npm(arguments = "init private")
 
     // Install Node modules
-    // TODO switch to node.mkNodeModules() when opentorah is released
     node.nodeModules.mkdirs()
     nodeExtension.npm(
       arguments = "install " + (requiredModules ++ nodeExtension.modules).mkString(" "),

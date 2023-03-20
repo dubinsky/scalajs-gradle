@@ -4,4 +4,8 @@ package org.podval.tools.testing.worker
 final class TestTagsFilter(
   val include: Array[String],
   val exclude: Array[String]
-) extends Serializable
+) extends Serializable:
+  override def toString: String =
+    val includeStr: String = include.mkString("Include[", ", ", "]")
+    val excludeStr: String = exclude.mkString("Exclude[", ", ", "]")
+    s"$includeStr $excludeStr"

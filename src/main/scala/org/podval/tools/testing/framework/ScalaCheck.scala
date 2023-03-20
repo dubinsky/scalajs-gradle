@@ -4,9 +4,13 @@ import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/typelevel/scalacheck
 // https://github.com/typelevel/scalacheck/blob/main/core/shared/src/main/scala/org/scalacheck/ScalaCheckFramework.scala
-// brings in test-interface
 object ScalaCheck extends FrameworkDescriptor(
   name = "ScalaCheck",
-  implementationClassName = "org.scalacheck.ScalaCheckFramework"
+  displayName = "ScalaCheck",
+  group = "org.scalacheck",
+  artifact = "scalacheck",
+  versionDefault = "1.17.0",
+  className = "org.scalacheck.ScalaCheckFramework",
+  sharedPackages = List("org.scalacheck")
 ):
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

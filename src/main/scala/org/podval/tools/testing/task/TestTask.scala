@@ -34,8 +34,8 @@ abstract class TestTask extends Test:
   // options seem to work...
   useSbt()
 
+  // TODO unify with ScalaJSTask?
   private def sourceSet: SourceSet = getProject.getSourceSet(SourceSet.TEST_SOURCE_SET_NAME)
-
   @Classpath final def getRuntimeClassPath: FileCollection = sourceSet.getRuntimeClasspath
   getProject.afterEvaluate((project: Project) =>
     getDependsOn.add(project.getClassesTask(sourceSet))
@@ -55,13 +55,11 @@ abstract class TestTask extends Test:
     logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     moduleRegistry = getModuleRegistry,
-    // delayed: not available at the time of the TestFramework construction
+    // delayed: not available at the time of the TestFramework construction (task creation)
     testEnvironment = () => testEnvironment,
     analysisFile = () => analysisFile,
     runningInIntelliJIdea = () => TestTask.runningInIntelliJIdea(TestTask.this)
   )
-
-  protected def testEnvironment: TestEnvironment
 
   private def analysisFile: File =
     // AnalysisDetector needs Zinc classes;
@@ -94,13 +92,15 @@ abstract class TestTask extends Test:
     documentationRegistry = getServices.get(classOf[DocumentationRegistry])
   )
 
-  protected def canFork: Boolean
-
   override def getMaxParallelForks: Int =
     val result: Int = super.getMaxParallelForks
     if canFork then result else 1
 
+  protected def canFork: Boolean
+
   protected def sourceMapper: Option[SourceMapper]
+
+  protected def testEnvironment: TestEnvironment
 
 object TestTask:
   private val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[org.gradle.api.internal.tasks.testing.TestFramework])
@@ -111,6 +111,7 @@ object TestTask:
   private val testListenerBroadcaster: Field = classOf[AbstractTestTask].getDeclaredField("testListenerBroadcaster")
   testListenerBroadcaster.setAccessible(true)
 
+  // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
   def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
     var result: Boolean = false
 
@@ -118,7 +119,6 @@ object TestTask:
       .get(task)
       .asInstanceOf[ListenerBroadcast[TestListener]]
       .visitListeners((testListener: TestListener) =>
-        // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
         if testListener.getClass.getName == "IJTestEventLogger$1" then result = true
       )
 
