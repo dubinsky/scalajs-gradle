@@ -5,7 +5,7 @@ import org.gradle.api.logging.{Logger, LogLevel as GLevel}
 import org.gradle.api.provider.Property
 import org.opentorah.build.Gradle.*
 import org.opentorah.files.PipeOutputThread
-import org.opentorah.node.Node
+import org.opentorah.node.{Node, NodeExtension}
 import org.opentorah.util.Files
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment}
@@ -111,7 +111,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
     val node: Node = NodeExtension.get(task.getProject).node
     JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
       .withExecutable(node.installation.nodeExec.getAbsolutePath)
-      .withEnv(Map(node.nodeEnv))
+      .withEnv(node.nodeEnv.toMap)
     )
 
   def run(): Unit =

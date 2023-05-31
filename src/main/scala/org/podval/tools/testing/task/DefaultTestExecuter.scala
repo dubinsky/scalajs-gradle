@@ -85,7 +85,11 @@ class DefaultTestExecuter(
       if !testExecutionSpec.isScanForTestClasses || testFramework.getDetector == null then None else Some {
         val result: TestFrameworkDetector = testFramework.getDetector
         result.setTestClasses(java.util.ArrayList[File](testExecutionSpec.getTestClassesDirs.getFiles))
-        // TODO [classpath] switch to classpath.getApplicationClasspath() without reflection - when it actually starts working ;)
+        // TODO [classpath] switch to classpath.getApplicationClasspath() without reflection -
+        // when it actually starts working instead of throwing
+        //  java.lang.NoSuchMethodError:
+        //    'org.gradle.internal.impldep.com.google.common.collect.ImmutableList
+        //    org.gradle.api.internal.tasks.testing.worker.ForkedTestClasspath.getApplicationClasspath()'
         val applicationClassPath = classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
         result.setTestClasspath(applicationClassPath)
         result

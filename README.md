@@ -7,7 +7,7 @@ It supports linking ScalaJS code, running and testing it.
 
 This plugin also supports testing plain Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
-Supports ScalaJS 1; default version: 1.13.0.
+Supports ScalaJS 1; default version: 1.13.1.
 
 NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
@@ -269,7 +269,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.15"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.16"
 }
 ```
 
@@ -280,7 +280,7 @@ final String scalaVersion       = '3.2.2'
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.15"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.16"
 }
 ```
 
@@ -304,7 +304,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.15"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.16"
 }
 ```
 
@@ -316,7 +316,7 @@ final String scala2versionMinor = '2.13'
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.15"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.16"
 }
 ```
 

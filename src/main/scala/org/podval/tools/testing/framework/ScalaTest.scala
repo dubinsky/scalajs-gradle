@@ -11,7 +11,7 @@ object ScalaTest extends FrameworkDescriptor(
   displayName = "ScalaTest",
   group = "org.scalatest",
   artifact = "scalatest",
-  versionDefault = "3.2.15",
+  versionDefault = "3.2.16",
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest.tools")  // TODO more?
 ):

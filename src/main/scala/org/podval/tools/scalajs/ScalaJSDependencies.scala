@@ -9,7 +9,7 @@ object ScalaJSDependencies:
   private val scalaJS: Configurations = Configurations.forName(configurationName)
 
   private val group: String = "org.scala-js"
-  private val versionDefault: String = "1.13.0"
+  private val versionDefault: String = "1.13.1"
 
   // Note: no Scala 3 flavours exists
   private object Library     extends Scala2Dependency(group, "scalajs-library")
@@ -23,7 +23,7 @@ object ScalaJSDependencies:
 
   private object DomSJS:
     private val artifact: String = "scalajs-dom_sjs1"
-    val versionDefault: String = "2.4.0"
+    val versionDefault: String = "2.6.0"
 
     object Scala2 extends Scala2Dependency(group, artifact)
     object Scala3 extends Scala3Dependency(group, artifact)

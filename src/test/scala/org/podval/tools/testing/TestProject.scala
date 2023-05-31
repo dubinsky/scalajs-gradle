@@ -8,6 +8,7 @@ import org.opentorah.util.Files
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import scala.jdk.CollectionConverters.*
 import java.io.File
+import java.net.URL
 
 final class TestProject(projectDir: File):
   private def gradleRunner: GradleRunner = GradleRunner.create().withProjectDir(projectDir)

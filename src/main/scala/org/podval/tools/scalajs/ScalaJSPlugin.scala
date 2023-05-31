@@ -6,6 +6,7 @@ import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
 import org.opentorah.build.{Configurations, DependencyRequirement, JavaDependency, JavaDependencyRequirement, ScalaLibrary}
 import org.opentorah.build.Gradle.*
+import org.opentorah.node.NodeExtension
 import org.podval.tools.testing.task.TestTaskScala
 import scala.jdk.CollectionConverters.*
 
@@ -18,7 +19,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
     if isScalaJSDisabled then
       project.getTasks.replace("test", classOf[TestTaskScala])
     else
-      NodeExtension.add(project)
+      NodeExtension.addTo(project)
 
       val scalaJS: Configuration = project.getConfigurations.create(ScalaJSDependencies.configurationName)
       scalaJS.setVisible(false)
