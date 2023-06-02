@@ -3,7 +3,7 @@ package org.podval.tools.testing
 import ForClass.*
 
 class ScalaOnlyTest extends GroupingFunSpec:
-  describe("scala-only") {
+  describe("scala-only"):
     test(
       project = Memo(TestProject.existingProject("scala-only")),
       checks = Seq(
@@ -28,4 +28,4 @@ class ScalaOnlyTest extends GroupingFunSpec:
       ),
       commandLineIncludeTestNames = Seq.empty
     )
-  }
+

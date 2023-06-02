@@ -1,12 +1,21 @@
-rootProject.name = 'org.podval.tools.scalajs'
+pluginManagement {
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
 
 dependencyResolutionManagement {
   repositories {
+    mavenLocal()
     mavenCentral()
     maven {
       url = 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
   }
 }
+
+rootProject.name = 'org.podval.tools.scalajs'
 
 //includeBuild '../../../OpenTorah/opentorah.org'

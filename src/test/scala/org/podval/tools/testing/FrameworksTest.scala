@@ -1,5 +1,7 @@
 package org.podval.tools.testing
 
+import org.opentorah.build.ScalaLibrary
+
 // TODO when run separately, this class produces correctly nested results;
 // when it is run together with other tests, something (Idea?) flattens the results...
 // Or are the *events* different?
@@ -38,6 +40,6 @@ object FrameworksTest:
   )
 
   val platforms: Seq[Platform] = Seq(
-    Platform(Platform.scala3VersionDefault, isScalaJSDisabled = true),
-    Platform(Platform.scala3VersionDefault, isScalaJSDisabled = false),
+    Platform(ScalaLibrary.Scala3.versionDefault, isScalaJS = false),
+    Platform(ScalaLibrary.Scala3.versionDefault, isScalaJS = true ),
   )

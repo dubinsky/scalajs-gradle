@@ -1,32 +1,31 @@
 package org.podval.tools.scalajs
 
 import org.gradle.api.artifacts.Configuration
-import org.opentorah.build.{Configurations, DependencyRequirement, Scala2Dependency, Scala3Dependency, 
-  ScalaDependencyRequirement, ScalaLibrary}
+import org.opentorah.build.{Configurations, DependencyRequirement, ScalaDependency, ScalaLibrary, Version}
 
 object ScalaJSDependencies:
   val configurationName: String = "scalajs"
   private val scalaJS: Configurations = Configurations.forName(configurationName)
 
   private val group: String = "org.scala-js"
-  private val versionDefault: String = "1.13.1"
+  private val versionDefault: Version = Version("1.13.1")
 
   // Note: no Scala 3 flavours exists
-  private object Library     extends Scala2Dependency(group, "scalajs-library")
-  private object TestBridge  extends Scala2Dependency(group, "scalajs-test-bridge")
-  private object Linker      extends Scala2Dependency(group, "scalajs-linker")
-  private object TestAdapter extends Scala2Dependency(group, "scalajs-sbt-test-adapter")
-  private object Compiler    extends Scala2Dependency(group, "scalajs-compiler", isScala2versionFull = true)
+  private object Library     extends ScalaDependency.Scala2(group, "scalajs-library")
+  private object TestBridge  extends ScalaDependency.Scala2(group, "scalajs-test-bridge")
+  private object Linker      extends ScalaDependency.Scala2(group, "scalajs-linker")
+  private object TestAdapter extends ScalaDependency.Scala2(group, "scalajs-sbt-test-adapter")
+  private object Compiler    extends ScalaDependency.Scala2(group, "scalajs-compiler", isScalaVersionFull = true)
 
-  private object JSDomNodeJS extends Scala2Dependency(group, "scalajs-env-jsdom-nodejs"):
-    val versionDefault: String = "1.1.0"
+  private object JSDomNodeJS extends ScalaDependency.Scala2(group, "scalajs-env-jsdom-nodejs"):
+    val versionDefault: Version = Version("1.1.0")
 
   private object DomSJS:
-    private val artifact: String = "scalajs-dom_sjs1"
-    val versionDefault: String = "2.6.0"
+    private val artifact: String = "scalajs-dom"
+    val versionDefault: Version = Version("2.6.0")
 
-    object Scala2 extends Scala2Dependency(group, artifact)
-    object Scala3 extends Scala3Dependency(group, artifact)
+    object Scala2 extends ScalaDependency.Scala2(group, artifact, isScalaJS = true)
+    object Scala3 extends ScalaDependency.Scala3(group, artifact, isScalaJS = true)
 
   def dependencyRequirements(
     pluginScalaLibrary: ScalaLibrary,
@@ -34,27 +33,27 @@ object ScalaJSDependencies:
     implementationConfiguration: Configuration
   ): Seq[DependencyRequirement] =
     
-    val scalaJSVersion: String = Library.getFromConfiguration(implementationConfiguration)
-      .map(_.version.version)
+    val scalaJSVersion: Version = Library.getFromConfiguration(implementationConfiguration)
+      .map(_.version)
       .getOrElse(versionDefault)
 
     val forPluginClassPath: Seq[DependencyRequirement] =
       Seq(
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = Linker,
           version = scalaJSVersion,
           scalaLibrary = pluginScalaLibrary,
           reason = "because it is needed for linking the ScalaJS code",
           configurations = scalaJS
         ),
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = JSDomNodeJS,
           version = JSDomNodeJS.versionDefault,
           scalaLibrary = pluginScalaLibrary,
           reason = "because it is needed for running/testing with DOM man manipulations",
           configurations = scalaJS
         ),
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = TestAdapter,
           version = scalaJSVersion,
           scalaLibrary = pluginScalaLibrary,
@@ -66,9 +65,9 @@ object ScalaJSDependencies:
     val forProjectClassPath: Seq[DependencyRequirement] =
       // only for Scala 3
       (if !projectScalaLibrary.isScala3 then Seq.empty else Seq(
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = ScalaLibrary.Scala3SJS,
-          version = projectScalaLibrary.scala3.get.version.version,
+          version = ScalaLibrary.Scala3.getScalaVersion(projectScalaLibrary),
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for linking of the ScalaJS code",
           configurations = Configurations.implementation
@@ -76,7 +75,7 @@ object ScalaJSDependencies:
       )) ++
       // only for Scala 2
       (if !projectScalaLibrary.isScala2 then Seq.empty else Seq(
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = Compiler,
           version = scalaJSVersion,
           scalaLibrary = projectScalaLibrary,
@@ -84,21 +83,21 @@ object ScalaJSDependencies:
           configurations = Configurations.scalaCompilerPlugins
         )
       )) ++ Seq(
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = Library,
           version = scalaJSVersion,
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for compiling of the ScalaJS code",
           configurations = Configurations.implementation
         ),
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = if projectScalaLibrary.isScala3 then DomSJS.Scala3 else DomSJS.Scala2,
           version = DomSJS.versionDefault,
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for DOM manipulations",
           configurations = Configurations.implementation
         ),
-        ScalaDependencyRequirement(
+        ScalaDependency.Requirement(
           dependency = TestBridge,
           version = scalaJSVersion,
           scalaLibrary = projectScalaLibrary,

@@ -19,7 +19,7 @@ dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.10'
+  implementation 'org.opentorah:opentorah-util:0.10.11'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 

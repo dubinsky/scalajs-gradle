@@ -144,7 +144,7 @@ class GroupingFunSpec extends AnyFunSpec:
 
   private def supports(fixture: Fixture, platform: Platform): Boolean =
     val framework: FrameworkDescriptor = fixture.framework
-    if platform.isScalaJSDisabled then framework.isScalaSupported else framework.isScalaJSSupported
+    if platform.isScalaJS then framework.isScalaJSSupported else framework.isScalaSupported
 
   private def run(
     project: Memo[TestProject],

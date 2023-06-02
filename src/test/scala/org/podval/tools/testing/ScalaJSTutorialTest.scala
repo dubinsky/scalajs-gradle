@@ -1,5 +1,6 @@
 package org.podval.tools.testing
 
+import org.opentorah.build.ScalaLibrary
 import ForClass.*
 
 class ScalaJSTutorialTest extends GroupingFunSpec:
@@ -8,9 +9,9 @@ class ScalaJSTutorialTest extends GroupingFunSpec:
     features = Seq(Feature("ScalaJS Tutorial")),
     fixtures = Seq(ScalaJSTutorialScalaTestFixture),
     platforms = Seq(
-      Platform(Platform.scala3VersionDefault  , isScalaJSDisabled = false),
-      Platform(Platform.scala213VersionDefault, isScalaJSDisabled = false),
-      Platform(Platform.scala212VersionDefault, isScalaJSDisabled = false),
+      Platform(ScalaLibrary.Scala3.versionDefault  , isScalaJS = true),
+      Platform(ScalaLibrary.Scala2.versionDefault13, isScalaJS = true),
+      Platform(ScalaLibrary.Scala2.versionDefault12, isScalaJS = true),
     ),
     groupByFeature = true,
     combinedFixtureNameOpt = None

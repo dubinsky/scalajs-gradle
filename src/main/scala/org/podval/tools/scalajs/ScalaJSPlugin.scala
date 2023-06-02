@@ -4,7 +4,7 @@ import org.gradle.api.{Plugin, Project}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
-import org.opentorah.build.{Configurations, DependencyRequirement, JavaDependency, JavaDependencyRequirement, ScalaLibrary}
+import org.opentorah.build.{Configurations, DependencyRequirement, JavaDependency, ScalaLibrary, Version}
 import org.opentorah.build.Gradle.*
 import org.opentorah.node.NodeExtension
 import org.podval.tools.testing.task.TestTaskScala
@@ -42,9 +42,9 @@ final class ScalaJSPlugin extends Plugin[Project]:
 
       val requirements: Seq[DependencyRequirement] =
         Seq(
-          JavaDependencyRequirement(
+          JavaDependency.Requirement(
             dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
-            version = "1.0",
+            version = Version("1.0"),
             reason =
               """
                 |because some test frameworks (ScalaTest :)) do not bring it in in,

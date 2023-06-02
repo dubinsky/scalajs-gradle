@@ -26,7 +26,7 @@ object ZioTestFixture extends Fixture(
     failed("some suite - failing test assertTrue")
   ))
 ):
-  override def works(feature: Feature, platform: Platform): Boolean = platform.isScalaJSDisabled
+  override def works(feature: Feature, platform: Platform): Boolean = !platform.isScalaJS
     
 
 

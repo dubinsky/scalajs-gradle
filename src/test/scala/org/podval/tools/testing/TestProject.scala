@@ -3,7 +3,7 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.opentorah.build.Dependency
+import org.opentorah.build.{Dependency, Version}
 import org.opentorah.util.Files
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import scala.jdk.CollectionConverters.*
@@ -99,7 +99,7 @@ object TestProject:
     )
 
     Files.write(Files.file(projectDir, "gradle.properties"),
-      gradleProperties(platform.isScalaJSDisabled))
+      gradleProperties(!platform.isScalaJS))
 
     Files.write(Files.file(projectDir, "settings.gradle"),
       settingsGradle(projectNameString, pluginProjectDir = root))
@@ -117,7 +117,7 @@ object TestProject:
         includeTags = includeTags,
         excludeTags = excludeTags,
         maxParallelForks = maxParallelForks,
-        link = if platform.isScalaJSDisabled then ""else link(mainClassName)
+        link = if !platform.isScalaJS then "" else link(mainClassName)
       )
     )
 
@@ -140,20 +140,16 @@ object TestProject:
   private def settingsGradle(projectName: String, pluginProjectDir: File): String =
     s"""pluginManagement {
        |  repositories {
+       |    mavenLocal()
        |    mavenCentral()
        |    gradlePluginPortal()
-       |    maven {
-       |      url = 'https://oss.sonatype.org/content/repositories/snapshots/'
-       |    }
        |  }
        |}
        |
        |dependencyResolutionManagement {
        |  repositories {
+       |    mavenLocal()
        |    mavenCentral()
-       |    maven {
-       |      url = 'https://oss.sonatype.org/content/repositories/snapshots/'
-       |    }
        |  }
        |}
        |
@@ -163,7 +159,7 @@ object TestProject:
        |""".stripMargin
 
   private def buildGradle(
-    nodeVersion: Option[String],
+    nodeVersion: Option[Version],
     scalaLibrary: Dependency.WithVersion,
     frameworks: Seq[Dependency.WithVersion],
     includeTestNames: Seq[String],
@@ -173,7 +169,7 @@ object TestProject:
     maxParallelForks: Int,
     link: String
   ): String =
-    val nodeVersionString: String = nodeVersion.fold("")((nodeVersion: String) => s"node.version = '$nodeVersion'\n")
+    val nodeVersionString: String = nodeVersion.fold("")((nodeVersion: Version) => s"node.version = '${nodeVersion.version}'\n")
     val includeTestNamesString: String = includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")
     val excludeTestNamesString: String = excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")
     val includeTagsString: String = includeTags.map(string => s"'$string'").mkString("[", ", ", "]")

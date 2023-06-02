@@ -13,7 +13,7 @@ abstract class FrameworkDescriptor(
   val sharedPackages: List[String]
 ) derives CanEqual:
   def isScalaSupported: Boolean = true
-  def isScalaJSSupported: Boolean = true
+  def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, isScalaDependency must be true...
   def isScalaDependency: Boolean = true
   
   def args(

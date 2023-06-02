@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.10] - 2023-06-
+- chore: tracking OpenTorah Dependency changes
+
 ## [0.4.9] - 2023-05-31
 - tests: better test testing infrastructure
 - cleanup: ScalaJS tutorial and frameworks test projects are now written by the testing infrastructure
