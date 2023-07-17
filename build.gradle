@@ -2,18 +2,18 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'com.gradle.plugin-publish' version '1.1.0'
-  id 'org.podval.tools.scalajs' version '0.4.9' // Note: must be applied *after* Plugin Portal Plugin
+  id 'com.gradle.plugin-publish' version '1.2.1'
+  id 'org.podval.tools.scalajs' version '0.4.10' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
 version = '0.4.10'
 description = 'Gradle plugin for ScalaJS'
 
-final String scalaVersion       = '3.3.0'
+final String scalaVersion       = '3.3.1'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.13.1'
-final String sbtVersion         = '1.8.0'
+final String scalaJsVersion     = '1.14.0'
+final String sbtVersion         = '1.9.5'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
@@ -34,14 +34,14 @@ dependencies {
 
   // For framework-specific exceptions
   compileOnly 'junit:junit:4.13.2'
-  compileOnly 'org.scalatest:scalatest_3:3.2.16'
+  compileOnly 'org.scalatest:scalatest_3:3.2.17'
   compileOnly 'org.scalacheck:scalacheck_3:1.17.0'
-  compileOnly 'com.lihaoyi:utest_3:0.8.1'
-  compileOnly 'org.specs2:specs2-core_3:5.2.0'
+  compileOnly 'com.lihaoyi:utest_3:0.8.2'
+  compileOnly 'org.specs2:specs2-core_3:5.4.1'
   compileOnly 'org.scalameta:munit_3:0.7.29'
   // TODO ZIO Test
 
-  testImplementation 'org.scalatest:scalatest_3:3.2.16'
+  testImplementation 'org.scalatest:scalatest_3:3.2.17'
 
   // TODO - was...
 //  // Used for running the GradleRunner tests in the testNg task -

@@ -6,12 +6,12 @@ plugins {
 // There is no Java in the project :)
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
-final String scalaVersion = '3.2.2'
+final String scalaVersion = '3.3.1'
 
 dependencies {
-  zinc "org.scala-sbt:zinc_2.13:1.8.0"
+  zinc "org.scala-sbt:zinc_2.13:1.9.5"
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  testImplementation "org.scalatest:scalatest_3:3.2.16"
+  testImplementation "org.scalatest:scalatest_3:3.2.17"
 }
 
 tasks.withType(ScalaCompile).configureEach {

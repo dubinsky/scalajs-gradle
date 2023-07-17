@@ -7,7 +7,7 @@ It supports linking ScalaJS code, running and testing it.
 
 This plugin also supports testing plain Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
-Supports ScalaJS 1; default version: 1.13.1.
+Supports ScalaJS 1; default version: 1.14.0.
 
 NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
@@ -252,15 +252,15 @@ is configured explicitly.
 
 Example with all dependencies listed for Scala 3:
 ```groovy
-final String scalaVersion       = '3.2.2'
+final String scalaVersion       = '3.3.1'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.11.0'
+final String scalaJsVersion     = '1.14.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.4.0"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.8.0"
 
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -269,31 +269,31 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.16"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.17"
 }
 ```
 
 And - with only the required dependencies:
 ```groovy
-final String scalaVersion       = '3.2.2'
+final String scalaVersion       = '3.3.1'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.16"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.17"
 }
 ```
 
 Example with explicit dependencies for Scala 2:
 ```groovy
-final String scalaVersion       = '2.13.10'
+final String scalaVersion       = '2.13.12'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.11.0'
+final String scalaJsVersion     = '1.14.0'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:2.4.0"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:2.8.0"
   
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -304,19 +304,19 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // for ScalaTest tests:  
-  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.16"
+  testImplementation "org.scalatest:scalatest_sjs1_3:3.2.17"
 }
 ```
 
 And - with only the required dependencies:
 ```groovy
-final String scalaVersion       = '2.13.10'
+final String scalaVersion       = '2.13.12'
 final String scala2versionMinor = '2.13'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   // a test framework:  
-  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.16"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:3.2.17"
 }
 ```
 
