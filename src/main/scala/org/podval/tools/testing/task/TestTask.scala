@@ -32,6 +32,13 @@ abstract class TestTask extends Test:
   // `getTestFrameworkProperty.convention(createTestFramework)`.
   // So, I am sticking with pre-applying the test framework at the task creation time;
   // options seem to work...
+  // TODO works with Gradle 8.3, but with Gradle 8.4-rc-1, I get:
+  // Caused by: org.gradle.api.tasks.TaskInstantiationException: Could not create task of type 'TestTaskScala'.
+  // Caused by: java.lang.NoClassDefFoundError: Could not initialize class org.podval.tools.testing.task.TestTask$
+  //   at org.podval.tools.testing.task.TestTask.useSbt(TestTask.scala:53)
+  //   at org.podval.tools.testing.task.TestTask.<init>(TestTask.scala:35)
+  //   at org.podval.tools.testing.task.TestTaskScala.<init>(TestTaskScala.scala:8)
+  //   at org.podval.tools.testing.task.TestTaskScala_Decorated.<init>(Unknown Source)
   useSbt()
 
   // TODO unify with ScalaJSTask?
@@ -68,7 +75,7 @@ abstract class TestTask extends Test:
 
     // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
     Files.file(
-      directory = getProject.getBuildDir,
+      directory = getProject.getProject.getLayout.getBuildDirectory.get.getAsFile,
       segments = s"tmp/scala/compilerAnalysis/${getProject.getScalaCompile(sourceSet).getName}.analysis"
     )
 

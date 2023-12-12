@@ -61,8 +61,11 @@ abstract class SourceMapper:
           case _ => throwable.getClass.getName,
         SourceMapper.stacktraceOf(throwableMapped),
         details.isAssertionFailure,
+        details.isFileComparisonFailure,
         details.getExpected,
-        details.getActual
+        details.getActual,
+        details.getExpectedContent,
+        details.getActualContent
       ),
       testFailure.getCauses
     )

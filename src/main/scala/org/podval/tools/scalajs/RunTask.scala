@@ -24,7 +24,7 @@ object RunTask:
       setUpNodeProject()
       ScalaJS(task = this, linkTask).run()
 
-  class Test extends TestTask with RunTask:
+  abstract class Test extends TestTask with RunTask:
     final override protected def flavour: String = "Test"
     final override protected def linkTaskClass: Class[LinkTask.Test] = classOf[LinkTask.Test]
     // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal

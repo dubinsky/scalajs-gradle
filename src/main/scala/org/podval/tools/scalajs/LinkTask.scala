@@ -32,7 +32,7 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask:
   @OutputDirectory final def getJSDirectory: File = outputFile("js")
   @OutputFile final def getReportTextFile: File = outputFile("linking-report.txt")
   @OutputFile final def getReportBinFile : File = outputFile("linking-report.bin")
-  private def outputFile(name: String): File = Files.file( getProject.getBuildDir,"scalajs", getName, name)
+  private def outputFile(name: String): File = Files.file(getProject.getLayout.getBuildDirectory.get.getAsFile, "scalajs", getName, name)
 
   def optimization: Optimization = getOptimization.byName(Optimization.Fast, Optimization.values.toList)
   @Input @Optional def getOptimization    : Property[String]
