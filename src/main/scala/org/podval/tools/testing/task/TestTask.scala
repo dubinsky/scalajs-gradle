@@ -115,15 +115,19 @@ object TestTask:
   private def useTestFramework(task: Test, value: TestFramework): Unit = useTestFramework.invoke(task, value)
 
   // TODO Gradle PR: figure this out from the environment - or introduce method to avoid the use of reflection
-  private val testListenerBroadcaster: Field = classOf[AbstractTestTask].getDeclaredField("testListenerBroadcaster")
-  testListenerBroadcaster.setAccessible(true)
+  private val testListenerSubscriptions: Field = classOf[AbstractTestTask].getDeclaredField("testListenerSubscriptions")
+  testListenerSubscriptions.setAccessible(true)
+
+  private val broadcastSubscriptionsGet: Method = Class.forName("org.gradle.api.tasks.testing.AbstractTestTask$BroadcastSubscriptions").getDeclaredMethod("get")
+  broadcastSubscriptionsGet.setAccessible(true)
 
   // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
   def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
     var result: Boolean = false
 
-    testListenerBroadcaster
-      .get(task)
+    broadcastSubscriptionsGet.invoke(
+        testListenerSubscriptions.get(task)
+      )
       .asInstanceOf[ListenerBroadcast[TestListener]]
       .visitListeners((testListener: TestListener) =>
         if testListener.getClass.getName == "IJTestEventLogger$1" then result = true
