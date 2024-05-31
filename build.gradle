@@ -3,23 +3,23 @@ plugins {
   id 'scala'
   id 'signing'
   id 'com.gradle.plugin-publish' version '1.2.1'
-  id 'org.podval.tools.scalajs' version '0.4.10' // Note: must be applied *after* Plugin Portal Plugin
+  id 'org.podval.tools.scalajs' version '0.4.11' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
-version = '0.4.10'
+version = '0.4.11'
 description = 'Gradle plugin for ScalaJS'
 
-final String scalaVersion       = '3.3.1'
+final String scalaVersion       = '3.4.2'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.14.0'
-final String sbtVersion         = '1.9.5'
+final String scalaJsVersion     = '1.16.0'
+final String sbtVersion         = '1.10.0'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.11'
+  implementation 'org.opentorah:opentorah-util:0.10.12'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 
@@ -34,14 +34,14 @@ dependencies {
 
   // For framework-specific exceptions
   compileOnly 'junit:junit:4.13.2'
-  compileOnly 'org.scalatest:scalatest_3:3.2.17'
-  compileOnly 'org.scalacheck:scalacheck_3:1.17.0'
-  compileOnly 'com.lihaoyi:utest_3:0.8.2'
-  compileOnly 'org.specs2:specs2-core_3:5.4.1'
-  compileOnly 'org.scalameta:munit_3:0.7.29'
+  compileOnly 'org.scalatest:scalatest_3:3.2.18'
+  compileOnly 'org.scalacheck:scalacheck_3:1.18.0'
+  compileOnly 'com.lihaoyi:utest_3:0.8.3'
+  compileOnly 'org.specs2:specs2-core_3:5.5.2'
+  compileOnly 'org.scalameta:munit_3:1.0.0'
   // TODO ZIO Test
 
-  testImplementation 'org.scalatest:scalatest_3:3.2.17'
+  testImplementation 'org.scalatest:scalatest_3:3.2.18'
 
   // TODO - was...
 //  // Used for running the GradleRunner tests in the testNg task -

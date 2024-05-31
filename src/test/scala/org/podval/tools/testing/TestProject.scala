@@ -188,7 +188,7 @@ object TestProject:
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |
        |dependencies {
-       |  zinc "org.scala-sbt:zinc_2.13:1.9.5"
+       |  zinc "org.scala-sbt:zinc_2.13:1.10.0"
        |  implementation '${scalaLibrary.dependencyNotation}'
        |$frameworksString
        |}

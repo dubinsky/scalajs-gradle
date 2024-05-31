@@ -1,7 +1,6 @@
 package org.podval.tools.testing
 
 import org.opentorah.build.ScalaLibrary
-import ForClass.*
 
 class ScalaJSTutorialTest extends GroupingFunSpec:
 

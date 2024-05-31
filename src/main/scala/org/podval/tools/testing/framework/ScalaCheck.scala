@@ -9,7 +9,7 @@ object ScalaCheck extends FrameworkDescriptor(
   displayName = "ScalaCheck",
   group = "org.scalacheck",
   artifact = "scalacheck",
-  versionDefault = "1.17.0",
+  versionDefault = "1.18.0",
   className = "org.scalacheck.ScalaCheckFramework",
   sharedPackages = List("org.scalacheck")
 ):

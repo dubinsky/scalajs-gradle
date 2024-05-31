@@ -11,7 +11,7 @@ object MUnit extends FrameworkDescriptor(
   displayName = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
-  versionDefault = "0.7.29",
+  versionDefault = "1.0.0",
   className = "munit.Framework",
   sharedPackages = List("munit")
 ):
