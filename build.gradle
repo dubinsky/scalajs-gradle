@@ -3,11 +3,11 @@ plugins {
   id 'scala'
   id 'signing'
   id 'com.gradle.plugin-publish' version '1.2.1'
-  id 'org.podval.tools.scalajs' version '0.4.11' // Note: must be applied *after* Plugin Portal Plugin
+  id 'org.podval.tools.scalajs' version '0.4.12' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
-version = '0.4.11'
+version = '0.4.12'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.4.2'
@@ -37,7 +37,7 @@ dependencies {
   compileOnly 'org.scalatest:scalatest_3:3.2.18'
   compileOnly 'org.scalacheck:scalacheck_3:1.18.0'
   compileOnly 'com.lihaoyi:utest_3:0.8.3'
-  compileOnly 'org.specs2:specs2-core_3:5.5.2'
+  compileOnly 'org.specs2:specs2-core_3:5.5.3'
   compileOnly 'org.scalameta:munit_3:1.0.0'
   // TODO ZIO Test
 

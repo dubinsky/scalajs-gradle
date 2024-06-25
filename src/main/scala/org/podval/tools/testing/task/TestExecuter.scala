@@ -70,6 +70,7 @@ class TestExecuter(
     if doNotFork then
       NonForkingTestClassProcessor(
         workerTestClassProcessorFactory,
+        actorFactory,
         clock
       )
     else

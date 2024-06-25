@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.12] - 2024-06-25
+- chore: update test framework versions
+- chore: Gradle 8.9 adjustments
+
 ## [0.4.11] - 2024-06-02
 - chore: Gradle 8.4 adjustments
 - chore: update test framework versions

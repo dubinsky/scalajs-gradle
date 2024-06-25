@@ -6,9 +6,9 @@ import org.gradle.api.internal.tasks.testing.{DefaultTestClassDescriptor, Defaul
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
+import org.gradle.internal.actor.ActorFactory
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.id.IdGenerator
-import org.gradle.internal.service.ServiceRegistry
 import org.gradle.internal.time.Clock
 import org.podval.tools.testing.exceptions.ExceptionConverter
 import org.podval.tools.testing.framework.FrameworkDescriptor
@@ -16,15 +16,13 @@ import org.podval.tools.testing.serializer.{TaskDefTestSpec, TaskDefTestSpecWrit
 import sbt.testing.{AnnotatedFingerprint, Event, Fingerprint, Framework, NestedSuiteSelector, NestedTestSelector,
   OptionalThrowable, Runner, Selector, Status, SubclassFingerprint, SuiteSelector, Task, TaskDef, TestSelector,
   TestWildcardSelector}
-import java.io.File
-import java.net.URLClassLoader
 import scala.util.control.NonFatal
 
 final class TestClassProcessor(
   testTagsFilter: TestTagsFilter,
   runningInIntelliJIdea: Boolean,
   logLevelEnabled: LogLevel,
-  idGenerator: IdGenerator[AnyRef],
+  idGenerator: IdGenerator[?],
   clock: Clock,
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
 
@@ -245,20 +243,23 @@ object TestClassProcessor:
   // because it is a `String` - and I am not keen on second-guessing what it is anyway,
   // I use a placeholder id and change it to the real one in `FixUpRootTestOutputTestResultProcessor`.
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
-
-  // Note: this one is Java-serialized, so I am using serializable types for parameters
+  
   final class Factory(
     testTagsFilter: TestTagsFilter,
     runningInIntelliJIdea: Boolean,
     logLevelEnabled: LogLevel
   ) extends WorkerTestClassProcessorFactory with Serializable:
 
-    override def create(serviceRegistry: ServiceRegistry): TestClassProcessor = TestClassProcessor(
+    override def create(
+      idGenerator: IdGenerator[?],
+      actorFactory: ActorFactory,
+      clock: Clock
+    ): TestClassProcessor = TestClassProcessor(
       testTagsFilter = testTagsFilter,
       runningInIntelliJIdea = runningInIntelliJIdea,
       logLevelEnabled = logLevelEnabled,
-      idGenerator = serviceRegistry.get(classOf[IdGenerator[AnyRef]]),
-      clock = serviceRegistry.get(classOf[Clock])
+      idGenerator = idGenerator,
+      clock = clock
     )
 
   private def runner(framework: Framework, testTagsFilter: TestTagsFilter): Runner =
