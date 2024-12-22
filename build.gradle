@@ -2,24 +2,24 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'com.gradle.plugin-publish' version '1.2.1'
-  id 'org.podval.tools.scalajs' version '0.4.12' // Note: must be applied *after* Plugin Portal Plugin
+  id 'com.gradle.plugin-publish' version '1.3.0'
+  id 'org.podval.tools.scalajs' version '0.4.13' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
-version = '0.4.12'
+version = '0.4.13'
 description = 'Gradle plugin for ScalaJS'
 
-final String scalaVersion       = '3.4.2'
+final String scalaVersion       = '3.6.2'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.16.0'
-final String sbtVersion         = '1.10.0'
+final String scalaJsVersion     = '1.17.0'
+final String sbtVersion         = '1.10.5'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.12'
+  implementation 'org.opentorah:opentorah-util:0.10.13'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 
@@ -34,14 +34,14 @@ dependencies {
 
   // For framework-specific exceptions
   compileOnly 'junit:junit:4.13.2'
-  compileOnly 'org.scalatest:scalatest_3:3.2.18'
-  compileOnly 'org.scalacheck:scalacheck_3:1.18.0'
-  compileOnly 'com.lihaoyi:utest_3:0.8.3'
-  compileOnly 'org.specs2:specs2-core_3:5.5.3'
-  compileOnly 'org.scalameta:munit_3:1.0.0'
+  compileOnly 'org.scalatest:scalatest_3:3.2.19'
+  compileOnly 'org.scalacheck:scalacheck_3:1.18.1'
+  compileOnly 'com.lihaoyi:utest_3:0.8.4'
+  compileOnly 'org.specs2:specs2-core_3:5.5.8'
+  compileOnly 'org.scalameta:munit_3:1.0.3'
   // TODO ZIO Test
 
-  testImplementation 'org.scalatest:scalatest_3:3.2.18'
+  testImplementation 'org.scalatest:scalatest_3:3.2.19'
 
   // TODO - was...
 //  // Used for running the GradleRunner tests in the testNg task -
@@ -181,12 +181,12 @@ gradlePlugin {
 }
 
 tasks.register('uploadLibrary')
-uploadLibrary.description('Upload artifacts')
-uploadLibrary.group('publishing')
+uploadLibrary.description = 'Upload artifacts'
+uploadLibrary.group = 'publishing'
 uploadLibrary.dependsOn(publishLibraryPublicationToMavenCentralRepository)
 
 tasks.register('upload')
-upload.description('Upload artifacts and plugins')
-upload.group('publishing')
+upload.description = 'Upload artifacts and plugins'
+upload.group = 'publishing'
 upload.dependsOn(uploadLibrary)
 upload.dependsOn(publishPlugins)

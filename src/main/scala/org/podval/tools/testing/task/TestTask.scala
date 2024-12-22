@@ -23,6 +23,7 @@ import scala.jdk.CollectionConverters.*
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
+// TODO do not invoke Task.getProject at execution time...
 abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
 
@@ -75,7 +76,7 @@ abstract class TestTask extends Test:
 
     // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
     Files.file(
-      directory = getProject.getProject.getLayout.getBuildDirectory.get.getAsFile,
+      directory = getProject.getLayout.getBuildDirectory.get.getAsFile,
       segments = s"tmp/scala/compilerAnalysis/${getProject.getScalaCompile(sourceSet).getName}.analysis"
     )
 

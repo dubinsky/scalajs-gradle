@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.13] - 2024-12-22
+- chore: Gradle 8.12 adjustments and forced update to sbt/zinc
+- chore: update ScalaJS
+- chore: update test framework versions
+- chore: update Scala to 3.6.2
+- chore: latest OpenTorah
+
 ## [0.4.12] - 2024-06-25
 - chore: update test framework versions
 - chore: Gradle 8.9 adjustments

@@ -26,10 +26,10 @@ final class ScalaJSPlugin extends Plugin[Project]:
       scalaJS.setCanBeConsumed(false)
       scalaJS.setDescription("ScalaJS dependencies used by the ScalaJS plugin.")
 
-      val linkMain: LinkTask.Main = project.getTasks.create ("link"    , classOf[LinkTask.Main])
-      val linkTest: LinkTask.Test = project.getTasks.create ("linkTest", classOf[LinkTask.Test])
-      val run     : RunTask .Main = project.getTasks.create ("run"     , classOf[RunTask .Main])
-      val test    : RunTask .Test = project.getTasks.replace("test"    , classOf[RunTask .Test])
+      val linkMain: LinkTask.Main = project.getTasks.register("link"    , classOf[LinkTask.Main]).get()
+      val linkTest: LinkTask.Test = project.getTasks.register("linkTest", classOf[LinkTask.Test]).get()
+      val run     : RunTask .Main = project.getTasks.register("run"     , classOf[RunTask .Main]).get()
+      val test    : RunTask .Test = project.getTasks.replace ("test"    , classOf[RunTask .Test])
       run .dependsOn(linkMain)
       test.dependsOn(linkTest)
 

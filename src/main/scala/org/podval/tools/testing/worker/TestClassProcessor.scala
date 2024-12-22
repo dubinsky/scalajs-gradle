@@ -231,6 +231,7 @@ final class TestClassProcessor(
     if isEnabled then testResultProcessor.output(
       testId,
       DefaultTestOutputEvent(
+        System.currentTimeMillis(), // TODO use org.gradle.internal.time.Clock via rg.gradle.internal.time.Time
         if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
         then TestOutputEvent.Destination.StdErr
         else TestOutputEvent.Destination.StdOut,

@@ -108,6 +108,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
   private def mkJsEnv: JSEnv =
+    // TODO do not invoke Task.getProject at execution time...
     val node: Node = NodeExtension.get(task.getProject).node
     JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
       .withExecutable(node.installation.nodeExec.getAbsolutePath)
