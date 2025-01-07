@@ -7,19 +7,19 @@ plugins {
 }
 
 group = 'org.podval.tools'
-version = '0.4.13'
+version = '0.4.14'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.6.2'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.17.0'
-final String sbtVersion         = '1.10.5'
+final String scalaJsVersion     = '1.18.0'
+final String sbtVersion         = '1.10.7'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.13'
+  implementation 'org.opentorah:opentorah-util:0.10.14'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 
