@@ -74,9 +74,9 @@ class TestExecuter(
         clock
       )
     else
-    // Encoding of TaskDefTestSpec happens at the end of the TestClassProcessor chain,
-    // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor
-    // can do their jobs.
+      // Encoding of TaskDefTestSpec happens at the end of the TestClassProcessor chain,
+      // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor
+      // can do their jobs.
       TaskDefTestSpecEncodingTestClassProcessor(
         super.createTestClassProcessor(
           workerLeaseService,

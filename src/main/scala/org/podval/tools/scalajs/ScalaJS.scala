@@ -2,7 +2,6 @@ package org.podval.tools.scalajs
 
 import org.gradle.api.GradleException
 import org.gradle.api.logging.{Logger, LogLevel as GLevel}
-import org.gradle.api.provider.Property
 import org.opentorah.build.Gradle.*
 import org.opentorah.files.PipeOutputThread
 import org.opentorah.node.{Node, NodeExtension}
@@ -108,10 +107,9 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
   private def mkJsEnv: JSEnv =
-    // TODO do not invoke Task.getProject at execution time...
-    val node: Node = NodeExtension.get(task.getProject).node
+    val node: Node = task.node
     JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
-      .withExecutable(node.installation.nodeExec.getAbsolutePath)
+      .withExecutable(node.installation.node.getAbsolutePath)
       .withEnv(node.nodeEnv.toMap)
     )
 

@@ -3,7 +3,7 @@ package org.podval.tools.testing.task
 import org.gradle.api.Action
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.internal.tasks.testing.{TestClassProcessor, WorkerTestClassProcessorFactory}
+import org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory
 import org.gradle.api.logging.LogLevel
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.opentorah.build.Gradle

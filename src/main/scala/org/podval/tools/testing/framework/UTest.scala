@@ -9,7 +9,7 @@ object UTest extends FrameworkDescriptor(
   displayName = "UTest",
   group = "com.lihaoyi",
   artifact = "utest",
-  versionDefault = "0.8.4",
+  versionDefault = "0.8.5",
   className = "utest.runner.Framework",
   sharedPackages = List("utest.runner") // TODO more?
 ):

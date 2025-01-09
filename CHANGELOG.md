@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.15] - 2025-01-12
+- cleanup: minor cleanup
+- chore: minor dependency updates
+- fix: eliminated calls to Task.getProject() during task execution
+
 ## [0.4.14] - 2025-01-07
-- 
+- fix: OS detection fails in macOS  https://github.com/opentorah/opentorah/issues/341
 
 ## [0.4.13] - 2024-12-22
 - chore: Gradle 8.12 adjustments and forced update to sbt/zinc
@@ -97,14 +102,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: all test ids are composite of any length, not just 2 as Gradle's serializer does
 - cleanup: replicated all TestEventSerializer's serializers - but with my id serializer
 - cleanup: no disambiguation needed in the TestSerializerRegistry
-- cleanup: packaged proxying of the test events in the non-forking scenario into SingleThreddingTestResultProcessor
+- cleanup: packaged proxying of the test events in the non-forking scenario into SingleThreadingTestResultProcessor
 - cleanup: introduced TestFramework
 - cleanup: packaged TestScanner as a TestFrameworkDetector
 - cleanup: use Gradle's DefaultTest[Class|Method]Descriptor in test events instead of TaskDefTest
 - cleanup: use Gradle's TestMainAction and WorkerTestClassProcessor
 - cleanup: boiled down the differences between Gradle's ForkingTestClassProcessor and mine to overridable methods
 - cleanup: boiled down the differences between Gradle's TestWorker and mine to overridable methods
-- cleanup: boiled down the differences between Gradle's DafultTestExecuter and mine to overridable methods
+- cleanup: boiled down the differences between Gradle's DefaultTestExecuter and mine to overridable methods
 - cleanup: tested with the modified Gradle
 
 ## [0.4.4] - 2023-02-19
@@ -127,7 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - 2022-09-15
 - chore: dependency updates
 - bug: fixed a Gradle issue with ModuleInitializers
-- docs: documented NodeJS version compatibility
+- docs: documented Node.js version compatibility
 
 ## [0.3.0] - 2022-08-14
 - chore: cleanup

@@ -4,7 +4,7 @@ import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFai
 import org.gradle.api.tasks.testing.{TestExecutionException, TestFailure, TestFailureDetails}
 import org.gradle.internal.serialize.PlaceholderExceptionSupport
 import org.opentorah.util.Strings
-import org.podval.tools.testing.exceptions.ExceptionConverter
+import scala.annotation.tailrec
 
 abstract class SourceMapper:
   import SourceMapper.Mapping
@@ -77,6 +77,7 @@ object SourceMapper:
     val column: Int
   )
 
+  @tailrec
   private def stacktraceOf(throwable: Throwable): String =
     try
       val out = java.io.StringWriter()

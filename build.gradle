@@ -3,23 +3,23 @@ plugins {
   id 'scala'
   id 'signing'
   id 'com.gradle.plugin-publish' version '1.3.0'
-  id 'org.podval.tools.scalajs' version '0.4.13' // Note: must be applied *after* Plugin Portal Plugin
+  id 'org.podval.tools.scalajs' version '0.4.15' // Note: must be applied *after* Plugin Portal Plugin
 }
 
 group = 'org.podval.tools'
-version = '0.4.14'
+version = '0.4.15'
 description = 'Gradle plugin for ScalaJS'
 
 final String scalaVersion       = '3.6.2'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.18.0'
+final String scalaJsVersion     = '1.18.1'
 final String sbtVersion         = '1.10.7'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.14'
+  implementation 'org.opentorah:opentorah-util:0.10.15'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 
@@ -36,9 +36,9 @@ dependencies {
   compileOnly 'junit:junit:4.13.2'
   compileOnly 'org.scalatest:scalatest_3:3.2.19'
   compileOnly 'org.scalacheck:scalacheck_3:1.18.1'
-  compileOnly 'com.lihaoyi:utest_3:0.8.4'
+  compileOnly 'com.lihaoyi:utest_3:0.8.5'
   compileOnly 'org.specs2:specs2-core_3:5.5.8'
-  compileOnly 'org.scalameta:munit_3:1.0.3'
+  compileOnly 'org.scalameta:munit_3:1.0.4'
   // TODO ZIO Test
 
   testImplementation 'org.scalatest:scalatest_3:3.2.19'

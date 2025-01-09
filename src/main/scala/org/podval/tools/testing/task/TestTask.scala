@@ -23,7 +23,6 @@ import scala.jdk.CollectionConverters.*
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
-// TODO do not invoke Task.getProject at execution time...
 abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
 
@@ -45,9 +44,22 @@ abstract class TestTask extends Test:
   // TODO unify with ScalaJSTask?
   private def sourceSet: SourceSet = getProject.getSourceSet(SourceSet.TEST_SOURCE_SET_NAME)
   @Classpath final def getRuntimeClassPath: FileCollection = sourceSet.getRuntimeClasspath
+
+  // To avoid invoking Task.getProject at execution time, some things are done or captured in afterEvaluate():
+  private var analysisFile: Option[File] = None
+
   getProject.afterEvaluate((project: Project) =>
     getDependsOn.add(project.getClassesTask(sourceSet))
-    ()
+
+    // AnalysisDetector needs Zinc classes;
+    // if I ever get rid of it, this classpath expansion goes away.
+    addToClassPath(this, project.getConfiguration(ScalaBasePlugin.ZINC_CONFIGURATION_NAME).asScala)
+
+    // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
+    analysisFile = Some(Files.file(
+      directory = project.getLayout.getBuildDirectory.get.getAsFile,
+      segments = s"tmp/scala/compilerAnalysis/${project.getScalaCompile(sourceSet).getName}.analysis"
+    ))
   )
 
   final def useSbt(@DelegatesTo(classOf[TestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
@@ -63,22 +75,11 @@ abstract class TestTask extends Test:
     logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     moduleRegistry = getModuleRegistry,
-    // delayed: not available at the time of the TestFramework construction (task creation)
+    // delayed: not available at the time of the TestFramework construction
     testEnvironment = () => testEnvironment,
-    analysisFile = () => analysisFile,
+    analysisFile = () => analysisFile.get,
     runningInIntelliJIdea = () => TestTask.runningInIntelliJIdea(TestTask.this)
   )
-
-  private def analysisFile: File =
-    // AnalysisDetector needs Zinc classes;
-    // if I ever get rid of it, this classpath expansion goes away.
-    addToClassPath(this, getProject.getConfiguration(ScalaBasePlugin.ZINC_CONFIGURATION_NAME).asScala)
-
-    // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
-    Files.file(
-      directory = getProject.getLayout.getBuildDirectory.get.getAsFile,
-      segments = s"tmp/scala/compilerAnalysis/${getProject.getScalaCompile(sourceSet).getName}.analysis"
-    )
 
   @TaskAction override def executeTests(): Unit =
     // Since Gradle's Test task manipulates the test framework in its `executeTests()`,

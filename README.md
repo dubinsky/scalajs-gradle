@@ -9,9 +9,9 @@ This plugin also supports testing plain Scala code (no ScalaJS) using sbt-compat
 
 Supports ScalaJS 1; default version: 1.17.0.
 
-NodeJS has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
+Node.js has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
-Plugin requires Gradle 8.0.2.
+Plugin requires Gradle 8.12.
 
 Plugin is written in Scala 3.
 Scala 2.12 on the *project* classpath is supported, but not on the *buildScript* classpath;
@@ -50,7 +50,7 @@ issues that maiflai's plugin has my does not:
 [Test events were not received](https://github.com/maiflai/gradle-scalatest/issues/67),
 [ASCII Control Characters Printed](https://github.com/maiflai/gradle-scalatest/issues/69).
 I never tried an alternative ScalaTest integration 
-[calatest-junit-runner](https://github.com/helmethair-co/scalatest-junit-runner),
+[scalatest-junit-runner](https://github.com/helmethair-co/scalatest-junit-runner),
 and if you need `JUnit5` that is probably a way to go, since my plugin does not support `JUnit5`
 (it does support `ScalaJS` though :).
 
@@ -62,7 +62,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.4.7'
+  id 'org.podval.tools.scalajs' version '0.4.15'
 }
 ```
 
@@ -247,14 +247,14 @@ If you declare a `scalajs-library` dependency explicitly, plugin chooses the sam
 version for the ScalaJS dependencies it adds
 (`scalajs-linker`, `scalajs-sbt-test-adapter`, `scalajs-test-bridge`, `scalajs-compiler`).
 
-Plugin uses version 2.4.0 of the ScalaJS DOM library (`scalajs-dom`) - unless a different version
+Plugin uses version 2.8.0 of the ScalaJS DOM library (`scalajs-dom`) - unless a different version
 is configured explicitly.
 
 Example with all dependencies listed for Scala 3:
 ```groovy
 final String scalaVersion       = '3.6.2'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.17.0'
+final String scalaJsVersion     = '1.18.1'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
@@ -288,7 +288,7 @@ Example with explicit dependencies for Scala 2:
 ```groovy
 final String scalaVersion       = '2.13.14'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.17.0'
+final String scalaJsVersion     = '1.18.1'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
@@ -322,17 +322,17 @@ dependencies {
 
 ### Node ###
 
-For running the code and tests, NodeJS has to be available.
+For running the code and tests, Node.js has to be available.
 
 In ScalaJS mode, plugin adds `node` extension to the project.
-This extension can be used to specify the version of NodeJS to use and Node modules to install.
+This extension can be used to specify the version of Node.js to use and Node modules to install.
 This extension can be retrieved by calling `NodeExtension.get(project)`.
 
-If `build.gradle` specifies a version of NodeJS to be used via `node.version="..."`,
+If `build.gradle` specifies a version of Node.js to be used via `node.version="..."`,
 plugin will install the specified version under `~/.gradle/nodejs` and use it;
-if version of NodeJS is not specified, "ambient" NodeJS will be used.
+if version of Node.js is not specified, "ambient" Node.js will be used.
 
-Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands using the same version of NodeJS;
+Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands using the same version of Node.js;
 those tasks can be used from the command line like this:
 ```shell
 ./gradlew npm --npm-arguments 'version'
@@ -342,8 +342,8 @@ those tasks can be used from the command line like this:
 Node extension also exposes methods `npm(arguments)` and `node(arguments)`
 which can be used in - say - `doFirst` blocks of your project.
 
-ScalaJS does not support versions of NodeJS newer than "16.19.1", so none of the "17.9.1", "18.15.0", "19.8.1".
-I do not know anything about NodeJS, and find this surprising - but I am sure there is a good
+ScalaJS does not support versions of Node.js newer than "16.19.1", so none of the "17.9.1", "18.15.0", "19.8.1".
+I do not know anything about Node.js, and find this surprising - but I am sure there is a good
 technical or political reason for this ;)
 
 Node modules for the project are in the `node_modules` directory in the project root.
@@ -552,7 +552,7 @@ various features of the various frameworks and their support by the plugin:
 Fixture, Feature, ForClass, GroupingFuncSpec, Platform, SourceFile, TestProject.
 
 #### Framework Peculiarities
-JUnit4 (and MUnit which seems to be base on JUnit4) report incorrect class and method names for test method events:
+JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:
 both are `<class name>.<method name>`; method names like this just look stupid, but class names look
 like new classes to Gradle, so test report is corrupted. I had to work around it.
 

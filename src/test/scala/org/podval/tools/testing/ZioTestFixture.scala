@@ -9,7 +9,7 @@ object ZioTestFixture extends Fixture(
        |import zio.Scope
        |
        |object ZIOTestTest extends ZIOSpecDefault:
-       |  override def spec: Spec[TestEnvironment with Scope, Any] = suite("some suite")(
+       |  override def spec: Spec[TestEnvironment & Scope, Any] = suite("some suite")(
        |    test("failing test") { assert(1)(Assertion.equalTo(2)) },
        |    test("passing test") { assert(1)(Assertion.equalTo(1)) },
        |    test("failing test assertTrue") { val one = 1; assertTrue(one == 2) },

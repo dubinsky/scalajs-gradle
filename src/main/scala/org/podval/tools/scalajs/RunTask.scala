@@ -15,7 +15,7 @@ trait RunTask extends ScalaJSTask:
     .getOrElse(throw GradleException(s"Task $getName must depend on a task of type ${linkTaskClass.getName}!"))
 
 object RunTask:
-  class Main extends DefaultTask with RunTask:
+  abstract class Main extends DefaultTask with RunTask:
     setGroup("other")
     final override protected def flavour: String = "Run"
     final override protected def linkTaskClass: Class[LinkTask.Main] = classOf[LinkTask.Main]

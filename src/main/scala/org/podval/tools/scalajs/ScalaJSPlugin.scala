@@ -6,7 +6,7 @@ import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
 import org.opentorah.build.{Configurations, DependencyRequirement, JavaDependency, ScalaLibrary, Version}
 import org.opentorah.build.Gradle.*
-import org.opentorah.node.NodeExtension
+import org.opentorah.node.{NodeExtension, TaskWithNode}
 import org.podval.tools.testing.task.TestTaskScala
 import scala.jdk.CollectionConverters.*
 
@@ -27,14 +27,14 @@ final class ScalaJSPlugin extends Plugin[Project]:
       scalaJS.setDescription("ScalaJS dependencies used by the ScalaJS plugin.")
 
       val linkMain: LinkTask.Main = project.getTasks.register("link"    , classOf[LinkTask.Main]).get()
-      val linkTest: LinkTask.Test = project.getTasks.register("linkTest", classOf[LinkTask.Test]).get()
       val run     : RunTask .Main = project.getTasks.register("run"     , classOf[RunTask .Main]).get()
+      run.dependsOn(linkMain)
+      val linkTest: LinkTask.Test = project.getTasks.register("linkTest", classOf[LinkTask.Test]).get()
       val test    : RunTask .Test = project.getTasks.replace ("test"    , classOf[RunTask .Test])
-      run .dependsOn(linkMain)
       test.dependsOn(linkTest)
 
     project.afterEvaluate((project: Project) =>
-      if !isScalaJSDisabled then NodeExtension.get(project).node(installIfDoesNotExist = true)
+      if !isScalaJSDisabled then NodeExtension.get(project).ensureNodeIsInstalled()
 
       val implementationConfiguration: Configuration = project.getConfiguration(Configurations.implementationConfiguration)
       val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(collectClassPath(getClass.getClassLoader))

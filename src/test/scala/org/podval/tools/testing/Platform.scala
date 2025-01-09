@@ -11,7 +11,7 @@ final class Platform(
 ):
   private def flavour: String = if isScalaJS then "ScalaJS" else "Scala"
   
-  def displayName: String = s"in $flavour v$scalaVersion" // TODO SCalaJS 3.2.2 is incorrect ;)
+  def displayName: String = s"in $flavour v$scalaVersion" // TODO ScalaJS 3.2.2 is incorrect ;)
 
   def scalaLibrary: Dependency.WithVersion = ScalaLibrary.forVersion(scalaVersion)
 

@@ -1,11 +1,10 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.Task
-import org.opentorah.node.NodeExtension
+import org.opentorah.node.TaskWithNode
 
-trait ScalaJSTask extends Task:
+trait ScalaJSTask extends TaskWithNode:
   setDescription(s"$flavour ScalaJS")
 
   protected def flavour: String
 
-  protected final def setUpNodeProject(): Unit = NodeExtension.get(getProject).setUpProject(List("jsdom"))
+  protected final def setUpNodeProject(): Unit = setUpNodeProject(List("jsdom"))

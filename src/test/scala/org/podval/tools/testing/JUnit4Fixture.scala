@@ -2,6 +2,7 @@ package org.podval.tools.testing
 
 import ForClass.*
 
+// TODO assertThat is deprecated!
 object JUnit4Fixture extends Fixture(
   framework = org.podval.tools.testing.framework.JUnit4,
   testSources = Seq(SourceFile("JUnit4Test",
