@@ -9,9 +9,7 @@ final class Platform(
   val isScalaJS: Boolean,
   val nodeVersion: Version = NodeDependency.versionDefault
 ):
-  private def flavour: String = if isScalaJS then "ScalaJS" else "Scala"
-  
-  def displayName: String = s"in $flavour v$scalaVersion" // TODO ScalaJS 3.2.2 is incorrect ;)
+  def displayName: String = s"""in Scala v$scalaVersion${if isScalaJS then " with ScalaJS" else ""}"""
 
   def scalaLibrary: Dependency.WithVersion = ScalaLibrary.forVersion(scalaVersion)
 

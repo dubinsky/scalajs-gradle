@@ -8,7 +8,7 @@ object ScalaJSDependencies:
   private val scalaJS: Configurations = Configurations.forName(configurationName)
 
   private val group: String = "org.scala-js"
-  private val versionDefault: Version = Version("1.17.0")
+  private val versionDefault: Version = Version("1.18.1")
 
   // Note: no Scala 3 flavours exists
   private object Library     extends ScalaDependency.Scala2(group, "scalajs-library")

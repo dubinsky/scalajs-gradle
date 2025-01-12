@@ -39,7 +39,7 @@ dependencies {
   compileOnly 'com.lihaoyi:utest_3:0.8.5'
   compileOnly 'org.specs2:specs2-core_3:5.5.8'
   compileOnly 'org.scalameta:munit_3:1.0.4'
-  // TODO ZIO Test
+  compileOnly 'dev.zio:zio-test_3:2.1.14'
 
   testImplementation 'org.scalatest:scalatest_3:3.2.19'
 

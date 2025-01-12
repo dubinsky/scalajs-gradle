@@ -23,6 +23,10 @@ import scala.jdk.CollectionConverters.*
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
+
+// Note: inherited Test.testsAreNotFiltered() calls Test.noCategoryOrTagOrGroupSpecified(),
+// which recognizes only JUnit and TestNG; since I can not override it, I'll just use
+// org.gradle.api.tasks.testing.junit.JUnitOptions for my "sbt" TestFrameworkOptions...
 abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
 

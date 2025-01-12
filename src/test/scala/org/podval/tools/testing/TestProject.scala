@@ -203,8 +203,8 @@ object TestProject:
        |    failOnNoMatchingTests = false
        |  }
        |  useSbt {
-       |    includeTags = $includeTagsString
-       |    excludeTags = $excludeTagsString
+       |    includeCategories = $includeTagsString
+       |    excludeCategories = $excludeTagsString
        |  }
        |  maxParallelForks = $maxParallelForks
        |}

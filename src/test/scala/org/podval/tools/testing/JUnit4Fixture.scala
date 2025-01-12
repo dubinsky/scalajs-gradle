@@ -2,12 +2,12 @@ package org.podval.tools.testing
 
 import ForClass.*
 
-// TODO assertThat is deprecated!
 object JUnit4Fixture extends Fixture(
   framework = org.podval.tools.testing.framework.JUnit4,
   testSources = Seq(SourceFile("JUnit4Test",
     s"""import org.junit.Assert.{assertArrayEquals, assertEquals, assertFalse, assertNotNull, assertNotSame, assertNull,
-       |  assertSame, assertThat, assertTrue}
+       |  assertSame, assertTrue}
+       |import org.hamcrest.MatcherAssert.assertThat
        |import org.hamcrest.CoreMatchers.{allOf, anyOf, both, containsString, equalTo, everyItem, hasItems, not, sameInstance,
        |  startsWith}
        |import org.hamcrest.core.CombinableMatcher

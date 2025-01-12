@@ -28,8 +28,8 @@ class TestFramework(
   override def getOptions: TestFrameworkOptions = options
 
   private def testTagsFilter: TestTagsFilter = TestTagsFilter(
-    include = options.getIncludeTags.asScala.toArray,
-    exclude = options.getExcludeTags.asScala.toArray
+    include = options.getIncludeCategories.asScala.toArray,
+    exclude = options.getExcludeCategories.asScala.toArray
   )
 
   override def copyWithFilters(newTestFilters: org.gradle.api.tasks.testing.TestFilter): TestFramework =

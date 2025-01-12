@@ -147,8 +147,8 @@ Tests can be filtered by tags, for example:
 ```groovy
 test {
   useSbt {
-    includeTags = ['org.scalatest.tags.Slow']
-    excludeTags = ['com.mycompany.tags.DbTest', 'com.mycompany.tags.RequiresDb']
+    includeCategories = ['org.scalatest.tags.Slow']
+    excludeCategories = ['com.mycompany.tags.DbTest', 'com.mycompany.tags.RequiresDb']
   }
 }
 ```

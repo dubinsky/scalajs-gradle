@@ -98,7 +98,7 @@ class GroupingFunSpec extends AnyFunSpec:
         .filter(_.works(feature, platform))
 
       if fixturesEffective.isEmpty
-      then ignore("doesn't work yet")(())
+      then ignore(s"doesn't work yet ${platform.displayName}")(())
       else describe(platform.displayName)(
         forProject(
           projectName :+ platform.displayName,

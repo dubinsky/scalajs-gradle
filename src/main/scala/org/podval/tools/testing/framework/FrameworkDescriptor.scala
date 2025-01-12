@@ -34,7 +34,7 @@ object FrameworkDescriptor:
     JUnit5,
     MUnit,
     UTest,
-    ZIOTest
+    ZioTest
   )
 
   def scalaSupported  : List[FrameworkDescriptor] = all.filter(_.isScalaSupported  )
