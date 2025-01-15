@@ -4,9 +4,9 @@ import org.gradle.api.{Plugin, Project}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
-import org.opentorah.build.{Configurations, DependencyRequirement, JavaDependency, ScalaLibrary, Version}
+import org.opentorah.build.{Configurations, DependencyRequirement, GradleClassPath, JavaDependency, ScalaLibrary, Version}
 import org.opentorah.build.Gradle.*
-import org.opentorah.node.{NodeExtension, TaskWithNode}
+import org.opentorah.node.NodeExtension
 import org.podval.tools.testing.task.TestTaskScala
 import scala.jdk.CollectionConverters.*
 
@@ -37,11 +37,12 @@ final class ScalaJSPlugin extends Plugin[Project]:
       if !isScalaJSDisabled then NodeExtension.get(project).ensureNodeIsInstalled()
 
       val implementationConfiguration: Configuration = project.getConfiguration(Configurations.implementationConfiguration)
-      val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(collectClassPath(getClass.getClassLoader))
+      val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this))
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(implementationConfiguration)
 
       val requirements: Seq[DependencyRequirement] =
         Seq(
+          // TODO do I need to add https://github.com/scala-js/scala-js/tree/main/test-interface too?
           JavaDependency.Requirement(
             dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
             version = Version("1.0"),
@@ -82,7 +83,7 @@ object ScalaJSPlugin:
     Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
 
   private def configureScalaCompile(project: Project, sourceSetName: String): Unit =
-    val scalaCompile: ScalaCompile = project.getScalaCompile(sourceSetName)
+    val scalaCompile: ScalaCompile = project.getScalaCompile(project.getSourceSet(sourceSetName))
     val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // Note: nullable
       .map(_.asScala.toList)
       .getOrElse(List.empty)

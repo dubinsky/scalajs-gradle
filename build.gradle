@@ -10,7 +10,7 @@ group = 'org.podval.tools'
 version = '0.4.15'
 description = 'Gradle plugin for ScalaJS'
 
-final String scalaVersion       = '3.6.2'
+final String scalaVersion       = '3.6.3'
 final String scala2versionMinor = '2.13'
 final String scalaJsVersion     = '1.18.1'
 final String sbtVersion         = '1.10.7'
@@ -19,7 +19,7 @@ dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.15'
+  implementation 'org.opentorah:opentorah-util:0.10.16'
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
 
@@ -54,7 +54,7 @@ dependencies {
 //  useTestNG()
 //}
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {

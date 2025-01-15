@@ -252,7 +252,7 @@ is configured explicitly.
 
 Example with all dependencies listed for Scala 3:
 ```groovy
-final String scalaVersion       = '3.6.2'
+final String scalaVersion       = '3.6.3'
 final String scala2versionMinor = '2.13'
 final String scalaJsVersion     = '1.18.1'
 
@@ -275,7 +275,7 @@ dependencies {
 
 And - with only the required dependencies:
 ```groovy
-final String scalaVersion       = '3.6.2'
+final String scalaVersion       = '3.6.3'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"

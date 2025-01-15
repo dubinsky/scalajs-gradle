@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.15] - 2025-01-12
+## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup
 - chore: minor dependency updates
 - fix: eliminated calls to Task.getProject() during task execution
@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: changed deprecated `org.junit.Assert.assertThat` to `org.hamcrest.MatcherAssert.assertThat`;
 - re-use Gradle's `JUnitOptions` as our TestFrameworkOptions (see the code for the reasons); as a result:
 - `useSbt` block now uses `includeCategories`/`excludeCategories` instead of `includeTags`/`excludeTags`
+- fix: eliminated calls to Project.afterEvaluate() in Gradle Tasks
+- chore: Java 21
+- chore: Scala 3.6.3
+- chore: latest OpenTorah with Gradle cleanup
 
 ## [0.4.14] - 2025-01-07
 - fix: OS detection fails in macOS  https://github.com/opentorah/opentorah/issues/341

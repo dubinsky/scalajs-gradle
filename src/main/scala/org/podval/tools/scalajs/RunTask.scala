@@ -31,11 +31,12 @@ object RunTask:
     final override protected def canFork: Boolean = false
 
     private var scalaJS: Option[ScalaJS] = None
+    final override protected def sourceMapper: Option[SourceMapper] = scalaJS.get.sourceMapper
+    final override protected def testEnvironment: TestEnvironment = scalaJS.get.testEnvironment
+
     @TaskAction override def executeTests(): Unit =
       setUpNodeProject()
       scalaJS = Some(ScalaJS(task = this, linkTask))
       super.executeTests()
       scalaJS = None
 
-    final override protected def sourceMapper: Option[SourceMapper] = scalaJS.get.sourceMapper
-    final override protected def testEnvironment: TestEnvironment = scalaJS.get.testEnvironment

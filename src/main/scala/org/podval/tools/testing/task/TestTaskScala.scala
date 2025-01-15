@@ -1,7 +1,7 @@
 package org.podval.tools.testing.task
 
 import org.podval.tools.testing.framework.FrameworkDescriptor
-import org.opentorah.build.Gradle.*
+import org.opentorah.build.GradleClassPath
 import sbt.testing.Framework
 import java.io.File
 
@@ -19,7 +19,7 @@ abstract class TestTaskScala extends TestTask:
       // - instantiate test frameworks from a classloader that has them and
       // - return sbt.testing.Framework used elsewhere, instead of something loaded from a different classloader
       //  (and thus can not be cast)
-      addToClassPath(TestTaskScala.this, testClassPath)
+      GradleClassPath.addTo(TestTaskScala.this, testClassPath)
 
       def maybeInstantiate(descriptor: FrameworkDescriptor): Option[Framework] =
         val result: Option[Framework] =

@@ -1,35 +1,24 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.{DefaultTask, NamedDomainObjectContainer, Project}
-import org.gradle.api.file.FileCollection
+import org.gradle.api.{DefaultTask, NamedDomainObjectContainer}
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.{Classpath, Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
+import org.gradle.api.tasks.{Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
+import org.opentorah.build.{GradleClassPath, TaskWithSourceSet}
 import org.opentorah.build.Gradle.*
 import org.opentorah.util.Files
 import java.io.File
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.{IterableHasAsScala, SetHasAsScala}
 
-sealed abstract class LinkTask extends DefaultTask with ScalaJSTask:
+sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWithSourceSet:
+  // To avoid invoking Task.getProject at execution time, some things are captured at creation:
   setGroup("build")
+  setDescription(s"$flavour ScalaJS${optimization.description}")
+  getDependsOn.add(getProject.getClassesTask(sourceSet))
 
-  // To avoid invoking Task.getProject at execution time, some things are captured at creation or in afterEvaluate():
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
-  private var scalaJSDependenciesClassPath: Option[Iterable[File]] = None
-  private var runtimeClasspath: Option[FileCollection] = None
-
-  getProject.afterEvaluate((project: Project) =>
-    getDependsOn.add(project.getClassesTask(sourceSet))
-    setDescription(s"$flavour ScalaJS${optimization.description}")
-    scalaJSDependenciesClassPath = Some(project.getConfiguration(ScalaJSDependencies.configurationName).asScala)
-    runtimeClasspath = Some(sourceSet.getRuntimeClasspath)
-  )
-
-  private def sourceSet: SourceSet = getProject.getSourceSet(sourceSetName)
-  protected def sourceSetName: String
+  private val scalaJSDependenciesClassPath: Iterable[File] = getProject.getConfiguration(ScalaJSDependencies.configurationName).asScala
 
   def moduleInitializerProperties: Option[Seq[ModuleInitializerProperties]]
-
-  @Classpath final def getRuntimeClassPath: FileCollection = runtimeClasspath.get
 
   @OutputDirectory final def getJSDirectory: File = outputFile("js")
   @OutputFile final def getReportTextFile: File = outputFile("linking-report.txt")
@@ -48,7 +37,9 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask:
     // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
     // So, dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
     // It seems that expanding the classpath once, here, is enough for everything to work.
-    addToClassPath(this, scalaJSDependenciesClassPath.get)
+    // Note: when done at creation, this causes
+    //   Cannot change dependencies of dependency configuration ':scalajs' after it has been resolved.
+    GradleClassPath.addTo(this, scalaJSDependenciesClassPath)
 
     ScalaJS(task = this, linkTask = this).link()
 

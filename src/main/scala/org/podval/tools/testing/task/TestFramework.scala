@@ -6,14 +6,14 @@ import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory
 import org.gradle.api.logging.LogLevel
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.opentorah.build.Gradle
+import org.opentorah.build.GradleClassPath
 import org.opentorah.util.Files
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.worker.TestTagsFilter
 import java.io.File
 import java.lang.reflect.Field
 import java.net.URL
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class TestFramework(
   testEnvironment: () => TestEnvironment,
@@ -87,7 +87,7 @@ class TestFramework(
     externalModules: List[String],
     jars: List[String]
   ): List[URL] =
-    jars.map(Gradle.findOnClassPath(TestFramework, _)) ++
+    jars.map(GradleClassPath.findOn(TestFramework, _)) ++
     (
       gradleModules.map(moduleRegistry.getModule) ++
       externalModules.map(moduleRegistry.getExternalModule)
@@ -119,11 +119,12 @@ class TestFramework(
 
       // "test-interface"; jar itself is already on the classpath
       "sbt.testing",
+      // TODO what about `scala-js:test-interface`? Do I need to add/share that when running Scala.js?
 
       // "groovy" external module added to the applicationClassPath
       "org.codehaus.groovy",
 
-      // When plugin jat is added to the application classpath,
+      // When plugin jar is added to the application classpath,
       // share only classes needed for the worker:
       //      "org.podval.tools.testing.exceptions",
       //      "org.podval.tools.testing.framework",
