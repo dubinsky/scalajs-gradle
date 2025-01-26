@@ -7,7 +7,7 @@ import org.podval.tools.build.TaskWithSourceSet
 import org.podval.tools.build.Gradle.*
 import org.podval.tools.util.Files
 import java.io.File
-import scala.jdk.CollectionConverters.{IterableHasAsScala, SetHasAsScala}
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWithSourceSet:
   // To avoid invoking Task.getProject at execution time, some things are captured at creation:
@@ -15,6 +15,8 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   setDescription(s"$flavour ScalaJS${optimization.description}")
   getDependsOn.add(getProject.getClassesTask(sourceSet))
 
+  final override protected def linkTask: LinkTask = this
+    
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
 
   def moduleInitializerProperties: Option[Seq[ModuleInitializerProperties]]
@@ -31,7 +33,7 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   @Input @Optional def getPrettyPrint     : Property[Boolean]
 
   @TaskAction final def execute(): Unit =
-    ScalaJS(task = this, linkTask = this).link()
+    scalaJs.link()
 
 object LinkTask:
   abstract class Main extends LinkTask:

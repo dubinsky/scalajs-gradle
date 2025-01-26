@@ -3,12 +3,12 @@ package org.podval.tools.scalajs
 import org.gradle.api.{DefaultTask, GradleException}
 import org.gradle.api.tasks.TaskAction
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 trait RunTask extends ScalaJSTask:
   protected def linkTaskClass: Class[? <: LinkTask]
 
-  protected final def linkTask: LinkTask = getDependsOn
+  final override protected def linkTask: LinkTask = getDependsOn
     .asScala
     .find((candidate: AnyRef) => linkTaskClass.isAssignableFrom(candidate.getClass))
     .map(_.asInstanceOf[LinkTask])
@@ -22,7 +22,7 @@ object RunTask:
 
     @TaskAction final def execute(): Unit =
       setUpNodeProject()
-      ScalaJS(task = this, linkTask).run()
+      scalaJs.run()
 
   abstract class Test extends TestTask with RunTask:
     final override protected def flavour: String = "Test"
@@ -36,7 +36,7 @@ object RunTask:
 
     @TaskAction override def executeTests(): Unit =
       setUpNodeProject()
-      scalaJS = Some(ScalaJS(task = this, linkTask))
+      scalaJS = Some(scalaJs)
       super.executeTests()
       scalaJS = None
 

@@ -7,4 +7,8 @@ trait ScalaJSTask extends TaskWithNode:
 
   protected def flavour: String
 
+  protected def linkTask: LinkTask
+  
   protected final def setUpNodeProject(): Unit = setUpNodeProject(List("jsdom"))
+  
+  protected final def scalaJs: ScalaJS = ScalaJS(task = this, linkTask = linkTask)
