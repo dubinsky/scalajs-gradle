@@ -5,13 +5,12 @@ import org.podval.tools.build.{Configurations, DependencyRequirement, ScalaDepen
 
 object ScalaJSDependencies:
   val configurationName: String = "scalajs"
-  private val scalaJS: Configurations = Configurations.forName(configurationName)
 
   private val group: String = "org.scala-js"
-  private val versionDefault: Version = Version("1.18.2")
+  val versionDefault: Version = Version("1.18.2")
 
   // Note: no Scala 3 flavours exists
-  private object Library       extends ScalaDependency.Scala2(group, "scalajs-library")
+  object Library       extends ScalaDependency.Scala2(group, "scalajs-library")
   private object Compiler      extends ScalaDependency.Scala2(group, "scalajs-compiler", isScalaVersionFull = true)
   private object Linker        extends ScalaDependency.Scala2(group, "scalajs-linker")
   private object TestBridge    extends ScalaDependency.Scala2(group, "scalajs-test-bridge")
@@ -31,12 +30,8 @@ object ScalaJSDependencies:
   def dependencyRequirements(
     pluginScalaLibrary: ScalaLibrary,
     projectScalaLibrary: ScalaLibrary,
-    implementationConfiguration: Configuration
+    scalaJSVersion: Version
   ): Seq[DependencyRequirement] =
-    
-    val scalaJSVersion: Version = Library.findInConfiguration(implementationConfiguration)
-      .map(_.version)
-      .getOrElse(versionDefault)
 
     val forPluginClassPath: Seq[DependencyRequirement] =
       Seq(
@@ -45,14 +40,14 @@ object ScalaJSDependencies:
           version = scalaJSVersion,
           scalaLibrary = pluginScalaLibrary,
           reason = "because it is needed for linking the ScalaJS code",
-          configurations = scalaJS
+          configurationName = configurationName
         ),
         ScalaDependency.Requirement(
           findable = JSDomNodeJS,
           version = JSDomNodeJS.versionDefault,
           scalaLibrary = pluginScalaLibrary,
           reason = "because it is needed for running/testing with DOM man manipulations",
-          configurations = scalaJS
+          configurationName = configurationName
         ),
         // with this on the classpath, I get:
         //Class sbt.testing.Status does not have member field 'sbt.testing.Status Success'
@@ -65,14 +60,14 @@ object ScalaJSDependencies:
 //            """seems that Zio Test works in Scala.js only with `scalajs-test-interface`;
 //              |this is before the TestAdapter, since that one brings in `test-interface`
 //              |""".stripMargin,
-//          configurations = scalaJS
+//          configurationName = scalaJS
 //        ),
         ScalaDependency.Requirement(
           findable = TestAdapter,
           version = scalaJSVersion,
           scalaLibrary = pluginScalaLibrary,
           reason = "because it is needed for running the tests on Node",
-          configurations = scalaJS
+          configurationName = configurationName
         )
       )
 
@@ -84,7 +79,7 @@ object ScalaJSDependencies:
           version = ScalaLibrary.Scala3.getScalaVersion(projectScalaLibrary),
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for linking of the ScalaJS code",
-          configurations = Configurations.implementation
+          configurationName = Configurations.implementation
         )
       )) ++
       // only for Scala 2
@@ -94,7 +89,7 @@ object ScalaJSDependencies:
           version = scalaJSVersion,
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
-          configurations = Configurations.scalaCompilerPlugins
+          configurationName = Configurations.scalaCompilerPlugins
         )
       )) ++ Seq(
         ScalaDependency.Requirement(
@@ -102,14 +97,14 @@ object ScalaJSDependencies:
           version = scalaJSVersion,
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for compiling of the ScalaJS code",
-          configurations = Configurations.implementation
+          configurationName = Configurations.implementation
         ),
         ScalaDependency.Requirement(
           findable = if projectScalaLibrary.isScala3 then DomSJS.Scala3 else DomSJS.Scala2,
           version = DomSJS.versionDefault,
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for DOM manipulations",
-          configurations = Configurations.implementation
+          configurationName = Configurations.implementation
         ),
         ScalaDependency.Requirement(
           findable = TestBridge,
@@ -117,7 +112,7 @@ object ScalaJSDependencies:
           scalaLibrary = projectScalaLibrary,
           reason = "because it is needed for testing of the ScalaJS code",
           isVersionExact = true,
-          configurations = Configurations.testImplementation
+          configurationName = Configurations.testImplementation
         )
       )
 

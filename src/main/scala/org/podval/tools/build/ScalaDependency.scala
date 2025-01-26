@@ -97,13 +97,13 @@ object ScalaDependency:
     version: Version,
     scalaLibrary: ScalaLibrary,
     reason: String,
-    configurations: Configurations,
+    configurationName: String,
     isVersionExact: Boolean = false
   ) extends DependencyRequirement(
     findable,
     version,
     reason,
-    configurations,
+    configurationName,
     isVersionExact
   ):
     override protected def getDependency: Dependency =

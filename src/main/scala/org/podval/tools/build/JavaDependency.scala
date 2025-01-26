@@ -16,13 +16,13 @@ object JavaDependency:
     dependency: JavaDependency,
     version: Version,
     reason: String,
-    configurations: Configurations,
+    configurationName: String,
     isVersionExact: Boolean = false
   ) extends DependencyRequirement(
     dependency,
     version,
     reason,
-    configurations,
+    configurationName,
     isVersionExact
   ):
     override protected def getDependency: Dependency = dependency

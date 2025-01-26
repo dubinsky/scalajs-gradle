@@ -203,7 +203,7 @@ dependencies {
 }
 ```
 
-Plugin does this automatically unless a dependency on `scala-compiler` is declared explicitly.
+Plugin does this automatically unless a dependency on `scalajs-compiler` is declared explicitly.
 
 To enable Scala compiler plugins, their classpaths need to be given to the compiler
 via a `-Xplugin:` option. Examples of the Gradle build script code that do that abound:

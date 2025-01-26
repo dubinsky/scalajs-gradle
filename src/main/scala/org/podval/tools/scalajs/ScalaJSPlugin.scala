@@ -4,7 +4,7 @@ import org.gradle.api.{Plugin, Project}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
-import org.podval.tools.build.{Configurations, DependencyRequirement, GradleClassPath, JavaDependency, ScalaLibrary, Version}
+import org.podval.tools.build.{Configurations, GradleClassPath, JavaDependency, ScalaLibrary, Version}
 import org.podval.tools.build.Gradle.*
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.testing.task.TestTaskScala
@@ -36,40 +36,41 @@ final class ScalaJSPlugin extends Plugin[Project]:
     project.afterEvaluate((project: Project) =>
       if !isScalaJSDisabled then NodeExtension.get(project).ensureNodeIsInstalled()
 
-      val implementationConfiguration: Configuration = project.getConfiguration(Configurations.implementationConfiguration)
+      val implementationConfiguration: Configuration = project.getConfiguration(Configurations.implementation)
       val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this))
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(implementationConfiguration)
 
-      val requirements: Seq[DependencyRequirement] =
-        if isScalaJSDisabled then  Seq(
-          // TODO do I need to add https://github.com/scala-js/scala-js/tree/main/test-interface too?
-          JavaDependency.Requirement(
-            dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
-            version = Version("1.0"),
-            reason =
-              """
-                |because some test frameworks (ScalaTest :)) do not bring it in in,
-                |and it needs to be on the testImplementation classpath;
-                |when using ScalaJS, org.scala-js:scalajs-sbt-test-adapter brings it into the scalajs configuration
-                |""".stripMargin,
-            configurations = Configurations.testImplementation
-          )
-        ) else
-          ScalaJSDependencies.dependencyRequirements(
-            pluginScalaLibrary,
-            projectScalaLibrary,
-            implementationConfiguration
-          )
-        
+      if isScalaJSDisabled then Seq(
+        JavaDependency.Requirement(
+          dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
+          version = Version("1.0"),
+          reason =
+            """
+              |because some test frameworks (ScalaTest :)) do not bring it in in,
+              |and it needs to be on the testImplementation classpath;
+              |when using ScalaJS, org.scala-js:scalajs-sbt-test-adapter brings it into the scalajs configuration
+              |""".stripMargin,
+          configurationName = Configurations.testImplementation
+        ).applyToConfiguration(project)
+      ) else
+        val scalaJSVersion: Version = ScalaJSDependencies.Library.findInConfiguration(implementationConfiguration)
+          .map(_.version)
+          .getOrElse(ScalaJSDependencies.versionDefault)
 
-      DependencyRequirement.applyToProject(requirements, project)
+        // TODO do I need to add https://github.com/scala-js/scala-js/tree/main/test-interface too?
+
+        ScalaJSDependencies.dependencyRequirements(
+          pluginScalaLibrary,
+          projectScalaLibrary,
+          scalaJSVersion
+        ).foreach(_.applyToConfiguration(project))
 
       if !isScalaJSDisabled && projectScalaLibrary.isScala3 then
         ScalaJSPlugin.configureScalaCompile(project, SourceSet.MAIN_SOURCE_SET_NAME)
         ScalaJSPlugin.configureScalaCompile(project, SourceSet.TEST_SOURCE_SET_NAME)
 
       projectScalaLibrary.verify(
-        ScalaLibrary.getFromClasspath(project.getConfiguration(Configurations.implementationClassPath).asScala)
+        ScalaLibrary.getFromClasspath(project.getConfiguration(Configurations.runtimeClassPath).asScala)
       )
     )
 

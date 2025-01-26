@@ -5,7 +5,6 @@ import org.gradle.StartParameter
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.testing.{AbstractTestTask, Test, TestListener}
 import org.gradle.api.tasks.{SourceSet, TaskAction}
 import org.gradle.api.Action
@@ -15,7 +14,7 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.Gradle.*
-import org.podval.tools.build.{GradleClassPath, TaskWithSourceSet}
+import org.podval.tools.build.{Configurations, GradleClassPath, TaskWithSourceSet}
 import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.{Field, Method}
@@ -34,7 +33,7 @@ abstract class TestTask extends Test with TaskWithSourceSet:
 
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
   private val scalaCompile: String = getProject.getScalaCompile(sourceSet).getName
-  private val zincClassPath: Iterable[File] = getProject.getConfiguration(ScalaBasePlugin.ZINC_CONFIGURATION_NAME).asScala
+  private val zincClassPath: Iterable[File] = getProject.getConfiguration(Configurations.zinc).asScala
   private var analysisFile: Option[File] = None
 
   // Note: Deferring creation of the test framework by using
