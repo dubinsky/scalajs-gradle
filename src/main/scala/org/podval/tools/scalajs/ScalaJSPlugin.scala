@@ -59,19 +59,21 @@ final class ScalaJSPlugin extends Plugin[Project]:
 
         // TODO do I need to add https://github.com/scala-js/scala-js/tree/main/test-interface too?
 
-        ScalaJSDependencies.dependencyRequirements(
+        ScalaJSDependencies.forPlugin(
           pluginScalaLibrary,
-          projectScalaLibrary,
           scalaJSVersion
         ).foreach(_.applyToConfiguration(project))
 
-        // Needed to access ScalaJS linking functionality in Link.
+        ScalaJSDependencies.forProject(
+          projectScalaLibrary,
+          scalaJSVersion
+        ).foreach(_.applyToConfiguration(project))
+        
+        // Needed to access ScalaJS linking functionality in LinkTask.
         // Dynamically-loaded classes can only be loaded after they are added to the classpath,
         // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
-        // So, dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
-        // It seems that expanding the classpath once, here, is enough for everything to work.
-        // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin...
-        // "classpath"?
+        // That is why dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
+        // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
         GradleClassPath.addTo(this, project.getConfiguration(ScalaJSDependencies.configurationName).asScala)
 
         if projectScalaLibrary.isScala3 then
