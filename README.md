@@ -94,7 +94,6 @@ the ScalaTest one ;)
 
 ## Testing ##
 
-
 Test runs are integrated with Gradle:
 - test counts are logged;
 - test reports are generated;
@@ -254,7 +253,7 @@ Example with all dependencies listed for Scala 3:
 ```groovy
 final String scalaVersion       = '3.6.3'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.18.1'
+final String scalaJsVersion     = '1.18.2'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
@@ -288,7 +287,7 @@ Example with explicit dependencies for Scala 2:
 ```groovy
 final String scalaVersion       = '2.13.14'
 final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.18.1'
+final String scalaJsVersion     = '1.18.2'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
@@ -338,9 +337,6 @@ those tasks can be used from the command line like this:
 ./gradlew npm --npm-arguments 'version'
 ./gradlew node --node-arguments '...'
  ```
-
-Node extension also exposes methods `npm(arguments)` and `node(arguments)`
-which can be used in - say - `doFirst` blocks of your project.
 
 ScalaJS does not support versions of Node.js newer than "16.19.1", so none of the "17.9.1", "18.15.0", "19.8.1".
 I do not know anything about Node.js, and find this surprising - but I am sure there is a good

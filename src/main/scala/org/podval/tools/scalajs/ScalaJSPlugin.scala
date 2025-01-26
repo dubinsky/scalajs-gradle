@@ -41,7 +41,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(implementationConfiguration)
 
       val requirements: Seq[DependencyRequirement] =
-        Seq(
+        if isScalaJSDisabled then  Seq(
           // TODO do I need to add https://github.com/scala-js/scala-js/tree/main/test-interface too?
           JavaDependency.Requirement(
             dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
@@ -54,14 +54,13 @@ final class ScalaJSPlugin extends Plugin[Project]:
                 |""".stripMargin,
             configurations = Configurations.testImplementation
           )
-        ) ++
-        (if isScalaJSDisabled then Seq.empty else
+        ) else
           ScalaJSDependencies.dependencyRequirements(
             pluginScalaLibrary,
             projectScalaLibrary,
             implementationConfiguration
           )
-        )
+        
 
       DependencyRequirement.applyToProject(requirements, project)
 

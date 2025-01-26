@@ -12,6 +12,8 @@ class TracingTestResultProcessor(
   private def trace(message: String): Unit =
     if isEnabled then println(clock.getCurrentTime.toString + "  " + message)
 
+  trace(s"delegate TestResultProcessor class: ${delegate.getClass.getName}")
+  
   override def started(test: TestDescriptorInternal, event: TestStartEvent): Unit =
     trace(s"started: id=${test.getId} $test parentId=${event.getParentId} class=${test.getClass.getName} isComposite=${test.isComposite}")
     delegate.started(test, event)

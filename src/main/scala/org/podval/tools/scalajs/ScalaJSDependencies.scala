@@ -8,14 +8,15 @@ object ScalaJSDependencies:
   private val scalaJS: Configurations = Configurations.forName(configurationName)
 
   private val group: String = "org.scala-js"
-  private val versionDefault: Version = Version("1.18.1")
+  private val versionDefault: Version = Version("1.18.2")
 
   // Note: no Scala 3 flavours exists
-  private object Library     extends ScalaDependency.Scala2(group, "scalajs-library")
-  private object TestBridge  extends ScalaDependency.Scala2(group, "scalajs-test-bridge")
-  private object Linker      extends ScalaDependency.Scala2(group, "scalajs-linker")
-  private object TestAdapter extends ScalaDependency.Scala2(group, "scalajs-sbt-test-adapter")
-  private object Compiler    extends ScalaDependency.Scala2(group, "scalajs-compiler", isScalaVersionFull = true)
+  private object Library       extends ScalaDependency.Scala2(group, "scalajs-library")
+  private object Compiler      extends ScalaDependency.Scala2(group, "scalajs-compiler", isScalaVersionFull = true)
+  private object Linker        extends ScalaDependency.Scala2(group, "scalajs-linker")
+  private object TestBridge    extends ScalaDependency.Scala2(group, "scalajs-test-bridge")
+  private object TestAdapter   extends ScalaDependency.Scala2(group, "scalajs-sbt-test-adapter")
+  private object TestInterface extends ScalaDependency.Scala2(group, "scalajs-test-interface")
 
   private object JSDomNodeJS extends ScalaDependency.Scala2(group, "scalajs-env-jsdom-nodejs"):
     val versionDefault: Version = Version("1.1.0")
@@ -53,6 +54,19 @@ object ScalaJSDependencies:
           reason = "because it is needed for running/testing with DOM man manipulations",
           configurations = scalaJS
         ),
+        // with this on the classpath, I get:
+        //Class sbt.testing.Status does not have member field 'sbt.testing.Status Success'
+        //	at org.podval.tools.testing.worker.TestClassProcessor$.org$podval$tools$testing$worker$TestClassProcessor$$$toResultType(TestClassProcessor.scala:360)
+//        ScalaDependency.Requirement(
+//          findable = TestInterface,
+//          version = scalaJSVersion,
+//          scalaLibrary = pluginScalaLibrary,
+//          reason =
+//            """seems that Zio Test works in Scala.js only with `scalajs-test-interface`;
+//              |this is before the TestAdapter, since that one brings in `test-interface`
+//              |""".stripMargin,
+//          configurations = scalaJS
+//        ),
         ScalaDependency.Requirement(
           findable = TestAdapter,
           version = scalaJSVersion,
