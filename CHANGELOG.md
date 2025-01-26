@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: moved `build`, `node` and `platform` packages and some utility classes back here from OpenTorah: 
   the classes are only used here; if need be, I can package them into an artifact and publish them from here...
 - cleanup: apply DependencyRequirement to configuration only, not to classpath, so not force resolution of the configurations!
-- cleanup: expand plugin classpath in the plugin itself, not in the LinkTask
-- cleanup: ScalaJSTask.scalaJs
-- cleanup: split Scala.js dependencies
+- cleanup: add Scala.js dependencies to the plugin classpath in the plugin itself, not in the LinkTask;
+- cleanup: ScalaJSTask.scalaJs;
+- cleanup: split Scala.js dependencies;
+- cleanup: add Zinc dependencies to the plugin classpath in the plugin itself, not in the TestTask;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

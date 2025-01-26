@@ -14,11 +14,10 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.Gradle.*
-import org.podval.tools.build.{Configurations, GradleClassPath, TaskWithSourceSet}
+import org.podval.tools.build.TaskWithSourceSet
 import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.{Field, Method}
-import scala.jdk.CollectionConverters.IterableHasAsScala
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
@@ -33,7 +32,6 @@ abstract class TestTask extends Test with TaskWithSourceSet:
 
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
   private val scalaCompile: String = getProject.getScalaCompile(sourceSet).getName
-  private val zincClassPath: Iterable[File] = getProject.getConfiguration(Configurations.zinc).asScala
   private var analysisFile: Option[File] = None
 
   // Note: Deferring creation of the test framework by using
@@ -77,12 +75,6 @@ abstract class TestTask extends Test with TaskWithSourceSet:
     // best be done with this here, before `super.createTestExecuter()` is called.
     require(getTestFramework.isInstanceOf[TestFramework], s"Only useSbt Gradle test framework is supported by this plugin - not $testFramework!")
     require(isScanForTestClasses, "File-name based test scan is not supported by this plugin, `isScanForTestClasses` must be `true`!")
-
-    // AnalysisDetector needs Zinc classes;
-    // if I ever get rid of it, this classpath expansion goes away.
-    // Note: when done at creation, causes:
-    //   Cannot change dependencies of dependency configuration ':zinc' after it has been resolved.
-    GradleClassPath.addTo(this, zincClassPath)
 
     // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
     analysisFile = Some(Files.file(buildDirectory, s"tmp/scala/compilerAnalysis/$scalaCompile.analysis"))

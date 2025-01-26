@@ -40,6 +40,10 @@ final class ScalaJSPlugin extends Plugin[Project]:
       val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this))
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(implementationConfiguration)
 
+      // AnalysisDetector, which runs during execution of TestTask, needs Zinc classes;
+      // if I ever get rid of it, this classpath expansion goes away.
+      GradleClassPath.addTo(this, project.getConfiguration(Configurations.zinc).asScala)
+      
       if isScalaJSDisabled then Seq(
         JavaDependency.Requirement(
           dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
