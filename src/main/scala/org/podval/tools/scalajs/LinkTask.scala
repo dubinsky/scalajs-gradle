@@ -3,7 +3,7 @@ package org.podval.tools.scalajs
 import org.gradle.api.{DefaultTask, NamedDomainObjectContainer}
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
-import org.podval.tools.build.{GradleClassPath, TaskWithSourceSet}
+import org.podval.tools.build.TaskWithSourceSet
 import org.podval.tools.build.Gradle.*
 import org.podval.tools.util.Files
 import java.io.File
@@ -16,7 +16,6 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   getDependsOn.add(getProject.getClassesTask(sourceSet))
 
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
-  private val scalaJSDependenciesClassPath: Iterable[File] = getProject.getConfiguration(ScalaJSDependencies.configurationName).asScala
 
   def moduleInitializerProperties: Option[Seq[ModuleInitializerProperties]]
 
@@ -32,15 +31,6 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   @Input @Optional def getPrettyPrint     : Property[Boolean]
 
   @TaskAction final def execute(): Unit =
-    // Needed to access ScalaJS linking functionality in Link.
-    // Dynamically-loaded classes are can only be loaded after they are added to the classpath,
-    // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
-    // So, dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
-    // It seems that expanding the classpath once, here, is enough for everything to work.
-    // Note: when done at creation, this causes
-    //   Cannot change dependencies of dependency configuration ':scalajs' after it has been resolved.
-    GradleClassPath.addTo(this, scalaJSDependenciesClassPath)
-
     ScalaJS(task = this, linkTask = this).link()
 
 object LinkTask:

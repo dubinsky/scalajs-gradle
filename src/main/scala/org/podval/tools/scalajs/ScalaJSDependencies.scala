@@ -60,7 +60,7 @@ object ScalaJSDependencies:
 //            """seems that Zio Test works in Scala.js only with `scalajs-test-interface`;
 //              |this is before the TestAdapter, since that one brings in `test-interface`
 //              |""".stripMargin,
-//          configurationName = scalaJS
+//          configurationName = configurationName
 //        ),
         ScalaDependency.Requirement(
           findable = TestAdapter,

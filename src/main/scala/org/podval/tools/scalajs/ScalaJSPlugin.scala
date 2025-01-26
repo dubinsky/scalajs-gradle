@@ -65,9 +65,18 @@ final class ScalaJSPlugin extends Plugin[Project]:
           scalaJSVersion
         ).foreach(_.applyToConfiguration(project))
 
-      if !isScalaJSDisabled && projectScalaLibrary.isScala3 then
-        ScalaJSPlugin.configureScalaCompile(project, SourceSet.MAIN_SOURCE_SET_NAME)
-        ScalaJSPlugin.configureScalaCompile(project, SourceSet.TEST_SOURCE_SET_NAME)
+        // Needed to access ScalaJS linking functionality in Link.
+        // Dynamically-loaded classes can only be loaded after they are added to the classpath,
+        // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
+        // So, dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
+        // It seems that expanding the classpath once, here, is enough for everything to work.
+        // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin...
+        // "classpath"?
+        GradleClassPath.addTo(this, project.getConfiguration(ScalaJSDependencies.configurationName).asScala)
+
+        if projectScalaLibrary.isScala3 then
+          ScalaJSPlugin.configureScalaCompile(project, SourceSet.MAIN_SOURCE_SET_NAME)
+          ScalaJSPlugin.configureScalaCompile(project, SourceSet.TEST_SOURCE_SET_NAME)
 
       projectScalaLibrary.verify(
         ScalaLibrary.getFromClasspath(project.getConfiguration(Configurations.runtimeClassPath).asScala)
