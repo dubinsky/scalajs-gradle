@@ -23,7 +23,7 @@ import java.lang.reflect.{Field, Method}
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
 
 // Note: inherited Test.testsAreNotFiltered() calls Test.noCategoryOrTagOrGroupSpecified(),
-// which recognizes only JUnit and TestNG; since I can not override it, I'll just use
+// which recognizes only JUnit and TestNG; since I can not override it, I just use
 // org.gradle.api.tasks.testing.junit.JUnitOptions for my "sbt" TestFrameworkOptions...
 abstract class TestTask extends Test with TaskWithSourceSet:
   // To avoid invoking Task.getProject at execution time, some things are done or captured at create or right before execution:
@@ -32,7 +32,6 @@ abstract class TestTask extends Test with TaskWithSourceSet:
 
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
   private val scalaCompile: String = getProject.getScalaCompile(sourceSet).getName
-  private var analysisFile: Option[File] = None
 
   // Note: Deferring creation of the test framework by using
   // `getTestFrameworkProperty.convention(project.provider(() => createTestFramework))` did not work out,
@@ -64,9 +63,10 @@ abstract class TestTask extends Test with TaskWithSourceSet:
     logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     moduleRegistry = getModuleRegistry,
-    // delayed: not available at the time of the TestFramework construction
+    // delayed: not available at the time of the TestFramework construction (task creation)
     testEnvironment = () => testEnvironment,
-    analysisFile = () => analysisFile.get,
+    // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
+    analysisFile = () => Files.file(buildDirectory, s"tmp/scala/compilerAnalysis/$scalaCompile.analysis"),
     runningInIntelliJIdea = () => TestTask.runningInIntelliJIdea(TestTask.this)
   )
 
@@ -75,9 +75,6 @@ abstract class TestTask extends Test with TaskWithSourceSet:
     // best be done with this here, before `super.createTestExecuter()` is called.
     require(getTestFramework.isInstanceOf[TestFramework], s"Only useSbt Gradle test framework is supported by this plugin - not $testFramework!")
     require(isScanForTestClasses, "File-name based test scan is not supported by this plugin, `isScanForTestClasses` must be `true`!")
-
-    // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
-    analysisFile = Some(Files.file(buildDirectory, s"tmp/scala/compilerAnalysis/$scalaCompile.analysis"))
 
     super.executeTests()
 
