@@ -6,10 +6,10 @@ import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory
 import org.gradle.api.logging.LogLevel
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.opentorah.build.GradleClassPath
-import org.opentorah.util.Files
+import org.podval.tools.build.GradleClassPath
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.worker.TestTagsFilter
+import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.Field
 import java.net.URL

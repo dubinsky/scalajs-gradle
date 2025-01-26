@@ -3,7 +3,7 @@ package org.podval.tools.testing.task
 import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFailureDetails}
 import org.gradle.api.tasks.testing.{TestExecutionException, TestFailure, TestFailureDetails}
 import org.gradle.internal.serialize.PlaceholderExceptionSupport
-import org.opentorah.util.Strings
+import org.podval.tools.util.Strings
 import scala.annotation.tailrec
 
 abstract class SourceMapper:

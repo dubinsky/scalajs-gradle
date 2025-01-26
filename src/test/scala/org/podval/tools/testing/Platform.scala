@@ -1,7 +1,7 @@
 package org.podval.tools.testing
 
-import org.opentorah.build.{Dependency, JavaDependency, ScalaDependency, ScalaLibrary, Version}
-import org.opentorah.node.NodeDependency
+import org.podval.tools.build.{Dependency, JavaDependency, ScalaDependency, ScalaLibrary, Version}
+import org.podval.tools.node.NodeDependency
 import org.podval.tools.testing.framework.FrameworkDescriptor
 
 final class Platform(

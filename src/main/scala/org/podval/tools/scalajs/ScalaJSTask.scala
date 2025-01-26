@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.opentorah.node.TaskWithNode
+import org.podval.tools.node.TaskWithNode
 
 trait ScalaJSTask extends TaskWithNode:
   setDescription(s"$flavour ScalaJS")

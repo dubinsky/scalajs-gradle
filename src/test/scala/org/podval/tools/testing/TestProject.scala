@@ -3,12 +3,11 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.opentorah.build.{Dependency, Version}
-import org.opentorah.util.Files
+import org.podval.tools.build.{Dependency, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
+import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.*
 import java.io.File
-import java.net.URL
 
 final class TestProject(projectDir: File):
   private def gradleRunner: GradleRunner = GradleRunner.create().withProjectDir(projectDir)

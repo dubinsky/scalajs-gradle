@@ -4,9 +4,9 @@ import org.gradle.api.{Plugin, Project}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.SourceSet
-import org.opentorah.build.{Configurations, DependencyRequirement, GradleClassPath, JavaDependency, ScalaLibrary, Version}
-import org.opentorah.build.Gradle.*
-import org.opentorah.node.NodeExtension
+import org.podval.tools.build.{Configurations, DependencyRequirement, GradleClassPath, JavaDependency, ScalaLibrary, Version}
+import org.podval.tools.build.Gradle.*
+import org.podval.tools.node.NodeExtension
 import org.podval.tools.testing.task.TestTaskScala
 import scala.jdk.CollectionConverters.*
 

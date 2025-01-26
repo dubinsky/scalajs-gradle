@@ -14,9 +14,9 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.opentorah.build.Gradle.*
-import org.opentorah.build.{GradleClassPath, TaskWithSourceSet}
-import org.opentorah.util.Files
+import org.podval.tools.build.Gradle.*
+import org.podval.tools.build.{GradleClassPath, TaskWithSourceSet}
+import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.{Field, Method}
 import scala.jdk.CollectionConverters.IterableHasAsScala

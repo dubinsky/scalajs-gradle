@@ -1,7 +1,7 @@
 package org.podval.tools.testing.task
 
 import org.podval.tools.testing.framework.FrameworkDescriptor
-import org.opentorah.build.GradleClassPath
+import org.podval.tools.build.GradleClassPath
 import sbt.testing.Framework
 import java.io.File
 

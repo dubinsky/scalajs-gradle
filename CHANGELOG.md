@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: cleanup;
 - chore: dependency updates;
 - chore: Scala.js dependency update;
+- chore: moved `build`, `node` and `platform` packages and some utility classes back here from OpenTorah: 
+  the classes are only used here; if need be, I can package them into an artifact and publish them from here...
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

@@ -18,10 +18,9 @@ final String sbtVersion         = '1.10.7'
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
-  // used: Gradle, DependencyRequirement, Node
-  implementation 'org.opentorah:opentorah-util:0.10.16'
-
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
+
+  compileOnly 'ch.qos.logback:logback-classic:1.5.16'
 
   compileOnly 'org.scala-sbt:test-interface:1.0'
 

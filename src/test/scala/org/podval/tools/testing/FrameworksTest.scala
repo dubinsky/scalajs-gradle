@@ -1,6 +1,6 @@
 package org.podval.tools.testing
 
-import org.opentorah.build.ScalaLibrary
+import org.podval.tools.build.ScalaLibrary
 
 // TODO when run separately, this class produces correctly nested results;
 // when it is run together with other tests, something (Idea?) flattens the results...

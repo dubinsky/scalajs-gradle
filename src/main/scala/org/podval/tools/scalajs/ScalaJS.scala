@@ -2,12 +2,12 @@ package org.podval.tools.scalajs
 
 import org.gradle.api.GradleException
 import org.gradle.api.logging.{Logger, LogLevel as GLevel}
-import org.opentorah.build.Gradle.*
-import org.opentorah.files.PipeOutputThread
-import org.opentorah.node.Node
-import org.opentorah.util.Files
+import org.podval.tools.build.Gradle.*
+import org.podval.tools.files.PipeOutputThread
+import org.podval.tools.node.Node
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment}
+import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}

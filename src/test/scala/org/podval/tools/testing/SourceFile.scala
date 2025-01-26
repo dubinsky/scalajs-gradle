@@ -1,6 +1,6 @@
 package org.podval.tools.testing
 
-import org.opentorah.util.Files
+import org.podval.tools.util.Files
 
 final class SourceFile(val name: String, val content: String)
 

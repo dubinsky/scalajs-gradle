@@ -3,9 +3,9 @@ package org.podval.tools.scalajs
 import org.gradle.api.{DefaultTask, NamedDomainObjectContainer}
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
-import org.opentorah.build.{GradleClassPath, TaskWithSourceSet}
-import org.opentorah.build.Gradle.*
-import org.opentorah.util.Files
+import org.podval.tools.build.{GradleClassPath, TaskWithSourceSet}
+import org.podval.tools.build.Gradle.*
+import org.podval.tools.util.Files
 import java.io.File
 import scala.jdk.CollectionConverters.{IterableHasAsScala, SetHasAsScala}
 

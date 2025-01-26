@@ -14,5 +14,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'org.podval.tools.scalajs'
-
-//includeBuild '../../../OpenTorah/opentorah.org'
