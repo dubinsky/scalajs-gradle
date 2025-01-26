@@ -26,12 +26,8 @@ import java.lang.reflect.{Field, Method}
 // which recognizes only JUnit and TestNG; since I can not override it, I just use
 // org.gradle.api.tasks.testing.junit.JUnitOptions for my "sbt" TestFrameworkOptions...
 abstract class TestTask extends Test with TaskWithSourceSet:
-  // To avoid invoking Task.getProject at execution time, some things are done or captured at create or right before execution:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
   getDependsOn.add(getProject.getClassesTask(sourceSet))
-
-  private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
-  private val scalaCompile: String = getProject.getScalaCompile(sourceSet).getName
 
   // Note: Deferring creation of the test framework by using
   // `getTestFrameworkProperty.convention(project.provider(() => createTestFramework))` did not work out,
@@ -39,13 +35,6 @@ abstract class TestTask extends Test with TaskWithSourceSet:
   // `getTestFrameworkProperty.convention(createTestFramework)`.
   // So, I am sticking with pre-applying the test framework at the task creation time;
   // options seem to work...
-  // TODO works with Gradle 8.3, but with Gradle 8.4-rc-1, I get:
-  // Caused by: org.gradle.api.tasks.TaskInstantiationException: Could not create task of type 'TestTaskScala'.
-  // Caused by: java.lang.NoClassDefFoundError: Could not initialize class org.podval.tools.testing.task.TestTask$
-  //   at org.podval.tools.testing.task.TestTask.useSbt(TestTask.scala:53)
-  //   at org.podval.tools.testing.task.TestTask.<init>(TestTask.scala:35)
-  //   at org.podval.tools.testing.task.TestTaskScala.<init>(TestTaskScala.scala:8)
-  //   at org.podval.tools.testing.task.TestTaskScala_Decorated.<init>(Unknown Source)
   useSbt()
 
   final override protected def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
@@ -59,16 +48,23 @@ abstract class TestTask extends Test with TaskWithSourceSet:
     Actions.`with`(Cast.cast(classOf[TestFrameworkOptions], getOptions), testFrameworkConfigure)
 
   final def useSbt(): Unit = TestTask.useTestFramework(this, createTestFramework)
-  private def createTestFramework: TestFramework = TestFramework(
-    logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
-    testFilter = getFilter.asInstanceOf[DefaultTestFilter],
-    moduleRegistry = getModuleRegistry,
-    // delayed: not available at the time of the TestFramework construction (task creation)
-    testEnvironment = () => testEnvironment,
+
+  private def createTestFramework: TestFramework =
     // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
-    analysisFile = () => Files.file(buildDirectory, s"tmp/scala/compilerAnalysis/$scalaCompile.analysis"),
-    runningInIntelliJIdea = () => TestTask.runningInIntelliJIdea(TestTask.this)
-  )
+    val analysisFile: File = Files.file(
+      getProject.getLayout.getBuildDirectory.get.getAsFile,
+      s"tmp/scala/compilerAnalysis/${getProject.getScalaCompile(sourceSet).getName}.analysis"
+    )
+
+    TestFramework(
+      logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
+      testFilter = getFilter.asInstanceOf[DefaultTestFilter],
+      moduleRegistry = getModuleRegistry,
+      analysisFile = analysisFile,
+      // delayed: not available at the time of the TestFramework construction (task creation)
+      testEnvironment = () => testEnvironment,
+      runningInIntelliJIdea = () => TestTask.runningInIntelliJIdea(TestTask.this)
+    )
 
   @TaskAction override def executeTests(): Unit =
     // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
@@ -91,7 +87,7 @@ abstract class TestTask extends Test with TaskWithSourceSet:
     documentationRegistry = getServices.get(classOf[DocumentationRegistry])
   )
 
-  override def getMaxParallelForks: Int =
+  final override def getMaxParallelForks: Int =
     val result: Int = super.getMaxParallelForks
     if canFork then result else 1
 
@@ -102,20 +98,21 @@ abstract class TestTask extends Test with TaskWithSourceSet:
   protected def testEnvironment: TestEnvironment
 
 object TestTask:
-  private val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[org.gradle.api.internal.tasks.testing.TestFramework])
-  useTestFramework.setAccessible(true)
-  private def useTestFramework(task: Test, value: TestFramework): Unit = useTestFramework.invoke(task, value)
-
-  // TODO Gradle PR: figure this out from the environment - or introduce method to avoid the use of reflection
-  private val testListenerSubscriptions: Field = classOf[AbstractTestTask].getDeclaredField("testListenerSubscriptions")
-  testListenerSubscriptions.setAccessible(true)
-
-  private val broadcastSubscriptionsGet: Method = Class.forName("org.gradle.api.tasks.testing.AbstractTestTask$BroadcastSubscriptions").getDeclaredMethod("get")
-  broadcastSubscriptionsGet.setAccessible(true)
+  private def useTestFramework(task: Test, value: TestFramework): Unit =
+    val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[org.gradle.api.internal.tasks.testing.TestFramework])
+    useTestFramework.setAccessible(true)
+    useTestFramework.invoke(task, value)
 
   // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
   def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
     var result: Boolean = false
+
+    // TODO Gradle PR: figure this out from the environment - or introduce method to avoid the use of reflection
+    val testListenerSubscriptions: Field = classOf[AbstractTestTask].getDeclaredField("testListenerSubscriptions")
+    testListenerSubscriptions.setAccessible(true)
+
+    val broadcastSubscriptionsGet: Method = Class.forName("org.gradle.api.tasks.testing.AbstractTestTask$BroadcastSubscriptions").getDeclaredMethod("get")
+    broadcastSubscriptionsGet.setAccessible(true)
 
     broadcastSubscriptionsGet.invoke(
         testListenerSubscriptions.get(task)

@@ -34,17 +34,16 @@ final class ScalaJSPlugin extends Plugin[Project]:
       test.dependsOn(linkTest)
 
     project.afterEvaluate((project: Project) =>
-      if !isScalaJSDisabled then NodeExtension.get(project).ensureNodeIsInstalled()
-
       val implementationConfiguration: Configuration = project.getConfiguration(Configurations.implementation)
       val pluginScalaLibrary : ScalaLibrary = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this))
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(implementationConfiguration)
 
       // AnalysisDetector, which runs during execution of TestTask, needs Zinc classes;
       // if I ever get rid of it, this classpath expansion goes away.
+      // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
       GradleClassPath.addTo(this, project.getConfiguration(Configurations.zinc).asScala)
-      
-      if isScalaJSDisabled then Seq(
+
+      if isScalaJSDisabled then
         JavaDependency.Requirement(
           dependency = JavaDependency(group = "org.scala-sbt", artifact = "test-interface"),
           version = Version("1.0"),
@@ -56,8 +55,11 @@ final class ScalaJSPlugin extends Plugin[Project]:
               |""".stripMargin,
           configurationName = Configurations.testImplementation
         ).applyToConfiguration(project)
-      ) else
-        val scalaJSVersion: Version = ScalaJSDependencies.Library.findInConfiguration(implementationConfiguration)
+      else
+        NodeExtension.get(project).ensureNodeIsInstalled()
+
+        val scalaJSVersion: Version = ScalaJSDependencies.Library
+          .findInConfiguration(implementationConfiguration)
           .map(_.version)
           .getOrElse(ScalaJSDependencies.versionDefault)
 
@@ -81,8 +83,8 @@ final class ScalaJSPlugin extends Plugin[Project]:
         GradleClassPath.addTo(this, project.getConfiguration(ScalaJSDependencies.configurationName).asScala)
 
         if projectScalaLibrary.isScala3 then
-          ScalaJSPlugin.configureScalaCompile(project, SourceSet.MAIN_SOURCE_SET_NAME)
-          ScalaJSPlugin.configureScalaCompile(project, SourceSet.TEST_SOURCE_SET_NAME)
+          ScalaJSPlugin.configureScalaCompileForScalaJs(project, SourceSet.MAIN_SOURCE_SET_NAME)
+          ScalaJSPlugin.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
 
       projectScalaLibrary.verify(
         ScalaLibrary.getFromClasspath(project.getConfiguration(Configurations.runtimeClassPath).asScala)
@@ -97,7 +99,7 @@ object ScalaJSPlugin:
     Option(project.findProperty(maiflaiProperty )).isDefined ||
     Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
 
-  private def configureScalaCompile(project: Project, sourceSetName: String): Unit =
+  private def configureScalaCompileForScalaJs(project: Project, sourceSetName: String): Unit =
     val scalaCompile: ScalaCompile = project.getScalaCompile(project.getSourceSet(sourceSetName))
     val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // Note: nullable
       .map(_.asScala.toList)

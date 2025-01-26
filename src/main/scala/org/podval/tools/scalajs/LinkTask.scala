@@ -1,8 +1,9 @@
 package org.podval.tools.scalajs
 
+import org.gradle.api.file.FileCollection
 import org.gradle.api.{DefaultTask, NamedDomainObjectContainer}
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.{Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
+import org.gradle.api.tasks.{Classpath, Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
 import org.podval.tools.build.TaskWithSourceSet
 import org.podval.tools.build.Gradle.*
 import org.podval.tools.util.Files
@@ -16,9 +17,11 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   getDependsOn.add(getProject.getClassesTask(sourceSet))
 
   final override protected def linkTask: LinkTask = this
-    
+
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
 
+  @Classpath final def getRuntimeClassPath: FileCollection = sourceSet.getRuntimeClasspath
+  
   def moduleInitializerProperties: Option[Seq[ModuleInitializerProperties]]
 
   @OutputDirectory final def getJSDirectory: File = outputFile("js")

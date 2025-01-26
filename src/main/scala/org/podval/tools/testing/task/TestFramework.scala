@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsSca
 
 class TestFramework(
   testEnvironment: () => TestEnvironment,
-  analysisFile: () => File,
+  analysisFile: File,
   runningInIntelliJIdea: () => Boolean,
   logLevelEnabled: LogLevel,
   testFilter: DefaultTestFilter,
@@ -39,7 +39,7 @@ class TestFramework(
   override def getDetector: TestFrameworkDetector =
     if detectorOpt.isEmpty then detectorOpt = Some(TestFrameworkDetector(
       testEnvironment(),
-      analysisFile(),
+      analysisFile,
       TestFilter(testFilter),
       testTagsFilter
     ))
