@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: add Zinc dependencies to the plugin classpath in the plugin itself, not in the TestTask;
 - cleanup: no need to delay calculation of `analysisFile`;
 - cleanup: ScalaJSTask.scalaJs;
+- cleanup: set LinkTask.runtimeClassPath in the plugin to eliminate a `Task.getProject` call during task execution - the last such call!
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

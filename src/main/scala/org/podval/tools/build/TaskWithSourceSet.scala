@@ -5,6 +5,6 @@ import org.gradle.api.tasks.SourceSet
 import org.podval.tools.build.Gradle.*
 
 trait TaskWithSourceSet extends Task:
-  protected final def sourceSet: SourceSet = getProject.getSourceSet(sourceSetName)
+  final def sourceSet: SourceSet = getProject.getSourceSet(sourceSetName)
 
   protected def sourceSetName: String

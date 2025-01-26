@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.gradle.api.file.FileCollection
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.{DefaultTask, NamedDomainObjectContainer}
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Classpath, Input, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
@@ -19,8 +19,10 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   final override protected def linkTask: LinkTask = this
 
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
-
-  @Classpath final def getRuntimeClassPath: FileCollection = sourceSet.getRuntimeClasspath
+  
+  // Note: configured by the plugin on all `LinkTask` to eliminate `Task.getProject` call during execution;
+  // at task creation runtime classpath does not yet have Scala.js and other dependencies that the plugin adds. 
+  @Classpath def getRuntimeClassPath: ConfigurableFileCollection
   
   def moduleInitializerProperties: Option[Seq[ModuleInitializerProperties]]
 

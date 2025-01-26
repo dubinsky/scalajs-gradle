@@ -69,9 +69,6 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
 
     try
       val report: Report = Await.result(atMost = Duration.Inf, awaitable = PathIRContainer
-        // TODO I still get "Invocation of Task.project at execution time has been deprecated" here,
-        // but I can't capture the runtime classpath at link task creation time since
-        // dependencies like Node have not been added to it yet...
         .fromClasspath(linkTask.getRuntimeClassPath.getFiles.asScala.toSeq.map(_.toPath))
         .map(_._1)
         .flatMap((irContainers: Seq[IRContainer]) => StandardImpl.irFileCache.newCache.cached(irContainers))

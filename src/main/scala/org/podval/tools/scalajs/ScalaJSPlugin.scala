@@ -86,6 +86,12 @@ final class ScalaJSPlugin extends Plugin[Project]:
           ScalaJSPlugin.configureScalaCompileForScalaJs(project, SourceSet.MAIN_SOURCE_SET_NAME)
           ScalaJSPlugin.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
 
+      // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s:
+      project.getTasks.asScala.foreach {
+        case linkTask: LinkTask => linkTask.getRuntimeClassPath.setFrom(linkTask.sourceSet.getRuntimeClasspath)
+        case _ =>
+      }
+
       projectScalaLibrary.verify(
         ScalaLibrary.getFromClasspath(project.getConfiguration(Configurations.runtimeClassPath).asScala)
       )
