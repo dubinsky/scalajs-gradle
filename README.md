@@ -7,7 +7,7 @@ It supports linking ScalaJS code, running and testing it.
 
 This plugin also supports testing plain Scala code (no ScalaJS) using sbt-compatible testing frameworks.
 
-Supports ScalaJS 1; default version: 1.17.0.
+Supports ScalaJS 1; default version: 1.18.2.
 
 Node.js has to be installed separately; supports versions that ScalaJS supports: 16 and possibly 17.
 
@@ -62,7 +62,7 @@ on the Gradle Plugin Portal. To apply it to a Gradle project:
 
 ```groovy
 plugins {
-  id 'org.podval.tools.scalajs' version '0.4.15'
+  id 'org.podval.tools.scalajs' version '0.4.16'
 }
 ```
 
