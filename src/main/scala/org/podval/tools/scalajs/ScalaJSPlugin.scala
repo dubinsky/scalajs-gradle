@@ -50,8 +50,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
           reason =
             """
               |because some test frameworks (ScalaTest :)) do not bring it in in,
-              |and it needs to be on the testImplementation classpath;
-              |when using ScalaJS, org.scala-js:scalajs-sbt-test-adapter brings it into the scalajs configuration
+              |and it needs to be on the testImplementation classpath
               |""".stripMargin,
           configurationName = Configurations.testImplementation
         ).applyToConfiguration(project)

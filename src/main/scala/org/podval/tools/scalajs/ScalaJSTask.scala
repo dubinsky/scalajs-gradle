@@ -11,4 +11,4 @@ trait ScalaJSTask extends TaskWithNode:
   
   protected final def setUpNodeProject(): Unit = setUpNodeProject(List("jsdom"))
   
-  protected final def scalaJs: ScalaJS = ScalaJS(task = this, linkTask = linkTask)
+  protected final def scalaJS: ScalaJS = ScalaJS(task = this, linkTask = linkTask)

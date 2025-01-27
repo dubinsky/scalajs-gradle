@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.16] - 2025-01-26
+## [0.4.16] - 2025-01-27
 - chore: cleanup;
 - chore: dependency updates;
 - chore: Scala.js dependency update;
@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: no need to delay calculation of `analysisFile`;
 - cleanup: ScalaJSTask.scalaJs;
 - cleanup: set LinkTask.runtimeClassPath in the plugin to eliminate a `Task.getProject` call during task execution - the last such call!
+- chore: Gradle update;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

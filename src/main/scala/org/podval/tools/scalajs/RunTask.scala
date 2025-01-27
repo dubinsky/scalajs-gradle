@@ -22,7 +22,7 @@ object RunTask:
 
     @TaskAction final def execute(): Unit =
       setUpNodeProject()
-      scalaJs.run()
+      scalaJS.run()
 
   abstract class Test extends TestTask with RunTask:
     final override protected def flavour: String = "Test"
@@ -30,13 +30,12 @@ object RunTask:
     // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
     final override protected def canFork: Boolean = false
 
-    private var scalaJS: Option[ScalaJS] = None
-    final override protected def sourceMapper: Option[SourceMapper] = scalaJS.get.sourceMapper
-    final override protected def testEnvironment: TestEnvironment = scalaJS.get.testEnvironment
+    private var scalaJSCached: Option[ScalaJS] = None
+    final override protected def sourceMapper: Option[SourceMapper] = scalaJSCached.get.sourceMapper
+    final override protected def testEnvironment: TestEnvironment = scalaJSCached.get.testEnvironment
 
     @TaskAction override def executeTests(): Unit =
       setUpNodeProject()
-      scalaJS = Some(scalaJs)
+      scalaJSCached = Some(scalaJS)
       super.executeTests()
-      scalaJS = None
-
+      scalaJSCached = None

@@ -13,6 +13,13 @@ object ZioTest extends FrameworkDescriptor(
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt") // TODO more?
 ):
+  // https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala
+  //  -t            testSearchTerm list
+  //  -tags         list
+  //  -ignore-tags  list
+  //  -policy       testTaskPolicy - ignored
+  //  -renderer     summary renderer; "intellij" or nothing; when IntelliJ, result code is always 0
+  //  -summary      print summary or not: flag
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
     FrameworkDescriptor.listOfOptions(       "-tags", testTagsFilter.include) ++
     FrameworkDescriptor.listOfOptions("-ignore-tags", testTagsFilter.exclude)

@@ -38,7 +38,7 @@ sealed abstract class LinkTask extends DefaultTask with ScalaJSTask with TaskWit
   @Input @Optional def getPrettyPrint     : Property[Boolean]
 
   @TaskAction final def execute(): Unit =
-    scalaJs.link()
+    scalaJS.link()
 
 object LinkTask:
   abstract class Main extends LinkTask:

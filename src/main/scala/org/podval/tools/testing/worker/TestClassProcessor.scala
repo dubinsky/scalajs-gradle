@@ -132,7 +132,7 @@ final class TestClassProcessor(
     // if I supply correct arguments to the frameworks, they do the tag filtering.
     // Also:
     // - ScalaTest does not have suite tagging and does not return nested tasks for methods,
-    //   so I am not get any tags from it even if I do not supply the arguments
+    //   so I am not going to get any tags from it even if I do not supply the arguments
     val isAllowed: Boolean =
       val tags: Array[String] = task.tags
 //      if tags.nonEmpty then output(s"--- got tags for $className $selector: " + tags.mkString("[", ", ", "]"))
@@ -146,6 +146,7 @@ final class TestClassProcessor(
       try
         val nestedTasks: Seq[Task] =
           try
+            if reportEvents then output(s"--- Task(${TestClassProcessor.toString(task.taskDef)}, ${task.tags.mkString}).execute()")
             task.execute(
               (event: Event) =>
                 require(!isTestCompleted, s"Received event for a completed test ${TestClassProcessor.toString(task.taskDef)}")
@@ -231,7 +232,7 @@ final class TestClassProcessor(
     if isEnabled then testResultProcessor.output(
       testId,
       DefaultTestOutputEvent(
-        System.currentTimeMillis(), // TODO use org.gradle.internal.time.Clock via rg.gradle.internal.time.Time
+        System.currentTimeMillis(), // TODO use org.gradle.internal.time.Clock via org.gradle.internal.time.Time
         if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
         then TestOutputEvent.Destination.StdErr
         else TestOutputEvent.Destination.StdOut,
@@ -355,12 +356,22 @@ object TestClassProcessor:
   private def toOption(optionalThrowable: OptionalThrowable): Option[Throwable] =
     if optionalThrowable.isEmpty then None else Some(optionalThrowable.get)
 
-  private given CanEqual[Status, Status] = CanEqual.derived
-  private def toResultType(status: Status): ResultType = status match
-    case Status.Success  => ResultType.SUCCESS
-    case Status.Error    => ResultType.FAILURE
-    case Status.Failure  => ResultType.FAILURE
-    case Status.Skipped  => ResultType.SKIPPED
-    case Status.Ignored  => ResultType.SKIPPED
-    case Status.Canceled => ResultType.SKIPPED
-    case Status.Pending  => ResultType.SKIPPED
+  private def toResultType(status: Status): ResultType =
+    // When `scalajs-test-interface` is used instead of the `test-interface`, I get:
+    //   Class sbt.testing.Status does not have member field 'sbt.testing.Status Success'
+//    given CanEqual[Status, Status] = CanEqual.derived
+//    status match
+//    case Status.Success  => ResultType.SUCCESS
+//    case Status.Error    => ResultType.FAILURE
+//    case Status.Failure  => ResultType.FAILURE
+//    case Status.Skipped  => ResultType.SKIPPED
+//    case Status.Ignored  => ResultType.SKIPPED
+//    case Status.Canceled => ResultType.SKIPPED
+//    case Status.Pending  => ResultType.SKIPPED
+    // This approach works for both:
+    val name: String = status.name()
+    if name == "Success" then ResultType.SUCCESS else
+    if name == "Error"   then ResultType.FAILURE else
+    if name == "Failure" then ResultType.FAILURE else
+      ResultType.SKIPPED
+

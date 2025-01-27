@@ -45,19 +45,18 @@ object ScalaJSDependencies:
         reason = "because it is needed for running/testing with DOM man manipulations",
         configurationName = configurationName
       ),
-      // with this on the classpath, I get:
-      //Class sbt.testing.Status does not have member field 'sbt.testing.Status Success'
-      //	at org.podval.tools.testing.worker.TestClassProcessor$.org$podval$tools$testing$worker$TestClassProcessor$$$toResultType(TestClassProcessor.scala:360)
-//        ScalaDependency.Requirement(
-//          findable = TestInterface,
-//          version = scalaJSVersion,
-//          scalaLibrary = pluginScalaLibrary,
-//          reason =
-//            """seems that Zio Test works in Scala.js only with `scalajs-test-interface`;
-//              |this is before the TestAdapter, since that one brings in `test-interface`
-//              |""".stripMargin,
-//          configurationName = configurationName
-//        ),
+//      ScalaDependency.Requirement(
+//        findable = TestInterface,
+//        version = scalaJSVersion,
+//        scalaLibrary = pluginScalaLibrary,
+//        reason =
+//          """Zio Test on Scala.js seems to use `scalajs-test-interface`,
+//            |although TestAdapter, confusingly, brings in `test-interface`
+//            | - and so do most of the test frameworks (except for ScalaTest);
+//            |even with this I get no test events from ZIO Test on Scala.js though...
+//            |""".stripMargin,
+//        configurationName = configurationName
+//      ),
       ScalaDependency.Requirement(
         findable = TestAdapter,
         version = scalaJSVersion,
