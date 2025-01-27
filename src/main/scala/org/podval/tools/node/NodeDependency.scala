@@ -32,7 +32,6 @@ object NodeDependency extends Dependency.Simple(
 
   private val os: Os = Os.get
   private val isWindows: Boolean = os == Os.Windows
-
   private val architecture: Architecture = Architecture.get
 
 // TODO override def toString: String = s"Node v$version for $os on $architecture"

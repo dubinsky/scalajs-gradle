@@ -1,6 +1,7 @@
 package org.podval.tools.node
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.{Input, TaskAction}
 
 abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNode:
@@ -8,18 +9,18 @@ abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNo
   setDescription(s"Run commands with '$commandName'")
 
   protected var arguments: String = ""
-
   @Input def getArguments: String = arguments
 
   // setArguments() can not be declared here, and is instead declared in subclasses,
   // since it is annotated - and annotation arguments must be constant...
 
-  @TaskAction def execute(): Unit = run(arguments)
-  protected def run(arguments: String): Unit
+  @TaskAction final def execute(): Unit = command(node)(arguments, getLogger.log(LogLevel.LIFECYCLE, _))
+  
+  protected def command(node: Node): (String, String => Unit) => Unit
 
 object NodeTask:
   abstract class NodeRunTask extends NodeTask("node"):
-    override protected def run(arguments: String): Unit = node(arguments)
+    override protected def command(node: Node): (String, String => Unit) => Unit = node.node
 
     @org.gradle.api.tasks.options.Option(
       option = "node-arguments",
@@ -28,7 +29,7 @@ object NodeTask:
     def setArguments(value: String): Unit = arguments = value
 
   abstract class NpmRunTask extends NodeTask("npm"):
-    override protected def run(arguments: String): Unit = npm(arguments)
+    override protected def command(node: Node): (String, String => Unit) => Unit = node.npm
 
     @org.gradle.api.tasks.options.Option(
       option = "npm-arguments",

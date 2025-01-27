@@ -5,7 +5,7 @@ import org.gradle.api.logging.Logger
 import java.io.File
 
 class GradleBuildContextCore(
-  gradleUserHomeDir: File,
+  val gradleUserHomeDir: File,
   override val logger: Logger
 ) extends BuildContextCore[Logger]:
   final override def frameworks: File = gradleUserHomeDir

@@ -19,7 +19,8 @@ final class ScalaJSPlugin extends Plugin[Project]:
     if isScalaJSDisabled then
       project.getTasks.replace("test", classOf[TestTaskScala])
     else
-      NodeExtension.addTo(project)
+      val nodeExtension: NodeExtension = NodeExtension.addTo(project)
+      nodeExtension.getModules.convention(List("jsdom").asJava)
 
       val scalaJS: Configuration = project.getConfigurations.create(ScalaJSDependencies.configurationName)
       scalaJS.setVisible(false)
@@ -55,8 +56,6 @@ final class ScalaJSPlugin extends Plugin[Project]:
           configurationName = Configurations.testImplementation
         ).applyToConfiguration(project)
       else
-        NodeExtension.get(project).ensureNodeIsInstalled()
-
         val scalaJSVersion: Version = ScalaJSDependencies.Library
           .findInConfiguration(implementationConfiguration)
           .map(_.version)
@@ -85,7 +84,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
           ScalaJSPlugin.configureScalaCompileForScalaJs(project, SourceSet.MAIN_SOURCE_SET_NAME)
           ScalaJSPlugin.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
 
-        // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s:
+        // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s.
         project.getTasks.asScala.foreach {
           case linkTask: LinkTask => linkTask.getRuntimeClassPath.setFrom(linkTask.sourceSet.getRuntimeClasspath)
           case _ =>

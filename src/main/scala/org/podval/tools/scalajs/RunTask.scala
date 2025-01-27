@@ -21,7 +21,6 @@ object RunTask:
     final override protected def linkTaskClass: Class[LinkTask.Main] = classOf[LinkTask.Main]
 
     @TaskAction final def execute(): Unit =
-      setUpNodeProject()
       scalaJS.run()
 
   abstract class Test extends TestTask with RunTask:
@@ -30,12 +29,12 @@ object RunTask:
     // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
     final override protected def canFork: Boolean = false
 
+    // cache for the call-backs used during execution
     private var scalaJSCached: Option[ScalaJS] = None
     final override protected def sourceMapper: Option[SourceMapper] = scalaJSCached.get.sourceMapper
     final override protected def testEnvironment: TestEnvironment = scalaJSCached.get.testEnvironment
 
     @TaskAction override def executeTests(): Unit =
-      setUpNodeProject()
       scalaJSCached = Some(scalaJS)
       super.executeTests()
       scalaJSCached = None

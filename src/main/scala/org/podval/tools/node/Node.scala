@@ -9,9 +9,7 @@ final class Node(
 ):
   override def toString: String = s"Node with modules in $nodeModules and $installation"
 
-  val nodeModules: File = File(nodeModulesParent, "node_modules")
-
-  def mkNodeModules(): Unit = nodeModules.mkdirs()
+  private val nodeModules: File = File(nodeModulesParent, "node_modules")
   
   val nodeEnv: Seq[(String, String)] = Seq(("NODE_PATH", nodeModules.getAbsolutePath))
 
@@ -52,3 +50,20 @@ final class Node(
     )
     log(s"Output: [$output]\n")
     output
+
+  def setUpNodeProject(
+    installModules: List[String],
+    logInfo: String => Unit,
+    logLifecycle: String => Unit,
+  ): Unit =
+    val isProjectSetUp: Boolean = File(nodeModulesParent, "package.json").exists
+
+    // Initialize Node project
+    if !isProjectSetUp then npm(arguments = "init private", logLifecycle)
+
+    // Install Node modules
+    nodeModules.mkdirs()
+    npm(
+      arguments = "install " + installModules.mkString(" "),
+      log = if isProjectSetUp then logInfo else logLifecycle
+    )

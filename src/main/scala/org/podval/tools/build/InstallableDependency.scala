@@ -11,6 +11,7 @@ trait InstallableDependency[T] extends Dependency:
 
   def archiveSubdirectoryPath(version: Version): Seq[String] = Seq.empty
 
+  // TODO use enumeration; determine from the file name
   def isZip(version: Version): Boolean = false
 
   def installation(root: File): T
