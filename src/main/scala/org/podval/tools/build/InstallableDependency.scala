@@ -44,8 +44,10 @@ trait InstallableDependency[T] extends Dependency:
     case Some(version) =>
       val dependencyWithVersion: Dependency.WithVersion = withVersion(Version(version))
       val result: T = installation(
-        Files.fileSeq(installsInto(context, dependencyWithVersion),
-        archiveSubdirectoryPath(dependencyWithVersion.version))
+        root = Files.fileSeq(
+          installsInto(context, dependencyWithVersion),
+          archiveSubdirectoryPath(dependencyWithVersion.version)
+        )
       )
 
       if exists(result)

@@ -52,7 +52,7 @@ issues that maiflai's plugin has my does not:
 I never tried an alternative ScalaTest integration 
 [scalatest-junit-runner](https://github.com/helmethair-co/scalatest-junit-runner),
 and if you need `JUnit5` that is probably a way to go, since my plugin does not support `JUnit5`
-(it does support `ScalaJS` though :).
+(it does support `ScalaJS` though :)).
 
 
 ## Applying to a Gradle project ##
@@ -154,7 +154,7 @@ test {
 
 If there is a need to have test runs with different configuration, more testing tasks can be added manually.
 
-For plain Scala projects (no ScalaJS), the type of the test task is `org.podval.tools.testing.TestTaskScala`.
+For plain Scala projects (no ScalaJS), the type of the test task is `org.podval.tools.scalajs.jvm.JvmTestTask`.
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
 For ScalaJS projects the type is `org.podval.tools.scalajs.Test`.

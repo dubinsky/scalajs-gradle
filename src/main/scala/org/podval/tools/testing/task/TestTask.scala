@@ -13,8 +13,7 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.Gradle.*
-import org.podval.tools.build.TaskWithSourceSet
+import org.podval.tools.build.Gradle
 import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.{Field, Method}
@@ -25,9 +24,10 @@ import java.lang.reflect.{Field, Method}
 // Note: inherited Test.testsAreNotFiltered() calls Test.noCategoryOrTagOrGroupSpecified(),
 // which recognizes only JUnit and TestNG; since I can not override it, I just use
 // org.gradle.api.tasks.testing.junit.JUnitOptions for my "sbt" TestFrameworkOptions...
-abstract class TestTask extends Test with TaskWithSourceSet:
+abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
-  getDependsOn.add(getProject.getClassesTask(sourceSet))
+  getDependsOn.add(Gradle.getClassesTask(getProject, sourceSetName))
+  private def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
 
   // Note: Deferring creation of the test framework by using
   // `getTestFrameworkProperty.convention(project.provider(() => createTestFramework))` did not work out,
@@ -36,8 +36,6 @@ abstract class TestTask extends Test with TaskWithSourceSet:
   // So, I am sticking with pre-applying the test framework at the task creation time;
   // options seem to work...
   useSbt()
-
-  final override protected def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
 
   final def useSbt(@DelegatesTo(classOf[TestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
     useSbt(ConfigureUtil.configureUsing(testFrameworkConfigure))
@@ -53,7 +51,7 @@ abstract class TestTask extends Test with TaskWithSourceSet:
     // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
     val analysisFile: File = Files.file(
       getProject.getLayout.getBuildDirectory.get.getAsFile,
-      s"tmp/scala/compilerAnalysis/${getProject.getScalaCompile(sourceSet).getName}.analysis"
+      s"tmp/scala/compilerAnalysis/${Gradle.getScalaCompile(getProject, sourceSetName).getName}.analysis"
     )
 
     TestFramework(

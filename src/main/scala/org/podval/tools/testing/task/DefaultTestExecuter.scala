@@ -26,6 +26,7 @@ import scala.jdk.CollectionConverters.*
 // Note: translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter
 // Note: this is the only Gradle class that I need to modify
 // to incorporate NonForkingTestClassProcessor needed for ScalaJS tests.
+// TODO Gradle PR for make it unnecessary to copy this file
 class DefaultTestExecuter(
   workerFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,

@@ -1,4 +1,4 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajs.js
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Optional}

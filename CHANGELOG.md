@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: set LinkTask.runtimeClassPath in the plugin to eliminate a `Task.getProject` call during task execution - the last such call!
 - chore: Gradle update;
 - cleanup: Node setup;
+- cleanup: split the plugin class into `ScalaDelegate` and `ScalaJSDelegate`;
+- cleanup: Gradle;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

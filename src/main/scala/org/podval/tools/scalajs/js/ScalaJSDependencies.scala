@@ -1,6 +1,8 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajs.js
 
-import org.podval.tools.build.{Configurations, DependencyRequirement, ScalaDependency, ScalaLibrary, Version}
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.plugins.scala.ScalaBasePlugin
+import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaLibrary, Version}
 
 object ScalaJSDependencies:
   val configurationName: String = "scalajs"
@@ -77,7 +79,7 @@ object ScalaJSDependencies:
         version = ScalaLibrary.Scala3.getScalaVersion(projectScalaLibrary),
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for linking of the ScalaJS code",
-        configurationName = Configurations.implementation
+        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       )
     )) ++
     // only for Scala 2
@@ -87,7 +89,7 @@ object ScalaJSDependencies:
         version = scalaJSVersion,
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
-        configurationName = Configurations.scalaCompilerPlugins
+        configurationName = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
       )
     )) ++ Seq(
       ScalaDependency.Requirement(
@@ -95,14 +97,14 @@ object ScalaJSDependencies:
         version = scalaJSVersion,
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for compiling of the ScalaJS code",
-        configurationName = Configurations.implementation
+        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       ),
       ScalaDependency.Requirement(
         findable = if projectScalaLibrary.isScala3 then DomSJS.Scala3 else DomSJS.Scala2,
         version = DomSJS.versionDefault,
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for DOM manipulations",
-        configurationName = Configurations.implementation
+        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       ),
       ScalaDependency.Requirement(
         findable = TestBridge,
@@ -110,6 +112,6 @@ object ScalaJSDependencies:
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for testing of the ScalaJS code",
         isVersionExact = true,
-        configurationName = Configurations.testImplementation
+        configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
       )
     )

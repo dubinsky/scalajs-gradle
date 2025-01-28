@@ -1,7 +1,7 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajs.js
 
-import org.gradle.api.{DefaultTask, GradleException}
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.{DefaultTask, GradleException}
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
 import scala.jdk.CollectionConverters.SetHasAsScala
 

@@ -1,4 +1,4 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajs.js
 
 enum Optimization(val description: String) derives CanEqual:
   case Fast extends Optimization(description = " - fast")

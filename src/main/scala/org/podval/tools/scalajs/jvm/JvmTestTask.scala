@@ -1,12 +1,14 @@
-package org.podval.tools.testing.task
+package org.podval.tools.scalajs.jvm
 
-import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.build.GradleClassPath
+import org.podval.tools.testing.framework.FrameworkDescriptor
+import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
 import sbt.testing.Framework
 import java.io.File
 
-abstract class TestTaskScala extends TestTask:
+abstract class JvmTestTask extends TestTask:
   setDescription(s"Test using sbt frameworks")
+  
   final override protected def canFork: Boolean = true
 
   final override protected def sourceMapper: Option[SourceMapper] = None
@@ -19,7 +21,7 @@ abstract class TestTaskScala extends TestTask:
       // - instantiate test frameworks from a classloader that has them and
       // - return sbt.testing.Framework used elsewhere, instead of something loaded from a different classloader
       //  (and thus can not be cast)
-      GradleClassPath.addTo(TestTaskScala.this, testClassPath)
+      GradleClassPath.addTo(JvmTestTask.this, testClassPath)
 
       def maybeInstantiate(descriptor: FrameworkDescriptor): Option[Framework] =
         val result: Option[Framework] =

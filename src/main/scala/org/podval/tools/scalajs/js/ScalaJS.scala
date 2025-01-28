@@ -1,25 +1,24 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajs.js
 
 import org.gradle.api.GradleException
 import org.gradle.api.logging.{Logger, LogLevel as GLevel}
-import org.podval.tools.build.Gradle.*
 import org.podval.tools.files.PipeOutputThread
 import org.podval.tools.node.Node
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment}
 import org.podval.tools.util.Files
-import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
-import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
-import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind,
+import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
+import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind, 
   ModuleSplitStyle, Report, Semantics, StandardConfig}
+import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.logging.Level as JSLevel
 import org.scalajs.testing.adapter.{TestAdapter, TestAdapterInitializer}
 import sbt.testing.Framework
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.jdk.CollectionConverters.*
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.{File, InputStream}
 import java.nio.file.Path
 
@@ -29,7 +28,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
   private def logger: Logger = task.getLogger
   private def jsDirectory: File = linkTask.getJSDirectory
   private def reportBinFile: File = linkTask.getReportBinFile
-  private def moduleKind: ModuleKind = linkTask.getModuleKind.byName(ModuleKind.NoModule, ModuleKind.All)
+  private def moduleKind: ModuleKind = LinkTask.byName(linkTask.getModuleKind, ModuleKind.NoModule, ModuleKind.All)
 
   private def jsLogger: org.scalajs.logging.Logger = new org.scalajs.logging.Logger:
     private def logSource: String = s"ScalaJS ${task.getName}"
@@ -53,7 +52,7 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
       .withModuleKind(moduleKind)
       .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
-      .withModuleSplitStyle(linkTask.getModuleSplitStyle.byName(ModuleSplitStyle.FewestModules, ScalaJS.moduleSplitStyles))
+      .withModuleSplitStyle(LinkTask.byName(linkTask.getModuleSplitStyle, ModuleSplitStyle.FewestModules, ScalaJS.moduleSplitStyles))
       .withPrettyPrint(linkTask.getPrettyPrint.getOrElse(false))
 
     logger.info(
