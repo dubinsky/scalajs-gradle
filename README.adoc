@@ -293,7 +293,7 @@ dependencies {
 === Gradle
 Test runs are integrated with Gradle:
 
-- test counts are logged (`TestCountLogger`) - if there are failing tests;
+- test counts are logged (by `TestCountLogger`) - if there are failing tests;
 - test reports are generated;
 - test framework output is logged at an appropriate level;
 - displaying test events and output is configured in the
@@ -391,10 +391,12 @@ test {
 
 If there is a need to have test runs with different configuration, more testing tasks can be added manually.
 
-For plain Scala projects (no Scala.js), the type of the test task is `org.podval.tools.scalajs.jvm.JvmTestTask`.
+For plain Scala projects (no Scala.js), the type of the test task is
+link:src/main/scala/org/podval/tools/scalajs/jvm/JvmTestTask.scala[org.podval.tools.scalajs.jvm.JvmTestTask].
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
-For Scala.js projects the type is `org.podval.tools.scalajs.js.Run.Test`.
+For Scala.js projects the type is
+link:src/main/scala/org/podval/tools/scalajs/js/RunTask.scala[org.podval.tools.scalajs.js.Run.Test].
 Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 

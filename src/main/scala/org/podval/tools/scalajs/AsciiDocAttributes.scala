@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.build.ScalaLibrary
+import org.podval.tools.build.ScalaLibraryDependency
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.js.ScalaJSDependencies
 import org.podval.tools.testing.{Sbt, framework}
@@ -21,9 +21,9 @@ object AsciiDocAttributes:
     "gradle" -> "8.12",
     "plugin" -> "0.4.16",
     
-    "scala" -> ScalaLibrary.Scala3.versionDefault,
-    "scala2-minor" -> ScalaLibrary.Scala3.scala2versionMinor,
-    "scala2" -> ScalaLibrary.Scala2.versionDefault13,
+    "scala" -> ScalaLibraryDependency.Scala3.versionDefault,
+    "scala2-minor" -> ScalaLibraryDependency.Scala3.scala2versionMinor,
+    "scala2" -> ScalaLibraryDependency.Scala2.versionDefault13,
     
     "zinc" -> Sbt.versionDefault,
     "sbt-test-interface" -> Sbt.TestInterface.versionDefault,

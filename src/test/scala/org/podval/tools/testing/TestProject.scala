@@ -3,7 +3,7 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, ScalaLibrary, Version}
+import org.podval.tools.build.{Dependency, ScalaLibraryDependency, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.*
@@ -109,7 +109,9 @@ object TestProject:
     Files.write(Files.file(projectDir, "build.gradle"),
       buildGradle(
         nodeVersion = platform.getNodeVersion,
-        scalaLibraryDependency = platform.scalaLibraryDependency,
+        scalaLibraryDependency = ScalaLibraryDependency.withVersion(platform.scalaVersion),
+        // TODO do not presuppose 2.13 for Zinc:
+        zincDependency = Sbt.Zinc.withScalaVersion(ScalaLibraryDependency.Scala3.scala2versionMinor).withVersion(Sbt.versionDefault),
         frameworks = frameworks.map(platform.toDependency),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,
@@ -160,6 +162,7 @@ object TestProject:
   private def buildGradle(
     nodeVersion: Option[Version],
     scalaLibraryDependency: Dependency.WithVersion,
+    zincDependency: Dependency.WithVersion,
     frameworks: Seq[Dependency.WithVersion],
     includeTestNames: Seq[String],
     excludeTestNames: Seq[String],
@@ -179,7 +182,7 @@ object TestProject:
         s"  testImplementation '${framework.dependencyNotation}'"
       ).mkString("\n")
 
-    s"""plugins {
+    val x = s"""plugins {
        |  id 'org.podval.tools.scalajs' version '0.0.0'
        |}
        |
@@ -187,7 +190,7 @@ object TestProject:
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |
        |dependencies {
-       |  zinc "org.scala-sbt:zinc_${ScalaLibrary.Scala3.scala2versionMinor}:${Sbt.versionDefault}"
+       |  zinc '${zincDependency.dependencyNotation}'
        |  implementation '${scalaLibraryDependency.dependencyNotation}'
        |$frameworksString
        |}
@@ -209,6 +212,8 @@ object TestProject:
        |}
        |""".stripMargin
 
+    x
+    
   private def link(mainClassName: Option[String]): String =
     val moduleInitializerString: String = mainClassName.fold("")(moduleInitializer)
     s"""link {

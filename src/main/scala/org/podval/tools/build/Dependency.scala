@@ -48,6 +48,7 @@ object Dependency:
     final override def artifactName: String =
       artifact
       
+  // TODO add a type parameter for the dependency type...    
   open class WithVersion(
     val dependency: Dependency,
     final override val version: Version

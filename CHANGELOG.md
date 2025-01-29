@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - doc: patch `README` with version attributes programmatically;
 - build: set dependency versions from properties in `gradle.properties` written programmatically;
 - build: `ScalaOnlyTest` now writes the `test-projects/scala-only` project instead of using prepared one;
+- cleanup: org.podval.tools.testing.Sbt;
+- cleanup: org.podval.tools.build.ScalaLibrary;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

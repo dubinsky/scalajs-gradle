@@ -2,7 +2,7 @@ package org.podval.tools.scalajs.js
 
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
-import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaLibrary, Version}
+import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaLibrary, ScalaLibraryDependency, Version}
 
 object ScalaJSDependencies:
   val configurationName: String = "scalajs"
@@ -75,8 +75,8 @@ object ScalaJSDependencies:
     // only for Scala 3
     (if !projectScalaLibrary.isScala3 then Seq.empty else Seq(
       ScalaDependency.Requirement(
-        findable = ScalaLibrary.Scala3SJS,
-        version = ScalaLibrary.Scala3.getScalaVersion(projectScalaLibrary),
+        findable = ScalaLibraryDependency.Scala3.ScalaJS,
+        version = ScalaLibraryDependency.Scala3.scalaVersion(projectScalaLibrary),
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for linking of the ScalaJS code",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME

@@ -16,7 +16,6 @@ final class ScalaDependency(
     s"${artifact}${findable.platformSuffix}_${findable.versionSuffix(scalaVersion)}"
 
 object ScalaDependency:
-
   abstract class Findable(
     override val group: String,
     override val artifact: String,
@@ -39,26 +38,36 @@ object ScalaDependency:
         if !isScalaVersionAcceptable(scalaVersion) then None else Some(withScalaVersion(scalaVersion))
 
     private def isScalaVersionAcceptable(scalaVersion: Version): Boolean =
-      (scalaVersion.major == scala.versionMajor) &&
+      scalaLibraryDependency.is(scalaVersion) &&
       isScalaVersionOfCorrectLength(scalaVersion)
 
     final def platformSuffix: String = if !isScalaJS then "" else "_sjs1"
 
     final def withScalaVersion(scalaLibrary: ScalaLibrary): ScalaDependency =
-      withScalaVersion(scala.getScalaVersion(scalaLibrary))
+      withScalaVersion(scalaLibraryDependency.scalaVersion(scalaLibrary))
 
     final def withScalaVersion(scalaVersion: Version): ScalaDependency =
-      require(isScalaVersionAcceptable(scalaVersion), s"Scala version $scalaVersion is not acceptable: $this requires $scala")
+      require(isScalaVersionAcceptable(scalaVersion), s"Scala version $scalaVersion is not acceptable: $this requires $scalaLibraryDependency")
       ScalaDependency(
         this,
         scalaVersion
       )
 
-    def scala: ScalaLibrary.Scala
+    def scalaLibraryDependency: ScalaLibraryDependency
 
     def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean
 
     def versionSuffix(scalaVersion: Version): String
+
+  def mk(
+    scalaVersion: Version,
+    group: String,
+    artifact: String,
+    isScalaJS: Boolean
+  ): Findable =
+    if ScalaLibraryDependency.Scala3.is(scalaVersion)
+    then Scala3(group, artifact, isScalaJS = isScalaJS)
+    else Scala2(group, artifact, isScalaJS = isScalaJS)
 
   open class Scala2(
     group: String,
@@ -70,7 +79,7 @@ object ScalaDependency:
     artifact = artifact,
     isScalaJS = isScalaJS
   ):
-    final override def scala: ScalaLibrary.Scala = ScalaLibrary.Scala2
+    final override def scalaLibraryDependency: ScalaLibraryDependency = ScalaLibraryDependency.Scala2
 
     final override def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
 
@@ -88,7 +97,7 @@ object ScalaDependency:
     artifact = artifact,
     isScalaJS = isScalaJS
   ):
-    final override def scala: ScalaLibrary.Scala = ScalaLibrary.Scala3
+    final override def scalaLibraryDependency: ScalaLibraryDependency = ScalaLibraryDependency.Scala3
 
     final override def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
 
