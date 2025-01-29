@@ -1,17 +1,15 @@
 plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
-  id 'org.podval.tools.scalajs' version '0.4.16'
+  id 'org.podval.tools.scalajs' version version_plugin
 }
 
 // There is no Java in the project :)
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
-final String scalaVersion = '3.6.3'
-
 dependencies {
-  zinc "org.scala-sbt:zinc_2.13:1.10.5"
-  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-  testImplementation "org.scalatest:scalatest_3:3.2.19"
+  zinc "org.scala-sbt:zinc_$version_scala2_minor:$version_zinc"
+  implementation "org.scala-lang:scala3-library_3:$version_scala"
+  testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }
 
 tasks.withType(ScalaCompile).configureEach {

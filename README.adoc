@@ -1,0 +1,825 @@
+= Gradle plugin for Scala.js
+:toc:
+:toclevels: 4
+// INCLUDED ATTRIBUTES
+:version-gradle: 8.12
+:version-plugin: 0.4.16
+:version-scala: 3.6.3
+:version-scala2-minor: 2.13
+:version-scala2: 2.13.16
+:version-zinc: 1.10.7
+:version-sbt-test-interface: 1.0
+:version-scalajs: 1.18.2
+:version-scalajs-dom: 2.8.0
+:version-scalajs-env-jsdom-nodejs: 1.1.0
+:version-node: 16.19.1
+:version-junit: 4.13.2
+:version-framework-junit4: 0.13.3
+:version-framework-munit: 1.1.0
+:version-framework-scalacheck: 1.18.1
+:version-framework-scalatest: 3.2.19
+:version-framework-spec2: 5.5.8
+:version-framework-utest: 0.8.5
+:version-framework-zio-test: 2.1.14
+// INCLUDED ATTRIBUTES
+
+== Summary
+
+This is a `Gradle` plugin that supports:
+
+- compiling, linking and running `Scala.js` code;
+- testing it using `sbt`-compatible testing frameworks;
+- testing plain Scala code (without Scala.js) using `sbt`-compatible testing frameworks.
+
+If needed, plugin automatically:
+
+- applies Gradle Scala plugin to the project it is applied to;
+- adds Scala.js dependencies that were not added explicitly;
+- configures Scala compiler for Scala.js;
+- retrieves and installs Node.js;
+- installs configured Node modules using `npm`.
+
+Plugin integrates with:
+
+- Gradle test task configuration;
+- Gradle test reporting;
+- IntelliJ Idea test reporting.
+
+Plugin works with:
+
+- Gradle {version-gradle};
+- Scala.js 1.x;
+- Node.js 16.x.
+
+Plugin itself is written in Scala 3.
+Project that the plugin is _applied_ to can use Scala 3, 2.13 or 2.12.
+Plugin is not compatible with other Gradle plugins that bring Scala 2.12 or earlier onto the _buildScript_ classpath.
+
+Gradle build file snippets below use the `Groovy` syntax, not the `Kotlin` one.
+
+== Motivation
+
+I dislike untyped languages, so if I have to write Javascript,
+I want to be able to do it in Scala;
+thanks to https://www.scala-js.org[Scala.js], this is possible.
+
+I http://dub.podval.org/2011/11/08/sbt-why.html[dislike]
+https://www.scala-sbt.org[sbt] -
+the https://www.scala-js.org/doc/project[official build tool] of Scala.js,
+which uses
+https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin[Scala.js sbt plugin];
+I want to be able to use my preferred build tool - https://gradle.org[Gradle].
+
+Existing Scala.js Gradle https://github.com/gtache/scalajs-gradle[plugin] by
+https://github.com/gtache[gtache] seems to be no longer maintained.
+
+Hence, this plugin.
+
+Plugin supports running tests using `sbt`-compatible testing frameworks
+in a way integrated with Gradle and IntelliJ Idea _with or without_ Scala.js.
+For plain Scala projects, Scala.js support can be disabled.
+
+For years, I used https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]
+to run my Scala Tests; thank you, https://github.com/maiflai[maiflai]!
+Since my plugin integrates with Gradle - and through it, with IntelliJ Idea -
+some of the issues that maiflai's plugin has my does not:
+https://github.com/maiflai/gradle-scalatest/issues/67[Test events were not received],
+https://github.com/maiflai/gradle-scalatest/issues/69[ASCII Control Characters Printed].
+
+I never tried an alternative ScalaTest integration
+https://github.com/helmethair-co/scalatest-junit-runner[scalatest-junit-runner],
+and if you need `JUnit5` _that_ is probably a way to go,
+since my plugin does not support `JUnit5`
+(it does support `Scala.js` though :)).
+
+== Applying to a Gradle project
+
+Plugin is https://plugins.gradle.org/plugin/org.podval.tools.scalajs[published]
+on the Gradle Plugin Portal; to apply it to a Gradle project:
+
+[source,groovy,subs="+attributes"]
+----
+plugins {
+  id 'org.podval.tools.scalajs' version '{version-plugin}'
+}
+----
+
+Plugin will automatically apply the Scala plugin to the project,
+so there is no need to manually list `id 'scala'` in the `plugins` block -
+but there is no harm in it either;
+either way, it is the responsibility of the project using the plugin
+to add a standard Scala library dependency that the Scala plugin requires.
+
+TODO is the following still the case?
+
+Plugin forces resolution of the some Gradle configurations (`implementation` and `testImplementation` configurations
+and some others and must be thus applied *after* any plugins
+that add dependencies to those configurations.
+One such plugin is the Gradle Plugin Portal Publishing Plugin,
+which applies Gradle Plugin Plugin,
+which adds dependencies to configurations.
+
+Unless Scala.js is disabled, plugin will run in Scala.js mode.
+To disable Scala.js and use the plugin for testing plain Scala code with `sbt`-compatible testing frameworks,
+put the following into the `gradle.properties` file of the project:
+
+[source,properties]
+----
+org.podval.tools.scalajs.disabled=true
+----
+
+In addition, the _presence_ of the
+https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]'s
+`mode` property also disables Scala.js:
+
+[source,properties]
+----
+com.github.maiflai.gradle-scalatest.mode = ...
+----
+(The _value_ of the `mode` property is ignored.)
+This way, this plugin can be used as a drop-in replacement for
+the ScalaTest one ;)
+
+== Dependencies
+
+Plugin automatically adds certain dependencies to various Gradle configurations if they are not configured explicitly;
+one of those configuration is `scalajs` - configuration that plugin creates.
+
+Scala.js dependencies are added only if Scala.js is enabled.
+If `scalajs-library` dependency is specified explicitly,
+plugin uses the same version for the Scala.js dependencies that it adds.
+
+
+|===
+|Name |goup:artifact |Version |Configuration |Notes
+
+|SBT Test Interface
+|org.scala-sbt:test-interface
+|{version-sbt-test-interface}
+|testImplementation
+|only when Scala.js is disabled
+
+|Scala.js compiler
+|org.scala-js:scalajs-compiler
+|Scala.js version
+|scalaCompilerPlugins
+|only for Scala 2
+
+|Scala.js-compiled Scala Library
+|org.scala-js:scalajs-library
+|Scala 3 version
+|implementation
+|only for Scala 3
+
+|Scala.js Library
+|org.scala-js:scalajs-library
+|{version-scalajs}
+|implementation
+|
+
+|Scala.js DOM manipulation Library
+|org.scala-js:scalajs-dom
+|{version-scalajs-dom}
+|implementation
+|
+
+|Scala.js Test Bridge
+|org.scala-js:scalajs-test-bridge
+|Scala.js version
+|testImplementation
+|
+
+|Scala.js Linker
+|org.scala-js:scalajs-linker
+|Scala.js version
+|scalajs
+|
+
+|Scala.js Node.js Environment
+|org.scala-js:scalajs-env-jsdom-nodejs
+|{version-scalajs-env-jsdom-nodejs}
+|scalajs
+|
+
+|Scala.js Test Adapter
+|org.scala-js:scalajs-sbt-test-adapter
+|Scala.js version
+|scalajs
+|
+
+|===
+
+Plugin internally uses some Zinc classes;
+the same Zinc is used as the one used by the project;
+see documentation of the Gradle Scala Plugin on how to configure desired version of Zinc.
+
+=== Scala 3
+Example with all dependencies listed for Scala 3:
+
+[source,groovy,subs="+attributes"]
+----
+final String scalaVersion       = '{version-scala}'
+final String scala2versionMinor = '{version-scala2-minor}'
+final String scalaJsVersion     = '{version-scalajs}'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+  implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:{version-scalajs-dom}"
+
+  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
+
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+
+  // a test framework:
+  testImplementation "org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}"
+}
+----
+
+And - with only the required dependencies:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:{version-scala}"
+  // a test framework:
+  testImplementation "org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}"
+}
+----
+
+=== Scala 2
+Example with explicit dependencies for Scala 2:
+
+[source,groovy,subs="+attributes"]
+----
+final String scalaVersion       = '{version-scala2}'
+final String scala2versionMinor = '{version-scala2-minor}'
+final String scalaJsVersion     = '{version-scalajs}'
+
+dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_3:{version-scalajs-dom}"
+
+  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
+
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
+
+  testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+
+  // for ScalaTest tests:
+  testImplementation "org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}"
+}
+----
+
+And - with only the required dependencies:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  implementation "org.scala-lang:scala-library:{version-scala2}"
+  // a test framework:
+  testImplementation "org.scalatest:scalatest_sjs1_{version-scala2-minor}:{version-framework-scalatest}"
+}
+----
+
+== Testing
+
+=== Gradle
+Test runs are integrated with Gradle:
+
+- test counts are logged (`TestCountLogger`) - if there are failing tests;
+- test reports are generated;
+- test framework output is logged at an appropriate level;
+- displaying test events and output is configured in the
+https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.logging.TestLoggingContainer.html[test.testLogging].
+
+If no tests were found (there are none or all were filtered out),
+Gradle outputs an error message "No tests found for given includes";
+this message can be suppressed by setting `test.filter.failOnNoMatchingTests = false`.
+
+=== IntelliJ Idea
+Test runs are integrated with IntelliJ Idea:
+
+- test counts are displayed;
+- tree of tests run with their outcome is displayed;
+- colours are suppressed in the framework output.
+
+=== Test Frameworks
+Plugin replaces the `test` task with one that supports running sbt-compatible test frameworks.
+At least one such framework needs to be added to the `testImplementation` configuration;
+multiple test frameworks can be used at the same time.
+
+Currently, the following test frameworks are supported:
+
+|===
+| Name | group:artifact | Version | Notes
+
+| JUnit4
+| `com.github.sbt:junit-interface`
+| {version-framework-junit4}
+| brings in `junit:junit`; does not support Scala.js
+
+| mUnit
+| `org.scalameta:munit_3`
+| {version-framework-munit}
+| brings in `junit:junit`; does support Scala.js?!
+
+| ScalaCheck
+| `org.scalacheck:scalacheck_3`
+| {version-framework-scalacheck}
+|
+
+| ScalaTest
+| `org.scalatest:scalatest_3`
+| {version-framework-scalatest}
+|
+
+| Specs2
+| `org.specs2:specs2-core_3`
+| {version-framework-spec2}
+|
+
+| uTest
+| `com.lihaoyi:utest_3`
+| {version-framework-utest}
+|
+
+| ZIO Test
+| `dev.zio:zio-test-sbt_3`
+| {version-framework-zio-test}
+| tests are `objects`, not `classes`
+|===
+
+When Scala.js is enabled, test framework artifact is suffixed with `_sjs1`;
+for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalatest_3`.
+
+For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
+
+=== Test Task
+Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
+in the traditional way; currently, not all configuration properties are honored.
+
+Plugin introduces its own Gradle test framework: `useSbt`.
+Plugin auto-applies this Gradle test framework to each test task.
+Re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
+
+File-name based test scan is not supported by this plugin;
+`isScanForTestClasses` must be at its default value `true`.
+
+Scala.js tests are run sequentially; Scala tests are forked/parallelized in accordance with the forking options.
+
+Class inclusion/exclusion filters are honored, but method-name-based filtering does not work,
+since in frameworks like ScalaTest individual tests are not methods.
+
+Tests can be filtered by tags, for example:
+
+[source,groovy]
+----
+test {
+  useSbt {
+    includeCategories = ['org.scalatest.tags.Slow']
+    excludeCategories = ['com.mycompany.tags.DbTest', 'com.mycompany.tags.RequiresDb']
+  }
+}
+----
+
+If there is a need to have test runs with different configuration, more testing tasks can be added manually.
+
+For plain Scala projects (no Scala.js), the type of the test task is `org.podval.tools.scalajs.jvm.JvmTestTask`.
+Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
+
+For Scala.js projects the type is `org.podval.tools.scalajs.js.Run.Test`.
+Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
+for manually added tasks this dependency has to be added manually.
+
+== Scala.js
+Ths section applies only when Scala.js support is enabled.
+
+=== Scala.js compiler
+
+==== Scala 3
+To support Scala.js, Scala compiler needs to be configured to produce both the `class` _and_ `sjsir` files.
+
+If the project uses Scala 3, all it takes is to pass `-scalajs` option to the Scala compiler, since
+Scala 3 compiler has Scala.js support built in:
+
+[source,groovy]
+----
+tasks.withType(ScalaCompile) {
+  scalaCompileOptions.with {
+    additionalParameters = [ '-scalajs' ]
+  }
+}
+----
+
+Plugin automatically adds this option to the main and test Scala compilation tasks if it is not present.
+
+==== Scala 2
+If the project uses Scala 2, Scala.js compiler plugin dependency needs to be declared:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:{version-scalajs}"
+}
+----
+
+Plugin does this automatically unless a dependency on `scalajs-compiler` is declared explicitly.
+
+To enable Scala compiler plugins, their classpaths need to be given to the compiler
+via a `-Xplugin:` option. Examples of the Gradle build script code that do that abound:
+
+[source,groovy]
+----
+tasks.withType(ScalaCompile) {
+  scalaCompileOptions.additionalParameters = [
+    '-Xplugin:' + configurations.scalaCompilerPlugin.asPath
+  ]
+}
+----
+
+*Note:* Such code is not needed, since Gradle Scala plugin already does this.
+
+=== Node.js
+
+For running `Scala.js` code and tests, plugin uses `Node.js`.
+
+In Scala.js mode, plugin adds `node` extension to the project.
+This extension can be used to specify the version of Node.js to use and Node modules to install:
+
+[source,groovy,subs="+attributes"]
+----
+node {
+  version = '{version-node}'
+  modules = ['jsdom']
+}
+----
+
+If Node.js version is not specified, plugin uses "ambient" Node.js - the one installed on the machine.
+
+If Node.js version is specified, plugin will install the specified version (under `~/.gradle/nodejs`) and use it.
+
+Scala.js does not support versions of Node.js newer than "{version-node}", so none of the "17.9.1", "18.15.0", "19.8.1".
+I do not know anything about Node.js, and find this surprising - but I am sure there is a good
+technical or political reason for this ;)
+
+If no Node modules to install are listed, plugin installs the `jsdom` module,
+which is required for `org.scala-js:scalajs-env-jsdom-nodejs`.
+
+To get better traces, one can add `source-map-support` module.
+
+Node modules for the project are in the `node_modules` directory in the project root.
+
+If `package.json` file does not exist, plugin runs `npm init private`.
+
+Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands using the same version of Node.js;
+those tasks can be used from the command line like this:
+
+[source,shell]
+----
+./gradlew npm --npm-arguments 'version'
+./gradlew node --node-arguments '...'
+----
+
+=== Linking
+
+For linking of the main code, plugin adds `link` task of type `org.podval.tools.scalajs.js.LinkTask.Main`.
+All tasks of this type automatically depend on the `classes` task.
+
+For linking of the test code, plugin adds `linkTest` task of type `org.podval.tools.scalajs.js.LinkTask.Test`.
+All tasks of this type automatically depend on the `testClasses` task.
+
+Each of the tasks exposes a property `JSDirectory` that points to a directory
+with the resulting JavaScript, so that it can be copied where needed.
+For example:
+
+TODO use services to not call Task.getProject at execution time.
+
+[source,groovy]
+----
+link.doLast {
+  project.sync {
+    from link.JSDirectory
+    into jsDirectory
+  }
+}
+----
+
+Link tasks have a number of properties that can be used to configure linking.
+Configurable properties with their defaults are:
+
+[source,groovy]
+----
+link {
+  optimization     = 'Fast'          // one of: 'Fast', 'Full'
+  moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
+  moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
+  prettyPrint      = false
+}
+----
+
+Setting `optimization` to `Full`:
+
+- uses `Semantics.optimized`;
+- enables `checkIR`;
+- enables Closure Compiler (unless `moduleKind` is set to `ESModule`).
+
+For `Link.Main` tasks, a list of module initializers may also be configured:
+
+[source,groovy]
+----
+moduleInitializers {
+  main {
+    className = '<fully qualified class name>'
+    mainMethodName = 'main'
+    mainMethodHasArgs = false
+  }
+  //...
+}
+----
+
+Name of the module initializer ('main' in the example above) becomes the module id.
+
+=== Running
+
+Plugin adds `run` task for running the main code (if it is an application and not a library).
+The task automatically depends on the `link` task.
+
+Additional tasks of type `org.podval.tools.scalajs.js.RunTask.Main` can be added manually;
+their dependency on a corresponding `LinkTask.Main` task must be set manually too.
+
+== Notes and Credits
+
+=== Linking
+It is reasonably easy - if repetitive - to configure the Scala compiler and add needed Scala.js dependencies by hand;
+what really pushed me to make this plugin is the difficulty and ugliness involved in
+manually setting up Scala.js linking in a Gradle script.
+
+A Stack Overflow https://stackoverflow.com/a/65777102/670095[answer]
+by https://stackoverflow.com/users/1149944/gzm0[gzm0] was *extremely* helpful
+for understanding how the Scala.js linker should be called. Thanks!
+
+I also looked at
+
+- https://www.scala-js.org/doc/tutorial/basic[Scala.js Tutorial]
+- https://github.com/scala-js/scala-js/tree/main/linker-interface[Scala.js Linker]
+- https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin[Scala.js sbt plugin]
+- https://github.com/gtache/scalajs-gradle[Old Scala.js Gradle plugin] by https://github.com/gtache[gtache]
+- https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
+- https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
+
+Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
+by https://github.com/machaval[machaval] - thanks for the encouragement!
+
+=== Testing
+
+Basic testing functionality was https://github.com/dubinsky/scalajs-gradle/issues/7[requested]
+by https://github.com/zstone1[zstone1] - thanks for the encouragement!
+
+To figure out how `sbt` itself integrates with testing frameworks, I had to untangle some `sbt` code, including:
+
+- `sbt.Defaults`
+- `sbt.Tests`
+- `sbt.TestRunner`
+- `sbt.ForkTests`
+- `org.scalajs.sbtplugin.ScalaJSPluginInternal`
+
+Turns out, internals of `sbt` are a maze of twisted (code) passages, all alike, where pieces of
+code are stored in key-value maps, and addition of such maps is used as an override mechanism.
+What a disaster!
+
+Just being able to run the tests with no integration with Gradle or IntelliJ Idea seemed
+suboptimal, so I decided to look into proper integrations of things like
+`org.scala-js:scalajs-sbt-test-adapter` and
+https://github.com/sbt/test-interface[org.scala-sbt:test-interface].
+
+I perused code from:
+
+- https://github.com/gradle/gradle[Gradle];
+- https://github.com/JetBrains/intellij-community[IntelliJ Idea];
+- https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin].
+
+This took _by far_ the most of my time (and takes up more than 3/4 of the plugin code),
+and uncovered a number of surprises.
+
+==== sbt test interface
+sbt's testing interface is supported by a number of test frameworks, and once I had
+a Gradle/Idea integration with it in Scala.js context, it was reasonably easy to re-use it
+to run tests on sbt-compatible frameworks _without_ any Scala.js involved - in plain Scala projects.
+
+There are _two_ testing interfaces in `org.scala-sbt:test-interface:1.0`;
+I use the one used by the Scala.js sbt plugin - presumably the new one ;)
+
+==== Dynamic Dependencies
+I had to develop an approach to add dependencies dynamically,
+with correct versions and built for correct version of Scala which may be different from the one
+plugin uses (so that Scala 2.12 can be supported).
+
+==== Running in IntelliJ Idea
+IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but _only_ if the task is of type
+`org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
+and `Test` extends `org.gradle.process.JavaForkOptions`, my test task runs in a forked JVM,
+making debugging of my code difficult.
+
+==== Test Output
+Gradle controls the formatting of the test output:
+
+- indenting is hard-coded in the
+https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/TestEventLogger.java#L63[TestEventLogger.onOutput()];
+- addition of the test name and the name of the output stream at the top of each indented batch
+(output of the same test) is hard-coded in the
+https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/AbstractTestLogger.java#L51[AbstractTestLogger.logEvent()].
+
+IntelliJ Idea, in `addTestListener.groovy`:
+
+- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L30[suppresses]
+the output and error events and
+- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L29[adds]
+its own test and output listener
+https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
+that does no batching, indenting or adding.
+
+==== Proxying Test Events
+Turns out that IntelliJ Idea integration only works when all the calls to
+the IJ listener happen from the same thread
+(it probably uses some thread-local variable to set up cross-process communications).
+Since some of the calls are caused by the call-back from the sbt testing interface's
+event handler, I get "Test events were not received" in the Idea test UI.
+It would have been nice if this fact was documented somewhere :(
+I coded an event queue with its own thread, but then discovered that:
+
+- Gradle provides a mechanism that ensures that all the calls are made from the same thread: `Actor.createActor().getProxy()`;
+- when tests are parallelized, `MaxNParallelTestClassProcessor` is used, which already does that, so I do not need to.
+
+==== Additional Test Information
+sbt-based test discovery produces more information than just the class name:
+
+- fingerprint
+- selectors
+- framework that recognized the test (supporting multiple testing frameworks in the same project
+  probably is not a critical requirement, but sbt does it, so I must too ;)
+
+When tests are parallelized, I do not want to read the compiler analysis file in every test worker
+and fish for this information again. For a while, I used modified serializer to get additional information
+obtained during test discovery to the worker; of course, serializer is hard-coded in the Gradle code,
+so to use mine I had to modify three Gradle files... I even made a https://github.com/gradle/gradle/pull/24088[pull request] to add flexibility
+in this regard to Gradle.
+But then I realized that I can encode additional information I need to get to the worker in the test class name!
+So now there is only one Gradle file that I need to modify: `DefaultTestExecuter`.
+Modification needed is - not to fork the JVM when running Scala.js tests (they have to run in the same JVM
+where the test frameworks were loaded).
+
+==== Test Ids and Serialization
+`org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer`
+seems to make a decision which serializer registry to use based on the
+outcome of the `SerializerRegistry.canSerialize()` call
+for the class of the first parameter of a method;
+test id is the first parameter of the `TestResultProcessor.output()`, `completed()` and `failure()` calls.
+Without some hackery like registering a serializer for `AnyRef` and disambiguating
+in the `SerializerRegistry.build()` call,
+neither `null` nor `String` are going to work as ids.
+
+This is probably the reason why Gradle:
+
+- makes all test ids `CompositeIdGenerator.CompositeId`
+- registers a `Serializer[CompositeIdGenerator.CompositeId]` in `TestEventSerializer`.
+
+Gradle just wants to attract attention to its `TestEventSerializer`, so it registers
+serializers for the types of the first parameters of all methods - including the test ids ;)
+
+And since the minimum of composed is two, Gradle uses test ids that are composite of two Longs.
+
+AbstractTestTask installs `StateTrackingTestResultProcessor`
+which keeps track of all tests that are executing in all `TestWorker`s.
+That means that test ids must be scoped per `TestWorker`.
+Each `TestWorker` has an `idGenerator` which it uses to generate `WorkerTestClassProcessor.workerSuiteId`;
+that same `idGenerator` can be used to generate sequential ids for the tests in the worker,
+satisfying the uniqueness requirements - and resulting in the test ids always being
+a composite of exactly two Longs!
+
+(Because tests are scoped by the workers, it does not seem possible to group test results by framework.)
+
+==== Testing the Tests
+I coded a neat way to test the plugin itself and
+various features of the various frameworks and their support by the plugin:
+Fixture, Feature, ForClass, GroupingFuncSpec, Platform, SourceFile, TestProject.
+
+==== Framework Peculiarities
+JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:
+both are `<class name>.<method name>`; method names like this just look stupid, but class names look
+like new classes to Gradle, so test report is corrupted. I had to work around it.
+
+MUnit (but not JUnit4!) and UTest write to standard output/error instead of logging via supplied sbt logger,
+so their output does not go through my `TestClassProcessor.output()`;
+do I need to modify capturing to get their output?
+
+Comment on the JupiterTestFingerprint.annotationName() says:
+
+> return The name of this class. This is to ensure that SBT does not find
+> any tests so that we can use JUnit Jupiter's test discovery mechanism.
+
+Well, mission accomplished: my test scanner does not find any tests, and since
+I have no idea what "JUnit Jupiter's test discovery mechanism" is,
+I get the Gradle message "No tests found for given includes".
+So, no JUnit5 support for now :(
+
+I _might_ try to use framework-specific test discovery instead of the Scala Analysis one in the Scala-only setting,
+but it is not a priority :)
+
+ScalaCheck processes test *methods* as nested tasks; other frameworks just run them and report the results
+via event handler. UTest uses `NestedTestSelector` for this, while others use `TestSelector`.
+ScalaCheck reports test suite completion via event handler, unlike others ;)
+ScalaTest does not return nested tasks for nested suites (or anything, according to the documentation
+of its Runner); events for the tests in the nested suites have `NetsedTestSelector`.
+
+When tagging classes used for inclusion/exclusion are not available, MUnit crashes with a `ClassNotFound` -
+but `ScalaTest` does not.
+
+==== TODO
+
+How is MUnit, that is JUnit4-based, supported by Scala.js - and JUnit4 itself is not?
+
+Test test filtering. For example, why supplying `--tests "*"` is NOT the same as not supplying any?
+
+Document what Test configuration methods are honoured.
+
+Document inability to debug Scala.js code or tests.
+
+Generate the framework table programmatically.
+
+Fine-tune the stack traces.
+
+from https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala#L267
+
+> selectors will always at least have one SuiteSelector, according to javadoc of TaskDef
+
+and:
+
+> In new Framework API, it is now a specified behavior that Framework's runner method will be called
+> to get a Runner instance once per project run.
+
+According to the Runner documentation (?), summary returned was already sent to the logger? Runner.done():
+
+> The test framework may send a summary (i.e., a message giving total tests succeeded, failed, and so on)
+> to the user via a log message. If so, it should return the summary from done.
+> If not, it should return an empty string.
+> The client may use the return value of done to decide whether to display its own summary message.
+
+Relax the restrictions on the plugin application order.
+
+I may want to try replacing AnalysisDetector with reading the class files.
+
+Clean up adding the plugin classes to the worker's classpath (and possibly reflective access to the
+implementation classpath).
+
+Add new tags to the plugin's portal page: manually at https://github.com/gradle/plugin-portal-requests !
+
+Look at Gradle's new test hotness: JVM test suite plugin.
+
+==== Test Tagging
+
+- ScalaTest:
+  * tests are taggable, but not suites?
+  * test exclusion works, test inclusion does not: nothing runs
+
+- ScalaCheck:
+  * no tagging
+
+==== TestDescriptor hierarchy
+
+[source]
+----
+org.gradle.api.tasks.testing.TestDescriptor
+  org.gradle.api.internal.tasks.testing.TestDescriptorInternal     // adds id
+    org.gradle.api.internal.tasks.testing.DecoratingTestDescriptor // attaches parent
+      // above is used by org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
+      // and org.gradle.api.internal.tasks.testing.logging.TestWorkerProgressListener
+      // set up in org.gradle.api.tasks.testing.AbstractTestTask
+    org.gradle.api.internal.tasks.testing.TestDescriptorInternal.UnknownTestDescriptor
+      // above is used by org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
+      // in cases that should not happen
+    org.gradle.api.internal.tasks.testing.AbstractTestDescriptor   // getParent -> null
+      org.gradle.api.internal.tasks.testing.DefaultTestDescriptor
+        // above is used by org.gradle.api.internal.tasks.testing.junit.JUnitTestEventAdapter
+        // and org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+        org.gradle.api.internal.tasks.testing.DefaultTestMethodDescriptor
+          // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+      org.gradle.api.internal.tasks.testing.DefaultTestSuiteDescriptor
+        // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+        org.gradle.api.internal.tasks.testing.processors.TestMainAction.RootTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor.WorkerTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.DefaultNestedTestSuiteDescriptor
+          // above is used in org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+        org.gradle.api.internal.tasks.testing.DefaultTestClassDescriptor
+          // above is used in
+          // org.gradle.api.internal.tasks.testing.logging.TestWorkerProgressListener
+          // org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+          // org.gradle.api.internal.tasks.testing.junit.TestClassExecutionEventGenerator
+          // org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+----

@@ -50,7 +50,8 @@ object ScalaLibrary:
     override def getScalaVersion(library: ScalaLibrary): Version = library.scala3.get.version
 
     // Note: Scala 2 minor version used by Scala 3 from 3.0.0 to the current is 2.13
-    def scala2version(scala3version: Version): Version = Version("2.13")
+    val scala2versionMinor: Version = Version("2.13")
+    def scala2version(scala3version: Version): Version = scala2versionMinor
 
   def forVersion(version: Version): Dependency.WithVersion =
     (if version.major == Scala3.versionMajor then Scala3 else Scala2).withVersion(version)

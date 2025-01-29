@@ -1,5 +1,6 @@
 package org.podval.tools.testing.framework
 
+import org.podval.tools.build.Version
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/sbt/junit-interface
@@ -14,6 +15,8 @@ object JUnit4 extends FrameworkDescriptor(
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
 ):
+  def jUnitVersion: Version = Version("4.13.2")
+  
   override def isScalaJSSupported: Boolean = false
   override def isScalaDependency: Boolean = false
 

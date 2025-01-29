@@ -11,17 +11,17 @@ object ScalaJSDependencies:
   val versionDefault: Version = Version("1.18.2")
 
   // Note: no Scala 3 flavours exists
-  object Library       extends ScalaDependency.Scala2(group, "scalajs-library")
+  object         Library       extends ScalaDependency.Scala2(group, "scalajs-library")
   private object Compiler      extends ScalaDependency.Scala2(group, "scalajs-compiler", isScalaVersionFull = true)
   private object Linker        extends ScalaDependency.Scala2(group, "scalajs-linker")
   private object TestBridge    extends ScalaDependency.Scala2(group, "scalajs-test-bridge")
   private object TestAdapter   extends ScalaDependency.Scala2(group, "scalajs-sbt-test-adapter")
   private object TestInterface extends ScalaDependency.Scala2(group, "scalajs-test-interface")
 
-  private object JSDomNodeJS extends ScalaDependency.Scala2(group, "scalajs-env-jsdom-nodejs"):
+  object JSDomNodeJS extends ScalaDependency.Scala2(group, "scalajs-env-jsdom-nodejs"):
     val versionDefault: Version = Version("1.1.0")
 
-  private object DomSJS:
+  object DomSJS:
     private val artifact: String = "scalajs-dom"
     val versionDefault: Version = Version("2.8.0")
 

@@ -7,51 +7,41 @@ plugins {
 }
 
 group = 'org.podval.tools'
-version = '0.4.16'
+version = version_plugin
 description = 'Gradle plugin for ScalaJS'
 
-final String scalaVersion       = '3.6.3'
-final String scala2versionMinor = '2.13'
-final String scalaJsVersion     = '1.18.2'
-final String sbtVersion         = '1.10.7'
+final String scalaVersion       = version_scala
+final String scala2versionMinor = version_scala2_minor
+final String scalaJsVersion     = version_scalajs
+final String zincVersion        = version_zinc
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
-  zinc "org.scala-sbt:zinc_$scala2versionMinor:$sbtVersion"
+  zinc "org.scala-sbt:zinc_$scala2versionMinor:$zincVersion"
 
   compileOnly 'ch.qos.logback:logback-classic:1.5.16'
 
-  compileOnly 'org.scala-sbt:test-interface:1.0'
+  compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
 
   // Note: transitive dependencies: zinc-persist -> zinc-core -> zinc-apiinfo, io, compiler-interface
-  compileOnly "org.scala-sbt:zinc-persist_$scala2versionMinor:$sbtVersion"
+  compileOnly "org.scala-sbt:zinc-persist_$scala2versionMinor:$zincVersion"
 
   compileOnly "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
-  compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:1.1.0"
+  compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:$version_scalajs_env_jsdom_nodejs"
 
   // For framework-specific exceptions
-  compileOnly 'junit:junit:4.13.2' // runner: "com.github.sbt:junit-interface:0.13.3"
-  compileOnly 'org.scalatest:scalatest_3:3.2.19'
-  compileOnly 'org.scalacheck:scalacheck_3:1.18.1'
-  compileOnly 'com.lihaoyi:utest_3:0.8.5'
-  compileOnly 'org.specs2:specs2-core_3:5.5.8'
-  compileOnly 'org.scalameta:munit_3:1.1.0'
-  compileOnly 'dev.zio:zio-test_3:2.1.14' // runner: "dev.zio:zio-test-sbt:2.1.14"
+  compileOnly "junit:junit:$version_junit" // runner: "com.github.sbt:junit-interface:0.13.3"
+  compileOnly "org.scalatest:scalatest_3:$version_framework_scalatest"
+  compileOnly "org.scalacheck:scalacheck_3:$version_framework_scalacheck"
+  compileOnly "com.lihaoyi:utest_3:$version_framework_utest"
+  compileOnly "org.specs2:specs2-core_3:$version_framework_spec2"
+  compileOnly "org.scalameta:munit_3:$version_framework_munit"
+  compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.14"
 
-  testImplementation 'org.scalatest:scalatest_3:3.2.19'
-
-  // TODO - was...
-//  // Used for running the GradleRunner tests in the testNg task -
-//  // and to compare my integration with Gradle and Idea with the real one :)
-//  testImplementation 'org.testng:testng:7.7.1'
+  testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }
-
-//tasks.register('testNg', Test) {
-//  setGroup("verification")
-//  useTestNG()
-//}
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
