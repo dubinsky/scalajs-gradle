@@ -4,7 +4,6 @@ import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
 import org.podval.tools.build.{Dependency, ScalaLibrary, Version}
-import org.podval.tools.scalajs.jvm.JvmDependencies
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.*
@@ -110,7 +109,7 @@ object TestProject:
     Files.write(Files.file(projectDir, "build.gradle"),
       buildGradle(
         nodeVersion = platform.getNodeVersion,
-        scalaLibrary = platform.scalaLibrary,
+        scalaLibraryDependency = platform.scalaLibraryDependency,
         frameworks = frameworks.map(platform.toDependency),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,
@@ -160,7 +159,7 @@ object TestProject:
 
   private def buildGradle(
     nodeVersion: Option[Version],
-    scalaLibrary: Dependency.WithVersion,
+    scalaLibraryDependency: Dependency.WithVersion,
     frameworks: Seq[Dependency.WithVersion],
     includeTestNames: Seq[String],
     excludeTestNames: Seq[String],
@@ -188,8 +187,8 @@ object TestProject:
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |
        |dependencies {
-       |  zinc "org.scala-sbt:zinc_${ScalaLibrary.Scala3.scala2versionMinor}:${JvmDependencies.Zinc.versionDefault}"
-       |  implementation '${scalaLibrary.dependencyNotation}'
+       |  zinc "org.scala-sbt:zinc_${ScalaLibrary.Scala3.scala2versionMinor}:${Sbt.versionDefault}"
+       |  implementation '${scalaLibraryDependency.dependencyNotation}'
        |$frameworksString
        |}
        |

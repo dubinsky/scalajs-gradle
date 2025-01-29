@@ -35,6 +35,10 @@ object ScalaLibrary:
     def versionMajor: Int
     def getScalaVersion(library: ScalaLibrary): Version
 
+  object Scala:
+    def forVersion(version: Version): Dependency.WithVersion =
+      (if version.major == Scala3.versionMajor then Scala3 else Scala2).withVersion(version)
+      
   object Scala2 extends Scala("scala-library"):
     override def versionMajor: Int = 2
     val versionDefault13: Version = Version("2.13.16")
@@ -52,9 +56,6 @@ object ScalaLibrary:
     // Note: Scala 2 minor version used by Scala 3 from 3.0.0 to the current is 2.13
     val scala2versionMinor: Version = Version("2.13")
     def scala2version(scala3version: Version): Version = scala2versionMinor
-
-  def forVersion(version: Version): Dependency.WithVersion =
-    (if version.major == Scala3.versionMajor then Scala3 else Scala2).withVersion(version)
 
   // Note: there is no Scala 2 equivalent
   object Scala3SJS extends ScalaDependency.Scala3(group = group, artifact = "scala3-library", isScalaJS = true)

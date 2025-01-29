@@ -3,8 +3,7 @@ package org.podval.tools.scalajs
 import org.podval.tools.build.ScalaLibrary
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.js.ScalaJSDependencies
-import org.podval.tools.scalajs.jvm.JvmDependencies
-import org.podval.tools.testing.framework
+import org.podval.tools.testing.{Sbt, framework}
 import org.podval.tools.util.Files
 import java.io.File
 
@@ -26,8 +25,8 @@ object AsciiDocAttributes:
     "scala2-minor" -> ScalaLibrary.Scala3.scala2versionMinor,
     "scala2" -> ScalaLibrary.Scala2.versionDefault13,
     
-    "zinc" -> JvmDependencies.Zinc.versionDefault,
-    "sbt-test-interface" -> JvmDependencies.SbtTestInterface.versionDefault,
+    "zinc" -> Sbt.versionDefault,
+    "sbt-test-interface" -> Sbt.TestInterface.versionDefault,
     
     "scalajs" -> ScalaJSDependencies.versionDefault,
     "scalajs-dom" -> ScalaJSDependencies.DomSJS.versionDefault,

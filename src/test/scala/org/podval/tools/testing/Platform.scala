@@ -11,7 +11,7 @@ final class Platform(
 ):
   def displayName: String = s"""in Scala v$scalaVersion${if isScalaJS then " with ScalaJS" else ""}"""
 
-  def scalaLibrary: Dependency.WithVersion = ScalaLibrary.forVersion(scalaVersion)
+  def scalaLibraryDependency: Dependency.WithVersion = ScalaLibrary.Scala.forVersion(scalaVersion)
 
   def getNodeVersion: Option[Version] = if !isScalaJS then None else Some(nodeVersion)
   

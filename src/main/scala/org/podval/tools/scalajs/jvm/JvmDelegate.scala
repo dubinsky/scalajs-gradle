@@ -13,4 +13,4 @@ class JvmDelegate extends ScalaJSPlugin.Delegate:
     pluginScalaLibrary : ScalaLibrary,
     projectScalaLibrary: ScalaLibrary
   ): Unit =
-    JvmDependencies.sbtTestInterfaceDependencyRequirement.applyToConfiguration(project)
+    JvmDependencies.SbtTestInterfaceDependencyRequirement.applyToConfiguration(project)

@@ -44,6 +44,9 @@ object ScalaDependency:
 
     final def platformSuffix: String = if !isScalaJS then "" else "_sjs1"
 
+    final def withScalaVersion(scalaLibrary: ScalaLibrary): ScalaDependency =
+      withScalaVersion(scala.getScalaVersion(scalaLibrary))
+
     final def withScalaVersion(scalaVersion: Version): ScalaDependency =
       require(isScalaVersionAcceptable(scalaVersion), s"Scala version $scalaVersion is not acceptable: $this requires $scala")
       ScalaDependency(
@@ -106,8 +109,7 @@ object ScalaDependency:
     configurationName,
     isVersionExact
   ):
-    override protected def getDependency: Dependency =
-      findable.withScalaVersion(findable.scala.getScalaVersion(scalaLibrary))
+    override protected def getDependency: Dependency = findable.withScalaVersion(scalaLibrary)
 
     override protected def verify(found: Dependency.WithVersion, project: Project): Unit =
     //    if found.dependency.isInstanceOf[Scala2Dependency] then // TODO get rid of casts
