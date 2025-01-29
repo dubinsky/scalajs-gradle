@@ -556,7 +556,7 @@ their dependency on a corresponding `LinkTask.Main` task must be set manually to
 
 == Notes and Credits
 
-=== Linking
+=== Scala.js Linking
 It is reasonably easy - if repetitive - to configure the Scala compiler and add needed Scala.js dependencies by hand;
 what really pushed me to make this plugin is the difficulty and ugliness involved in
 manually setting up Scala.js linking in a Gradle script.
@@ -576,6 +576,11 @@ I also looked at
 
 Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
 by https://github.com/machaval[machaval] - thanks for the encouragement!
+
+=== Dynamic Dependencies
+I had to develop an approach to add dependencies dynamically,
+with correct versions and built for correct version of Scala which may be different from the one
+plugin uses (so that Scala 2.12 can be supported).
 
 === Testing
 
@@ -608,7 +613,7 @@ I perused code from:
 This took _by far_ the most of my time (and takes up more than 3/4 of the plugin code),
 and uncovered a number of surprises.
 
-==== sbt test interface
+=== sbt Test Interface
 sbt's testing interface is supported by a number of test frameworks, and once I had
 a Gradle/Idea integration with it in Scala.js context, it was reasonably easy to re-use it
 to run tests on sbt-compatible frameworks _without_ any Scala.js involved - in plain Scala projects.
@@ -616,18 +621,13 @@ to run tests on sbt-compatible frameworks _without_ any Scala.js involved - in p
 There are _two_ testing interfaces in `org.scala-sbt:test-interface:1.0`;
 I use the one used by the Scala.js sbt plugin - presumably the new one ;)
 
-==== Dynamic Dependencies
-I had to develop an approach to add dependencies dynamically,
-with correct versions and built for correct version of Scala which may be different from the one
-plugin uses (so that Scala 2.12 can be supported).
-
-==== Running in IntelliJ Idea
+=== Running in IntelliJ Idea
 IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but _only_ if the task is of type
 `org.gradle.api.tasks.testing.Test`. Since I must derive my test task from `Test`,
 and `Test` extends `org.gradle.process.JavaForkOptions`, my test task runs in a forked JVM,
 making debugging of my code difficult.
 
-==== Test Output
+=== Test Output
 Gradle controls the formatting of the test output:
 
 - indenting is hard-coded in the
@@ -645,7 +645,7 @@ its own test and output listener
 https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
 that does no batching, indenting or adding.
 
-==== Proxying Test Events
+=== Proxying Test Events
 Turns out that IntelliJ Idea integration only works when all the calls to
 the IJ listener happen from the same thread
 (it probably uses some thread-local variable to set up cross-process communications).
@@ -657,7 +657,7 @@ I coded an event queue with its own thread, but then discovered that:
 - Gradle provides a mechanism that ensures that all the calls are made from the same thread: `Actor.createActor().getProxy()`;
 - when tests are parallelized, `MaxNParallelTestClassProcessor` is used, which already does that, so I do not need to.
 
-==== Additional Test Information
+=== Additional Test Information
 sbt-based test discovery produces more information than just the class name:
 
 - fingerprint
@@ -675,7 +675,7 @@ So now there is only one Gradle file that I need to modify: `DefaultTestExecuter
 Modification needed is - not to fork the JVM when running Scala.js tests (they have to run in the same JVM
 where the test frameworks were loaded).
 
-==== Test Ids and Serialization
+=== Test Ids and Serialization
 `org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer`
 seems to make a decision which serializer registry to use based on the
 outcome of the `SerializerRegistry.canSerialize()` call
@@ -705,12 +705,12 @@ a composite of exactly two Longs!
 
 (Because tests are scoped by the workers, it does not seem possible to group test results by framework.)
 
-==== Testing the Tests
+=== Testing the Tests
 I coded a neat way to test the plugin itself and
 various features of the various frameworks and their support by the plugin:
 Fixture, Feature, ForClass, GroupingFuncSpec, Platform, SourceFile, TestProject.
 
-==== Framework Peculiarities
+=== Test Framework Peculiarities
 JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:
 both are `<class name>.<method name>`; method names like this just look stupid, but class names look
 like new classes to Gradle, so test report is corrupted. I had to work around it.
@@ -741,17 +741,15 @@ of its Runner); events for the tests in the nested suites have `NetsedTestSelect
 When tagging classes used for inclusion/exclusion are not available, MUnit crashes with a `ClassNotFound` -
 but `ScalaTest` does not.
 
-==== TODO
+=== TODO
 
-How is MUnit, that is JUnit4-based, supported by Scala.js - and JUnit4 itself is not?
+How is MUnit, which is JUnit4-based, supported by Scala.js - and JUnit4 itself is not?
 
 Test test filtering. For example, why supplying `--tests "*"` is NOT the same as not supplying any?
 
 Document what Test configuration methods are honoured.
 
 Document inability to debug Scala.js code or tests.
-
-Generate the framework table programmatically.
 
 Fine-tune the stack traces.
 
@@ -773,16 +771,16 @@ According to the Runner documentation (?), summary returned was already sent to 
 
 Relax the restrictions on the plugin application order.
 
-I may want to try replacing AnalysisDetector with reading the class files.
-
 Clean up adding the plugin classes to the worker's classpath (and possibly reflective access to the
 implementation classpath).
 
 Add new tags to the plugin's portal page: manually at https://github.com/gradle/plugin-portal-requests !
 
+I may want to try replacing AnalysisDetector with reading the class files.
+
 Look at Gradle's new test hotness: JVM test suite plugin.
 
-==== Test Tagging
+=== Test Tagging
 
 - ScalaTest:
   * tests are taggable, but not suites?
@@ -791,7 +789,7 @@ Look at Gradle's new test hotness: JVM test suite plugin.
 - ScalaCheck:
   * no tagging
 
-==== TestDescriptor hierarchy
+=== TestDescriptor hierarchy
 
 [source]
 ----
