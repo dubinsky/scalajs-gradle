@@ -3,7 +3,6 @@ package org.podval.tools.testing
 import org.podval.tools.build.ScalaLibrary
 
 class ScalaJSTutorialTest extends GroupingFunSpec:
-
   groupTest(
     features = Seq(Feature("ScalaJS Tutorial")),
     fixtures = Seq(ScalaJSTutorialScalaTestFixture),

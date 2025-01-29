@@ -3,7 +3,8 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, Version}
+import org.podval.tools.build.{Dependency, ScalaLibrary, Version}
+import org.podval.tools.scalajs.jvm.JvmDependencies
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.*
@@ -60,11 +61,11 @@ object TestProject:
     .getParentFile // build
     .getParentFile
 
-  def existingProject(projectName: String): TestProject = TestProject(Files.file(
-    root,
-    "test-projects",
-    projectName
-  ))
+//  def existingProject(projectName: String): TestProject = TestProject(Files.file(
+//    root,
+//    "test-projects",
+//    projectName
+//  ))
 
   private def scalaFile(projectDir: File, isTest: Boolean, name: String): File = Files.file(
     projectDir,
@@ -187,7 +188,7 @@ object TestProject:
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |
        |dependencies {
-       |  zinc "org.scala-sbt:zinc_2.13:1.10.5"
+       |  zinc "org.scala-sbt:zinc_${ScalaLibrary.Scala3.scala2versionMinor}:${JvmDependencies.Zinc.versionDefault}"
        |  implementation '${scalaLibrary.dependencyNotation}'
        |$frameworksString
        |}

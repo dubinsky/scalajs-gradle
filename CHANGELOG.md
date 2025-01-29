@@ -25,8 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: Gradle;
 - doc: converted `README` from MarkDown to AsciiDoc;
 - doc: refreshed `README`;
-- doc: write the AsciiDoc version attributes into a separate file programmatically and include it in `README`;
+- doc: patch `README` with version attributes programmatically;
 - build: set dependency versions from properties in `gradle.properties` written programmatically;
+- build: `ScalaOnlyTest` now writes the `test-projects/scala-only` project instead of using prepared one;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

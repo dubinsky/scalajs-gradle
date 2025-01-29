@@ -156,7 +156,7 @@ class GroupingFunSpec extends AnyFunSpec:
         it(s"contains '$runOutputExpectation'")(assert(runOutput.get.contains(runOutputExpectation)))
     }
 
-  final def test(
+  private def test(
     project: Memo[TestProject],
     checks: Seq[ForClass],
     commandLineIncludeTestNames: Seq[String]

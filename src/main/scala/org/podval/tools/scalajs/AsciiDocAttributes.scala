@@ -50,15 +50,12 @@ object AsciiDocAttributes:
   def main(args: Array[String]): Unit =
     def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
     
-    val gradlePropertiesContent: String = toString(
+    Files.write(File("gradle.properties").getAbsoluteFile, toString(
       Seq("org.podval.tools.scalajs.disabled = true") ++
-      versions.map((name, value) =>
-        s"version_${name.replace('-', '_')} = ${value.toString}"
-      )
-    )
-
-    Files.write(File("gradle.properties").getAbsoluteFile, gradlePropertiesContent)
-    Files.write(File("test-projects/scala-only/gradle.properties").getAbsoluteFile, gradlePropertiesContent)
+        versions.map((name, value) =>
+          s"version_${name.replace('-', '_')} = ${value.toString}"
+        )
+    ))
     
     val readmeFile: File = File("README.adoc").getAbsoluteFile
     val readmeContent: Seq[String] = Files.read(readmeFile)

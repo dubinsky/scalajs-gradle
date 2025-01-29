@@ -5,6 +5,7 @@ import org.podval.tools.build.{JavaDependency, Version}
 
 object JvmDependencies:
   // TODO  zinc "org.scala-sbt:zinc_$scala2versionMinor"
+  // TODO move under import org.podval.tools.testing
   object Zinc:
     val versionDefault: Version = Version("1.10.7")
 
