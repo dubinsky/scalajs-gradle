@@ -1,28 +1,25 @@
 package org.podval.tools.build
 
-open class JavaDependency(
+final class JavaDependency(
   group: String,
   artifact: String
-) extends Dependency.Simple(
+) extends SimpleDependency[JavaDependency](
   group = group,
   artifact = artifact
 ):
-  final override def classifier(version: Version): Option[String] = None
+  override def classifier(version: Version): Option[String] = None
+  override def extension (version: Version): Option[String] = None
 
-  final override def extension(version: Version): Option[String] = None
-
-object JavaDependency:
-  open class Requirement(
-    dependency: JavaDependency,
+  def required(
     version: Version,
     reason: String,
     configurationName: String,
     isVersionExact: Boolean = false
-  ) extends DependencyRequirement(
-    dependency,
+  ): DependencyRequirement = DependencyRequirement(
+    findable = this,
+    dependency = this,
     version,
     reason,
     configurationName,
     isVersionExact
-  ):
-    override protected def getDependency: Dependency = dependency
+  )

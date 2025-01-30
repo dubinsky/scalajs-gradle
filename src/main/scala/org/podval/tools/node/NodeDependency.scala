@@ -1,6 +1,6 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{Dependency, InstallableDependency, Repository, Version}
+import org.podval.tools.build.{InstallableDependency, Repository, SimpleDependency, Version}
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
 import java.io.File
@@ -15,10 +15,11 @@ import java.nio.file.{Files, Path, Paths}
 // My simplified Node support is under 300 lines.
 
 // Describes Node distribution's packaging and structure.
-object NodeDependency extends Dependency.Simple(
+object NodeDependency extends SimpleDependency[NodeDependency.type](
   group = "org.nodejs",
   artifact = "node"
 ) with InstallableDependency[NodeInstallation]:
+
   // Anything later than that breaks ScalaJS: 17.9.1, 18.15.0, 19.8.1
   val versionDefault: Version = Version("16.19.1")
 
@@ -79,7 +80,7 @@ object NodeDependency extends Dependency.Simple(
   override def archiveSubdirectoryPath(version: Version): Seq[String] =
     val classifierStr: String = Strings.prefix("-", classifier(version))
     Seq(
-      s"$artifact-v${version.version}$classifierStr"
+      s"$artifact-v$version$classifierStr"
     )
 
   override def installation(root: File): NodeInstallation =

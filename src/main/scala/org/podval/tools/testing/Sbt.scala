@@ -1,12 +1,13 @@
 package org.podval.tools.testing
 
-import org.podval.tools.build.{JavaDependency, ScalaDependency, Version}
+import org.podval.tools.build.{JavaDependency, ScalaDependency, ScalaPlatform, Version}
 
 object Sbt:
   val group: String = "org.scala-sbt"
   val versionDefault: Version = Version("1.10.7")
 
-  object Zinc extends ScalaDependency.Scala2(group, "zinc", isScalaJS = false)
+  val Zinc: ScalaDependency = ScalaPlatform.Scala2.Jvm.dependency(group, "zinc")
 
-  object TestInterface extends JavaDependency(group, "test-interface"):
+  object TestInterface:
+    val dependency: JavaDependency = JavaDependency(group, "test-interface")
     val versionDefault: Version = Version("1.0")

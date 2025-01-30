@@ -3,10 +3,10 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, ScalaLibraryDependency, Version}
+import org.podval.tools.build.{Dependency, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 
 final class TestProject(projectDir: File):
@@ -109,9 +109,10 @@ object TestProject:
     Files.write(Files.file(projectDir, "build.gradle"),
       buildGradle(
         nodeVersion = platform.getNodeVersion,
-        scalaLibraryDependency = ScalaLibraryDependency.withVersion(platform.scalaVersion),
-        // TODO do not presuppose 2.13 for Zinc:
-        zincDependency = Sbt.Zinc.withScalaVersion(ScalaLibraryDependency.Scala3.scala2versionMinor).withVersion(Sbt.versionDefault),
+        scalaLibraryDependency = ScalaPlatform.getJvmScalaLibrary(platform.scalaVersion),
+        // Note: even wit Scala 2.12 in the project, Zinc must be for 2.13, since it is used by the plugin itself.
+        // TODO document
+        zincDependency = Sbt.Zinc.withScalaVersion(ScalaVersion.Scala3.scala2versionMinor).withVersion(Sbt.versionDefault),
         frameworks = frameworks.map(platform.toDependency),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,
@@ -171,7 +172,7 @@ object TestProject:
     maxParallelForks: Int,
     link: String
   ): String =
-    val nodeVersionString: String = nodeVersion.fold("")((nodeVersion: Version) => s"node.version = '${nodeVersion.version}'\n")
+    val nodeVersionString: String = nodeVersion.fold("")((nodeVersion: Version) => s"node.version = '$nodeVersion'\n")
     val includeTestNamesString: String = includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")
     val excludeTestNamesString: String = excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")
     val includeTagsString: String = includeTags.map(string => s"'$string'").mkString("[", ", ", "]")

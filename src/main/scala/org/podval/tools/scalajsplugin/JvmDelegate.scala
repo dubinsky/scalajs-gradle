@@ -2,7 +2,7 @@ package org.podval.tools.scalajsplugin
 
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
-import org.podval.tools.build.{JavaDependency, ScalaLibrary}
+import org.podval.tools.build.{DependencyRequirement, JavaDependency, ScalaLibrary}
 import org.podval.tools.testing.Sbt
 
 class JvmDelegate extends ScalaJSPlugin.Delegate:
@@ -14,11 +14,10 @@ class JvmDelegate extends ScalaJSPlugin.Delegate:
     pluginScalaLibrary : ScalaLibrary,
     projectScalaLibrary: ScalaLibrary
   ): Unit =
-    JvmDelegate.SbtTestInterfaceDependencyRequirement.applyToConfiguration(project)
+    JvmDelegate.sbtTestInterfaceDependencyRequirement.applyToConfiguration(project)
 
 object JvmDelegate:
-  private object SbtTestInterfaceDependencyRequirement extends JavaDependency.Requirement(
-    dependency = Sbt.TestInterface,
+  private def sbtTestInterfaceDependencyRequirement: DependencyRequirement = Sbt.TestInterface.dependency.required(
     version = Sbt.TestInterface.versionDefault,
     reason =
       """because some test frameworks (ScalaTest :)) do not bring it in in,

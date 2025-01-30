@@ -3,6 +3,7 @@ package org.podval.tools.testing.framework
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
+// TODO separate record for the base library's group and artifact
 abstract class FrameworkDescriptor(
   val name: String,
   val displayName: String,

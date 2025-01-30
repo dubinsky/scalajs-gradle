@@ -1,6 +1,6 @@
 package org.podval.tools.testing
 
-import org.podval.tools.build.{Dependency, JavaDependency, ScalaDependency, ScalaLibraryDependency, Version}
+import org.podval.tools.build.{Dependency, JavaDependency, ScalaPlatform, Version}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.testing.framework.FrameworkDescriptor
 
@@ -22,11 +22,9 @@ final class Platform(
     val result: Dependency = 
       if !framework.isScalaDependency
       then JavaDependency(group, artifact)
-      else ScalaDependency.mk(
-        scalaVersion,
-        group, 
-        artifact,
-        isScalaJS
-      ).withScalaVersion(scalaVersion)
-      
+      else ScalaPlatform
+        .get(scalaVersion, isScalaJS)
+        .dependency(group, artifact)
+        .withScalaVersion(scalaVersion)
+
     result.withVersion(Version(framework.versionDefault))

@@ -6,7 +6,8 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.build.*
+import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaLibrary, ScalaPlatform,
+  ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJSDependencies
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
@@ -86,22 +87,19 @@ object ScalaJSDelegate:
     pluginScalaLibrary: ScalaLibrary,
     scalaJSVersion: Version
   ): Seq[DependencyRequirement] = Seq(
-    ScalaDependency.Requirement(
-      findable = ScalaJSDependencies.Linker,
+    ScalaJSDependencies.Linker.required(
       version = scalaJSVersion,
       scalaLibrary = pluginScalaLibrary,
       reason = "because it is needed for linking the ScalaJS code",
       configurationName = scalaJSConfigurationName
     ),
-    ScalaDependency.Requirement(
-      findable = ScalaJSDependencies.JSDomNodeJS,
+    ScalaJSDependencies.JSDomNodeJS.dependency.required(
       version = ScalaJSDependencies.JSDomNodeJS.versionDefault,
       scalaLibrary = pluginScalaLibrary,
       reason = "because it is needed for running/testing with DOM man manipulations",
       configurationName = scalaJSConfigurationName
     ),
-    //      ScalaDependency.Requirement(
-    //        findable = TestInterface,
+    //      ScalaJSDependencies.TestInterface.require(
     //        version = scalaJSVersion,
     //        scalaLibrary = pluginScalaLibrary,
     //        reason =
@@ -112,8 +110,7 @@ object ScalaJSDelegate:
     //            |""".stripMargin,
     //        scalaJSConfigurationName = scalaJSConfigurationName
     //      ),
-    ScalaDependency.Requirement(
-      findable = ScalaJSDependencies.TestAdapter,
+    ScalaJSDependencies.TestAdapter.required(
       version = scalaJSVersion,
       scalaLibrary = pluginScalaLibrary,
       reason = "because it is needed for running the tests on Node",
@@ -127,9 +124,8 @@ object ScalaJSDelegate:
   ): Seq[DependencyRequirement] =
     // only for Scala 3
     (if !projectScalaLibrary.isScala3 then Seq.empty else Seq(
-      ScalaDependency.Requirement(
-        findable = ScalaLibraryDependency.Scala3.ScalaJS,
-        version = ScalaLibraryDependency.Scala3.scalaVersion(projectScalaLibrary),
+      ScalaPlatform.Scala3.JS.scalaLibrary.required(
+        version = ScalaVersion.Scala3.scalaVersion(projectScalaLibrary),
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for linking of the ScalaJS code",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
@@ -137,34 +133,30 @@ object ScalaJSDelegate:
     )) ++
     // only for Scala 2
     (if !projectScalaLibrary.isScala2 then Seq.empty else Seq(
-      ScalaDependency.Requirement(
-        findable = ScalaJSDependencies.Compiler,
+      ScalaJSDependencies.Compiler.required(
         version = scalaJSVersion,
         scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
         configurationName = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
       )
     )) ++ Seq(
-    ScalaDependency.Requirement(
-      findable = ScalaJSDependencies.Library,
-      version = scalaJSVersion,
-      scalaLibrary = projectScalaLibrary,
-      reason = "because it is needed for compiling of the ScalaJS code",
-      configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
-    ),
-    ScalaDependency.Requirement(
-      findable = if projectScalaLibrary.isScala3 then ScalaJSDependencies.DomSJS.Scala3 else ScalaJSDependencies.DomSJS.Scala2,
-      version = ScalaJSDependencies.DomSJS.versionDefault,
-      scalaLibrary = projectScalaLibrary,
-      reason = "because it is needed for DOM manipulations",
-      configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
-    ),
-    ScalaDependency.Requirement(
-      findable = ScalaJSDependencies.TestBridge,
-      version = scalaJSVersion,
-      scalaLibrary = projectScalaLibrary,
-      reason = "because it is needed for testing of the ScalaJS code",
-      isVersionExact = true,
-      configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
-    )
+      ScalaJSDependencies.Library.required(
+        version = scalaJSVersion,
+        scalaLibrary = projectScalaLibrary,
+        reason = "because it is needed for compiling of the ScalaJS code",
+        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
+      ),
+      ScalaJSDependencies.DomSJS(isScala3 = projectScalaLibrary.isScala3).required(
+        version = ScalaJSDependencies.DomSJS.versionDefault,
+        scalaLibrary = projectScalaLibrary,
+        reason = "because it is needed for DOM manipulations",
+        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
+      ),
+      ScalaJSDependencies.TestBridge.required(
+        version = scalaJSVersion,
+        scalaLibrary = projectScalaLibrary,
+        reason = "because it is needed for testing of the ScalaJS code",
+        isVersionExact = true,
+        configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
+      )
   )

@@ -1,6 +1,6 @@
 package org.podval.tools.testing
 
-import org.podval.tools.build.ScalaLibraryDependency
+import org.podval.tools.build.ScalaVersion
 
 // TODO when run separately, this class produces correctly nested results;
 // when it is run together with other tests, something (Idea?) flattens the results...
@@ -40,6 +40,6 @@ object FrameworksTest:
   )
 
   val platforms: Seq[Platform] = Seq(
-    Platform(ScalaLibraryDependency.Scala3.versionDefault, isScalaJS = false),
-    Platform(ScalaLibraryDependency.Scala3.versionDefault, isScalaJS = true ),
+    Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = false),
+    Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = true ),
   )

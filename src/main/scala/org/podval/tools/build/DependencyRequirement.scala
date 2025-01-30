@@ -3,19 +3,18 @@ package org.podval.tools.build
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{GradleException, Project}
 
-abstract class DependencyRequirement(
-  findable: Dependency.Findable,
+final class DependencyRequirement(
+  findable: FindableDependency[?],
+  dependency: Dependency,
   version: Version,
   reason: String,
   configurationName: String,
-  isVersionExact: Boolean = false
+  isVersionExact: Boolean
 ):
-  // Note: all applyToConfiguration() must be run first: once a applyToClassPath() runs,
-  // configuration is no longer changeable.
-  final def applyToConfiguration(project: Project): Dependency.WithVersion =
+  def applyToConfiguration(project: Project): Dependency.WithVersion =
     val configuration: Configuration = Gradle.getConfiguration(project, configurationName)
     val result: Dependency.WithVersion = findable.findInConfiguration(configuration).getOrElse {
-      val toAdd: Dependency.WithVersion = getDependency.withVersion(version)
+      val toAdd: Dependency.WithVersion = dependency.withVersion(version)
       project.getLogger.info(s"Adding dependency $toAdd to the $configuration $reason", null, null, null)
       configuration
         .getDependencies
@@ -24,12 +23,12 @@ abstract class DependencyRequirement(
         .findInConfiguration(configuration)
         .getOrElse(throw GradleException(s"failed to add dependency $toAdd to configuration $configuration"))
     }
-    verify(result, project)
-    result
-
-  protected def verify(found: Dependency.WithVersion, project: Project): Unit =
-    if isVersionExact && found.version != version then project.getLogger.info(
-      s"Found $found, but the project uses version $version", null, null, null
+    
+    dependency.verifyRequired(
+      result,
+      version, 
+      isVersionExact,
+      project
     )
-  
-  protected def getDependency: Dependency
+    
+    result

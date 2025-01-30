@@ -1,13 +1,13 @@
 package org.podval.tools.testing
 
-import org.podval.tools.build.ScalaLibraryDependency
+import org.podval.tools.build.ScalaVersion
 
 class ScalaOnlyTest extends GroupingFunSpec:
   describe("scala-only"):
     groupTest(
       features = Seq(ScalaOnlyFeature),
       fixtures = Seq(ScalaOnlyFixture),
-      platforms = Seq(Platform(ScalaLibraryDependency.Scala3.versionDefault, isScalaJS = false)),
+      platforms = Seq(Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = false)),
       groupByFeature = true,
       combinedFixtureNameOpt = None
     )

@@ -31,14 +31,14 @@ final class ScalaLibrary(
 object ScalaLibrary:
   def getFromConfiguration(configuration: Configuration): ScalaLibrary =
     ScalaLibrary(
-      scala3 = ScalaLibraryDependency.Scala3.findInConfiguration(configuration),
-      scala2 = ScalaLibraryDependency.Scala2.findInConfiguration(configuration)
+      scala3 = ScalaPlatform.Scala3.Jvm.scalaLibrary.findInConfiguration(configuration),
+      scala2 = ScalaPlatform.Scala2.Jvm.scalaLibrary.findInConfiguration(configuration)
     )
 
   def getFromClasspath(classPath: Iterable[File]): ScalaLibrary =
     val result: ScalaLibrary = ScalaLibrary(
-      scala3 = ScalaLibraryDependency.Scala3.findInClassPath(classPath),
-      scala2 = ScalaLibraryDependency.Scala2.findInClassPath(classPath)
+      scala3 = ScalaPlatform.Scala3.Jvm.scalaLibrary.findInClassPath(classPath),
+      scala2 = ScalaPlatform.Scala2.Jvm.scalaLibrary.findInClassPath(classPath)
     )
     require(result.scala2.nonEmpty, "No Scala 2 library!")
     result
