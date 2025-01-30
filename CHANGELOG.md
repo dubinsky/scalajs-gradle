@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: org.podval.tools.testing.Sbt;
 - cleanup: org.podval.tools.build.ScalaLibrary;
 - cleanup: ScalaJS;
+- cleanup: split out core Scala.js support;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

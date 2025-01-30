@@ -1,8 +1,8 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajsplugin
 
 import org.podval.tools.build.ScalaLibraryDependency
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.scalajs.js.ScalaJSDependencies
+import org.podval.tools.scalajs.ScalaJSDependencies
 import org.podval.tools.testing.{Sbt, framework}
 import org.podval.tools.util.Files
 import java.io.File
@@ -16,7 +16,7 @@ import java.io.File
 // One include (of the `versions.adoc` in `README.adoc`.)
 // is not enough to bother with AsciiDoctor Reducer (https://github.com/asciidoctor/asciidoctor-reducer),
 // so I just patch the Readme.adoc...
-object AsciiDocAttributes:
+object VersionsWriter:
   private val versions: Seq[(String, Any)] = Seq(
     "gradle" -> "8.12",
     "plugin" -> "0.4.16",
@@ -43,19 +43,19 @@ object AsciiDocAttributes:
     "framework-utest" -> framework.UTest.versionDefault,
     "framework-zio-test" -> framework.ZioTest.versionDefault
   )
-  
+
   private val includeBoundary: String = "// INCLUDED ATTRIBUTES"
-  
+
   def main(args: Array[String]): Unit =
     def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
-    
+
     Files.write(File("gradle.properties").getAbsoluteFile, toString(
       Seq("org.podval.tools.scalajs.disabled = true") ++
         versions.map((name, value) =>
           s"version_${name.replace('-', '_')} = ${value.toString}"
         )
     ))
-    
+
     val readmeFile: File = File("README.adoc").getAbsoluteFile
     val readmeContent: Seq[String] = Files.read(readmeFile)
 
@@ -64,4 +64,4 @@ object AsciiDocAttributes:
       Seq(includeBoundary) ++
       versions.map((name, value) => s":version-$name: ${value.toString}") ++
       readmeContent.dropWhile(_ != includeBoundary).tail.dropWhile(_ != includeBoundary)
-    ))  
+    ))

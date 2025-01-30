@@ -1,4 +1,4 @@
-package org.podval.tools.scalajs.jvm
+package org.podval.tools.scalajsplugin
 
 import org.podval.tools.build.GradleClassPath
 import org.podval.tools.testing.framework.FrameworkDescriptor

@@ -1,4 +1,4 @@
-package org.podval.tools.scalajs.js
+package org.podval.tools.scalajs
 
 import com.google.debugging.sourcemap.SourceMapConsumerV3
 import com.google.debugging.sourcemap.proto.Mapping.OriginalMapping

@@ -392,11 +392,11 @@ test {
 If there is a need to have test runs with different configuration, more testing tasks can be added manually.
 
 For plain Scala projects (no Scala.js), the type of the test task is
-link:src/main/scala/org/podval/tools/scalajs/jvm/JvmTestTask.scala[org.podval.tools.scalajs.jvm.JvmTestTask].
+link:src/main/scala/org/podval/tools/scalajsplugin/JvmTestTask.scala[org.podval.tools.scalajsplugin.JvmTestTask].
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
 For Scala.js projects the type is
-link:src/main/scala/org/podval/tools/scalajs/js/RunTask.scala[org.podval.tools.scalajs.js.Run.Test].
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTas.Test].
 Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 
@@ -491,10 +491,12 @@ those tasks can be used from the command line like this:
 
 === Linking
 
-For linking of the main code, plugin adds `link` task of type `org.podval.tools.scalajs.js.LinkTask.Main`.
+For linking of the main code, plugin adds `link` task of type
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Main].
 All tasks of this type automatically depend on the `classes` task.
 
-For linking of the test code, plugin adds `linkTest` task of type `org.podval.tools.scalajs.js.LinkTask.Test`.
+For linking of the test code, plugin adds `linkTest` task of type
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Test].
 All tasks of this type automatically depend on the `testClasses` task.
 
 Each of the tasks exposes a property `JSDirectory` that points to a directory
@@ -553,7 +555,9 @@ Name of the module initializer ('main' in the example above) becomes the module 
 Plugin adds `run` task for running the main code (if it is an application and not a library).
 The task automatically depends on the `link` task.
 
-Additional tasks of type `org.podval.tools.scalajs.js.RunTask.Main` can be added manually;
+Additional tasks of type
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTask.Main]
+can be added manually;
 their dependency on a corresponding `LinkTask.Main` task must be set manually too.
 
 == Notes and Credits

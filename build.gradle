@@ -161,7 +161,7 @@ gradlePlugin {
   plugins {
     scalajs {
       id = 'org.podval.tools.scalajs'
-      implementationClass = 'org.podval.tools.scalajs.ScalaJSPlugin'
+      implementationClass = 'org.podval.tools.scalajsplugin.ScalaJSPlugin'
       displayName = project.description
       description = project.description
       tags.set(['Scala', 'ScalaJS', 'sbt', 'testing', 'ScalaTest'])

@@ -1,6 +1,7 @@
-package org.podval.tools.scalajs.js
+package org.podval.tools.scalajsplugin
 
 import org.podval.tools.node.{Node, TaskWithNode}
+import org.podval.tools.scalajs.ScalaJS
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 trait ScalaJSTask extends TaskWithNode:
@@ -8,7 +9,7 @@ trait ScalaJSTask extends TaskWithNode:
 
   protected def flavour: String
 
-  protected def linkTask: LinkTask
+  protected def linkTask: ScalaJSLinkTask
 
   protected final def scalaJS: ScalaJS =
     val node: Node = linkTask.node

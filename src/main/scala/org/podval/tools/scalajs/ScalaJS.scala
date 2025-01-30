@@ -1,5 +1,6 @@
-package org.podval.tools.scalajs.js
+package org.podval.tools.scalajs
 
+// TODO disentangle from Gradle
 import org.gradle.api.GradleException
 import org.gradle.api.logging.{Logger, LogLevel as GLevel}
 import org.podval.tools.files.PipeOutputThread

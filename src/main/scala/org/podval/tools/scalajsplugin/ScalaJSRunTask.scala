@@ -1,31 +1,32 @@
-package org.podval.tools.scalajs.js
+package org.podval.tools.scalajsplugin
 
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.{DefaultTask, GradleException}
+import org.podval.tools.scalajs.ScalaJS
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-trait RunTask extends ScalaJSTask:
-  protected def linkTaskClass: Class[? <: LinkTask]
+trait ScalaJSRunTask extends ScalaJSTask:
+  protected def linkTaskClass: Class[? <: ScalaJSLinkTask]
 
-  final override protected def linkTask: LinkTask = getDependsOn
+  final override protected def linkTask: ScalaJSLinkTask = getDependsOn
     .asScala
     .find((candidate: AnyRef) => linkTaskClass.isAssignableFrom(candidate.getClass))
-    .map(_.asInstanceOf[LinkTask])
+    .map(_.asInstanceOf[ScalaJSLinkTask])
     .getOrElse(throw GradleException(s"Task $getName must depend on a task of type ${linkTaskClass.getName}!"))
 
-object RunTask:
-  abstract class Main extends DefaultTask with RunTask:
+object ScalaJSRunTask:
+  abstract class Main extends DefaultTask with ScalaJSRunTask:
     setGroup("other")
     final override protected def flavour: String = "Run"
-    final override protected def linkTaskClass: Class[LinkTask.Main] = classOf[LinkTask.Main]
+    final override protected def linkTaskClass: Class[ScalaJSLinkTask.Main] = classOf[ScalaJSLinkTask.Main]
 
     @TaskAction final def execute(): Unit =
       scalaJS.run()
 
-  abstract class Test extends TestTask with RunTask:
+  abstract class Test extends TestTask with ScalaJSRunTask:
     final override protected def flavour: String = "Test"
-    final override protected def linkTaskClass: Class[LinkTask.Test] = classOf[LinkTask.Test]
+    final override protected def linkTaskClass: Class[ScalaJSLinkTask.Test] = classOf[ScalaJSLinkTask.Test]
     // Note: ScalaJS tests are not forkable; see org.scalajs.sbtplugin.ScalaJSPluginInternal
     final override protected def canFork: Boolean = false
 
