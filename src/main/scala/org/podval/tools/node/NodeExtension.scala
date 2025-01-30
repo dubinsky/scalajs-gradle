@@ -4,7 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.process.ExecOperations
-import org.podval.tools.build.GradleBuildContext
+import org.podval.tools.build.{Gradle, GradleBuildContext}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SetHasAsScala}
 import java.io.File
 import javax.inject.Inject
@@ -25,7 +25,7 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
     // install Node (if needed) and set up Node project (if needed).
     NodeDependency
       .getInstalledOrInstall(
-        version = NodeExtension.toOption(getVersion),
+        version = Gradle.toOption(getVersion),
         context = context
       )
       .node(
@@ -50,5 +50,3 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
 object NodeExtension:
   def addTo(project: Project): NodeExtension = project.getExtensions.create("node", classOf[NodeExtension])
 
-  def toOption[T](property: Property[T]): Option[T] =
-    if !property.isPresent then None else Some(property.get)

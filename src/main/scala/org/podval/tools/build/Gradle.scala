@@ -3,6 +3,7 @@ package org.podval.tools.build
 import org.gradle.api.{Project, Task}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
 import scala.jdk.CollectionConverters.SetHasAsScala
@@ -30,3 +31,6 @@ object Gradle:
     .asInstanceOf[TaskProvider[ScalaCompile]]
     .get
 
+  def toOption[T](property: Property[T]): Option[T] =
+    if !property.isPresent then None else Some(property.get)
+    

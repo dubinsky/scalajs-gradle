@@ -3,7 +3,7 @@ package org.podval.tools.node
 import org.gradle.api.Task
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, OutputDirectory}
-import org.podval.tools.build.GradleBuildContextCore
+import org.podval.tools.build.{Gradle, GradleBuildContextCore}
 import java.io.File
 
 trait TaskWithNode extends Task:
@@ -13,7 +13,7 @@ trait TaskWithNode extends Task:
 
   final def node: Node = NodeDependency
     .getInstalled(
-      version = NodeExtension.toOption(getVersion),
+      version = Gradle.toOption(getVersion),
       context = GradleBuildContextCore(getGradleUserHomeDir.get, getLogger)
     )
     .node(

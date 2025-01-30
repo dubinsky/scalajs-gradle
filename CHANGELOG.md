@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - build: `ScalaOnlyTest` now writes the `test-projects/scala-only` project instead of using prepared one;
 - cleanup: org.podval.tools.testing.Sbt;
 - cleanup: org.podval.tools.build.ScalaLibrary;
+- cleanup: ScalaJS;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

@@ -3,14 +3,13 @@ package org.podval.tools.scalajs.js
 import org.gradle.api.GradleException
 import org.gradle.api.logging.{Logger, LogLevel as GLevel}
 import org.podval.tools.files.PipeOutputThread
-import org.podval.tools.node.Node
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment}
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
-import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer, ModuleKind, 
-  ModuleSplitStyle, Report, Semantics, StandardConfig}
+import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, ModuleInitializer as ModuleInitializerSJS,
+  ModuleKind as ModuleKindSJS, ModuleSplitStyle as ModuleSplitStyleSJS, Report, Semantics, StandardConfig}
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.logging.Level as JSLevel
 import org.scalajs.testing.adapter.{TestAdapter, TestAdapterInitializer}
@@ -18,48 +17,53 @@ import sbt.testing.Framework
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.{File, InputStream}
 import java.nio.file.Path
 
-final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
-  private given CanEqual[ModuleKind, ModuleKind] = CanEqual.derived
-
-  private def logger: Logger = task.getLogger
-  private def jsDirectory: File = linkTask.getJSDirectory
-  private def reportBinFile: File = linkTask.getReportBinFile
-  private def moduleKind: ModuleKind = LinkTask.byName(linkTask.getModuleKind, ModuleKind.NoModule, ModuleKind.All)
-
+final class ScalaJS(
+  nodePath: String, // TODO not needed for link()
+  nodeEnvironment: Map[String, String], // TODO not needed for link()
+  jsDirectory: File,
+  reportBinFile: File,
+  reportTextFile: File,
+  optimization: Optimization,
+  moduleKind: ModuleKind,
+  moduleSplitStyle: ModuleSplitStyle,
+  moduleInitializers: Option[Seq[ModuleInitializer]],
+  prettyPrint: Boolean,
+  runtimeClassPath: Seq[File],
+  logger: Logger,
+  logSource: String
+):
   private def jsLogger: org.scalajs.logging.Logger = new org.scalajs.logging.Logger:
-    private def logSource: String = s"ScalaJS ${task.getName}"
     override def trace(t: => Throwable): Unit =
       logger.error(s"$logSource Error", t)
     override def log(level: JSLevel, message: => String): Unit =
       logger.log(ScalaJS.scalajs2gradleLevel(level), s"$logSource: $message")
 
   def link(): Unit =
-    val reportTextFile: File = linkTask.getReportTextFile
-
     // Note: tests use fixed entry point
-    val moduleInitializers: Seq[ModuleInitializer] = linkTask
-      .moduleInitializerProperties
+    val moduleInitializersSJS: Seq[ModuleInitializerSJS] = moduleInitializers
       .map(_.map(ScalaJS.toModuleInitializer))
       .getOrElse(Seq(ScalaJS.testAdapterInitializer))
 
-    val fullOptimization: Boolean = linkTask.optimization == Optimization.Full
+    val fullOptimization: Boolean = optimization == Optimization.Full
     val linkerConfig: StandardConfig = StandardConfig()
       .withCheckIR(fullOptimization)
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
-      .withModuleKind(moduleKind)
+      .withModuleKind(ScalaJS.toJs(moduleKind))
       .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
-      .withModuleSplitStyle(LinkTask.byName(linkTask.getModuleSplitStyle, ModuleSplitStyle.FewestModules, ScalaJS.moduleSplitStyles))
-      .withPrettyPrint(linkTask.getPrettyPrint.getOrElse(false))
+      .withModuleSplitStyle(moduleSplitStyle match {
+        case ModuleSplitStyle.FewestModules => ModuleSplitStyleSJS.FewestModules
+        case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
+      })
+      .withPrettyPrint(prettyPrint)
 
     logger.info(
-      s"""ScalaJSPlugin ${task.getName}:
+      s"""$logSource:
          |JSDirectory = $jsDirectory
          |reportFile = $reportTextFile
-         |moduleInitializers = ${moduleInitializers.map(ModuleInitializer.fingerprint).mkString(", ")}
+         |moduleInitializers = ${moduleInitializersSJS.map(ModuleInitializerSJS.fingerprint).mkString(", ")}
          |linkerConfig = $linkerConfig
          |""".stripMargin,
       null, null, null)
@@ -68,12 +72,12 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
 
     try
       val report: Report = Await.result(atMost = Duration.Inf, awaitable = PathIRContainer
-        .fromClasspath(linkTask.getRuntimeClassPath.getFiles.asScala.toSeq.map(_.toPath))
+        .fromClasspath(runtimeClassPath.map(_.toPath))
         .map(_._1)
         .flatMap((irContainers: Seq[IRContainer]) => StandardImpl.irFileCache.newCache.cached(irContainers))
         .flatMap((irFiles: Seq[IRFile]) => StandardImpl.linker(linkerConfig).link(
           irFiles = irFiles,
-          moduleInitializers = moduleInitializers,
+          moduleInitializers = moduleInitializersSJS,
           output = PathOutputDirectory(jsDirectory.toPath),
           logger = jsLogger
         ))
@@ -92,7 +96,8 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
       .find(_.moduleID == "main")
       .getOrElse(throw GradleException(s"Linking report does not have a module named 'main'. See $reportBinFile"))
 
-    require(moduleKind == result.moduleKind, s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}")
+    given CanEqual[ModuleKindSJS, ModuleKindSJS] = CanEqual.derived
+    require(ScalaJS.toJs(moduleKind) == result.moduleKind, s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}")
     result
 
   private def mainModulePath: Path = Files.file(
@@ -106,10 +111,9 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
   private def mkJsEnv: JSEnv =
-    val node: Node = task.node
     JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
-      .withExecutable(node.installation.node.getAbsolutePath)
-      .withEnv(node.nodeEnv.toMap)
+      .withExecutable(nodePath)
+      .withEnv(nodeEnvironment)
     )
 
   def run(): Unit =
@@ -188,27 +192,27 @@ final class ScalaJS(task: ScalaJSTask, linkTask: LinkTask):
       testAdapter.close()
 
 object ScalaJS:
-  private val moduleSplitStyles: List[ModuleSplitStyle] = List(
-    ModuleSplitStyle.FewestModules,
-    ModuleSplitStyle.SmallestModules
-  )
+  private def toModuleInitializer(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
+    val clazz: String = moduleInitializer.className
+    val method: String = moduleInitializer.mainMethodName.getOrElse("main")
+    val result: ModuleInitializerSJS =
+      if moduleInitializer.mainMethodHasArgs
+      then ModuleInitializerSJS.mainMethodWithArgs(clazz, method)
+      else ModuleInitializerSJS.mainMethod(clazz, method)
+    result.withModuleID(moduleInitializer.moduleId)
 
-  private def toModuleInitializer(properties: ModuleInitializerProperties): ModuleInitializer =
-    val clazz: String = properties.getClassName.get
-    val method: String = properties.getMainMethodName.getOrElse("main")
-    val result: ModuleInitializer =
-      if properties.getMainMethodHasArgs.getOrElse(false)
-      then ModuleInitializer.mainMethodWithArgs(clazz, method)
-      else ModuleInitializer.mainMethod(clazz, method)
-    result.withModuleID(properties.getName)
-
-  private def testAdapterInitializer: ModuleInitializer = ModuleInitializer.mainMethod(
+  private def testAdapterInitializer: ModuleInitializerSJS = ModuleInitializerSJS.mainMethod(
     TestAdapterInitializer.ModuleClassName,
     TestAdapterInitializer.MainMethodName
   )
 
-  private given CanEqual[JSLevel, JSLevel] = CanEqual.derived
+  private def toJs(moduleKind: ModuleKind): ModuleKindSJS = moduleKind match {
+    case ModuleKind.NoModule => ModuleKindSJS.NoModule
+    case ModuleKind.ESModule => ModuleKindSJS.ESModule
+    case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
+  }
 
+  private given CanEqual[JSLevel, JSLevel] = CanEqual.derived
   private def scalajs2gradleLevel(level: JSLevel): GLevel = level match
     case JSLevel.Error => GLevel.ERROR
     case JSLevel.Warn  => GLevel.WARN
