@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.16] - 2025-01-27
+## [0.4.16] - 2025-02-02
 - chore: cleanup;
 - chore: dependency updates;
 - chore: Scala.js dependency update;
@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: ScalaJS;
 - cleanup: split out core Scala.js support;
 - cleanup: *Dependency*;
+- chore: updated Gradle Plugin Publishing Plugin to a just released version without Task.getProject() during execution;
 
 ## [0.4.15] - 2025-01-17
 - cleanup: minor cleanup

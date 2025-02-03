@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'com.gradle.plugin-publish' version '1.3.0'
+  id 'com.gradle.plugin-publish' version '1.3.1'
   id 'org.podval.tools.scalajs' version '0.4.16' // Note: must be applied *after* Plugin Portal Plugin
 }
 

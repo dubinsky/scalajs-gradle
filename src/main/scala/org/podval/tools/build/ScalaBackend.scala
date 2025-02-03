@@ -1,11 +1,11 @@
 package org.podval.tools.build
 
 sealed trait ScalaBackend:
+  def suffix: Option[String]
+
   final def suffixString: String = suffix match
     case None => ""
     case Some(suffix) => s"_$suffix"
-    
-  def suffix: Option[String]
 
 object ScalaBackend:
   case object Jvm extends ScalaBackend:
