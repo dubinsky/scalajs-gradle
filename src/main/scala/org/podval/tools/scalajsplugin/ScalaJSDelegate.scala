@@ -124,6 +124,12 @@ object ScalaJSDelegate:
   ): Seq[DependencyRequirement] =
     // only for Scala 3
     (if !projectScalaLibrary.isScala3 then Seq.empty else Seq(
+      // org.scala-lang:scala3-library_3:
+      //   org.scala-lang:scala-library:2.13.x
+      // org.scala-lang:scala3-library_sjs1_3
+      //   org.scala-js:scalajs-javalib
+      //   org.scala-js:scalajs-scalalib_2.13
+      // org.scala-js:scalajs-library_2.13
       ScalaPlatform.Scala3.JS.scalaLibrary.required(
         version = ScalaVersion.Scala3.scalaVersion(projectScalaLibrary),
         scalaLibrary = projectScalaLibrary,
@@ -152,6 +158,9 @@ object ScalaJSDelegate:
         reason = "because it is needed for DOM manipulations",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       ),
+      // Dependencies:
+      // org.scala-js:scalajs-test-bridge_2.13
+      //  org.scala-js:scalajs-test-interface_2.13
       ScalaJSDependencies.TestBridge.required(
         version = scalaJSVersion,
         scalaLibrary = projectScalaLibrary,

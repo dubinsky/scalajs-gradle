@@ -38,4 +38,4 @@ abstract class JvmTestTask extends TestTask:
 
         result
 
-      FrameworkDescriptor.scalaSupported.flatMap(maybeInstantiate)
+      FrameworkDescriptor.jvmSupported.flatMap(maybeInstantiate)

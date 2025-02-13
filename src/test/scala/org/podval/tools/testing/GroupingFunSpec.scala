@@ -2,6 +2,7 @@ package org.podval.tools.testing
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
+import org.podval.tools.build.Version
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
@@ -14,8 +15,8 @@ class GroupingFunSpec extends AnyFunSpec:
     features: Seq[Feature],
     fixtures: Seq[Fixture],
     platforms: Seq[Platform],
-    groupByFeature: Boolean,
-    combinedFixtureNameOpt: Option[String]
+    groupByFeature: Boolean = true,
+    combinedFixtureNameOpt: Option[String] = None
   ): Unit =
     if combinedFixtureNameOpt.isEmpty then
       if groupByFeature then
@@ -97,11 +98,16 @@ class GroupingFunSpec extends AnyFunSpec:
       val fixturesEffective: Seq[Fixture] = fixturesSupported
         .filter(_.works(feature, platform))
 
+      val platformDisplayName: String =
+        val platformVersion: Version = platform.scalaPlatformWithScalaVersion.scalaVersion
+        val platformSuffix: String = if platform.scalaPlatformWithScalaVersion.isScalaJS then " with ScalaJS" else ""
+        s"in Scala v$platformVersion$platformSuffix"
+
       if fixturesEffective.isEmpty
-      then ignore(s"doesn't work yet ${platform.displayName}")(())
-      else describe(platform.displayName)(
+      then ignore(s"doesn't work yet $platformDisplayName")(())
+      else describe(platformDisplayName)(
         forProject(
-          projectName :+ platform.displayName,
+          projectName :+ platformDisplayName,
           feature,
           fixturesEffective,
           platform
@@ -144,7 +150,7 @@ class GroupingFunSpec extends AnyFunSpec:
 
   private def supports(fixture: Fixture, platform: Platform): Boolean =
     val framework: FrameworkDescriptor = fixture.framework
-    if platform.isScalaJS then framework.isScalaJSSupported else framework.isScalaSupported
+    if platform.isScalaJS then framework.isScalaJSSupported else framework.isJvmSupported
 
   private def run(
     project: Memo[TestProject],

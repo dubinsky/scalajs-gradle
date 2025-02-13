@@ -7,9 +7,7 @@ class ScalaOnlyTest extends GroupingFunSpec:
     groupTest(
       features = Seq(ScalaOnlyFeature),
       fixtures = Seq(ScalaOnlyFixture),
-      platforms = Seq(Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = false)),
-      groupByFeature = true,
-      combinedFixtureNameOpt = None
+      platforms = Seq(Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = false))
     )
     //  testLogging {
     ////    events "started", "skipped", "failed", "passed", "standard_error", "standard_out"

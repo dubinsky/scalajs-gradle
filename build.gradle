@@ -38,7 +38,7 @@ dependencies {
   compileOnly "com.lihaoyi:utest_3:$version_framework_utest"
   compileOnly "org.specs2:specs2-core_3:$version_framework_spec2"
   compileOnly "org.scalameta:munit_3:$version_framework_munit"
-  compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.14"
+  compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.15"
 
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }

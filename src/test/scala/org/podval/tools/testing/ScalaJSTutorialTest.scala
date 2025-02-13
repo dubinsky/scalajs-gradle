@@ -10,7 +10,5 @@ class ScalaJSTutorialTest extends GroupingFunSpec:
       Platform(ScalaVersion.Scala3         .versionDefault, isScalaJS = true),
       Platform(ScalaVersion.Scala2.Scala213.versionDefault, isScalaJS = true),
       Platform(ScalaVersion.Scala2.Scala212.versionDefault, isScalaJS = true),
-    ),
-    groupByFeature = true,
-    combinedFixtureNameOpt = None
+    )
   )

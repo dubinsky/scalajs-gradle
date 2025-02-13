@@ -1,6 +1,5 @@
 package org.podval.tools.build
 
-// TODO two inheritors?
 trait DependencyCoordinates:
   def group: String
   def artifact: String

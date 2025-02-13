@@ -10,16 +10,13 @@ class FrameworksTest extends GroupingFunSpec:
   groupTest(
     features = FrameworksTest.features,
     fixtures = FrameworksTest.fixtures,
-    platforms = FrameworksTest.platforms,
-    groupByFeature = true,
-    combinedFixtureNameOpt = None
+    platforms = FrameworksTest.platforms
   )
 
   groupTest(
     features = FrameworksTest.features,
     fixtures = FrameworksTest.fixtures,
     platforms = FrameworksTest.platforms,
-    groupByFeature = true,
     combinedFixtureNameOpt = Some("combined frameworks")
   )
 
@@ -30,6 +27,7 @@ object FrameworksTest:
 
   val fixtures: List[Fixture] = List(
     JUnit4Fixture,
+    JUnit4ScalaJSFixture,
     JUnit5Fixture,
     MUnitFixture,
     ScalaCheckFixture,

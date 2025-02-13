@@ -16,12 +16,12 @@ import java.net.URL
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class TestFramework(
-  testEnvironment: () => TestEnvironment,
-  analysisFile: File,
-  runningInIntelliJIdea: () => Boolean,
   logLevelEnabled: LogLevel,
   testFilter: DefaultTestFilter,
-  moduleRegistry: ModuleRegistry
+  moduleRegistry: ModuleRegistry,
+  analysisFile: File,
+  testEnvironment: () => TestEnvironment,
+  runningInIntelliJIdea: () => Boolean
 ) extends org.gradle.api.internal.tasks.testing.TestFramework:
 
   private val options: TestFrameworkOptions = new TestFrameworkOptions
@@ -52,9 +52,9 @@ class TestFramework(
 
   override def getProcessorFactory: WorkerTestClassProcessorFactory =
     org.podval.tools.testing.worker.TestClassProcessor.Factory(
-      testTagsFilter,
+      testTagsFilter = testTagsFilter,
       runningInIntelliJIdea = runningInIntelliJIdea(),
-      logLevelEnabled
+      logLevelEnabled = logLevelEnabled
     )
 
   // I need to make sure that the plugin classes themselves are on the worker's classpath(s).
@@ -119,7 +119,6 @@ class TestFramework(
 
       // "test-interface"; jar itself is already on the classpath
       "sbt.testing",
-      // TODO what about `scala-js:test-interface`? Do I need to add/share that when running Scala.js?
 
       // "groovy" external module added to the applicationClassPath
       "org.codehaus.groovy",

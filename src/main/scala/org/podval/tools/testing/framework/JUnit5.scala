@@ -13,7 +13,8 @@ object JUnit5 extends FrameworkDescriptor(
   className = "net.aichler.jupiter.api.JupiterFramework",
   sharedPackages = List("net.aichler.jupiter.api", "org.junit")
 ):
-  override def isScalaSupported: Boolean = false
+  override def isJvmSupported: Boolean = false
   override def isScalaJSSupported: Boolean = false
   override def isScalaDependency: Boolean = false
+
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

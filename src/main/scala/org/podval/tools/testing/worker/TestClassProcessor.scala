@@ -23,7 +23,7 @@ final class TestClassProcessor(
   runningInIntelliJIdea: Boolean,
   logLevelEnabled: LogLevel,
   idGenerator: IdGenerator[?],
-  clock: Clock,
+  clock: Clock
 ) extends org.gradle.api.internal.tasks.testing.TestClassProcessor:
 
   private val reportEvents: Boolean = false

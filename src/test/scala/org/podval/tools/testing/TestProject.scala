@@ -3,7 +3,7 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{Dependency, JavaDependency, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
@@ -60,12 +60,6 @@ object TestProject:
     .getParentFile // build
     .getParentFile
 
-//  def existingProject(projectName: String): TestProject = TestProject(Files.file(
-//    root,
-//    "test-projects",
-//    projectName
-//  ))
-
   private def scalaFile(projectDir: File, isTest: Boolean, name: String): File = Files.file(
     projectDir,
     "src",
@@ -108,12 +102,13 @@ object TestProject:
 
     Files.write(Files.file(projectDir, "build.gradle"),
       buildGradle(
-        nodeVersion = platform.getNodeVersion,
-        scalaLibraryDependency = ScalaPlatform.getJvmScalaLibrary(platform.scalaVersion),
-        // Note: even wit Scala 2.12 in the project, Zinc must be for 2.13, since it is used by the plugin itself.
-        // TODO document
+        nodeVersion = if !platform.isScalaJS then None else Some(platform.nodeVersion),
+        scalaLibraryDependency = platform.scalaPlatformWithScalaVersion.jvmScalaLibrary,
+        // Note: even with Scala 2.12 in the project, Zinc must be for 2.13, since it is used by the plugin itself;
+        // Gradle Scala Plugin also requires Zinc 2.13 since version 7.5.
+        // TODO use ScalaPlatform.to()
         zincDependency = Sbt.Zinc.withScalaVersion(ScalaVersion.Scala3.scala2versionMinor).withVersion(Sbt.versionDefault),
-        frameworks = frameworks.map(platform.toDependency),
+        frameworks = frameworks.map(framework => frameworkDependency(platform, framework)),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,
         includeTags = includeTags,
@@ -125,6 +120,30 @@ object TestProject:
 
     TestProject(projectDir)
 
+  private def frameworkDependency(
+    platform: Platform,
+    framework: FrameworkDescriptor
+  ): Dependency.WithVersion =
+    require(if platform.isScalaJS then framework.isScalaJSSupported else framework.isJvmSupported)
+    
+    val result: Dependency =
+      if !framework.isScalaDependency
+      then JavaDependency(
+        framework.group,
+        framework.artifact
+      )
+      else platform.scalaPlatformWithScalaVersion
+        .to(
+          jvm = framework.isJvmOnlyDependency,
+          scala2 = framework.isScala2OnlyDependency
+        )
+        .dependency(
+          framework.group,
+          framework.artifact
+        )
+
+    result.withVersion(framework.versionDefault)
+  
   private def writeSources(projectDir: File, sources: Seq[SourceFile], isTest: Boolean): Unit =
     for sourceFile: SourceFile <- sources do
       val content: String = sourceFile.content
@@ -183,7 +202,7 @@ object TestProject:
         s"  testImplementation '${framework.dependencyNotation}'"
       ).mkString("\n")
 
-    val x = s"""plugins {
+    s"""plugins {
        |  id 'org.podval.tools.scalajs' version '0.0.0'
        |}
        |
@@ -212,8 +231,6 @@ object TestProject:
        |  maxParallelForks = $maxParallelForks
        |}
        |""".stripMargin
-
-    x
     
   private def link(mainClassName: Option[String]): String =
     val moduleInitializerString: String = mainClassName.fold("")(moduleInitializer)

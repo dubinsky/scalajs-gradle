@@ -1,30 +1,23 @@
 package org.podval.tools.testing
 
-import org.podval.tools.build.{Dependency, JavaDependency, ScalaPlatform, Version}
+import org.podval.tools.build.{ScalaPlatform, Version}
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.testing.framework.FrameworkDescriptor
 
-final class Platform(
-  val scalaVersion: Version,
-  val isScalaJS: Boolean,
-  val nodeVersion: Version = NodeDependency.versionDefault
+final class Platform private(
+  val scalaPlatformWithScalaVersion: ScalaPlatform.WithScalaVersion,
+  val nodeVersion: Version
 ):
-  def displayName: String = s"""in Scala v$scalaVersion${if isScalaJS then " with ScalaJS" else ""}"""
-  
-  def getNodeVersion: Option[Version] = if !isScalaJS then None else Some(nodeVersion)
-  
-  def toDependency(framework: FrameworkDescriptor): Dependency.WithVersion =
-    require(if isScalaJS then framework.isScalaJSSupported else framework.isScalaSupported)
+  def isScalaJS: Boolean = scalaPlatformWithScalaVersion.isScalaJS
 
-    val group: String = framework.group
-    val artifact: String = framework.artifact
-
-    val result: Dependency = 
-      if !framework.isScalaDependency
-      then JavaDependency(group, artifact)
-      else ScalaPlatform
-        .get(scalaVersion, isScalaJS)
-        .dependency(group, artifact)
-        .withScalaVersion(scalaVersion)
-
-    result.withVersion(Version(framework.versionDefault))
+object Platform:
+  def apply(
+    scalaVersion: Version,
+    isScalaJS: Boolean,
+    nodeVersion: Version = NodeDependency.versionDefault
+  ): Platform = new Platform(
+    scalaPlatformWithScalaVersion = ScalaPlatform.WithScalaVersion(
+      scalaVersion,
+      isScalaJS
+    ),
+    nodeVersion
+  )

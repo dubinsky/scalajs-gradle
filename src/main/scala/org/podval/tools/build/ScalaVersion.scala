@@ -9,6 +9,8 @@ sealed trait ScalaVersion:
 
   protected def versionMajor: Int
 
+  def isScala3: Boolean
+
   // WTF?
   protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean
 
@@ -20,6 +22,8 @@ sealed trait ScalaVersion:
 object ScalaVersion:
   object Scala3 extends ScalaVersion:
     override protected def versionMajor: Int = 3
+
+    override def isScala3: Boolean = true
 
     override protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
 
@@ -37,6 +41,8 @@ object ScalaVersion:
 
   object Scala2 extends ScalaVersion:
     override protected def versionMajor: Int = 2
+
+    override def isScala3: Boolean = false
 
     override protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
 

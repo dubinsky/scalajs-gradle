@@ -1,22 +1,27 @@
 package org.podval.tools.testing.framework
 
+import org.podval.tools.build.Version
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
-// TODO separate record for the base library's group and artifact
+// TODO separate record for the base library's group and artifact?
 abstract class FrameworkDescriptor(
   val name: String,
   val displayName: String,
   val group: String,
   val artifact: String,
-  val versionDefault: String,
+  val versionDefault: Version,
   val className: String,
   val sharedPackages: List[String]
 ) derives CanEqual:
-  def isScalaSupported: Boolean = true
+  def isJvmSupported: Boolean = true
   def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, isScalaDependency must be true...
+
+  // TODO clean this up with an enumeration - and stick it into parameters
   def isScalaDependency: Boolean = true
-  
+  def isScala2OnlyDependency: Boolean = false
+  def isJvmOnlyDependency: Boolean = false
+
   def args(
     testTagsFilter: TestTagsFilter
   ): Seq[String]
@@ -26,19 +31,19 @@ abstract class FrameworkDescriptor(
     .newInstance()
 
 object FrameworkDescriptor:
-
   val all: List[FrameworkDescriptor] = List(
     ScalaTest,
     ScalaCheck,
     Specs2,
     JUnit4,
+    JUnit4ScalaJS,
     JUnit5,
     MUnit,
     UTest,
     ZioTest
   )
 
-  def scalaSupported  : List[FrameworkDescriptor] = all.filter(_.isScalaSupported  )
+  def jvmSupported    : List[FrameworkDescriptor] = all.filter(_.isJvmSupported    )
   def scalaJSSupported: List[FrameworkDescriptor] = all.filter(_.isScalaJSSupported)
 
   def apply(name: String): FrameworkDescriptor = all

@@ -20,7 +20,7 @@
 :version-framework-scalatest: 3.2.19
 :version-framework-spec2: 5.5.8
 :version-framework-utest: 0.8.5
-:version-framework-zio-test: 2.1.14
+:version-framework-zio-test: 2.1.15
 // INCLUDED ATTRIBUTES
 
 == Summary
@@ -76,8 +76,8 @@ https://github.com/gtache[gtache] seems to be no longer maintained.
 Hence, this plugin.
 
 Plugin supports running tests using `sbt`-compatible testing frameworks
-in a way integrated with Gradle and IntelliJ Idea _with or without_ Scala.js.
-For plain Scala projects, Scala.js support can be disabled.
+in a way integrated with Gradle and IntelliJ Idea _with or without_ Scala.js:
+for plain Scala projects, Scala.js support can be disabled.
 
 For years, I used https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]
 to run my Scala Tests; thank you, https://github.com/maiflai[maiflai]!
@@ -104,7 +104,7 @@ plugins {
 }
 ----
 
-Plugin will automatically apply the Scala plugin to the project,
+Plugin will automatically apply the `Scala` plugin to the project,
 so there is no need to manually list `id 'scala'` in the `plugins` block -
 but there is no harm in it either;
 either way, it is the responsibility of the project using the plugin
@@ -112,15 +112,13 @@ to add a standard Scala library dependency that the Scala plugin requires.
 
 TODO is the following still the case?
 
-Plugin forces resolution of the some Gradle configurations (`implementation` and `testImplementation` configurations
-and some others and must be thus applied *after* any plugins
-that add dependencies to those configurations.
-One such plugin is the Gradle Plugin Portal Publishing Plugin,
-which applies Gradle Plugin Plugin,
+Plugin forces resolution of the some Gradle configurations (`implementation` and `testImplementation`)
+and must be thus applied *after* any plugins that add dependencies to those configurations.
+One such plugin is the `Gradle Plugin Portal Publishing Plugin`, which applies to the project `Gradle Plugin Plugin`,
 which adds dependencies to configurations.
 
-Unless Scala.js is disabled, plugin will run in Scala.js mode.
-To disable Scala.js and use the plugin for testing plain Scala code with `sbt`-compatible testing frameworks,
+Unless `Scala.js` support is disabled, plugin will run in Scala.js mode;
+to disable Scala.js and use the plugin for testing plain Scala code with `sbt`-compatible testing frameworks,
 put the following into the `gradle.properties` file of the project:
 
 [source,properties]
@@ -149,7 +147,14 @@ Scala.js dependencies are added only if Scala.js is enabled.
 If `scalajs-library` dependency is specified explicitly,
 plugin uses the same version for the Scala.js dependencies that it adds.
 
+When Scala.js is enabled, artifact is suffixed with `_sjs1`;
+for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalatest_3`.
 
+For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
+
+Same rules apply to the test framework dependencies listed in the <<_test_frameworks>> section.
+
+[%autowidth]
 |===
 |Name |goup:artifact |Version |Configuration |Notes
 
@@ -177,7 +182,7 @@ plugin uses the same version for the Scala.js dependencies that it adds.
 |implementation
 |
 
-|Scala.js DOM manipulation Library
+|Scala.js-compiled DOM manipulation Library
 |org.scala-js:scalajs-dom
 |{version-scalajs-dom}
 |implementation
@@ -211,7 +216,10 @@ plugin uses the same version for the Scala.js dependencies that it adds.
 
 Plugin internally uses some Zinc classes;
 the same Zinc is used as the one used by the project;
-see documentation of the Gradle Scala Plugin on how to configure desired version of Zinc.
+see https://docs.gradle.org/current/userguide/scala_plugin.html#sec:configure_zinc_compiler[documentation]
+of the Gradle Scala Plugin on how to configure desired version of Zinc.
+Zinc compiled for Scala 2.12 is incompatible with the plugin,
+but Gradle anyway requires Zinc compiled for Scala 2.13 since version 7.5.
 
 === Scala 3
 Example with all dependencies listed for Scala 3:
@@ -262,7 +270,7 @@ final String scalaJsVersion     = '{version-scalajs}'
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_3:{version-scalajs-dom}"
+  implementation "org.scala-js:scalajs-dom_sjs1_2.13:{version-scalajs-dom}"
 
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -273,7 +281,7 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // for ScalaTest tests:
-  testImplementation "org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}"
+  testImplementation "org.scalatest:scalatest_sjs1_2.13:{version-framework-scalatest}"
 }
 ----
 
@@ -301,7 +309,7 @@ https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.logging.TestLog
 
 If no tests were found (there are none or all were filtered out),
 Gradle outputs an error message "No tests found for given includes";
-this message can be suppressed by setting `test.filter.failOnNoMatchingTests = false`.
+this message can (for now!) be suppressed by setting `test.filter.failOnNoMatchingTests = false`.
 
 === IntelliJ Idea
 Test runs are integrated with IntelliJ Idea:
@@ -317,57 +325,58 @@ multiple test frameworks can be used at the same time.
 
 Currently, the following test frameworks are supported:
 
+[%autowidth]
 |===
 | Name | group:artifact | Version | Notes
 
 | JUnit4
 | `com.github.sbt:junit-interface`
 | {version-framework-junit4}
-| brings in `junit:junit`; does not support Scala.js
+| Java dependency - no Scala version in the artifact; JVM only, no Scala.js; brings in `junit:junit`
+
+| JUnit4 ScalaJS
+| `org.scala-js:scalajs-junit-test-runtime`
+| {version-scalajs}
+| Scala dependency - no `sjs1` suffix in the artifact; Scala.js only, no JVM; not updated since 2015
 
 | mUnit
-| `org.scalameta:munit_3`
+| `org.scalameta:munit`
 | {version-framework-munit}
-| brings in `junit:junit`; does support Scala.js?!
+| on JVM, brings in `junit:junit`
 
 | ScalaCheck
-| `org.scalacheck:scalacheck_3`
+| `org.scalacheck:scalacheck`
 | {version-framework-scalacheck}
 |
 
 | ScalaTest
-| `org.scalatest:scalatest_3`
+| `org.scalatest:scalatest`
 | {version-framework-scalatest}
 |
 
 | Specs2
-| `org.specs2:specs2-core_3`
+| `org.specs2:specs2-core`
 | {version-framework-spec2}
 |
 
 | uTest
-| `com.lihaoyi:utest_3`
+| `com.lihaoyi:utest`
 | {version-framework-utest}
 |
 
 | ZIO Test
-| `dev.zio:zio-test-sbt_3`
+| `dev.zio:zio-test-sbt`
 | {version-framework-zio-test}
 | tests are `objects`, not `classes`
 |===
-
-When Scala.js is enabled, test framework artifact is suffixed with `_sjs1`;
-for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalatest_3`.
-
-For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
 
 === Test Task
 Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
 in the traditional way; currently, not all configuration properties are honored.
 
-Plugin introduces its own Gradle test framework: `useSbt`.
-Plugin auto-applies this Gradle test framework to each test task.
-Re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
+Plugin introduces its own Gradle test framework: `useSbt`;
+plugin auto-applies this Gradle test framework to each test task;
+re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
 
 File-name based test scan is not supported by this plugin;
 `isScanForTestClasses` must be at its default value `true`.
@@ -395,7 +404,7 @@ For plain Scala projects (no Scala.js), the type of the test task is
 link:src/main/scala/org/podval/tools/scalajsplugin/JvmTestTask.scala[org.podval.tools.scalajsplugin.JvmTestTask].
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
-For Scala.js projects the type is
+For Scala.js projects the type of the test task is
 link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTas.Test].
 Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
@@ -404,9 +413,9 @@ for manually added tasks this dependency has to be added manually.
 Ths section applies only when Scala.js support is enabled.
 
 === Scala.js compiler
+To support Scala.js, Scala compiler needs to be configured to produce both the `class` _and_ `sjsir` files.
 
 ==== Scala 3
-To support Scala.js, Scala compiler needs to be configured to produce both the `class` _and_ `sjsir` files.
 
 If the project uses Scala 3, all it takes is to pass `-scalajs` option to the Scala compiler, since
 Scala 3 compiler has Scala.js support built in:
@@ -446,7 +455,7 @@ tasks.withType(ScalaCompile) {
 }
 ----
 
-*Note:* Such code is not needed, since Gradle Scala plugin already does this.
+*Note:* Such code is not needed, since Gradle `Scala` plugin does this automatically.
 
 === Node.js
 
@@ -463,9 +472,10 @@ node {
 }
 ----
 
-If Node.js version is not specified, plugin uses "ambient" Node.js - the one installed on the machine.
+If Node.js version is not specified, plugin uses "ambient" Node.js -
+the one installed on the machine where it is running.
 
-If Node.js version is specified, plugin will install the specified version (under `~/.gradle/nodejs`) and use it.
+If Node.js version is specified, plugin will install it (under `~/.gradle/nodejs`) and use it.
 
 Scala.js does not support versions of Node.js newer than "{version-node}", so none of the "17.9.1", "18.15.0", "19.8.1".
 I do not know anything about Node.js, and find this surprising - but I am sure there is a good
@@ -476,11 +486,12 @@ which is required for `org.scala-js:scalajs-env-jsdom-nodejs`.
 
 To get better traces, one can add `source-map-support` module.
 
-Node modules for the project are in the `node_modules` directory in the project root.
+Node modules for the project are installed in the `node_modules` directory in the project root.
 
 If `package.json` file does not exist, plugin runs `npm init private`.
 
-Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands using the same version of Node.js;
+Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands
+using the same version of Node.js that is used by the plugin;
 those tasks can be used from the command line like this:
 
 [source,shell]
@@ -492,12 +503,12 @@ those tasks can be used from the command line like this:
 === Linking
 
 For linking of the main code, plugin adds `link` task of type
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Main].
-All tasks of this type automatically depend on the `classes` task.
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Main];
+all tasks of this type automatically depend on the `classes` task.
 
 For linking of the test code, plugin adds `linkTest` task of type
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Test].
-All tasks of this type automatically depend on the `testClasses` task.
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Test];
+all tasks of this type automatically depend on the `testClasses` task.
 
 Each of the tasks exposes a property `JSDirectory` that points to a directory
 with the resulting JavaScript, so that it can be copied where needed.
@@ -552,19 +563,19 @@ Name of the module initializer ('main' in the example above) becomes the module 
 
 === Running
 
-Plugin adds `run` task for running the main code (if it is an application and not a library).
-The task automatically depends on the `link` task.
+Plugin adds `run` task for running the main code (if it is an application and not a library);
+this task automatically depends on the `link` task.
 
 Additional tasks of type
 link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTask.Main]
 can be added manually;
-their dependency on a corresponding `LinkTask.Main` task must be set manually too.
+their dependency on a corresponding `ScalaJSLinkTask.Main` task must be set manually too.
 
 == Notes and Credits
 
 === Scala.js Linking
 It is reasonably easy - if repetitive - to configure the Scala compiler and add needed Scala.js dependencies by hand;
-what really pushed me to make this plugin is the difficulty and ugliness involved in
+what really pushed me to build this plugin is the difficulty and ugliness involved in
 manually setting up Scala.js linking in a Gradle script.
 
 A Stack Overflow https://stackoverflow.com/a/65777102/670095[answer]
@@ -580,13 +591,13 @@ I also looked at
 - https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
 - https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
 
-Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
-by https://github.com/machaval[machaval] - thanks for the encouragement!
-
 === Dynamic Dependencies
 I had to develop an approach to add dependencies dynamically,
 with correct versions and built for correct version of Scala which may be different from the one
 plugin uses (so that Scala 2.12 can be supported).
+
+Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
+by https://github.com/machaval[machaval] - thanks for the encouragement!
 
 === Testing
 
@@ -625,7 +636,7 @@ a Gradle/Idea integration with it in Scala.js context, it was reasonably easy to
 to run tests on sbt-compatible frameworks _without_ any Scala.js involved - in plain Scala projects.
 
 There are _two_ testing interfaces in `org.scala-sbt:test-interface:1.0`;
-I use the one used by the Scala.js sbt plugin - presumably the new one ;)
+I use the one used by the Scala.js sbt plugin - presumably the "new" one ;)
 
 === Running in IntelliJ Idea
 IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but _only_ if the task is of type
@@ -675,8 +686,8 @@ When tests are parallelized, I do not want to read the compiler analysis file in
 and fish for this information again. For a while, I used modified serializer to get additional information
 obtained during test discovery to the worker; of course, serializer is hard-coded in the Gradle code,
 so to use mine I had to modify three Gradle files... I even made a https://github.com/gradle/gradle/pull/24088[pull request] to add flexibility
-in this regard to Gradle.
-But then I realized that I can encode additional information I need to get to the worker in the test class name!
+in this regard to Gradle -
+but then I realized that I can encode additional information I need to get to the worker in the test class name!
 So now there is only one Gradle file that I need to modify: `DefaultTestExecuter`.
 Modification needed is - not to fork the JVM when running Scala.js tests (they have to run in the same JVM
 where the test frameworks were loaded).
@@ -702,19 +713,25 @@ serializers for the types of the first parameters of all methods - including the
 And since the minimum of composed is two, Gradle uses test ids that are composite of two Longs.
 
 AbstractTestTask installs `StateTrackingTestResultProcessor`
-which keeps track of all tests that are executing in all `TestWorker`s.
+which keeps track of all tests that are executing in any `TestWorker`.
 That means that test ids must be scoped per `TestWorker`.
 Each `TestWorker` has an `idGenerator` which it uses to generate `WorkerTestClassProcessor.workerSuiteId`;
 that same `idGenerator` can be used to generate sequential ids for the tests in the worker,
 satisfying the uniqueness requirements - and resulting in the test ids always being
 a composite of exactly two Longs!
 
-(Because tests are scoped by the workers, it does not seem possible to group test results by framework.)
+Note: Because tests are scoped by the workers, it does not seem possible to group test results by framework.
 
 === Testing the Tests
 I coded a neat way to test the plugin itself and
 various features of the various frameworks and their support by the plugin:
-Fixture, Feature, ForClass, GroupingFuncSpec, Platform, SourceFile, TestProject.
+link:src/test/scala/org/podval/tools/testing/Feature.scala[Feature],
+link:src/test/scala/org/podval/tools/testing/Fixture.scala[Fixture],
+link:src/test/scala/org/podval/tools/testing/ForClass.scala[ForClass],
+link:src/test/scala/org/podval/tools/testing/GroupingFunSpec.scala[GroupingFunSpec],
+link:src/test/scala/org/podval/tools/testing/Platform.scala[Platform],
+link:src/test/scala/org/podval/tools/testing/SourceFile.scala[SourceFile],
+link:src/test/scala/org/podval/tools/testing/TestProject.scala[TestProject].
 
 === Test Framework Peculiarities
 JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:
@@ -749,11 +766,7 @@ but `ScalaTest` does not.
 
 === TODO
 
-How is MUnit, which is JUnit4-based, supported by Scala.js - and JUnit4 itself is not?
-
 Test test filtering. For example, why supplying `--tests "*"` is NOT the same as not supplying any?
-
-Document what Test configuration methods are honoured.
 
 Document inability to debug Scala.js code or tests.
 

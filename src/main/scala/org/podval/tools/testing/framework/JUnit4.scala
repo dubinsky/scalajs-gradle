@@ -6,18 +6,26 @@ import org.podval.tools.testing.worker.TestTagsFilter
 // https://github.com/sbt/junit-interface
 // https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitFramework.java
 // Note: no nested tasks
+// Dependencies:
+// Scala:
+// com.github.sbt:junit-interface:0.13.3
+//   junit:junit:4.13.2
+//   org.hamcrest:hamcrest-core
+//   org.scala-sbt:test-interface:1.0
 object JUnit4 extends FrameworkDescriptor(
   name = "JUnit",
   displayName = "JUnit4",
   group = "com.github.sbt",
   artifact = "junit-interface",
-  versionDefault = "0.13.3",
+  versionDefault = Version("0.13.3"),
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
 ):
   def jUnitVersion: Version = Version("4.13.2")
-  
+
+  override def isJvmSupported: Boolean = true
   override def isScalaJSSupported: Boolean = false
+  
   override def isScalaDependency: Boolean = false
 
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =

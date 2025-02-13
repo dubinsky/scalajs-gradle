@@ -28,13 +28,14 @@ final class ScalaDependency(
         scalaVersion
       )
 
-  override protected def dependencyForArtifactName(artifactName: String): Option[ScalaDependency.WithScalaVersion] =
-    scalaPlatform
-      .scalaVersionForArtifactName(
-        artifactName,
-        artifactNameExpected = artifact
-      )
-      .map(withScalaVersion)
+  override protected def dependencyForArtifactName(
+    artifactName: String
+  ): Option[ScalaDependency.WithScalaVersion] = scalaPlatform
+    .scalaVersionForArtifactName(
+      artifactName,
+      artifactNameExpected = artifact
+    )
+    .map(withScalaVersion)
 
   def required(
     version: Version,
