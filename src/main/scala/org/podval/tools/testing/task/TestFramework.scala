@@ -150,10 +150,9 @@ class TestFramework(
     ()
 
 object TestFramework:
-  private val implementationClassPath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
-  implementationClassPath.setAccessible(true)
-
   private def getImplementationClassPath(builder: DefaultWorkerProcessBuilder): java.util.List[URL] =
+    val implementationClassPath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
+    implementationClassPath.setAccessible(true)
     implementationClassPath
       .get(builder)
       .asInstanceOf[java.util.List[URL]]

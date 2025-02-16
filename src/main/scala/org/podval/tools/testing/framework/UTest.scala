@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaDependency, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/com-lihaoyi/utest
@@ -27,5 +27,5 @@ object UTest extends FrameworkDescriptor(
   versionDefault = Version("0.8.5"),
   className = "utest.runner.Framework",
   sharedPackages = List("utest.runner") // TODO more?
-):
+) with ScalaDependency.Maker:
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

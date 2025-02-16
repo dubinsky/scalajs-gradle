@@ -1,6 +1,7 @@
 package org.podval.tools.testing
 
 import ForClass.*
+import org.podval.tools.build.ScalaPlatform
 
 object ZioTestFixture extends Fixture(
   framework = org.podval.tools.testing.framework.ZioTest,
@@ -27,7 +28,5 @@ object ZioTestFixture extends Fixture(
   ))
 ):
   // TODO I do not get test events when running ZioTest on Scala.js!
-  override def works(feature: Feature, platform: Platform): Boolean = !platform.isScalaJS
-    
-
+  override def works(feature: Feature, platform: ScalaPlatform): Boolean = !platform.backend.isJS
 

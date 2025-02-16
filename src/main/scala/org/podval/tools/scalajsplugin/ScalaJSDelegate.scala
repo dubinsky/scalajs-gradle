@@ -6,10 +6,9 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaLibrary, ScalaPlatform,
-  ScalaVersion, Version}
+import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
-import org.podval.tools.scalajs.ScalaJSDependencies
+import org.podval.tools.scalajs.ScalaJS
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class ScalaJSDelegate extends ScalaJSPlugin.Delegate:
@@ -31,21 +30,22 @@ class ScalaJSDelegate extends ScalaJSPlugin.Delegate:
 
   override def afterEvaluate(
     project: Project,
-    pluginScalaLibrary : ScalaLibrary,
-    projectScalaLibrary: ScalaLibrary
+    pluginScalaPlatform: ScalaPlatform,
+    projectScalaPlatform: ScalaPlatform
   ): Unit =
-    val scalaJSVersion: Version = ScalaJSDependencies.Library
+    val scalaJSVersion: Version = ScalaJS.Library
+      .findable(projectScalaPlatform)
       .findInConfiguration(Gradle.getConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME))
       .map(_.version)
-      .getOrElse(ScalaJSDependencies.versionDefault)
+      .getOrElse(ScalaJS.versionDefault)
 
     ScalaJSDelegate.forPlugin(
-      pluginScalaLibrary,
+      pluginScalaPlatform,
       scalaJSVersion
     ).foreach(_.applyToConfiguration(project))
 
     ScalaJSDelegate.forProject(
-      projectScalaLibrary,
+      projectScalaPlatform,
       scalaJSVersion
     ).foreach(_.applyToConfiguration(project))
 
@@ -56,7 +56,7 @@ class ScalaJSDelegate extends ScalaJSPlugin.Delegate:
     // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
     GradleClassPath.addTo(this, Gradle.getConfiguration(project, ScalaJSDelegate.scalaJSConfigurationName).asScala)
 
-    if projectScalaLibrary.isScala3 then
+    if projectScalaPlatform.version.isScala3 then
       ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.MAIN_SOURCE_SET_NAME)
       ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
 
@@ -84,24 +84,23 @@ object ScalaJSDelegate:
   private val scalaJSConfigurationName: String = "scalajs"
 
   private def forPlugin(
-    pluginScalaLibrary: ScalaLibrary,
+    pluginScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version
   ): Seq[DependencyRequirement] = Seq(
-    ScalaJSDependencies.Linker.required(
+    ScalaJS.Linker.required(
+      platform = pluginScalaPlatform,
       version = scalaJSVersion,
-      scalaLibrary = pluginScalaLibrary,
       reason = "because it is needed for linking the ScalaJS code",
       configurationName = scalaJSConfigurationName
     ),
-    ScalaJSDependencies.JSDomNodeJS.dependency.required(
-      version = ScalaJSDependencies.JSDomNodeJS.versionDefault,
-      scalaLibrary = pluginScalaLibrary,
+    ScalaJS.JSDomNodeJS.required(
+      platform = pluginScalaPlatform,
       reason = "because it is needed for running/testing with DOM man manipulations",
       configurationName = scalaJSConfigurationName
     ),
     //      ScalaJSDependencies.TestInterface.require(
+    //        scalaPlatform = pluginScalaPlatform,
     //        version = scalaJSVersion,
-    //        scalaLibrary = pluginScalaLibrary,
     //        reason =
     //          """Zio Test on Scala.js seems to use `scalajs-test-interface`,
     //            |although TestAdapter, confusingly, brings in `test-interface`
@@ -110,60 +109,59 @@ object ScalaJSDelegate:
     //            |""".stripMargin,
     //        scalaJSConfigurationName = scalaJSConfigurationName
     //      ),
-    ScalaJSDependencies.TestAdapter.required(
+    ScalaJS.TestAdapter.required(
+      platform = pluginScalaPlatform,
       version = scalaJSVersion,
-      scalaLibrary = pluginScalaLibrary,
       reason = "because it is needed for running the tests on Node",
       configurationName = scalaJSConfigurationName
     )
   )
 
   private def forProject(
-    projectScalaLibrary: ScalaLibrary,
+    projectScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version
   ): Seq[DependencyRequirement] =
     // only for Scala 3
-    (if !projectScalaLibrary.isScala3 then Seq.empty else Seq(
+    (if !projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
       // org.scala-lang:scala3-library_3:
       //   org.scala-lang:scala-library:2.13.x
       // org.scala-lang:scala3-library_sjs1_3
       //   org.scala-js:scalajs-javalib
       //   org.scala-js:scalajs-scalalib_2.13
       // org.scala-js:scalajs-library_2.13
-      ScalaPlatform.Scala3.JS.scalaLibrary.required(
-        version = ScalaVersion.Scala3.scalaVersion(projectScalaLibrary),
-        scalaLibrary = projectScalaLibrary,
+      ScalaVersion.Scala3.ScalaLibraryJS.required(
+        platform = projectScalaPlatform,
+        version = projectScalaPlatform.scalaVersion,
         reason = "because it is needed for linking of the ScalaJS code",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       )
     )) ++
     // only for Scala 2
-    (if !projectScalaLibrary.isScala2 then Seq.empty else Seq(
-      ScalaJSDependencies.Compiler.required(
+    (if projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
+      ScalaJS.Compiler.required(
+        platform = projectScalaPlatform,
         version = scalaJSVersion,
-        scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
         configurationName = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
       )
     )) ++ Seq(
-      ScalaJSDependencies.Library.required(
+      ScalaJS.Library.required(
+        platform = projectScalaPlatform,
         version = scalaJSVersion,
-        scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for compiling of the ScalaJS code",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       ),
-      ScalaJSDependencies.DomSJS(isScala3 = projectScalaLibrary.isScala3).required(
-        version = ScalaJSDependencies.DomSJS.versionDefault,
-        scalaLibrary = projectScalaLibrary,
+      ScalaJS.DomSJS.required(
+        platform = projectScalaPlatform,
         reason = "because it is needed for DOM manipulations",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
       ),
       // Dependencies:
       // org.scala-js:scalajs-test-bridge_2.13
-      //  org.scala-js:scalajs-test-interface_2.13
-      ScalaJSDependencies.TestBridge.required(
+      //   org.scala-js:scalajs-test-interface_2.13
+      ScalaJS.TestBridge.required(
+        platform = projectScalaPlatform,
         version = scalaJSVersion,
-        scalaLibrary = projectScalaLibrary,
         reason = "because it is needed for testing of the ScalaJS code",
         isVersionExact = true,
         configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME

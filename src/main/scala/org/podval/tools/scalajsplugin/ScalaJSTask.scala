@@ -1,7 +1,7 @@
 package org.podval.tools.scalajsplugin
 
 import org.podval.tools.node.{Node, TaskWithNode}
-import org.podval.tools.scalajs.ScalaJS
+import org.podval.tools.scalajs.ScalaJSActions
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 trait ScalaJSTask extends TaskWithNode:
@@ -11,9 +11,9 @@ trait ScalaJSTask extends TaskWithNode:
 
   protected def linkTask: ScalaJSLinkTask
 
-  protected final def scalaJS: ScalaJS =
+  protected final def scalaJSActions: ScalaJSActions =
     val node: Node = linkTask.node
-    ScalaJS(
+    ScalaJSActions(
       nodePath = node.installation.node.getAbsolutePath,
       nodeEnvironment = node.nodeEnv.toMap,
       jsDirectory = linkTask.getJSDirectory,

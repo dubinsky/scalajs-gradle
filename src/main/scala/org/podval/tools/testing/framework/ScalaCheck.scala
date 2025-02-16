@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaDependency, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/typelevel/scalacheck
@@ -26,5 +26,5 @@ object ScalaCheck extends FrameworkDescriptor(
   versionDefault = Version("1.18.1"),
   className = "org.scalacheck.ScalaCheckFramework",
   sharedPackages = List("org.scalacheck")
-):
+) with ScalaDependency.Maker:
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

@@ -2,7 +2,7 @@ package org.podval.tools.testing
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaPlatform, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
@@ -14,7 +14,7 @@ class GroupingFunSpec extends AnyFunSpec:
   final def groupTest(
     features: Seq[Feature],
     fixtures: Seq[Fixture],
-    platforms: Seq[Platform],
+    platforms: Seq[ScalaPlatform],
     groupByFeature: Boolean = true,
     combinedFixtureNameOpt: Option[String] = None
   ): Unit =
@@ -88,8 +88,8 @@ class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    platforms: Seq[Platform]
-  ): Unit = for platform: Platform <- platforms do
+    platforms: Seq[ScalaPlatform]
+  ): Unit = for platform: ScalaPlatform <- platforms do
     val fixturesSupported: Seq[Fixture] = fixtures
       .filter(supports(_, platform))
       .filter(_.supports(feature, platform))
@@ -99,8 +99,8 @@ class GroupingFunSpec extends AnyFunSpec:
         .filter(_.works(feature, platform))
 
       val platformDisplayName: String =
-        val platformVersion: Version = platform.scalaPlatformWithScalaVersion.scalaVersion
-        val platformSuffix: String = if platform.scalaPlatformWithScalaVersion.isScalaJS then " with ScalaJS" else ""
+        val platformVersion: Version = platform.scalaVersion
+        val platformSuffix: String = if platform.backend.isJS then " with ScalaJS" else ""
         s"in Scala v$platformVersion$platformSuffix"
 
       if fixturesEffective.isEmpty
@@ -118,7 +118,7 @@ class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    platform: Platform
+    platform: ScalaPlatform
   ): Unit =
     val manyFixtures: Boolean = fixtures.length > 1
 
@@ -148,9 +148,9 @@ class GroupingFunSpec extends AnyFunSpec:
         runOutputExpectations = fixtures.head.runOutputExpectations
       )
 
-  private def supports(fixture: Fixture, platform: Platform): Boolean =
+  private def supports(fixture: Fixture, platform: ScalaPlatform): Boolean =
     val framework: FrameworkDescriptor = fixture.framework
-    if platform.isScalaJS then framework.isScalaJSSupported else framework.isJvmSupported
+    if platform.backend.isJS then framework.isScalaJSSupported else framework.isJvmSupported
 
   private def run(
     project: Memo[TestProject],

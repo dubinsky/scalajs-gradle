@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{Dependency, ScalaPlatform, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
@@ -8,19 +8,14 @@ import org.podval.tools.testing.worker.TestTagsFilter
 abstract class FrameworkDescriptor(
   val name: String,
   val displayName: String,
-  val group: String,
-  val artifact: String,
-  val versionDefault: Version,
+  override val group: String,
+  override val artifact: String,
+  override val versionDefault: Version,
   val className: String,
   val sharedPackages: List[String]
-) derives CanEqual:
+) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
   def isJvmSupported: Boolean = true
-  def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, isScalaDependency must be true...
-
-  // TODO clean this up with an enumeration - and stick it into parameters
-  def isScalaDependency: Boolean = true
-  def isScala2OnlyDependency: Boolean = false
-  def isJvmOnlyDependency: Boolean = false
+  def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, dependency must be a Scala one...
 
   def args(
     testTagsFilter: TestTagsFilter

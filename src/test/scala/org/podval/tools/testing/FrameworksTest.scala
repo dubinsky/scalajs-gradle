@@ -1,6 +1,6 @@
 package org.podval.tools.testing
 
-import org.podval.tools.build.ScalaVersion
+import org.podval.tools.build.{ScalaBackend, ScalaPlatform, ScalaVersion}
 
 // TODO when run separately, this class produces correctly nested results;
 // when it is run together with other tests, something (Idea?) flattens the results...
@@ -37,7 +37,7 @@ object FrameworksTest:
     ZioTestFixture
   )
 
-  val platforms: Seq[Platform] = Seq(
-    Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = false),
-    Platform(ScalaVersion.Scala3.versionDefault, isScalaJS = true ),
+  val platforms: Seq[ScalaPlatform] = Seq(
+    ScalaPlatform(ScalaVersion.Scala3.versionDefault, ScalaBackend.Jvm),
+    ScalaPlatform(ScalaVersion.Scala3.versionDefault, ScalaBackend.JS ()),
   )

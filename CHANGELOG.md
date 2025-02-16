@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: dependency updates;
 - fix: support JUnit4 ScalaJS framework;
 - cleanup: ScalaPlatform;
+- cleanup: Dependency.Maker;
 
 ## [0.4.16] - 2025-02-02
 - chore: cleanup;

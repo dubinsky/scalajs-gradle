@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{JavaDependency, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/sbt/junit-interface
@@ -20,14 +20,12 @@ object JUnit4 extends FrameworkDescriptor(
   versionDefault = Version("0.13.3"),
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
-):
+) with JavaDependency.Maker:
   def jUnitVersion: Version = Version("4.13.2")
 
   override def isJvmSupported: Boolean = true
   override def isScalaJSSupported: Boolean = false
   
-  override def isScalaDependency: Boolean = false
-
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
     FrameworkDescriptor.listOption("--include-categories", testTagsFilter.include) ++
     FrameworkDescriptor.listOption("--exclude-categories", testTagsFilter.exclude)

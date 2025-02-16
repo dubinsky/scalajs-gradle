@@ -3,7 +3,7 @@ package org.podval.tools.testing
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, JavaDependency, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{Dependency, JavaDependency, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
@@ -74,7 +74,7 @@ object TestProject:
 
   final def writeProject(
     projectName: Seq[String],
-    platform: Platform,
+    platform: ScalaPlatform,
     mainSources: Seq[SourceFile],
     testSources: Seq[SourceFile],
     frameworks: Seq[FrameworkDescriptor],
@@ -91,58 +91,38 @@ object TestProject:
       Seq("build", "test-projects") ++ projectName ++ Seq(projectNameString)*
     )
 
+    val isScalaJS: Boolean = platform.backend.isJS
+    
     Files.write(Files.file(projectDir, "gradle.properties"),
-      gradleProperties(!platform.isScalaJS))
+      gradleProperties(!isScalaJS))
 
     Files.write(Files.file(projectDir, "settings.gradle"),
       settingsGradle(projectNameString, pluginProjectDir = root))
 
     writeSources(projectDir, mainSources, isTest = false)
     writeSources(projectDir, testSources, isTest = true)
-
+    
     Files.write(Files.file(projectDir, "build.gradle"),
       buildGradle(
-        nodeVersion = if !platform.isScalaJS then None else Some(platform.nodeVersion),
-        scalaLibraryDependency = platform.scalaPlatformWithScalaVersion.jvmScalaLibrary,
-        // Note: even with Scala 2.12 in the project, Zinc must be for 2.13, since it is used by the plugin itself;
-        // Gradle Scala Plugin also requires Zinc 2.13 since version 7.5.
-        // TODO use ScalaPlatform.to()
-        zincDependency = Sbt.Zinc.withScalaVersion(ScalaVersion.Scala3.scala2versionMinor).withVersion(Sbt.versionDefault),
-        frameworks = frameworks.map(framework => frameworkDependency(platform, framework)),
+        nodeVersion = platform.backend match
+          case ScalaBackend.JS(nodeVersion) => Some(nodeVersion)
+          case _ => None,
+        scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
+        zincDependency = Sbt.Zinc.dependencyWithVersion(platform),
+        frameworks = frameworks.map((framework: FrameworkDescriptor) =>
+          require(if isScalaJS then framework.isScalaJSSupported else framework.isJvmSupported)
+          framework.dependencyWithVersion(platform)
+        ),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,
         includeTags = includeTags,
         excludeTags = excludeTags,
         maxParallelForks = maxParallelForks,
-        link = if !platform.isScalaJS then "" else link(mainClassName)
+        link = if !isScalaJS then "" else link(mainClassName)
       )
     )
 
     TestProject(projectDir)
-
-  private def frameworkDependency(
-    platform: Platform,
-    framework: FrameworkDescriptor
-  ): Dependency.WithVersion =
-    require(if platform.isScalaJS then framework.isScalaJSSupported else framework.isJvmSupported)
-    
-    val result: Dependency =
-      if !framework.isScalaDependency
-      then JavaDependency(
-        framework.group,
-        framework.artifact
-      )
-      else platform.scalaPlatformWithScalaVersion
-        .to(
-          jvm = framework.isJvmOnlyDependency,
-          scala2 = framework.isScala2OnlyDependency
-        )
-        .dependency(
-          framework.group,
-          framework.artifact
-        )
-
-    result.withVersion(framework.versionDefault)
   
   private def writeSources(projectDir: File, sources: Seq[SourceFile], isTest: Boolean): Unit =
     for sourceFile: SourceFile <- sources do

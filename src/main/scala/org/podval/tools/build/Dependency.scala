@@ -6,6 +6,7 @@ abstract class Dependency(
   final override val group: String,
   final override val artifact: String
 ) extends DependencyCoordinates:
+  
   final def withVersion(version: Version): Dependency.WithVersion =
     Dependency.WithVersion(dependency = this, version)
 
@@ -37,3 +38,31 @@ object Dependency:
     classifier = dependency.classifier(version),
     extension = dependency.extension(version)
   )
+
+  trait Maker[-P]:
+    def group: String
+    def artifact: String
+    def versionDefault: Version
+    
+    def findable(platform: P): FindableDependency[?]
+    
+    def dependency(platform: P): Dependency
+    
+    final def dependencyWithVersion(platform: P, version: Version = versionDefault): WithVersion =
+      dependency(platform).withVersion(version)
+
+    final def required(
+      platform: P,
+      version: Version = versionDefault,
+      reason: String,
+      configurationName: String,
+      isVersionExact: Boolean = false
+    ): DependencyRequirement = DependencyRequirement(
+      findable = findable(platform),
+      dependency = dependency(platform),
+      version,
+      reason,
+      configurationName,
+      isVersionExact
+    )
+    

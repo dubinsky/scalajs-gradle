@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaDependency, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestFramework.scala
@@ -51,7 +51,7 @@ object ZioTest extends FrameworkDescriptor(
   versionDefault = Version("2.1.15"),
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt") // TODO more?
-):
+) with ScalaDependency.Maker:
   // https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala
   //  -t            testSearchTerm list
   //  -tags         list

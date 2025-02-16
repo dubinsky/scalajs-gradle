@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaDependency, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // implementation: https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala
@@ -62,7 +62,7 @@ object ScalaTest extends FrameworkDescriptor(
   versionDefault = Version("3.2.19"),
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest.tools")  // TODO more?
-):
+) with ScalaDependency.Maker:
   override def args(
     testTagsFilter: TestTagsFilter
   ): Seq[String] =

@@ -8,17 +8,20 @@ final class ScalaLibrary(
   val scala2: Option[Dependency.WithVersion]
 ):
   require(scala3.nonEmpty || scala2.nonEmpty, "No Scala library!")
-  def isScala3: Boolean = scala3.nonEmpty
-  def isScala2: Boolean = scala3.isEmpty
+  
+  def toPlatform(backend: ScalaBackend): ScalaPlatform = ScalaPlatform(
+    scalaVersion = scala3.getOrElse(scala2.get).version,
+    backend
+  )
 
   override def toString: String = s"ScalaLibrary(scala3=${scala3.map(_.version)}, scala2=${scala2.map(_.version)})"
 
   def verify(other: ScalaLibrary): Unit =
     require(
-      other.isScala3 == isScala3,
-      s"Scala 3 presence changed from $isScala3 to ${other.isScala3}"
+      other.scala3.nonEmpty == scala3.nonEmpty,
+      s"Scala 3 presence changed from ${scala3.nonEmpty} to ${other.scala3.nonEmpty}"
     )
-    if isScala3
+    if scala3.nonEmpty
     then require(
       other.scala3.get.version == scala3.get.version,
       s"Scala 3 version changed from ${scala3.get.version} to ${other.scala3.get.version}"
@@ -31,14 +34,14 @@ final class ScalaLibrary(
 object ScalaLibrary:
   def getFromConfiguration(configuration: Configuration): ScalaLibrary =
     ScalaLibrary(
-      scala3 = ScalaPlatform.Scala3.Jvm.scalaLibrary.findInConfiguration(configuration),
-      scala2 = ScalaPlatform.Scala2.Jvm.scalaLibrary.findInConfiguration(configuration)
+      scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(configuration),
+      scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(configuration)
     )
 
   def getFromClasspath(classPath: Iterable[File]): ScalaLibrary =
     val result: ScalaLibrary = ScalaLibrary(
-      scala3 = ScalaPlatform.Scala3.Jvm.scalaLibrary.findInClassPath(classPath),
-      scala2 = ScalaPlatform.Scala2.Jvm.scalaLibrary.findInClassPath(classPath)
+      scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInClassPath(classPath),
+      scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInClassPath(classPath)
     )
     require(result.scala2.nonEmpty, "No Scala 2 library!")
     result

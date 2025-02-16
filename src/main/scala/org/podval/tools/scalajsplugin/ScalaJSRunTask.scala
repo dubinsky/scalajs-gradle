@@ -2,7 +2,7 @@ package org.podval.tools.scalajsplugin
 
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.{DefaultTask, GradleException}
-import org.podval.tools.scalajs.ScalaJS
+import org.podval.tools.scalajs.ScalaJSActions
 import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
 import scala.jdk.CollectionConverters.SetHasAsScala
 
@@ -21,8 +21,7 @@ object ScalaJSRunTask:
     final override protected def flavour: String = "Run"
     final override protected def linkTaskClass: Class[ScalaJSLinkTask.Main] = classOf[ScalaJSLinkTask.Main]
 
-    @TaskAction final def execute(): Unit =
-      scalaJS.run()
+    @TaskAction final def execute(): Unit = scalaJSActions.run()
 
   abstract class Test extends TestTask with ScalaJSRunTask:
     final override protected def flavour: String = "Test"
@@ -31,11 +30,11 @@ object ScalaJSRunTask:
     final override protected def canFork: Boolean = false
 
     // cache for the call-backs used during execution
-    private var scalaJSCached: Option[ScalaJS] = None
-    final override protected def sourceMapper: Option[SourceMapper] = scalaJSCached.get.sourceMapper
-    final override protected def testEnvironment: TestEnvironment = scalaJSCached.get.testEnvironment
+    private var scalaJSActionsCached: Option[ScalaJSActions] = None
+    final override protected def sourceMapper: Option[SourceMapper] = scalaJSActionsCached.get.sourceMapper
+    final override protected def testEnvironment: TestEnvironment = scalaJSActionsCached.get.testEnvironment
 
     @TaskAction override def executeTests(): Unit =
-      scalaJSCached = Some(scalaJS)
+      scalaJSActionsCached = Some(scalaJSActions)
       super.executeTests()
-      scalaJSCached = None
+      scalaJSActionsCached = None

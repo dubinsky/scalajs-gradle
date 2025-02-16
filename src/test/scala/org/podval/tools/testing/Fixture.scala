@@ -1,5 +1,6 @@
 package org.podval.tools.testing
 
+import org.podval.tools.build.ScalaPlatform
 import org.podval.tools.testing.framework.FrameworkDescriptor
 
 open class Fixture(
@@ -10,5 +11,5 @@ open class Fixture(
   final val runOutputExpectations: Seq[String] = Seq.empty
 ):
   // TODO move
-  def supports(feature: Feature, platform: Platform): Boolean = true
-  def works   (feature: Feature, platform: Platform): Boolean = true
+  def supports(feature: Feature, platform: ScalaPlatform): Boolean = true
+  def works   (feature: Feature, platform: ScalaPlatform): Boolean = true

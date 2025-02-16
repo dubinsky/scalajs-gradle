@@ -1,8 +1,9 @@
-package org.podval.tools.scalajs
+package org.podval.tools.scalajsplugin
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Optional}
 import org.podval.tools.build.Gradle
+import org.podval.tools.scalajs.ModuleInitializer
 
 abstract class ModuleInitializerProperties:
   @Input def getName: String // Type must have a read-only 'name' property

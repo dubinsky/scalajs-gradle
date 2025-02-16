@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-final class JavaDependency(
+final class JavaDependency private(
   group: String,
   artifact: String
 ) extends SimpleDependency[JavaDependency](
@@ -10,16 +10,12 @@ final class JavaDependency(
   override def classifier(version: Version): Option[String] = None
   override def extension (version: Version): Option[String] = None
 
-  def required(
-    version: Version,
-    reason: String,
-    configurationName: String,
-    isVersionExact: Boolean = false
-  ): DependencyRequirement = DependencyRequirement(
-    findable = this,
-    dependency = this,
-    version,
-    reason,
-    configurationName,
-    isVersionExact
-  )
+object JavaDependency:
+  trait Maker extends Dependency.Maker[Any]:
+    final override def findable(platform: Any): JavaDependency = JavaDependency(
+      group, 
+      artifact
+    )
+
+    final override def dependency(platform: Any): JavaDependency = findable(platform)
+    

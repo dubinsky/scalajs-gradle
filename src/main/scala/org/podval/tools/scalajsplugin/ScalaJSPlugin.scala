@@ -3,7 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.{Plugin, Project}
-import org.podval.tools.build.{Gradle, GradleClassPath, ScalaLibrary}
+import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class ScalaJSPlugin extends Plugin[Project]:
@@ -19,8 +19,8 @@ final class ScalaJSPlugin extends Plugin[Project]:
     delegate.beforeEvaluate(project)
 
     project.afterEvaluate((project: Project) =>
-      val pluginScalaLibrary: ScalaLibrary = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this))
-      val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(Gradle.getConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME))
+      val projectScalaLibrary: ScalaLibrary = 
+        ScalaLibrary.getFromConfiguration(Gradle.getConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME))
 
       // AnalysisDetector, which runs during execution of TestTask, needs Zinc classes;
       // if I ever get rid of it, this classpath expansion goes away.
@@ -29,8 +29,8 @@ final class ScalaJSPlugin extends Plugin[Project]:
 
       delegate.afterEvaluate(
         project,
-        pluginScalaLibrary,
-        projectScalaLibrary
+        pluginScalaPlatform = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm),
+        projectScalaPlatform = projectScalaLibrary.toPlatform(if isJSDisabled then ScalaBackend.Jvm else ScalaBackend.JS())
       )
 
       projectScalaLibrary.verify(
@@ -47,6 +47,6 @@ object ScalaJSPlugin:
 
     def afterEvaluate(
       project: Project,
-      pluginScalaLibrary : ScalaLibrary,
-      projectScalaLibrary: ScalaLibrary
+      pluginScalaPlatform: ScalaPlatform,
+      projectScalaPlatform: ScalaPlatform
     ): Unit

@@ -1,6 +1,6 @@
 package org.podval.tools.testing.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaDependency, Version}
 import org.podval.tools.testing.worker.TestTagsFilter
 
 // http://etorreborre.github.io/specs2/
@@ -40,7 +40,7 @@ object Specs2 extends FrameworkDescriptor(
   versionDefault = Version("5.5.8"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner") // TODO more?
-):
+) with ScalaDependency.Maker:
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
     FrameworkDescriptor.listOption("include", testTagsFilter.include) ++
     FrameworkDescriptor.listOption("exclude", testTagsFilter.exclude)
