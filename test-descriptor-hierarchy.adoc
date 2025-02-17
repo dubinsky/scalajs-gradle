@@ -1,0 +1,32 @@
+= TestDescriptor hierarchy
+
+[source]
+----
+org.gradle.api.tasks.testing.TestDescriptor
+  org.gradle.api.internal.tasks.testing.TestDescriptorInternal     // adds id
+    org.gradle.api.internal.tasks.testing.DecoratingTestDescriptor // attaches parent
+      // above is used by org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
+      // and org.gradle.api.internal.tasks.testing.logging.TestWorkerProgressListener
+      // set up in org.gradle.api.tasks.testing.AbstractTestTask
+    org.gradle.api.internal.tasks.testing.TestDescriptorInternal.UnknownTestDescriptor
+      // above is used by org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
+      // in cases that should not happen
+    org.gradle.api.internal.tasks.testing.AbstractTestDescriptor   // getParent -> null
+      org.gradle.api.internal.tasks.testing.DefaultTestDescriptor
+        // above is used by org.gradle.api.internal.tasks.testing.junit.JUnitTestEventAdapter
+        // and org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+        org.gradle.api.internal.tasks.testing.DefaultTestMethodDescriptor
+          // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+      org.gradle.api.internal.tasks.testing.DefaultTestSuiteDescriptor
+        // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+        org.gradle.api.internal.tasks.testing.processors.TestMainAction.RootTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor.WorkerTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.DefaultNestedTestSuiteDescriptor
+          // above is used in org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+        org.gradle.api.internal.tasks.testing.DefaultTestClassDescriptor
+          // above is used in
+          // org.gradle.api.internal.tasks.testing.logging.TestWorkerProgressListener
+          // org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
+          // org.gradle.api.internal.tasks.testing.junit.TestClassExecutionEventGenerator
+          // org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
+----

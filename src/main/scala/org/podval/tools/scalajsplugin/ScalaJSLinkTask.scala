@@ -5,7 +5,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, InputFiles, Nested, Optional, OutputDirectory, OutputFile, SourceSet, TaskAction}
 import org.gradle.api.{DefaultTask, NamedDomainObjectContainer}
 import org.podval.tools.build.Gradle
-import org.podval.tools.scalajs.{ModuleInitializer, ModuleKind, ModuleSplitStyle, Optimization}
+import org.podval.tools.scalajs.{ModuleInitializer, ModuleKind, ModuleSplitStyle, Optimization, ScalaJSLink}
 import org.podval.tools.util.Files
 import java.io.File
 import scala.jdk.CollectionConverters.SetHasAsScala
@@ -17,7 +17,14 @@ sealed abstract class ScalaJSLinkTask extends DefaultTask with ScalaJSTask:
 
   def sourceSetName: String
 
-  @TaskAction final def execute(): Unit = scalaJSActions.link()
+  @TaskAction final def execute(): Unit = ScalaJSLink(scalaJSCommon).link(
+    reportTextFile = linkTask.getReportTextFile,
+    optimization = optimization,
+    moduleSplitStyle = moduleSplitStyle,
+    moduleInitializers = moduleInitializers,
+    prettyPrint = prettyPrint,
+    runtimeClassPath = getRuntimeClassPath.getFiles.asScala.toSeq,
+  )
 
   final override protected def linkTask: ScalaJSLinkTask = this
 
