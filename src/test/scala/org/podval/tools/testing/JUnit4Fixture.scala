@@ -12,9 +12,15 @@ object JUnit4Fixture extends Fixture(
        |  startsWith}
        |import org.hamcrest.core.CombinableMatcher
        |import org.junit.Test
+       |import org.junit.experimental.categories.Category
+       |
+       |trait ExcludedTest
+       |trait IncludedTest
        |
        |@Test
-       |final class JUnit4Test /*AssertTests*/:
+       |final class JUnit4Test:
+       |  @Test @Category(Array(classOf[ExcludedTest])) def excluded(): Unit = assertTrue("should be excluded", false)
+       |  
        |  @Test def testAssertArrayEquals(): Unit =
        |    val expected: Array[Byte] = "trial".getBytes
        |    val actual: Array[Byte] = "trial".getBytes
@@ -48,6 +54,7 @@ object JUnit4Fixture extends Fixture(
        |""".stripMargin
   )),
   checks = Seq(forClass("JUnit4Test",
+    absent("excluded"),
     failedCount(1),
     skippedCount(0),
     passed("testAssertNotNull"),

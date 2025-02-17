@@ -36,4 +36,6 @@ object MUnit extends FrameworkDescriptor(
   className = "munit.Framework",
   sharedPackages = List("munit")
 ) with ScalaDependency.Maker:
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
+    FrameworkDescriptor.listOption("--include-tags", testTagsFilter.include) ++
+    FrameworkDescriptor.listOption("--exclude-tags", testTagsFilter.exclude)

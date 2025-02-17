@@ -8,6 +8,7 @@ import org.podval.tools.testing.worker.TestTagsFilter
 // https://github.com/nicolasstucki/scala-js-junit
 // Dependencies:
 // ScalaJS:
+// Note: does not support included/excluded categories options
 object JUnit4ScalaJS extends FrameworkDescriptor(
   name = "Scala.js JUnit test framework",
   displayName = "JUnit4 ScalaJS",
@@ -18,8 +19,7 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
 ) with ScalaDependency.MakerScala2Jvm:
   override def isJvmSupported: Boolean = false
-  override def isScalaJSSupported: Boolean = true
+  override def isScalaJSSupported: Boolean = false // TODO true - Gradle build does NOT fail even when some tests do!
   
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
-    FrameworkDescriptor.listOption("--include-categories", testTagsFilter.include) ++
-    FrameworkDescriptor.listOption("--exclude-categories", testTagsFilter.exclude)
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
+

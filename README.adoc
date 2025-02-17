@@ -334,7 +334,7 @@ Currently, the following test frameworks are supported:
 | {version-framework-junit4}
 | Java dependency - no Scala version in the artifact; JVM only, no Scala.js; brings in `junit:junit`
 
-| JUnit4 ScalaJS
+| JUnit4 Scala.js
 | `org.scala-js:scalajs-junit-test-runtime`
 | {version-scalajs}
 | Scala dependency - no `sjs1` suffix in the artifact; Scala.js only, no JVM; not updated since 2015
@@ -386,17 +386,7 @@ Scala.js tests are run sequentially; Scala tests are forked/parallelized in acco
 Class inclusion/exclusion filters are honored, but method-name-based filtering does not work,
 since in frameworks like ScalaTest individual tests are not methods.
 
-Tests can be filtered by tags, for example:
-
-[source,groovy]
-----
-test {
-  useSbt {
-    includeCategories = ['org.scalatest.tags.Slow']
-    excludeCategories = ['com.mycompany.tags.DbTest', 'com.mycompany.tags.RequiresDb']
-  }
-}
-----
+Tests can be filtered by tags; see <<_test_tagging>> for details.
 
 If there is a need to have test runs with different configuration, more testing tasks can be added manually.
 
@@ -408,6 +398,112 @@ For Scala.js projects the type of the test task is
 link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTas.Test].
 Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
+
+=== Test Tagging
+
+Tags to include and exclude in the run are specified in:
+
+[source,groovy]
+----
+test {
+  useSbt {
+    includeCategories = ["itag1", "itag2"]
+    excludeCategories = ["etag1", "etag2"]
+  }
+}
+----
+
+Inclusion rules are:
+- if no inclusions nor exclusions are specified, all tests are included.
+- if only inclusions are specified, only tests tagged with one of them are included.
+- if only exclusions are specified, only tests not tagged with any of them are included.
+- if both inclusions and exclusions are specified, only tests tagged with one of the inclusions and not tagged with any of the exclusions are included.
+
+==== JUnit
+Tag tests with an annotation using an array of classes or traits
+that do not have to be derived from anything JUnit-specific:
+
+[source, scala]
+----
+trait TagClassOrTrait
+@org.junit.experimental.categories.Category(Array(
+  classOf[org.podval.tools.testing.ExcludedTest]
+))
+@Test def excluded(): Unit = ()
+----
+
+In the Gradle build file, `excludeCategories` and `includeCategories`
+list fully-qualified names of tagging classes or traits.
+
+==== Scala.js JUnit test framework
+Does not support test tagging.
+
+==== MUnit
+MUnit is based on JUnit4, so it supports the `Category`-based exclusion and inclusion;
+since on Scala.js MUnit uses `Scala.js JUnit test framework`,
+which does not support this mechanism,
+MUnit does not support it either.
+
+Plugin does not support `Category`-based mechanism;
+MUnit provides a different, `Tag`-based mechanism,
+and that is what plugin uses.
+
+Tag tests with values that are instances of `munit.Tag`:
+
+[source, scala]
+----
+val exclude = new munit.Tag("ExcludedTest")
+test("excluded".tag(exclude)) {}
+----
+
+In the Gradle build file, `excludeCategories` and `includeCategories` list tag names.
+
+==== ScalaCheck
+ScalaCheck itself does not support test tagging,
+but if it is used via another test framework -
+like `ScalaTest` or `specs2` -
+test tagging mechanisms provided by that framework can be used.
+
+==== ScalaTest
+Tag tests with (possibly many) objects that extend `org.scalatest.Tag`:
+
+[source, scala]
+----
+object ExcludedTest extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
+"excluded" should "not run" taggedAs(ExcludedTest) in {  true shouldBe false }
+----
+
+In the Gradle build file, `excludeCategories` and `includeCategories` list tag names.
+
+TODO
+
+- tests are taggable, but not suites?
+- test exclusion works, test inclusion does not: nothing runs
+
+==== specs2
+Tag tests with (possibly many) tag names:
+
+[source,scala]
+----
+exclude tests tagged for exclusion $excludedTest
+  ${tag("org.podval.tools.testing.ExcludedTest")}
+----
+
+In the Gradle build file, `excludeCategories` and `includeCategories` list tag names.
+
+==== uTest
+Does not support test tagging.
+
+==== ZIO Test
+Tag tests with (possibly many) tag names using `TestAspect.tag`:
+
+[source, scala]
+----
+test("excluded") { assertTrue(1 == 0) } @@
+  zio.test.TestAspect.tag("org.podval.tools.testing.ExcludedTest")
+----
+
+In the Gradle build file, `excludeCategories` and `includeCategories` list tag names.
 
 == Scala.js
 Ths section applies only when Scala.js support is enabled.
@@ -729,7 +825,6 @@ link:src/test/scala/org/podval/tools/testing/Feature.scala[Feature],
 link:src/test/scala/org/podval/tools/testing/Fixture.scala[Fixture],
 link:src/test/scala/org/podval/tools/testing/ForClass.scala[ForClass],
 link:src/test/scala/org/podval/tools/testing/GroupingFunSpec.scala[GroupingFunSpec],
-link:src/test/scala/org/podval/tools/testing/Platform.scala[Platform],
 link:src/test/scala/org/podval/tools/testing/SourceFile.scala[SourceFile],
 link:src/test/scala/org/podval/tools/testing/TestProject.scala[TestProject].
 
@@ -798,12 +893,3 @@ Add new tags to the plugin's portal page: manually at https://github.com/gradle/
 I may want to try replacing AnalysisDetector with reading the class files.
 
 Look at Gradle's new test hotness: JVM test suite plugin.
-
-=== Test Tagging
-
-- ScalaTest:
-  * tests are taggable, but not suites?
-  * test exclusion works, test inclusion does not: nothing runs
-
-- ScalaCheck:
-  * no tagging

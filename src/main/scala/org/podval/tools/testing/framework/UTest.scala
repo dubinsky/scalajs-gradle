@@ -26,6 +26,6 @@ object UTest extends FrameworkDescriptor(
   artifact = "utest",
   versionDefault = Version("0.8.5"),
   className = "utest.runner.Framework",
-  sharedPackages = List("utest.runner") // TODO more?
+  sharedPackages = List("utest.runner")
 ) with ScalaDependency.Maker:
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

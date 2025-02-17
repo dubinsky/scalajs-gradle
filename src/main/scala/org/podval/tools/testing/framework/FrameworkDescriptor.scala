@@ -46,9 +46,16 @@ object FrameworkDescriptor:
     .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))
 
   def listOption(name: String, values: Array[String]): Seq[String] =
-    if values.isEmpty then Seq.empty else
+    if values.isEmpty
+    then Seq.empty
+    else
       val valuesStr: String = values.mkString(",")
       Seq(s"$name=$valuesStr")
+
+  def listOptionNoEq(name: String, values: Array[String]): Seq[String] =
+    if values.isEmpty
+    then Seq.empty
+    else Seq(name, values.mkString(","))
 
   def listOfOptions(name: String, values: Array[String]): Seq[String] =
     values.toIndexedSeq.flatMap((value: String) => Seq(name, value))

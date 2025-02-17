@@ -22,7 +22,9 @@ class FrameworksTest extends GroupingFunSpec:
 
 object FrameworksTest:
   val features: List[Feature] = List(
-    Feature("basic functionality")
+    new Feature("basic functionality"):
+      override def maxParallelForks(fixture: Fixture): Int = 2 // Note: ignored on Scala.js
+      override def excludeTags(fixture: Fixture): Seq[String] = Seq("org.podval.tools.testing.ExcludedTest")
   )
 
   val fixtures: List[Fixture] = List(

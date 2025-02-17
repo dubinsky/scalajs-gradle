@@ -13,13 +13,15 @@ object Spec2Fixture extends Fixture(
        |  This is a specification to check the 'Hello world' string
        |
        |  The 'Hello world' string should
+       |    exclude tests tagged for exclusion $$e0 $${tag("org.podval.tools.testing.ExcludedTest")}
        |    contain 11 characters $$e1
-       |    start with 'Hello' $$e2 $${tag("Spec2Tag")}
+       |    start with 'Hello' $$e2
        |    end with 'world' $$e3
        |    fail to end with 'xxx' $$e4
        |
        |    \"\"\"
        |
+       |    def e0 = "Hello world" must haveSize(0)
        |    def e1 = "Hello world" must haveSize(11)
        |    def e2 = "Hello world" must startWith("Hello")
        |    def e3 = "Hello world" must endWith("world")
@@ -27,6 +29,7 @@ object Spec2Fixture extends Fixture(
        |""".stripMargin
   )),
   checks = Seq(forClass("Spec2Test",
+    absent("exclude tests tagged for exclusion"),
     failedCount(1),
     skippedCount(0),
     passed("contain 11 characters"),

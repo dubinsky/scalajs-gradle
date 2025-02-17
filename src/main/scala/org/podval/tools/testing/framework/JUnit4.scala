@@ -5,6 +5,9 @@ import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/sbt/junit-interface
 // https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitFramework.java
+// https://github.com/junit-team/junit4
+// https://github.com/junit-team/junit4/blob/main/src/main/java/org/junit/experimental/categories/Category.java
+//
 // Note: no nested tasks
 // Dependencies:
 // Scala:

@@ -39,8 +39,8 @@ object Specs2 extends FrameworkDescriptor(
   artifact = "specs2-core",
   versionDefault = Version("5.5.8"),
   className = "org.specs2.runner.Specs2Framework",
-  sharedPackages = List("org.specs2.runner") // TODO more?
+  sharedPackages = List("org.specs2.runner")
 ) with ScalaDependency.Maker:
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
-    FrameworkDescriptor.listOption("include", testTagsFilter.include) ++
-    FrameworkDescriptor.listOption("exclude", testTagsFilter.exclude)
+    FrameworkDescriptor.listOptionNoEq("include", testTagsFilter.include) ++
+    FrameworkDescriptor.listOptionNoEq("exclude", testTagsFilter.exclude)

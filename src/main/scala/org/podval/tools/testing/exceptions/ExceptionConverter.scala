@@ -15,7 +15,11 @@ object ExceptionConverter:
     case "junit.framework.ComparisonFailure" => JUnitFrameworkComparisonFailureConverter
     case "munit.ComparisonFailException"     => MUnitComparisonFailExceptionConverter
     case "java.lang.AssertionError"          => JavaLangAssertionErrorConverter
-    // TODO do ZIO Test and others?
+    // TODO ScalaCheck
+    // TODO ScalaTest
+    // TODO Specs2
+    // TODO utest.AssertionError
+    // TODO ZioTest.
     case _                                   => DefaultConverter
 
   def toTestFailure(throwable: Throwable): TestFailure =

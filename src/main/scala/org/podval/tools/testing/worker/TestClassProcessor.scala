@@ -93,7 +93,7 @@ final class TestClassProcessor(
         output(s"--- $frameworkName $message")
 
       val taskDefString: String = TestClassProcessor.toString(taskDef)
-      if same.length > 1 then out(s"--- MULTIPLE TASKS FOR THE $taskDefString") else
+      if same.length > 1 then out(s"MULTIPLE TASKS FOR THE $taskDefString") else
         if different.isEmpty then
           if same.isEmpty
           then out(s"REJECTED $taskDefString")
@@ -195,6 +195,7 @@ final class TestClassProcessor(
       nestedTestId
 
     TestClassProcessor.toOption(event.throwable).foreach((throwable: Throwable) =>
+      // TODO print throwable to detect the types to convert
       testResultProcessor.failure(eventTestId, ExceptionConverter.toTestFailure(throwable))
     )
 
@@ -232,7 +233,7 @@ final class TestClassProcessor(
     if isEnabled then testResultProcessor.output(
       testId,
       DefaultTestOutputEvent(
-        System.currentTimeMillis(), // TODO use org.gradle.internal.time.Clock via org.gradle.internal.time.Time
+        clock.getCurrentTime,
         if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
         then TestOutputEvent.Destination.StdErr
         else TestOutputEvent.Destination.StdOut,
