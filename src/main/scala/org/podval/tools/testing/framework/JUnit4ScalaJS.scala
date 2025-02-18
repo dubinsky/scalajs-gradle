@@ -18,8 +18,8 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
 ) with ScalaDependency.MakerScala2Jvm:
-  override def isJvmSupported: Boolean = false
-  override def isScalaJSSupported: Boolean = false // TODO true - Gradle build does NOT fail even when some tests do!
+  override protected def isJvmSupported: Boolean = false
+  override protected def isScalaJSSupported: Boolean = false // TODO true - Gradle build does NOT fail even when some tests do!
   
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
 

@@ -14,8 +14,13 @@ abstract class FrameworkDescriptor(
   val className: String,
   val sharedPackages: List[String]
 ) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
-  def isJvmSupported: Boolean = true
-  def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, dependency must be a Scala one...
+  final def isSupported(platform: ScalaPlatform): Boolean =
+    if platform.backend.isJS
+    then isScalaJSSupported
+    else isJvmSupported
+  
+  protected def isJvmSupported: Boolean = true
+  protected def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, dependency must be a Scala one...
 
   def args(
     testTagsFilter: TestTagsFilter

@@ -4,8 +4,10 @@ import org.podval.tools.build.ScalaVersion
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.ScalaJS
 import org.podval.tools.testing.{Sbt, framework}
-import org.podval.tools.util.Files
+import org.podval.tools.util.{Files, Strings}
 import java.io.File
+
+// TODO write README tables also!
 
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
@@ -57,11 +59,9 @@ object VersionsWriter:
     ))
 
     val readmeFile: File = File("README.adoc").getAbsoluteFile
-    val readmeContent: Seq[String] = Files.read(readmeFile)
 
-    Files.write(readmeFile, toString(
-      readmeContent.takeWhile(_ != includeBoundary) ++
-      Seq(includeBoundary) ++
-      versions.map((name, value) => s":version-$name: ${value.toString}") ++
-      readmeContent.dropWhile(_ != includeBoundary).tail.dropWhile(_ != includeBoundary)
-    ))
+    Files.write(readmeFile, toString(Strings.splice(
+      in = Files.read(readmeFile),
+      boundary = includeBoundary,
+      patch = versions.map((name, value) => s":version-$name: ${value.toString}")
+    )))

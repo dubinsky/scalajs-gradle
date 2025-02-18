@@ -1,4 +1,4 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.testproject
 
 // TODO find in the standard library - LazyRef?
 final class Memo[A](getter: => A):

@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import org.podval.tools.testing.ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object JUnit4ScalaJSFixture extends Fixture(
   framework = org.podval.tools.testing.framework.JUnit4ScalaJS,
@@ -29,13 +30,16 @@ object JUnit4ScalaJSFixture extends Fixture(
        |  @Test def testAssertTrue(): Unit = assertTrue("failure - should be true", true)
        |  @Test def failure(): Unit = assertTrue("failure - should be true", false)
        |""".stripMargin
-  )),
-  checks = Seq(forClass("JUnit4ScalaJSTest",
-    // TODO test report does not show failure, although failure event is emitted?
-//    failedCount(1),
-    skippedCount(0),
-    passed("testAssertNotNull"),
-    passed("testAssertNotSame"),
-//    failed("failure")
   ))
-)
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
+    forClass("JUnit4ScalaJSTest",
+      // TODO test report does not show failure, although failure event is emitted?
+  //    failedCount(1),
+      skippedCount(0),
+      passed("testAssertNotNull"),
+      passed("testAssertNotSame"),
+  //    failed("failure")
+    )
+  )
+

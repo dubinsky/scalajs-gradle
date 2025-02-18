@@ -1,4 +1,4 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
@@ -21,9 +21,9 @@ class GroupingFunSpec extends AnyFunSpec:
     if combinedFixtureNameOpt.isEmpty then
       if groupByFeature then
         for feature: Feature <- features do
-          describe(feature.name)(
+          describe(feature.name):
             for fixture: Fixture <- fixtures do
-              describe(fixture.framework.displayName)(
+              describe(fixture.framework.displayName):
                 forPlatforms(
                   projectName = Seq(
                     feature.name,
@@ -33,13 +33,11 @@ class GroupingFunSpec extends AnyFunSpec:
                   Seq(fixture),
                   platforms
                 )
-              )
-          )
       else
         for fixture: Fixture <- fixtures do
-          describe(fixture.framework.displayName)(
+          describe(fixture.framework.displayName):
             for feature: Feature <- features do
-              describe(feature.name)(
+              describe(feature.name):
                 forPlatforms(
                   projectName = Seq(
                     fixture.framework.displayName,
@@ -49,14 +47,12 @@ class GroupingFunSpec extends AnyFunSpec:
                   Seq(fixture),
                   platforms
                 )
-              )
-          )
     else
       val combinedFixtureName: String = combinedFixtureNameOpt.get
       if groupByFeature then
         for feature: Feature <- features do
-          describe(feature.name)(
-            describe(combinedFixtureName)(
+          describe(feature.name):
+            describe(combinedFixtureName):
               forPlatforms(
                 projectName = Seq(
                   feature.name,
@@ -66,12 +62,10 @@ class GroupingFunSpec extends AnyFunSpec:
                 fixtures,
                 platforms
               )
-            )
-          )
       else
-        describe(combinedFixtureName)(
+        describe(combinedFixtureName):
           for feature: Feature <- features do
-            describe(feature.name)(
+            describe(feature.name):
               forPlatforms(
                 projectName = Seq(
                   combinedFixtureName,
@@ -81,8 +75,6 @@ class GroupingFunSpec extends AnyFunSpec:
                 fixtures,
                 platforms
               )
-            )
-        )
 
   private def forPlatforms(
     projectName: Seq[String],
@@ -91,28 +83,21 @@ class GroupingFunSpec extends AnyFunSpec:
     platforms: Seq[ScalaPlatform]
   ): Unit = for platform: ScalaPlatform <- platforms do
     val fixturesSupported: Seq[Fixture] = fixtures
-      .filter(supports(_, platform))
-      .filter(_.supports(feature, platform))
+      .filter(_.framework.isSupported(platform))
 
     if fixturesSupported.nonEmpty then
-      val fixturesEffective: Seq[Fixture] = fixturesSupported
-        .filter(_.works(feature, platform))
-
       val platformDisplayName: String =
         val platformVersion: Version = platform.scalaVersion
         val platformSuffix: String = if platform.backend.isJS then " with ScalaJS" else ""
         s"in Scala v$platformVersion$platformSuffix"
 
-      if fixturesEffective.isEmpty
-      then ignore(s"doesn't work yet $platformDisplayName")(())
-      else describe(platformDisplayName)(
+      describe(platformDisplayName):
         forProject(
           projectName :+ platformDisplayName,
           feature,
-          fixturesEffective,
+          fixturesSupported,
           platform
         )
-      )
 
   private def forProject(
     projectName: Seq[String],
@@ -128,18 +113,18 @@ class GroupingFunSpec extends AnyFunSpec:
       mainSources = fixtures.flatMap(_.mainSources),
       testSources = fixtures.flatMap(_.testSources),
       frameworks = fixtures.map(_.framework),
-      includeTestNames = fixtures.flatMap(feature.includeTestNames),
-      excludeTestNames = fixtures.flatMap(feature.excludeTestNames),
-      includeTags = fixtures.flatMap(feature.includeTags),
-      excludeTags = fixtures.flatMap(feature.excludeTags),
-      maxParallelForks = fixtures.map(feature.maxParallelForks).min,
+      includeTestNames = feature.includeTestNames,
+      excludeTestNames = feature.excludeTestNames,
+      includeTags = feature.includeTags,
+      excludeTags = feature.excludeTags,
+      maxParallelForks = feature.maxParallelForks,
       mainClassName = if manyFixtures then None else fixtures.head.mainSources.headOption.map(_.name)
     ))
 
     test(
       project,
-      checks = fixtures.flatMap(feature.checks),
-      commandLineIncludeTestNames = fixtures.flatMap(feature.commandLineIncludeTestNames)
+      checks = fixtures.flatMap(_.checks(feature)),
+      commandLineIncludeTestNames = feature.commandLineIncludeTestNames
     )
 
     if !manyFixtures then
@@ -148,19 +133,14 @@ class GroupingFunSpec extends AnyFunSpec:
         runOutputExpectations = fixtures.head.runOutputExpectations
       )
 
-  private def supports(fixture: Fixture, platform: ScalaPlatform): Boolean =
-    val framework: FrameworkDescriptor = fixture.framework
-    if platform.backend.isJS then framework.isScalaJSSupported else framework.isJvmSupported
-
   private def run(
     project: Memo[TestProject],
     runOutputExpectations: Seq[String]
   ): Unit = if runOutputExpectations.nonEmpty then
-    describe("run output") {
+    describe("run output"):
       val runOutput: Memo[String] = project.map(_.run)
       for runOutputExpectation: String <- runOutputExpectations do
         it(s"contains '$runOutputExpectation'")(assert(runOutput.get.contains(runOutputExpectation)))
-    }
 
   private def test(
     project: Memo[TestProject],
@@ -168,15 +148,13 @@ class GroupingFunSpec extends AnyFunSpec:
     commandLineIncludeTestNames: Seq[String]
   ): Unit =
     val results: Memo[List[TestClassResult]] = project.map(_.test(commandLineIncludeTestNames)._1)
-    describe("tests")(
+    describe("tests"):
       for forClass: ForClass <- checks do
-        describe(s"class '${forClass.className}'")(
+        describe(s"class '${forClass.className}'"):
           checkClass(
             classExpectations = forClass.expectations,
             resultOptMemo = results.map(_.find(_.getClassName == s"${ForClass.testingPackage}.${forClass.className}"))
           )
-        )
-    )
 
   private def checkClass(
     classExpectations: Seq[ClassExpectation],

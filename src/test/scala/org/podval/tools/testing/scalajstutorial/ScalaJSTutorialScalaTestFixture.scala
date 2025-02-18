@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.scalajstutorial
 
-import ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object ScalaJSTutorialScalaTestFixture extends Fixture(
   framework = org.podval.tools.testing.framework.ScalaTest,
@@ -33,9 +34,11 @@ object ScalaJSTutorialScalaTestFixture extends Fixture(
          |    document.addEventListener("DOMContentLoaded", (e: dom.Event) => setupUI())
          |  }
          |}
-         |
          |""".stripMargin
     )
+  ),
+  runOutputExpectations = Seq(
+    "Running!!!"
   ),
   testSources = Seq(
     SourceFile(name = "TutorialTest", content =
@@ -66,7 +69,6 @@ object ScalaJSTutorialScalaTestFixture extends Fixture(
          |    }
          |  }
          |}
-         |
          |""".stripMargin
     ),
     SourceFile(name = "TutorialTest2", content =
@@ -83,8 +85,9 @@ object ScalaJSTutorialScalaTestFixture extends Fixture(
          |}
          |""".stripMargin
     )
-  ),
-  checks = Seq(
+  )
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
     forClass(className = "TutorialTest",
       failedCount(1),
       skippedCount(0),
@@ -98,8 +101,4 @@ object ScalaJSTutorialScalaTestFixture extends Fixture(
       passed("2*2 success"),
       failed("2*2 failure")
     )
-  ),
-  runOutputExpectations = Seq(
-    "Running!!!"
   )
-)

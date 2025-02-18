@@ -1,12 +1,12 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{ScalaBackend, ScalaPlatform, ScalaVersion}
+import org.podval.tools.testing.testproject.{Feature, Fixture, GroupingFunSpec}
 
 // TODO when run separately, this class produces correctly nested results;
 // when it is run together with other tests, something (Idea?) flattens the results...
 // Or are the *events* different?
 class FrameworksTest extends GroupingFunSpec:
-
   groupTest(
     features = FrameworksTest.features,
     fixtures = FrameworksTest.fixtures,
@@ -21,10 +21,14 @@ class FrameworksTest extends GroupingFunSpec:
   )
 
 object FrameworksTest:
+  val basicFunctionality: Feature = Feature(
+    name = "basic functionality",
+    maxParallelForks = 2,
+    excludeTags = Seq("org.podval.tools.testing.ExcludedTest")
+  )
+  
   val features: List[Feature] = List(
-    new Feature("basic functionality"):
-      override def maxParallelForks(fixture: Fixture): Int = 2 // Note: ignored on Scala.js
-      override def excludeTags(fixture: Fixture): Seq[String] = Seq("org.podval.tools.testing.ExcludedTest")
+    basicFunctionality
   )
 
   val fixtures: List[Fixture] = List(

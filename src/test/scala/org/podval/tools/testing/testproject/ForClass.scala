@@ -1,4 +1,4 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.testproject
 
 import org.gradle.api.tasks.testing.TestResult.ResultType
 

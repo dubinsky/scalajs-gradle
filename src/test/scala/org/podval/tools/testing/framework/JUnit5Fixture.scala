@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object JUnit5Fixture extends Fixture(
   framework = org.podval.tools.testing.framework.JUnit5,
@@ -28,6 +29,10 @@ object JUnit5Fixture extends Fixture(
        |    fail("test should have been aborted")
        |
        |""".stripMargin
-  )),
-  checks = Seq(forClass("JUnit5Test", presentClass))
-)
+  ))
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
+    forClass("JUnit5Test", 
+      presentClass
+    )
+  )

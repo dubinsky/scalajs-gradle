@@ -26,8 +26,8 @@ object JUnit4 extends FrameworkDescriptor(
 ) with JavaDependency.Maker:
   def jUnitVersion: Version = Version("4.13.2")
 
-  override def isJvmSupported: Boolean = true
-  override def isScalaJSSupported: Boolean = false
+  override protected def isJvmSupported: Boolean = true
+  override protected def isScalaJSSupported: Boolean = false
   
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
     FrameworkDescriptor.listOption("--include-categories", testTagsFilter.include) ++

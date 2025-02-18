@@ -10,3 +10,13 @@ object Strings:
     else throw IllegalArgumentException(s"String '$from' doesn't start with '$prefix'")
 
   def prefix(prefix: String, what: Option[String]): String = what.fold("")(string => prefix + string)
+
+  def splice(
+    in: Seq[String],
+    boundary: String,
+    patch: Seq[String]
+  ): Seq[String] =
+    in.takeWhile(_ != boundary) ++
+    Seq(boundary) ++
+    patch ++
+    in.dropWhile(_ != boundary).tail.dropWhile(_ != boundary)

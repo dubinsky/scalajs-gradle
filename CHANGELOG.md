@@ -7,18 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.4.17] - 2025-02-
-- doc: documented test framework dependencies;
-- chore: dependency updates;
-- fix: support JUnit4 Scala.js framework;
-- cleanup: ScalaPlatform;
-- cleanup: Dependency.Maker;
-- cleanup: Scala.js actions;
+- feat: support JUnit4 Scala.js framework;
 - feat: test tagging for JUnit4;
 - feat: test tagging for MUnit;
 - feat: test tagging for ScalaTest;
 - feat: test tagging for specs2;
 - feat: test tagging for ZIO Test;
+- doc: documented test framework dependencies;
+- doc: documented test framework test tagging;
+- cleanup: ScalaPlatform;
+- cleanup: Dependency.Maker;
+- cleanup: Scala.js actions;
 - cleanup: ScalaOnlyTest re-absorbed and removed;
+- cleanup: tests;
+- chore: dependency updates;
 
 ## [0.4.16] - 2025-02-02
 - chore: cleanup;

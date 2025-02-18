@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object ScalaCheckFixture extends Fixture(
   org.podval.tools.testing.framework.ScalaCheck,
@@ -14,12 +15,15 @@ object ScalaCheckFixture extends Fixture(
        |  property("substring") = forAll { (a: String, b: String, c: String) => (a+b+c).substring(a.length, a.length+b.length) == b }
        |}
        |""".stripMargin
-  )),
-  checks = Seq(forClass("ScalaCheckTest",
-    failedCount(1),
-    skippedCount(0),
-    passed("String.startsWith"),
-    failed("String.concatenate"),
-    passed("String.substring")
   ))
-)
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
+    forClass("ScalaCheckTest",
+      failedCount(1),
+      skippedCount(0),
+      passed("String.startsWith"),
+      failed("String.concatenate"),
+      passed("String.substring")
+    )
+  )
+

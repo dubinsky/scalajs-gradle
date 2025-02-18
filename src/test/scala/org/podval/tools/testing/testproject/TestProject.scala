@@ -1,10 +1,11 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.testproject
 
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
 import org.podval.tools.build.{Dependency, JavaDependency, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.testing.framework.FrameworkDescriptor
+import org.podval.tools.testing.Sbt
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
@@ -50,7 +51,8 @@ object TestProject:
       List(classSummary) ++ methodResults
     ).flatten
 
-  private def root: File = Files.url2file(getClass.getResource("anchor.txt"))
+  private def root: File = Files.url2file(getClass.getResource("/org/podval/tools/testing/testproject/anchor.txt"))
+    .getParentFile // testproject
     .getParentFile // testing
     .getParentFile // tools
     .getParentFile // podval
@@ -110,7 +112,7 @@ object TestProject:
         scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
         zincDependency = Sbt.Zinc.dependencyWithVersion(platform),
         frameworks = frameworks.map((framework: FrameworkDescriptor) =>
-          require(if isScalaJS then framework.isScalaJSSupported else framework.isJvmSupported)
+          require(framework.isSupported(platform))
           framework.dependencyWithVersion(platform)
         ),
         includeTestNames = includeTestNames,

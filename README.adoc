@@ -318,6 +318,35 @@ Test runs are integrated with IntelliJ Idea:
 - tree of tests run with their outcome is displayed;
 - colours are suppressed in the framework output.
 
+=== Test Task
+Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
+in the traditional way; currently, not all configuration properties are honored.
+
+Plugin introduces its own Gradle test framework: `useSbt`;
+plugin auto-applies this Gradle test framework to each test task;
+re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
+
+File-name based test scan is not supported by this plugin;
+`isScanForTestClasses` must be at its default value `true`.
+
+Scala.js tests are run sequentially; Scala tests are forked/parallelized in accordance with the forking options.
+
+Class inclusion/exclusion filters are honored, but method-name-based filtering does not work,
+since in frameworks like ScalaTest individual tests are not methods.
+
+Tests can be filtered by tags; see <<_test_tagging>> for details.
+
+If there is a need to have test runs with different configuration, more testing tasks can be added manually.
+
+For plain Scala projects (no Scala.js), the type of the test task is
+link:src/main/scala/org/podval/tools/scalajsplugin/JvmTestTask.scala[org.podval.tools.scalajsplugin.JvmTestTask].
+Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
+
+For Scala.js projects the type of the test task is
+link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTas.Test].
+Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
+for manually added tasks this dependency has to be added manually.
+
 === Test Frameworks
 Plugin replaces the `test` task with one that supports running sbt-compatible test frameworks.
 At least one such framework needs to be added to the `testImplementation` configuration;
@@ -369,35 +398,6 @@ Currently, the following test frameworks are supported:
 | {version-framework-zio-test}
 | tests are `objects`, not `classes`
 |===
-
-=== Test Task
-Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
-in the traditional way; currently, not all configuration properties are honored.
-
-Plugin introduces its own Gradle test framework: `useSbt`;
-plugin auto-applies this Gradle test framework to each test task;
-re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported.
-
-File-name based test scan is not supported by this plugin;
-`isScanForTestClasses` must be at its default value `true`.
-
-Scala.js tests are run sequentially; Scala tests are forked/parallelized in accordance with the forking options.
-
-Class inclusion/exclusion filters are honored, but method-name-based filtering does not work,
-since in frameworks like ScalaTest individual tests are not methods.
-
-Tests can be filtered by tags; see <<_test_tagging>> for details.
-
-If there is a need to have test runs with different configuration, more testing tasks can be added manually.
-
-For plain Scala projects (no Scala.js), the type of the test task is
-link:src/main/scala/org/podval/tools/scalajsplugin/JvmTestTask.scala[org.podval.tools.scalajsplugin.JvmTestTask].
-Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
-
-For Scala.js projects the type of the test task is
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTas.Test].
-Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
-for manually added tasks this dependency has to be added manually.
 
 === Test Tagging
 
@@ -821,12 +821,12 @@ Note: Because tests are scoped by the workers, it does not seem possible to grou
 === Testing the Tests
 I coded a neat way to test the plugin itself and
 various features of the various frameworks and their support by the plugin:
-link:src/test/scala/org/podval/tools/testing/Feature.scala[Feature],
-link:src/test/scala/org/podval/tools/testing/Fixture.scala[Fixture],
-link:src/test/scala/org/podval/tools/testing/ForClass.scala[ForClass],
-link:src/test/scala/org/podval/tools/testing/GroupingFunSpec.scala[GroupingFunSpec],
-link:src/test/scala/org/podval/tools/testing/SourceFile.scala[SourceFile],
-link:src/test/scala/org/podval/tools/testing/TestProject.scala[TestProject].
+link:src/test/scala/org/podval/tools/testing/testproject/Feature.scala[Feature],
+link:src/test/scala/org/podval/tools/testing/testproject/Fixture.scala[Fixture],
+link:src/test/scala/org/podval/tools/testing/testproject/ForClass.scala[ForClass],
+link:src/test/scala/org/podval/tools/testing/testproject/GroupingFunSpec.scala[GroupingFunSpec],
+link:src/test/scala/org/podval/tools/testing/testproject/SourceFile.scala[SourceFile],
+link:src/test/scala/org/podval/tools/testing/testproject/TestProject.scala[TestProject].
 
 === Test Framework Peculiarities
 JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:

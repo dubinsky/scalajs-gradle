@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object JUnit4Fixture extends Fixture(
   framework = org.podval.tools.testing.framework.JUnit4,
@@ -52,14 +53,17 @@ object JUnit4Fixture extends Fixture(
        |  @Test def testAssertTrue(): Unit = assertTrue("failure - should be true", true)
        |  @Test def failure(): Unit = assertTrue("failure - should be true", false)
        |""".stripMargin
-  )),
-  checks = Seq(forClass("JUnit4Test",
-    absent("excluded"),
-    failedCount(1),
-    skippedCount(0),
-    passed("testAssertNotNull"),
-    passed("testAssertNotSame"),
-    passed("testAssertThatHasItems"),
-    failed("failure")
   ))
-)
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
+    forClass("JUnit4Test",
+      absent("excluded"),
+      failedCount(1),
+      skippedCount(0),
+      passed("testAssertNotNull"),
+      passed("testAssertNotSame"),
+      passed("testAssertThatHasItems"),
+      failed("failure")
+    )
+  )
+

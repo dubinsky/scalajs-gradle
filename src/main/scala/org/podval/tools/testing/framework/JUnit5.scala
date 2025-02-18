@@ -14,7 +14,7 @@ object JUnit5 extends FrameworkDescriptor(
   className = "net.aichler.jupiter.api.JupiterFramework",
   sharedPackages = List("net.aichler.jupiter.api", "org.junit")
 ) with JavaDependency.Maker:
-  override def isJvmSupported: Boolean = false
-  override def isScalaJSSupported: Boolean = false
+  override protected def isJvmSupported: Boolean = false
+  override protected def isScalaJSSupported: Boolean = false
 
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

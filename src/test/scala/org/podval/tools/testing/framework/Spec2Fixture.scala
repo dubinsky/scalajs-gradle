@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object Spec2Fixture extends Fixture(
   framework = org.podval.tools.testing.framework.Specs2,
@@ -27,14 +28,17 @@ object Spec2Fixture extends Fixture(
        |    def e3 = "Hello world" must endWith("world")
        |    def e4 = "Hello world" must endWith("xxx")
        |""".stripMargin
-  )),
-  checks = Seq(forClass("Spec2Test",
-    absent("exclude tests tagged for exclusion"),
-    failedCount(1),
-    skippedCount(0),
-    passed("contain 11 characters"),
-    passed("start with 'Hello'"),
-    passed("end with 'world'"),
-    failed("fail to end with 'xxx'")
   ))
-)
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
+    forClass("Spec2Test",
+      absent("exclude tests tagged for exclusion"),
+      failedCount(1),
+      skippedCount(0),
+      passed("contain 11 characters"),
+      passed("start with 'Hello'"),
+      passed("end with 'world'"),
+      failed("fail to end with 'xxx'")
+    )
+  )
+

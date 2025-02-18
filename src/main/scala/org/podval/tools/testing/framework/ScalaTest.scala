@@ -61,7 +61,7 @@ object ScalaTest extends FrameworkDescriptor(
   artifact = "scalatest",
   versionDefault = Version("3.2.19"),
   className = "org.scalatest.tools.Framework",
-  sharedPackages = List("org.scalatest.tools")
+  sharedPackages = List("org.scalatest")
 ) with ScalaDependency.Maker:
   override def args(
     testTagsFilter: TestTagsFilter

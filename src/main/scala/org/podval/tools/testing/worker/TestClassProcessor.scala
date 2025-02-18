@@ -195,8 +195,12 @@ final class TestClassProcessor(
       nestedTestId
 
     TestClassProcessor.toOption(event.throwable).foreach((throwable: Throwable) =>
-      // TODO print throwable to detect the types to convert
-      testResultProcessor.failure(eventTestId, ExceptionConverter.toTestFailure(throwable))
+      val throwableClassName: String = throwable.getClass.getName
+      if reportEvents then output(s"--- Throwable class name: $throwableClassName")
+      testResultProcessor.failure(
+        eventTestId,
+        ExceptionConverter.converter(throwableClassName).toTestFailure(throwable)
+      )
     )
 
     testResultProcessor.completed(eventTestId, TestCompleteEvent(endTime, resultType))

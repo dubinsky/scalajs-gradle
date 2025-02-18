@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.scalajstutorial
 
 import org.podval.tools.build.{ScalaBackend, ScalaPlatform, ScalaVersion}
+import org.podval.tools.testing.testproject.{Feature, GroupingFunSpec}
 
 class ScalaJSTutorialTest extends GroupingFunSpec:
   groupTest(

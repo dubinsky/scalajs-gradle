@@ -1,7 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import ForClass.*
-import org.podval.tools.build.ScalaPlatform
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object ZioTestFixture extends Fixture(
   framework = org.podval.tools.testing.framework.ZioTest,
@@ -18,17 +18,19 @@ object ZioTestFixture extends Fixture(
        |    test("passing test assertTrue") { assertTrue(1 == 1) }
        |  )
        |""".stripMargin
-  )),
-  checks = Seq(forClass(className = "ZIOTestTest",
-    absent("excluded test"),
-    failedCount(2),
-    skippedCount(0),
-    passed("some suite - passing test"),
-    passed("some suite - passing test assertTrue"),
-    failed("some suite - failing test"),
-    failed("some suite - failing test assertTrue")
   ))
 ):
-  // TODO I do not get test events when running ZioTest on Scala.js!
-  override def works(feature: Feature, platform: ScalaPlatform): Boolean = !platform.backend.isJS
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
+    forClass(className = "ZIOTestTest",
+      absent("excluded test"),
+      failedCount(2),
+      skippedCount(0),
+      passed("some suite - passing test"),
+      passed("some suite - passing test assertTrue"),
+      failed("some suite - failing test"),
+      failed("some suite - failing test assertTrue")
+    )
+  )
+
+
 

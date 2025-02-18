@@ -1,6 +1,7 @@
-package org.podval.tools.testing
+package org.podval.tools.testing.framework
 
-import ForClass.*
+import org.podval.tools.testing.testproject.ForClass.*
+import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object ScalaTestFixture extends Fixture(
   framework = org.podval.tools.testing.framework.ScalaTest,
@@ -56,8 +57,9 @@ object ScalaTestFixture extends Fixture(
          |)
          |""".stripMargin
     )
-  ),
-  checks = Seq(
+  )
+):
+  override def checks(feature: Feature): Seq[ForClass] = Seq(
     forClass(className = "ScalaTestTest",
       absent("excluded"),
       failedCount(1),
@@ -74,5 +76,5 @@ object ScalaTestFixture extends Fixture(
       skipped("A Stack should throw NoSuchElementException if an empty stack is popped")
     )
   )
-)
+
 
