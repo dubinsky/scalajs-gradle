@@ -26,6 +26,13 @@ object FrameworksTest:
     maxParallelForks = 2,
     excludeTags = Seq("org.podval.tools.testing.ExcludedTest")
   )
+
+  val withTagInclusions: Feature = Feature(
+    name = "with tag inclusions",
+    maxParallelForks = 2,
+    includeTags = Seq("org.podval.tools.testing.IncludedTest"),
+    excludeTags = Seq("org.podval.tools.testing.ExcludedTest")
+  )
   
   val features: List[Feature] = List(
     basicFunctionality

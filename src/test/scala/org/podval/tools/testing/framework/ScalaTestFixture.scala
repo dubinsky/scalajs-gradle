@@ -11,9 +11,10 @@ object ScalaTestFixture extends Fixture(
          |import org.scalatest.matchers.should.Matchers
          |
          |final class ScalaTestTest extends AnyFlatSpec, Matchers:
-         |  object ExcludedTest extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
+         |  object Include extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
+         |  object Exclude extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
          |
-         |  "excluded" should "not run" taggedAs(ExcludedTest) in {  true shouldBe true }
+         |  "excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe true }
          |  "2*2 success" should "pass" in { 2 * 2 shouldBe 4 }
          |  "2*2 failure" should "fail" in { 2 * 2 shouldBe 5 }
          |  ignore should "be ignored" in { 2 * 2 shouldBe 5 }

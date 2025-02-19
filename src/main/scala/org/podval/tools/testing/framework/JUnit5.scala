@@ -8,13 +8,18 @@ import org.podval.tools.testing.worker.TestTagsFilter
 object JUnit5 extends FrameworkDescriptor(
   name = "Jupiter",
   displayName = "JUnit5",
-  group = null,
-  artifact = null,
-  versionDefault = null,
-  className = "net.aichler.jupiter.api.JupiterFramework",
-  sharedPackages = List("net.aichler.jupiter.api", "org.junit")
+  group = "com.github.sbt.junit",
+  artifact = "jupiter-interface",
+  versionDefault = Version("0.13.3"),
+  className = "com.github.sbt.junit.jupiter.api.JupiterFramework",
+  sharedPackages = List("com.github.sbt.junit.jupiter.api", "org.junit")
 ) with JavaDependency.Maker:
+  // TODO JUnit5 uses its own test discovery mechanism, which the plugin currently does not support
   override protected def isJvmSupported: Boolean = false
+ 
+  // This is a JVM-only test framework
   override protected def isScalaJSSupported: Boolean = false
 
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
+    FrameworkDescriptor.listOption("--include-tags", testTagsFilter.include) ++
+    FrameworkDescriptor.listOption("--exclude-tags", testTagsFilter.exclude)

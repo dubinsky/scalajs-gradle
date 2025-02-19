@@ -11,7 +11,7 @@ object JUnit4ScalaJSFixture extends Fixture(
        |import org.junit.Test
        |
        |@Test
-       |final class JUnit4ScalaJSTest /*AssertTests*/:
+       |final class JUnit4ScalaJSTest:
        |  @Test def testAssertArrayEquals(): Unit =
        |    val expected: Array[Byte] = "trial".getBytes
        |    val actual: Array[Byte] = "trial".getBytes

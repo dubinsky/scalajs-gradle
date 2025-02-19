@@ -1,6 +1,5 @@
 package org.podval.tools.testing.testproject
 
-import org.podval.tools.build.ScalaPlatform
 import org.podval.tools.testing.framework.FrameworkDescriptor
 
 abstract class Fixture(

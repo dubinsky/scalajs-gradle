@@ -15,6 +15,7 @@ object ForClass:
   enum ClassExpectation derives CanEqual:
     case AbsentClass
     case PresentClass
+    case TestCount   (count: Int)
     case FailedCount (count: Int)
     case SkippedCount(count: Int)
     case Method(methodName: String, methodExpectation: MethodExpectation)
@@ -23,6 +24,7 @@ object ForClass:
 
   def absentClass : AbsentClass .type = AbsentClass
   def presentClass: PresentClass.type = PresentClass
+  def testCount   (count: Int): TestCount    = TestCount   (count)
   def failedCount (count: Int): FailedCount  = FailedCount (count)
   def skippedCount(count: Int): SkippedCount = SkippedCount(count)
 

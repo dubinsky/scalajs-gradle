@@ -11,7 +11,7 @@ object JUnit5Fixture extends Fixture(
        |import org.junit.jupiter.api.{AfterAll, AfterEach, BeforeAll, BeforeEach, Disabled, Test}
        |
        |@Test
-       |final class JUnit5Test /*StandardTests*/:
+       |final class JUnit5Test:
        |  @BeforeAll def initAll(): Unit = ()
        |  @AfterAll def tearDownAll(): Unit = ()
        |  @BeforeEach def init(): Unit = ()

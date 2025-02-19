@@ -7,9 +7,10 @@ object MUnitFixture extends Fixture(
   framework = org.podval.tools.testing.framework.MUnit,
   testSources = Seq(SourceFile("MUnitTest",
     s"""class MUnitTest extends munit.FunSuite:
+       |  val include = new munit.Tag("org.podval.tools.testing.ExcludedTest")
        |  val exclude = new munit.Tag("org.podval.tools.testing.ExcludedTest")
        |
-       |  test("excluded".tag(exclude)) {}
+       |  test("excluded".tag(include).tag(exclude)) {}
        |  test("42 != 43") { assertEquals(42, 43) }
        |  test("2=2") { assertEquals(2, 2) }
        |""".stripMargin

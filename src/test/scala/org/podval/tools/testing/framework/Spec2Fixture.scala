@@ -14,7 +14,10 @@ object Spec2Fixture extends Fixture(
        |  This is a specification to check the 'Hello world' string
        |
        |  The 'Hello world' string should
-       |    exclude tests tagged for exclusion $$e0 $${tag("org.podval.tools.testing.ExcludedTest")}
+       |    exclude tests tagged for exclusion $$e0 $${tag(
+       |      "org.podval.tools.testing.IncludedTest",
+       |       "org.podval.tools.testing.ExcludedTest"
+       |    )}
        |    contain 11 characters $$e1
        |    start with 'Hello' $$e2
        |    end with 'world' $$e3

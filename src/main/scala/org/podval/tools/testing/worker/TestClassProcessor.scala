@@ -10,7 +10,7 @@ import org.gradle.internal.actor.ActorFactory
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
-import org.podval.tools.testing.exceptions.ExceptionConverter
+import org.podval.tools.testing.exceptions.*
 import org.podval.tools.testing.framework.FrameworkDescriptor
 import org.podval.tools.testing.serializer.{TaskDefTestSpec, TaskDefTestSpecWriter}
 import sbt.testing.{AnnotatedFingerprint, Event, Fingerprint, Framework, NestedSuiteSelector, NestedTestSelector,
@@ -195,17 +195,36 @@ final class TestClassProcessor(
       nestedTestId
 
     TestClassProcessor.toOption(event.throwable).foreach((throwable: Throwable) =>
-      val throwableClassName: String = throwable.getClass.getName
-      if reportEvents then output(s"--- Throwable class name: $throwableClassName")
       testResultProcessor.failure(
         eventTestId,
-        ExceptionConverter.converter(throwableClassName).toTestFailure(throwable)
+        exceptionConverter(throwable.getClass.getName).toTestFailure(throwable)
       )
     )
 
     testResultProcessor.completed(eventTestId, TestCompleteEvent(endTime, resultType))
 
     isSameTest
+
+  private def exceptionConverter(throwableClassName: String): ExceptionConverter = throwableClassName match
+    case "org.junit.ComparisonFailure" => // JUnit
+      OrgJUnitComparisonFailureConverter
+    case "junit.framework.ComparisonFailure" => // JUnit
+      JUnitFrameworkComparisonFailureConverter
+    case "munit.ComparisonFailException" =>  // MUnit
+      MUnitComparisonFailExceptionConverter
+    case "org.scalatest.exceptions.TestFailedException" => // ScalaTest
+      OrgScalaTestExceptionsTestFailedExceptionConverter
+    case "utest.AssertionError" => // UTest
+      UTestAssertionErrorConverter
+    case "java.lang.AssertionError" =>
+      JavaLangAssertionErrorConverter  
+    case "java.lang.Exception" => 
+      DefaultExceptionConverter
+    case "org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3" => // Scala.js
+      DefaultExceptionConverter
+    case _ => // Everything else (there is no framework-specific exceptions for ScalaCheck, specs2 nor ZIO Test):
+      output(s"--- Unknown Throwable class name: $throwableClassName")
+      DefaultExceptionConverter
 
   private def testLogger(testId: AnyRef): sbt.testing.Logger = new sbt.testing.Logger:
     private def log(logLevel: LogLevel, message: String): Unit = output(

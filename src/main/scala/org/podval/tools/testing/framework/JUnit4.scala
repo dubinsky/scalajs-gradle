@@ -26,7 +26,7 @@ object JUnit4 extends FrameworkDescriptor(
 ) with JavaDependency.Maker:
   def jUnitVersion: Version = Version("4.13.2")
 
-  override protected def isJvmSupported: Boolean = true
+  // This is a JVM-only test framework
   override protected def isScalaJSSupported: Boolean = false
   
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =

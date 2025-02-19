@@ -164,14 +164,15 @@ class GroupingFunSpec extends AnyFunSpec:
     for classExpectation: ClassExpectation <- classExpectations do
       def get[A](opt: Option[A]): A = opt.getOrElse(fail(s"no results where there should be"))
       classExpectation match
-        case AbsentClass  => it("class absent")(assert(resultOpt.isEmpty))
+        case AbsentClass  => it("class absent" )(assert(resultOpt.isEmpty))
         case PresentClass => it("class present")(get(resultOpt))
+        case TestCount   (count) => it("number of tests"        )(assertResult(count)(get(resultOpt).getTestsCount   ))
         case FailedCount (count) => it("number of failed tests" )(assertResult(count)(get(resultOpt).getFailuresCount))
         case SkippedCount(count) => it("number of skipped tests")(assertResult(count)(get(resultOpt).getSkippedCount ))
         case Method(methodName, methodExpectation) =>
           def methodResultOpt: Option[TestMethodResult] = get(resultOpt).getResults.asScala.toList.find(_.getName == methodName)
           given CanEqual[ResultType, ResultType] = CanEqual.derived
           methodExpectation match
-            case AbsentMethod  => it(s"method '$methodName' absent")(assert(methodResultOpt.isEmpty))
+            case AbsentMethod  => it(s"method '$methodName' absent" )(assert(methodResultOpt.isEmpty))
             case PresentMethod => it(s"method '$methodName' present")(get(methodResultOpt))
             case MethodResult(resultType) => it(s"method '$methodName' result")(assertResult(resultType)(get(methodResultOpt).getResultType))
