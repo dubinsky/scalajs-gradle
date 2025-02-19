@@ -20,7 +20,7 @@ object JUnit4Fixture extends Fixture(
        |
        |@Test
        |final class JUnit4Test:
-       |  @Test def testAssertFalse(): Unit = assertFalse("should be false", false)
+       |  @Test def successNotIncluded(): Unit = assertFalse("should be false", false)
        |  @Test @Category(Array(classOf[IncludedTest])) def success(): Unit = assertTrue("should be true", true)
        |  @Test @Category(Array(classOf[IncludedTest])) def failure(): Unit = assertTrue("should be true", false)
        |  @Test @Category(Array(classOf[IncludedTest], classOf[ExcludedTest])) def excluded(): Unit = assertTrue("should be excluded", false)
@@ -54,14 +54,32 @@ object JUnit4Fixture extends Fixture(
        |""".stripMargin
   ))
 ):
-  override def checks(feature: Feature): Seq[ForClass] = Seq(
-    forClass("JUnit4Test",
-      passed("success"),
-      failed("failure"),
-      absent("excluded"),
+  override def checks(feature: Feature): Seq[ForClass] = feature match
+    case FrameworksTest.basicFunctionality =>
+      Seq(
+        forClass("JUnit4Test",
+          passed("successNotIncluded"),
+          passed("success"),
+          failed("failure"),
+          absent("excluded"),
+          
+          testCount(13),
+          failedCount(1),
+          skippedCount(0)
+        )
+      )
+    case FrameworksTest.withTagInclusions =>
+      Seq(
+        forClass("JUnit4Test",
+          absent("successNotIncluded"),
+          passed("success"),
+          failed("failure"),
+          absent("excluded"),
+  
+          testCount(2),
+          failedCount(1),
+          skippedCount(0)
+        )
+      ) 
+    
       
-      testCount(13),
-      failedCount(1),
-      skippedCount(0)
-    )
-  )

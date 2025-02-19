@@ -66,7 +66,8 @@ class TestExecuter(
     documentationRegistry: DocumentationRegistry
   ): TestClassProcessor =
     // ScalaJS tests must be run in the same JVM where they are discovered.
-    val doNotFork: Boolean = !canFork // TODO provide a way to not fork Scala tests
+    // TODO provide a way to not fork Scala tests?
+    val doNotFork: Boolean = !canFork
     if doNotFork then
       NonForkingTestClassProcessor(
         workerTestClassProcessorFactory,

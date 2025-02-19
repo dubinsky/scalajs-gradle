@@ -301,7 +301,7 @@ dependencies {
 === Gradle
 Test runs are integrated with Gradle:
 
-- test counts are logged (by `TestCountLogger`) - if there are failing tests;
+- test counts are logged (by `TestCountLogger`) - if there were failing tests;
 - test reports are generated;
 - test framework output is logged at an appropriate level;
 - displaying test events and output is configured in the
@@ -317,6 +317,67 @@ Test runs are integrated with IntelliJ Idea:
 - test counts are displayed;
 - tree of tests run with their outcome is displayed;
 - colours are suppressed in the framework output.
+
+Can the test classes and individual tests be run and debugged
+directly from IntelliJ Idea or not depends on the test framework used -
+some are recognized by Intellij Idea itself, some - by the Scala plugin for it,
+and some are not recognized at all;
+what functionality is available also depends on the backend used - JVM or Scala.js:
+
+[%autowidth]
+|===
+| Name | Class on JVM | Test on JVM | Class on JS | Test on JS
+
+| JUnit4
+| run and debug
+| run and debug
+| not supported
+| not supported
+
+| JUnit4 Scala.js
+| not supported
+| not supported
+| run but not debug
+| run but not debug; running any runs all in the class
+
+
+| mUnit
+| run and debug
+| run and debug; only the first detected; running it runs all test in the class
+| run but not debug
+| run but not debug; only the first detected; running it runs all test in the class
+
+| ScalaCheck
+| not recognized
+| not recognized
+| not recognized
+| not recognized
+
+| ScalaTest
+| run and debug
+| run and debug; running any runs all in the class
+| run but not debug
+| run but not debug; running any runs all in the class
+
+| Specs2
+| run and debug
+| not detected
+| run but not debug
+| not detected
+
+| uTest
+| run and debug
+| not detected
+| run but not debug
+| not detected
+
+| ZIO Test
+| not recognized; can be run as an object, without test reporting
+| not detected
+| ?
+| ?
+
+|===
 
 === Test Task
 Test task added by the plugin is derived from the normal Gradle `test` task, and can be configured
@@ -445,7 +506,7 @@ since on Scala.js MUnit uses `Scala.js JUnit test framework`,
 which does not support this mechanism,
 MUnit does not support it either.
 
-Plugin does not support `Category`-based mechanism;
+Plugin does not use `Category`-based mechanism;
 MUnit provides a different, `Tag`-based mechanism,
 and that is what plugin uses.
 
@@ -469,12 +530,10 @@ Tag tests with objects that extend `org.scalatest.Tag`:
 
 [source, scala]
 ----
-object Include extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
+object Include extends org.scalatest.Tag("org.podval.tools.testing.IncludedTest")
 object Exclude extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
 "excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe false }
 ----
-
-TODO test exclusion works, test inclusion does not: nothing runs
 
 ==== specs2
 Tag tests with tag names:

@@ -27,4 +27,5 @@ object ScalaCheck extends FrameworkDescriptor(
   className = "org.scalacheck.ScalaCheckFramework",
   sharedPackages = List("org.scalacheck")
 ) with ScalaDependency.Maker:
+  // This framework does not support test tagging.
   override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

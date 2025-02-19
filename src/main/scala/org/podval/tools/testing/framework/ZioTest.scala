@@ -52,7 +52,7 @@ object ZioTest extends FrameworkDescriptor(
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt")
 ) with ScalaDependency.Maker:
-  // TODO I do not get test events when running ZioTest on Scala.js!
+  // TODO https://github.com/dubinsky/scalajs-gradle/issues/37
   override def isScalaJSSupported: Boolean = false
   
   // https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala

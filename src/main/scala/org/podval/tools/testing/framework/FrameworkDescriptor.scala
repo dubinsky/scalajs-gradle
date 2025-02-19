@@ -20,7 +20,9 @@ abstract class FrameworkDescriptor(
     else isJvmSupported
   
   protected def isJvmSupported: Boolean = true
-  protected def isScalaJSSupported: Boolean = true // TODO if isScalaJSSupported, dependency must be a Scala one...
+
+  // Note: if isScalaJSSupported, dependency must be a Scala one.
+  protected def isScalaJSSupported: Boolean = true
 
   def args(
     testTagsFilter: TestTagsFilter

@@ -11,12 +11,13 @@ object ScalaTestFixture extends Fixture(
          |import org.scalatest.matchers.should.Matchers
          |
          |final class ScalaTestTest extends AnyFlatSpec, Matchers:
-         |  object Include extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
+         |  object Include extends org.scalatest.Tag("org.podval.tools.testing.IncludedTest")
          |  object Exclude extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
          |
+         |  "successNotIncluded" should "pass" in { 2 * 2 shouldBe 4 }
+         |  "success" should "pass" taggedAs(Include) in { 2 * 2 shouldBe 4 }
+         |  "failure" should "fail" taggedAs(Include) in { 2 * 2 shouldBe 5 }
          |  "excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe true }
-         |  "2*2 success" should "pass" in { 2 * 2 shouldBe 4 }
-         |  "2*2 failure" should "fail" in { 2 * 2 shouldBe 5 }
          |  ignore should "be ignored" in { 2 * 2 shouldBe 5 }
          |
          |  "The Scala language" must "add correctly" in {
@@ -60,22 +61,45 @@ object ScalaTestFixture extends Fixture(
     )
   )
 ):
-  override def checks(feature: Feature): Seq[ForClass] = Seq(
-    forClass(className = "ScalaTestTest",
-      absent("excluded"),
-      failedCount(1),
-      skippedCount(1),
-      passed("2*2 success should pass"),
-      failed("2*2 failure should fail"),
-      skipped("2*2 failure should be ignored"),
-      passed("The Scala language must add correctly")
-    ),
-    forClass(className = "StackSpec",
-      failedCount(0),
-      skippedCount(1),
-      passed("A Stack should pop values in last-in-first-out order"),
-      skipped("A Stack should throw NoSuchElementException if an empty stack is popped")
-    )
-  )
+  override def checks(feature: Feature): Seq[ForClass] = feature match
+    case FrameworksTest.basicFunctionality =>
+      Seq(
+        forClass("ScalaTestTest",
+          passed("successNotIncluded should pass"),
+          passed("success should pass"),
+          failed("failure should fail"),
+          absent("excluded should not run"),
+    
+          skipped("excluded should be ignored"),
+          passed("The Scala language must add correctly"),
+    
+          testCount(5),
+          failedCount(1),
+          skippedCount(1)
+        ),
+        forClass("StackSpec",
+          failedCount(0),
+          skippedCount(1),
+          passed("A Stack should pop values in last-in-first-out order"),
+          skipped("A Stack should throw NoSuchElementException if an empty stack is popped")
+        )
+      )
+    case FrameworksTest.withTagInclusions =>
+      Seq(
+        forClass("ScalaTestTest",
+          absent("successNotIncluded should pass"),
+          passed("success should pass"),
+          failed("failure should fail"),
+          absent("excluded should not run"),
+
+          absent("excluded should be ignored"),
+          absent("The Scala language must add correctly"),
+
+          testCount(2),
+          failedCount(1),
+          skippedCount(0)
+        )
+      )
+      
 
 

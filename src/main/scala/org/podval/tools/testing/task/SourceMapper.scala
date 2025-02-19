@@ -42,7 +42,7 @@ abstract class SourceMapper:
     val details: TestFailureDetails = testFailure.getDetails
     val message: String = Option(details.getMessage).getOrElse(s"$throwable was thrown")
 
-    // TODO Gradle's org.gradle.internal.serialize.ExceptionPlaceholder serializes exceptions with lots of details;
+    // Gradle's org.gradle.internal.serialize.ExceptionPlaceholder serializes exceptions with lots of details;
     // org.scalajs.testing.common.Serializer.ThrowableSerializer - not so much: they all become
     // "org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3";
     // since source mapping is used only for ScalaJS, there is no point trying to preserve the original

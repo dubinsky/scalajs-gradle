@@ -21,8 +21,8 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   // This is a Scala.js-only test framework
   override protected def isJvmSupported: Boolean = false
 
-  // TODO true - Gradle build does NOT fail even when some tests do!
+  // TODO https://github.com/dubinsky/scalajs-gradle/issues/36
   override protected def isScalaJSSupported: Boolean = false
-  
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
 
+  // This framework does not support test tagging.
+  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty

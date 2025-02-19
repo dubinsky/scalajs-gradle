@@ -48,14 +48,13 @@ final class TestFrameworkDetector(
       .find(_.classFilePath == classFilePath)
       .flatMap(filter)
 
-    testClass.foreach { (testClass: TestClass) =>
+    testClass.foreach: (testClass: TestClass) =>
       val taskDefStr: String = org.podval.tools.testing.worker.TestClassProcessor.toString(testClass.taskDef)
       logger.info(s"TestFramework.processTestClass($taskDefStr)", null, null, null)
       testClassProcessor.get.processTestClass(TaskDefTestSpec(
         framework = Right(testClass.framework),
         taskDef = testClass.taskDef
       ))
-    }
 
     testClass.isDefined
 

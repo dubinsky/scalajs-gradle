@@ -34,7 +34,7 @@ abstract class JvmTestTask extends TestTask:
             case _: ClassNotFoundException => None
 
         val message: String = if result.isEmpty then "not detected" else "detected"
-        getLogger.info(s"Test framework ${descriptor.name} $message", null, null, null)
+        getLogger.info(s"Test framework ${descriptor.displayName} $message", null, null, null)
 
         result
 

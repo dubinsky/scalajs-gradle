@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: test tagging for ScalaTest;
 - feat: test tagging for specs2;
 - feat: test tagging for ZIO Test;
+- feat: support test tag inclusions;
 - doc: documented test framework dependencies;
 - doc: documented test framework test tagging;
 - cleanup: ScalaPlatform;

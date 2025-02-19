@@ -14,11 +14,11 @@ object JUnit5 extends FrameworkDescriptor(
   className = "com.github.sbt.junit.jupiter.api.JupiterFramework",
   sharedPackages = List("com.github.sbt.junit.jupiter.api", "org.junit")
 ) with JavaDependency.Maker:
-  // TODO JUnit5 uses its own test discovery mechanism, which the plugin currently does not support
-  override protected def isJvmSupported: Boolean = false
- 
   // This is a JVM-only test framework
   override protected def isScalaJSSupported: Boolean = false
+
+  // TODO https://github.com/dubinsky/scalajs-gradle/issues/38
+  override protected def isJvmSupported: Boolean = false
 
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
     FrameworkDescriptor.listOption("--include-tags", testTagsFilter.include) ++

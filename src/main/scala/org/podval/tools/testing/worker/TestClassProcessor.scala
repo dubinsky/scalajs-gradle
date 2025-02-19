@@ -36,28 +36,43 @@ final class TestClassProcessor(
 
   private var runners: Map[String, Runner] = Map.empty
 
-  private def getRunner(testFramework: Either[String, Framework]): Runner = synchronized {
+  private def getRunner(testFramework: Either[String, Framework]): Runner = synchronized:
     val frameworkName: String = testFramework.fold(identity, _.name)
     runners.getOrElse(frameworkName, {
-      val framework: Framework = testFramework match
-        case Right(framework) =>
-          // not forking: just use the framework and its classloader
-          framework
-        case Left(frameworkName) =>
-          // forking: instantiate
-          FrameworkDescriptor(frameworkName)
-            .newInstance
-            .asInstanceOf[Framework]
-          
-      val runner: Runner = TestClassProcessor.runner(
-        framework,
+      val runner: Runner = makeRunner(
+        testFramework,
         testTagsFilter
       )
       runners = runners.updated(frameworkName, runner)
       runner
     })
-  }
-  
+
+  private def makeRunner(
+    testFramework: Either[String, Framework],
+    testTagsFilter: TestTagsFilter
+  ): Runner =
+    val framework: Framework = testFramework match
+      case Right(framework) =>
+        // not forking: just use the framework and its classloader
+        framework
+      case Left(frameworkName) =>
+        // forking: instantiate
+        FrameworkDescriptor(frameworkName)
+          .newInstance
+          .asInstanceOf[Framework]
+
+    val frameworkName: String = framework.name
+    val args: Seq[String] = FrameworkDescriptor(frameworkName).args(testTagsFilter)
+    if reportEvents then output(s"--- Test framework $frameworkName arguments: $args")
+    // Note: we are running the runner in *this* JVM, so remote arguments are not used?
+    val remoteArgs: Seq[String] = Seq.empty
+    val frameworkClassLoader: ClassLoader = framework.getClass.getClassLoader
+    framework.runner(
+      args.toArray,
+      remoteArgs.toArray,
+      frameworkClassLoader
+    )
+
   /**
    * Completes any pending or asynchronous processing. Blocks until all processing is complete.
    */
@@ -128,49 +143,57 @@ final class TestClassProcessor(
       TestStartEvent(startTime, parentId)
     )
 
-    // Note: this should probably be removed:
-    // if I supply correct arguments to the frameworks, they do the tag filtering.
-    // Also:
-    // - ScalaTest does not have suite tagging and does not return nested tasks for methods,
-    //   so I am not going to get any tags from it even if I do not supply the arguments
-    val isAllowed: Boolean =
-      val tags: Array[String] = task.tags
-//      if tags.nonEmpty then output(s"--- got tags for $className $selector: " + tags.mkString("[", ", ", "]"))
-      def isListed(list: Array[String]): Boolean = tags.exists(list.contains)
-      (testTagsFilter.include.isEmpty || isListed(testTagsFilter.include)) && !isListed(testTagsFilter.exclude)
-
-    if !isAllowed then
-      // skipped test
-      testResultProcessor.completed(testId, TestCompleteEvent(startTime, ResultType.SKIPPED))
-    else
-      try
-        val nestedTasks: Seq[Task] =
-          try
-            if reportEvents then output(s"--- Task(${TestClassProcessor.toString(task.taskDef)}, ${task.tags.mkString}).execute()")
-            task.execute(
-              (event: Event) =>
-                require(!isTestCompleted, s"Received event for a completed test ${TestClassProcessor.toString(task.taskDef)}")
-                isTestCompleted = handleEvent(
-                  testId,
-                  className,
-                  selector,
-                  event
-                ),
-              Array(testLogger(testId))
-            ).toSeq
-          catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
-            testResultProcessor.failure(testId, TestFailure.fromTestFrameworkFailure(throwable))
-            Seq.empty
-
-        for nestedTask: Task <- nestedTasks do
-          if reportEvents then output(s"----- GOT NESTED TASK FOR $className $selector: ${TestClassProcessor.toString(nestedTask.taskDef)}")
-          run(
-            parentId = testId,
-            selector = TestClassProcessor.verifyCanNest(selector, TestClassProcessor.getSelector(nestedTask.taskDef)),
-            task = nestedTask
+    try
+      val nestedTasks: Seq[Task] =
+        try
+          if reportEvents then output(s"--- Task(${TestClassProcessor.toString(task.taskDef)}, ${task.tags.mkString}).execute()")
+          task.execute(
+            (event: Event) =>
+              require(!isTestCompleted, s"Received event for a completed test ${TestClassProcessor.toString(task.taskDef)}")
+              isTestCompleted = handleEvent(
+                testId,
+                className,
+                selector,
+                event
+              ),
+            Array(testLogger(testId))
+          ).toSeq
+        catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
+          testResultProcessor.failure(
+            testId, 
+            TestFailure.fromTestFrameworkFailure(throwable)
           )
-      finally
-        if !isTestCompleted then testResultProcessor.completed(testId, TestCompleteEvent(clock.getCurrentTime))
+          Seq.empty
+
+      for nestedTask: Task <- nestedTasks do
+        if reportEvents then output(s"----- GOT NESTED TASK FOR $className $selector: ${TestClassProcessor.toString(nestedTask.taskDef)}")
+        run(
+          parentId = testId,
+          selector = TestClassProcessor.verifyCanNest(selector, TestClassProcessor.getSelector(nestedTask.taskDef)),
+          task = nestedTask
+        )
+    finally
+      if !isTestCompleted then testResultProcessor.completed(
+        testId,
+        TestCompleteEvent(clock.getCurrentTime)
+      )
+
+  // Although it is tempting to help the test frameworks out by filtering tests based on their tags
+  // right here, using code like this:
+  //    val isAllowed: Boolean = true
+  //      val tags: Array[String] = task.tags
+  //      if tags.nonEmpty then output(s"--- got tags for $className $selector: " + tags.mkString("[", ", ", "]"))
+  //      def isListed(list: Array[String]): Boolean = tags.exists(list.contains)
+  //      (testTagsFilter.include.isEmpty || isListed(testTagsFilter.include)) && !isListed(testTagsFilter.exclude)
+  //    if !isAllowed then
+  //      // skipped test
+  //      testResultProcessor.completed(testId, TestCompleteEvent(startTime, ResultType.SKIPPED))
+  //    else ...
+  //
+  // - it is unnecessary, since all the test frameworks plugin supports that support tagging accept
+  //   arguments that allow them to do the filtering internally;
+  // - it is destructive, since none of the test frameworks plugin supports populate `task.tags`,
+  //   so with explicit tag inclusions, none of the tests run!
 
   private def handleEvent(
     testId: AnyRef,
@@ -201,7 +224,10 @@ final class TestClassProcessor(
       )
     )
 
-    testResultProcessor.completed(eventTestId, TestCompleteEvent(endTime, resultType))
+    testResultProcessor.completed(
+      eventTestId, 
+      TestCompleteEvent(endTime, resultType)
+    )
 
     isSameTest
 
@@ -239,7 +265,10 @@ final class TestClassProcessor(
     override def info (message: String): Unit = log(LogLevel.INFO , message)
     override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
     override def trace(throwable: Throwable): Unit =
-      testResultProcessor.failure(testId, TestFailure.fromTestFrameworkFailure(throwable))
+      testResultProcessor.failure(
+        testId, 
+        TestFailure.fromTestFrameworkFailure(throwable)
+      )
 
   private def output(message: String): Unit = output(
     testId = TestClassProcessor.rootTestSuiteIdPlaceholder,
@@ -287,15 +316,6 @@ object TestClassProcessor:
       idGenerator = idGenerator,
       clock = clock
     )
-
-  private def runner(framework: Framework, testTagsFilter: TestTagsFilter): Runner =
-    val frameworkName: String = framework.name
-    val args: Seq[String] = FrameworkDescriptor(frameworkName).args(testTagsFilter)
-//    println(s"--- ARGS: $args")
-    // Note: we are running the runner in *this* JVM, so remote arguments are not used?
-    val remoteArgs: Seq[String] = Seq.empty
-    val frameworkClassLoader: ClassLoader = framework.getClass.getClassLoader
-    framework.runner(args.toArray, remoteArgs.toArray, frameworkClassLoader)
 
   private def getSelector(taskDef: TaskDef): Selector =
     require(taskDef.selectors.length == 1, "Exactly one Selector is required")

@@ -30,5 +30,6 @@ object JUnit4 extends FrameworkDescriptor(
   override protected def isScalaJSSupported: Boolean = false
   
   override def args(testTagsFilter: TestTagsFilter): Seq[String] =
+//    Seq("--verbosity=3") ++
     FrameworkDescriptor.listOption("--include-categories", testTagsFilter.include) ++
     FrameworkDescriptor.listOption("--exclude-categories", testTagsFilter.exclude)

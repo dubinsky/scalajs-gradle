@@ -3,9 +3,6 @@ package org.podval.tools.testing.framework
 import org.podval.tools.build.{ScalaBackend, ScalaPlatform, ScalaVersion}
 import org.podval.tools.testing.testproject.{Feature, Fixture, GroupingFunSpec}
 
-// TODO when run separately, this class produces correctly nested results;
-// when it is run together with other tests, something (Idea?) flattens the results...
-// Or are the *events* different?
 class FrameworksTest extends GroupingFunSpec:
   groupTest(
     features = FrameworksTest.features,
@@ -35,7 +32,8 @@ object FrameworksTest:
   )
   
   val features: List[Feature] = List(
-    basicFunctionality
+    basicFunctionality,
+    withTagInclusions
   )
 
   val fixtures: List[Fixture] = List(
