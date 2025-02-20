@@ -18,7 +18,7 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
   project.getTasks.register("npm", classOf[NodeTask.NpmRunTask])
   project.getTasks.register("node", classOf[NodeTask.NodeRunTask])
 
-  project.afterEvaluate((project: Project) =>
+  project.afterEvaluate: (project: Project) =>
     val context: GradleBuildContext = GradleBuildContext(project, execOperations)
     def nodeModulesParent: File = project.getProjectDir
 
@@ -38,14 +38,12 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
       )
 
     // set properties needed to run Node on the `TaskWithNode`s.
-    project.getTasks.asScala.foreach {
+    project.getTasks.asScala.foreach:
       case taskWithNode: TaskWithNode =>
         taskWithNode.getVersion.set(getVersion)
         taskWithNode.getGradleUserHomeDir.set(context.gradleUserHomeDir)
         taskWithNode.getNodeModulesParent.set(nodeModulesParent)
       case _ =>
-    }
-  )
 
 object NodeExtension:
   def addTo(project: Project): NodeExtension = project.getExtensions.create("node", classOf[NodeExtension])

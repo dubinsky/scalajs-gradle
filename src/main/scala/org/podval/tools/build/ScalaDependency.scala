@@ -33,12 +33,11 @@ final class ScalaDependency private(
   override protected def dependencyForArtifactName(
     artifactName: String
   ): Option[ScalaDependency.WithScalaVersion] = artifactAndScalaVersion(artifactName)
-    .flatMap((artifact, scalaVersion) =>
+    .flatMap: (artifact, scalaVersion) =>
       val matches: Boolean =
         (artifact == this.artifact) &&
         scalaPlatform.version.isScalaVersionAcceptable(scalaVersion)
       if !matches then None else Some(scalaVersion)
-    )
     .map(withScalaVersion)
 
   private def artifactAndScalaVersion(artifactName: String): Option[(String, Version)] =

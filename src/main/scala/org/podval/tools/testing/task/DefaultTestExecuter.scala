@@ -44,7 +44,7 @@ class DefaultTestExecuter(
   private var testClassProcessor: Option[TestClassProcessor] = None
   override def stopNow(): Unit = testClassProcessor.foreach(_.stopNow())
 
-  override def execute(testExecutionSpec: JvmTestExecutionSpec, testResultProcessor: TestResultProcessor): Unit = {
+  override def execute(testExecutionSpec: JvmTestExecutionSpec, testResultProcessor: TestResultProcessor): Unit =
     val testFramework: TestFramework = testExecutionSpec.getTestFramework
     val testInstanceFactory: WorkerTestClassProcessorFactory = testFramework.getProcessorFactory
 
@@ -83,7 +83,7 @@ class DefaultTestExecuter(
     val testClassFiles: FileTree = testExecutionSpec.getCandidateClassFiles
 
     val testFrameworkDetector: Option[TestFrameworkDetector] =
-      if !testExecutionSpec.isScanForTestClasses || testFramework.getDetector == null then None else Some {
+      if !testExecutionSpec.isScanForTestClasses || testFramework.getDetector == null then None else Some:
         val result: TestFrameworkDetector = testFramework.getDetector
         result.setTestClasses(java.util.ArrayList[File](testExecutionSpec.getTestClassesDirs.getFiles))
         // TODO [classpath] switch to classpath.getApplicationClasspath() without reflection -
@@ -94,7 +94,6 @@ class DefaultTestExecuter(
         val applicationClassPath = classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
         result.setTestClasspath(applicationClassPath)
         result
-      }
 
     TestMainAction(
       DefaultTestClassScanner(testClassFiles, testFrameworkDetector.orNull, processor),
@@ -105,7 +104,6 @@ class DefaultTestExecuter(
       testExecutionSpec.getPath,
       "Gradle Test Run " + testExecutionSpec.getIdentityPath
     ).run()
-  }
 
   protected def createTestClassProcessor(
     workerLeaseService: WorkerLeaseService,

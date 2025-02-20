@@ -18,7 +18,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
 
     delegate.beforeEvaluate(project)
 
-    project.afterEvaluate((project: Project) =>
+    project.afterEvaluate: (project: Project) =>
       val projectScalaLibrary: ScalaLibrary = 
         ScalaLibrary.getFromConfiguration(Gradle.getConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME))
 
@@ -36,7 +36,6 @@ final class ScalaJSPlugin extends Plugin[Project]:
       projectScalaLibrary.verify(
         ScalaLibrary.getFromClasspath(Gradle.getConfiguration(project, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).asScala)
       )
-    )
 
 object ScalaJSPlugin:
   private val disabledProperty: String = "org.podval.tools.scalajs.disabled"

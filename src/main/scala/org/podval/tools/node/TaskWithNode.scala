@@ -8,8 +8,8 @@ import java.io.File
 
 trait TaskWithNode extends Task:
   @Input def getVersion: Property[String]
-  @OutputDirectory def getGradleUserHomeDir: Property[File]
-  @OutputDirectory def getNodeModulesParent: Property[File]
+  @OutputDirectory def getGradleUserHomeDir: Property[File] // TODO lose the @OutputDirectory?
+  @OutputDirectory def getNodeModulesParent: Property[File] // TODO lose the @OutputDirectory?
 
   final def node: Node = NodeDependency
     .getInstalled(

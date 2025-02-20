@@ -217,12 +217,11 @@ final class TestClassProcessor(
       )
       nestedTestId
 
-    TestClassProcessor.toOption(event.throwable).foreach((throwable: Throwable) =>
+    TestClassProcessor.toOption(event.throwable).foreach: (throwable: Throwable) =>
       testResultProcessor.failure(
         eventTestId,
         exceptionConverter(throwable.getClass.getName).toTestFailure(throwable)
       )
-    )
 
     testResultProcessor.completed(
       eventTestId, 

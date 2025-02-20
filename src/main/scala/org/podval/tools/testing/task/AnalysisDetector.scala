@@ -36,7 +36,7 @@ object AnalysisDetector:
       .values
       .toSeq
       .map(_.api)
-      .flatMap((companions: Companions) =>
+      .flatMap: (companions: Companions) =>
         Seq(
           companions.classApi,
           companions.objectApi
@@ -45,11 +45,9 @@ object AnalysisDetector:
           companions.classApi .structure.inherited.toSeq ++
           companions.objectApi.structure.declared .toSeq ++
           companions.objectApi.structure.inherited.toSeq
-      )
-      .filter {
+      .filter:
         case c: ClassLike => c.topLevel
         case _ => false
-      }
 
     val detectors: Seq[Detector] =
       val detectorOpts: Seq[Option[Detector]] = for
@@ -83,10 +81,9 @@ object AnalysisDetector:
           definitions
         )
       detector: Detector <-
-        detectors.filter((detector: Detector) =>
+        detectors.filter: (detector: Detector) =>
           (discovered.isModule == detector.isModule) &&
           (if detector.isAnnotation then discovered.annotations else discovered.baseClasses).contains(detector.name)
-        )
     yield
       val className: String = definition.asInstanceOf[ClassLike].name
       val sourceFile: VirtualFileRef = relations.definesClass(className).head

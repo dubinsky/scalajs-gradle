@@ -13,7 +13,7 @@ final class DependencyRequirement(
 ):
   def applyToConfiguration(project: Project): Dependency.WithVersion =
     val configuration: Configuration = Gradle.getConfiguration(project, configurationName)
-    val result: Dependency.WithVersion = findable.findInConfiguration(configuration).getOrElse {
+    val result: Dependency.WithVersion = findable.findInConfiguration(configuration).getOrElse:
       val toAdd: Dependency.WithVersion = dependency.withVersion(version)
       project.getLogger.info(s"Adding dependency $toAdd to the $configuration $reason", null, null, null)
       configuration
@@ -22,7 +22,6 @@ final class DependencyRequirement(
       findable
         .findInConfiguration(configuration)
         .getOrElse(throw GradleException(s"failed to add dependency $toAdd to configuration $configuration"))
-    }
     
     dependency.verifyRequired(
       result,

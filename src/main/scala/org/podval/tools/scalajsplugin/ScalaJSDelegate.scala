@@ -61,11 +61,10 @@ class ScalaJSDelegate extends ScalaJSPlugin.Delegate:
       ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
 
     // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s.
-    project.getTasks.asScala.foreach {
+    project.getTasks.asScala.foreach:
       case linkTask: ScalaJSLinkTask =>
         linkTask.getRuntimeClassPath.setFrom(Gradle.getSourceSet(project, linkTask.sourceSetName).getRuntimeClasspath)
       case _ =>
-    }
 
 object ScalaJSDelegate:
   private def configureScalaCompileForScalaJs(project: Project, sourceSetName: String): Unit =

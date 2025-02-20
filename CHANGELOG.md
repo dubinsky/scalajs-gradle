@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: ScalaOnlyTest re-absorbed and removed;
 - cleanup: tests;
 - cleanup: exception converters;
+- cleanup: braces;
 - chore: dependency updates;
 
 ## [0.4.16] - 2025-02-02

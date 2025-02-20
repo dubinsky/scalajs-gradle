@@ -18,7 +18,7 @@ abstract class SourceMapper:
       for stackTraceElement: StackTraceElement <- throwable.getStackTrace yield
         val mapping: Option[Mapping] = getMapping(stackTraceElement.getLineNumber, 1)
 
-        val newStackTraceElement: StackTraceElement = mapping.fold(stackTraceElement)((mapping: Mapping) =>
+        val newStackTraceElement: StackTraceElement = mapping.fold(stackTraceElement): (mapping: Mapping) =>
           StackTraceElement(
             stackTraceElement.getClassLoaderName,
             stackTraceElement.getModuleName,
@@ -27,17 +27,16 @@ abstract class SourceMapper:
             stackTraceElement.getMethodName,
             mapping.file,
             mapping.line
-          ))
+          )
 
         mapping -> newStackTraceElement
 
     val location: String = mappings
       .flatMap(_._1)
       .find(_.file.startsWith("file://"))
-      .fold("") { (mapping: Mapping) =>
+      .fold(""): (mapping: Mapping) =>
         val filePath: String = Strings.drop(mapping.file, "file://")
         s" ($filePath:${mapping.line}:${mapping.column})"
-      }
 
     val details: TestFailureDetails = testFailure.getDetails
     val message: String = Option(details.getMessage).getOrElse(s"$throwable was thrown")

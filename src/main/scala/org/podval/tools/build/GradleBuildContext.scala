@@ -28,12 +28,11 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
       project.getRepositories.clear()
 
       // Add repository
-      project.getRepositories.ivy((newRepository: IvyArtifactRepository) =>
+      project.getRepositories.ivy: (newRepository: IvyArtifactRepository) =>
         newRepository.setUrl(repository.get.url)
-        newRepository.patternLayout((repositoryLayout: IvyPatternRepositoryLayout) =>
+        newRepository.patternLayout: (repositoryLayout: IvyPatternRepositoryLayout) =>
           repositoryLayout.artifact(repository.get.artifactPattern)
           repositoryLayout.ivy(repository.get.ivy)
-        )
 
         // Gradle 6.0 broke Node.js retrieval;
         // from https://github.com/gradle/gradle/issues/11006 and code referenced there
@@ -42,8 +41,7 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
         newRepository.metadataSources((metadataSources: IvyArtifactRepository.MetadataSources) =>
           metadataSources.artifact(); // Indicates that this repository may not contain metadata files...
         )
-      )
-
+        
     info(s"Resolving $dependencyNotation")
 
     val dependency: Dependency = project.getDependencies.create(dependencyNotation)
@@ -69,19 +67,17 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
     info(s"Unpacking $file into $into")
 
     into.mkdir()
-    project.copy((copySpec: CopySpec) =>
+    project.copy: (copySpec: CopySpec) =>
       copySpec
         .from(if isZip then project.zipTree(file) else project.tarTree(file))
         .into(into)
       ()
-    )
 
   override def javaexec(mainClass: String, args: String*): Unit =
     info(s"Running $mainClass(${args.mkString(", ")})")
 
-    execOperations.javaexec((exec: JavaExecSpec) =>
+    execOperations.javaexec: (exec: JavaExecSpec) =>
       exec.setClasspath(Gradle.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getRuntimeClasspath)
       exec.getMainClass.set(mainClass)
       exec.args(args*)
       ()
-    )
