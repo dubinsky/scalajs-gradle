@@ -160,7 +160,7 @@ final class TestClassProcessor(
           ).toSeq
         catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
           testResultProcessor.failure(
-            testId, 
+            testId,
             TestFailure.fromTestFrameworkFailure(throwable)
           )
           Seq.empty
@@ -203,31 +203,55 @@ final class TestClassProcessor(
   ): Boolean =
     val endTime: Long = clock.getCurrentTime
     val resultType: ResultType = TestClassProcessor.toResultType(event.status)
-
     // Note: Assuming that if the event is for the testId, selector is the same,
     // and if not - it is a *test method* in the same class.
     val isSameTest: Boolean = TestClassProcessor.selectorsEqual(selector, event.selector)
-    if reportEvents then output(s"----- GOT EVENT FOR $className $selector: ${event.fullyQualifiedName} ${event.selector} $resultType; isSameTest=$isSameTest")
+    val throwableOpt: Option[Throwable] =
+      if event.throwable.isEmpty
+      then None
+      else Some(event.throwable.get)
+      
+    if reportEvents then output(s"----- GOT EVENT FOR $className $selector: ${event.fullyQualifiedName} ${event.selector} $resultType; throwable=$throwableOpt isSameTest=$isSameTest")
+    
     val eventTestId: AnyRef = if isSameTest then testId else
       val nestedTestId: AnyRef = idGenerator.generateId()
       // Note: reconstruct implied 'started' event
       testResultProcessor.started(
-        TestClassProcessor.testDescriptorInternal(nestedTestId, className, TestClassProcessor.verifyCanNest(selector, event.selector)),
+        TestClassProcessor.testDescriptorInternal(
+          testId = nestedTestId, 
+          className = className,
+          selector = TestClassProcessor.verifyCanNest(selector, event.selector)
+        ),
         TestStartEvent(endTime - event.duration, testId)
       )
       nestedTestId
 
-    TestClassProcessor.toOption(event.throwable).foreach: (throwable: Throwable) =>
-      testResultProcessor.failure(
-        eventTestId,
-        exceptionConverter(throwable.getClass.getName).toTestFailure(throwable)
-      )
+    throwableOpt
+      .orElse:
+        // It is possible, albeit not nice, for the test framework to not populate the `event.throwable`
+        // of the `Failure` event; Scala.js's JUnit does this.
+        // Gradle, on the other hand, treats a test as failed only when it receives a `throwable` for the test -
+        // otherwise, although XML report does record the failure, HTML report does not,
+        // nor does Gradle build fail.
+        // This is why I supply a synthesized event for
+        // *method* failures if one did not come up from the framework.
+        given CanEqual[ResultType, ResultType] = CanEqual.derived
+        if (resultType != ResultType.FAILURE) || isSameTest then None else Some: // TODO use !isMethod() instead of isSameTest?
+          val message = "A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE"
+          if reportEvents then output(s"----- MAKING UP $message")
+          Exception(message)
+      .foreach: (throwable: Throwable) =>
+        testResultProcessor.failure(
+          eventTestId,
+          exceptionConverter(throwable.getClass.getName).toTestFailure(throwable)
+        )
 
     testResultProcessor.completed(
-      eventTestId, 
+      eventTestId,
       TestCompleteEvent(endTime, resultType)
     )
 
+    // Returns true if the test completed
     isSameTest
 
   private def exceptionConverter(throwableClassName: String): ExceptionConverter = throwableClassName match
@@ -265,7 +289,7 @@ final class TestClassProcessor(
     override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
     override def trace(throwable: Throwable): Unit =
       testResultProcessor.failure(
-        testId, 
+        testId,
         TestFailure.fromTestFrameworkFailure(throwable)
       )
 
@@ -298,6 +322,7 @@ object TestClassProcessor:
   // I use a placeholder id and change it to the real one in `FixUpRootTestOutputTestResultProcessor`.
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
   
+  // TODO move to TestFramework?
   final class Factory(
     testTagsFilter: TestTagsFilter,
     runningInIntelliJIdea: Boolean,
@@ -395,9 +420,6 @@ object TestClassProcessor:
     val selectors: String = taskDef.selectors.map(_.toString).mkString("[", ", ", "]")
 
     s"$name selectors=$selectors explicitlySpecified=${taskDef.explicitlySpecified}"
-
-  private def toOption(optionalThrowable: OptionalThrowable): Option[Throwable] =
-    if optionalThrowable.isEmpty then None else Some(optionalThrowable.get)
 
   private def toResultType(status: Status): ResultType =
     // When `scalajs-test-interface` is used instead of the `test-interface`, I get:
