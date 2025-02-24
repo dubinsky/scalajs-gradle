@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{ScalaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/typelevel/scalacheck
 // https://github.com/typelevel/scalacheck/blob/main/core/shared/src/main/scala/org/scalacheck/ScalaCheckFramework.scala
@@ -28,4 +27,7 @@ object ScalaCheck extends FrameworkDescriptor(
   sharedPackages = List("org.scalacheck")
 ) with ScalaDependency.Maker:
   // This framework does not support test tagging.
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
+  override def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] = Seq.empty

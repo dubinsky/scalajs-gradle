@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{ScalaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/com-lihaoyi/utest
 // https://github.com/com-lihaoyi/utest/blob/master/utest/src/utest/runner/Framework.scala
@@ -29,4 +28,7 @@ object UTest extends FrameworkDescriptor(
   sharedPackages = List("utest.runner")
 ) with ScalaDependency.Maker:
   // This framework does not support test tagging.
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] = Seq.empty
+  override def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] = Seq.empty

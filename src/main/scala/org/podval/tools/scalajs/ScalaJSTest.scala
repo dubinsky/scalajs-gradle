@@ -1,14 +1,14 @@
 package org.podval.tools.scalajs
 
+import org.podval.tools.testing.TestEnvironment
 import org.podval.tools.testing.framework.FrameworkDescriptor
-import org.podval.tools.testing.task.{SourceMapper, TestEnvironment}
 import org.podval.tools.util.Files
 import org.scalajs.testing.adapter.TestAdapter
 import sbt.testing.Framework
 import java.io.File
 
 final class ScalaJSTest(common: ScalaJSRunCommon):
-  def sourceMapper: Option[SourceMapper] = common.mainModule
+  def sourceMapper: Option[ClosureCompilerSourceMapper] = common.mainModule
     .sourceMapName
     .map((name: String) => Files.file(common.common.jsDirectory, name))
     .map(ClosureCompilerSourceMapper(_))

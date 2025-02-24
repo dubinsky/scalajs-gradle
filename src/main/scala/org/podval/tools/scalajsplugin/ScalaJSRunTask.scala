@@ -4,7 +4,8 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.{DefaultTask, GradleException}
 import org.podval.tools.node.Node
 import org.podval.tools.scalajs.{ScalaJSRun, ScalaJSRunCommon, ScalaJSTest}
-import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
+import org.podval.tools.testing.{SourceMapper, TestEnvironment}
+import org.podval.tools.testing.task.TestTask
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 trait ScalaJSRunTask extends ScalaJSTask:

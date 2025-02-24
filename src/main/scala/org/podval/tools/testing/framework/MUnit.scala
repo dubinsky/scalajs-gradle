@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{ScalaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala
@@ -36,6 +35,9 @@ object MUnit extends FrameworkDescriptor(
   className = "munit.Framework",
   sharedPackages = List("munit")
 ) with ScalaDependency.Maker:
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
-    FrameworkDescriptor.listOption("--include-tags", testTagsFilter.include) ++
-    FrameworkDescriptor.listOption("--exclude-tags", testTagsFilter.exclude)
+  override def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] =
+    FrameworkDescriptor.listOption("--include-tags", includeTags) ++
+    FrameworkDescriptor.listOption("--exclude-tags", excludeTags)

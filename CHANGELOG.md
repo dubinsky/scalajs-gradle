@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: test tagging for specs2;
 - feat: test tagging for ZIO Test;
 - feat: support test tag inclusions;
+- feat: support JUnit4 assumptions;
 - doc: documented test framework dependencies;
 - doc: documented test framework test tagging;
 - cleanup: ScalaPlatform;
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: exception converters;
 - cleanup: braces;
 - cleanup: docs;
+- cleanup: structure of the `testing` package;
 - chore: dependency updates;
 
 ## [0.4.16] - 2025-02-02

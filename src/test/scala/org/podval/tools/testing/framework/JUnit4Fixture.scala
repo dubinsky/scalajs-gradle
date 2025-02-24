@@ -8,12 +8,13 @@ object JUnit4Fixture extends Fixture(
   testSources = Seq(SourceFile("JUnit4Test",
     s"""import org.junit.Assert.{assertArrayEquals, assertEquals, assertFalse, assertNotNull, assertNotSame, assertNull,
        |  assertSame, assertTrue}
+       |import org.junit.Assume.assumeTrue
+       |import org.junit.Test
+       |import org.junit.experimental.categories.Category
        |import org.hamcrest.MatcherAssert.assertThat
        |import org.hamcrest.CoreMatchers.{allOf, anyOf, both, containsString, equalTo, everyItem, hasItems, not, sameInstance,
        |  startsWith}
        |import org.hamcrest.core.CombinableMatcher
-       |import org.junit.Test
-       |import org.junit.experimental.categories.Category
        |
        |trait IncludedTest
        |trait ExcludedTest
@@ -21,6 +22,7 @@ object JUnit4Fixture extends Fixture(
        |@Test
        |final class JUnit4Test:
        |  @Test def successNotIncluded(): Unit = assertFalse("should be false", false)
+       |  @Test def assumeFalse(): Unit = assumeTrue(false)
        |  @Test @Category(Array(classOf[IncludedTest])) def success(): Unit = assertTrue("should be true", true)
        |  @Test @Category(Array(classOf[IncludedTest])) def failure(): Unit = assertTrue("should be true", false)
        |  @Test @Category(Array(classOf[IncludedTest], classOf[ExcludedTest])) def excluded(): Unit = assertTrue("should be excluded", false)
@@ -59,13 +61,14 @@ object JUnit4Fixture extends Fixture(
       Seq(
         forClass("JUnit4Test",
           passed("successNotIncluded"),
+          skipped("assumeFalse"),
           passed("success"),
           failed("failure"),
           absent("excluded"),
           
-          testCount(13),
+          testCount(14),
           failedCount(1),
-          skippedCount(0)
+          skippedCount(1)
         )
       )
     case FrameworksTest.withTagInclusions =>

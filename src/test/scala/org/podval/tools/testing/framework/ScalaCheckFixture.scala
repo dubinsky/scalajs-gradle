@@ -5,7 +5,7 @@ import org.podval.tools.testing.testproject.{Feature, Fixture, ForClass, SourceF
 
 object ScalaCheckFixture extends Fixture(
   org.podval.tools.testing.framework.ScalaCheck,
-  testSources = Seq(SourceFile("ScalaCheckTest" /*StringSpecification*/,
+  testSources = Seq(SourceFile("ScalaCheckTest",
     s"""import org.scalacheck.Properties
        |import org.scalacheck.Prop.forAll
        |

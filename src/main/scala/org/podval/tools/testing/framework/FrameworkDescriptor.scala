@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{Dependency, ScalaPlatform, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
 // TODO separate record for the base library's group and artifact?
@@ -24,10 +23,12 @@ abstract class FrameworkDescriptor(
   // Note: if isScalaJSSupported, dependency must be a Scala one.
   protected def isScalaJSSupported: Boolean = true
 
+  // TODO use Sets?
   def args(
-    testTagsFilter: TestTagsFilter
+    includeTags: Array[String],
+    excludeTags: Array[String]
   ): Seq[String]
-
+  
   final def newInstance: AnyRef = Class.forName(className)
     .getDeclaredConstructor()
     .newInstance()

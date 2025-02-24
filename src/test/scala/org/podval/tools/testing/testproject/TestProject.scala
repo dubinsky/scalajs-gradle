@@ -204,7 +204,9 @@ object TestProject:
        |  filter {
        |$includeTestNamesString
        |$excludeTestNamesString
-       |    failOnNoMatchingTests = false
+       |  }
+       |  testLogging.lifecycle {
+       |    events("STARTED", "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR")
        |  }
        |  useSbt {
        |    includeCategories = $includeTagsString

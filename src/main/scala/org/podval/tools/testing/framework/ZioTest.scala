@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{ScalaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestFramework.scala
 // Dependencies:
@@ -62,6 +61,9 @@ object ZioTest extends FrameworkDescriptor(
   //  -policy       testTaskPolicy - ignored
   //  -renderer     summary renderer; "intellij" or nothing; when IntelliJ, result code is always 0
   //  -summary      print summary or not: flag
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
-    FrameworkDescriptor.listOfOptions(       "-tags", testTagsFilter.include) ++
-    FrameworkDescriptor.listOfOptions("-ignore-tags", testTagsFilter.exclude)
+  override def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] =
+    FrameworkDescriptor.listOfOptions(       "-tags", includeTags) ++
+    FrameworkDescriptor.listOfOptions("-ignore-tags", excludeTags)

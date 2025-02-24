@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{JavaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/sbt/junit-interface
 // https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitFramework.java
@@ -29,7 +28,10 @@ object JUnit4 extends FrameworkDescriptor(
   // This is a JVM-only test framework
   override protected def isScalaJSSupported: Boolean = false
   
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
+  override def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] =
 //    Seq("--verbosity=3") ++
-    FrameworkDescriptor.listOption("--include-categories", testTagsFilter.include) ++
-    FrameworkDescriptor.listOption("--exclude-categories", testTagsFilter.exclude)
+    FrameworkDescriptor.listOption("--include-categories", includeTags) ++
+    FrameworkDescriptor.listOption("--exclude-categories", excludeTags)

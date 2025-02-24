@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{ScalaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // implementation: https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala
 // runner arguments: https://www.scalatest.org/user_guide/using_the_runner
@@ -64,7 +63,8 @@ object ScalaTest extends FrameworkDescriptor(
   sharedPackages = List("org.scalatest")
 ) with ScalaDependency.Maker:
   override def args(
-    testTagsFilter: TestTagsFilter
+    includeTags: Array[String],
+    excludeTags: Array[String]
   ): Seq[String] =
-    FrameworkDescriptor.listOfOptions("-n", testTagsFilter.include) ++
-    FrameworkDescriptor.listOfOptions("-l", testTagsFilter.exclude)
+    FrameworkDescriptor.listOfOptions("-n", includeTags) ++
+    FrameworkDescriptor.listOfOptions("-l", excludeTags)

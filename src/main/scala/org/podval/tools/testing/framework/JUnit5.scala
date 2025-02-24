@@ -1,7 +1,6 @@
 package org.podval.tools.testing.framework
 
 import org.podval.tools.build.{JavaDependency, Version}
-import org.podval.tools.testing.worker.TestTagsFilter
 
 // https://github.com/sbt/sbt-jupiter-interface
 // https://github.com/sbt/sbt-jupiter-interface/blob/master/src/library/src/main/java/net/aichler/jupiter/api/JupiterFramework.java
@@ -20,6 +19,9 @@ object JUnit5 extends FrameworkDescriptor(
   // TODO https://github.com/dubinsky/scalajs-gradle/issues/38
   override protected def isJvmSupported: Boolean = false
 
-  override def args(testTagsFilter: TestTagsFilter): Seq[String] =
-    FrameworkDescriptor.listOption("--include-tags", testTagsFilter.include) ++
-    FrameworkDescriptor.listOption("--exclude-tags", testTagsFilter.exclude)
+  override def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] =
+    FrameworkDescriptor.listOption("--include-tags", includeTags) ++
+    FrameworkDescriptor.listOption("--exclude-tags", excludeTags)

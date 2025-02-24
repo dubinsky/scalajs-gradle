@@ -12,8 +12,9 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
-import org.podval.tools.testing.processors.{NonForkingTestClassProcessor, TaskDefTestSpecEncodingTestClassProcessor}
-import org.podval.tools.testing.results.{FixUpRootTestOutputTestResultProcessor, SourceMappingTestResultProcessor,
+import org.podval.tools.testing.SourceMapper
+import org.podval.tools.testing.processor.{NonForkingTestClassProcessor, TaskDefTestSpecEncodingTestClassProcessor}
+import org.podval.tools.testing.result.{FixUpRootTestOutputTestResultProcessor, SourceMappingTestResultProcessor,
   TracingTestResultProcessor}
 
 class TestExecuter(

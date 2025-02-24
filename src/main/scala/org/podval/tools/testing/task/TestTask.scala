@@ -14,6 +14,7 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.Gradle
+import org.podval.tools.testing.{SourceMapper, TestEnvironment}
 import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.{Field, Method}
@@ -102,7 +103,7 @@ object TestTask:
     useTestFramework.invoke(task, value)
 
   // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
-  def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
+  private def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
     var result: Boolean = false
 
     // TODO Gradle PR: figure this out from the environment - or introduce method to avoid the use of reflection

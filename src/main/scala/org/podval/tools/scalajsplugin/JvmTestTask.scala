@@ -1,8 +1,9 @@
 package org.podval.tools.scalajsplugin
 
 import org.podval.tools.build.GradleClassPath
+import org.podval.tools.testing.{SourceMapper, TestEnvironment}
 import org.podval.tools.testing.framework.FrameworkDescriptor
-import org.podval.tools.testing.task.{SourceMapper, TestEnvironment, TestTask}
+import org.podval.tools.testing.task.TestTask
 import sbt.testing.Framework
 import java.io.File
 
