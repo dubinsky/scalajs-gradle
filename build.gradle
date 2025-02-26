@@ -36,7 +36,7 @@ dependencies {
   compileOnly "org.scalatest:scalatest_3:$version_framework_scalatest"
   compileOnly "org.scalacheck:scalacheck_3:$version_framework_scalacheck"
   compileOnly "com.lihaoyi:utest_3:$version_framework_utest"
-  compileOnly "org.specs2:specs2-core_3:$version_framework_spec2"
+  compileOnly "org.specs2:specs2-core_3:$version_framework_specs2"
   compileOnly "org.scalameta:munit_3:$version_framework_munit"
   compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.15"
 

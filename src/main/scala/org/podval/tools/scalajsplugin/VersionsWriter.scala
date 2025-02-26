@@ -38,10 +38,11 @@ object VersionsWriter:
 
     "junit" -> framework.JUnit4.jUnitVersion,
     "framework-junit4" -> framework.JUnit4.versionDefault,
+    "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
     "framework-munit" -> framework.MUnit.versionDefault,
     "framework-scalacheck" -> framework.ScalaCheck.versionDefault,
     "framework-scalatest" -> framework.ScalaTest.versionDefault,
-    "framework-spec2" -> framework.Specs2.versionDefault,
+    "framework-specs2" -> framework.Specs2.versionDefault,
     "framework-utest" -> framework.UTest.versionDefault,
     "framework-zio-test" -> framework.ZioTest.versionDefault
   )

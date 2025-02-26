@@ -15,10 +15,11 @@
 :version-node: 16.19.1
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
+:version-framework-junit4-scalajs: 1.18.2
 :version-framework-munit: 1.1.0
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalatest: 3.2.19
-:version-framework-spec2: 5.5.8
+:version-framework-specs2: 5.5.8
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.15
 // INCLUDED ATTRIBUTES
@@ -43,6 +44,7 @@ Plugin integrates with:
 
 - Gradle test task configuration;
 - Gradle test reporting;
+- IntelliJ Idea test running;
 - IntelliJ Idea test reporting.
 
 Plugin works with:
@@ -140,19 +142,21 @@ the ScalaTest one ;)
 
 == Dependencies
 
-Plugin automatically adds certain dependencies to various Gradle configurations if they are not configured explicitly;
-one of those configuration is `scalajs` - configuration that plugin creates.
+Plugin automatically adds certain dependencies to various Gradle configurations
+if they are not configured explicitly;
+one of those configurations is `scalajs` - configuration that plugin creates.
 
 Scala.js dependencies are added only if Scala.js is enabled.
+
 If `scalajs-library` dependency is specified explicitly,
 plugin uses the same version for the Scala.js dependencies that it adds.
 
 When Scala.js is enabled, artifact is suffixed with `_sjs1`;
 for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalatest_3`.
-
 For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
-
 Same rules apply to the test framework dependencies listed in the <<_test_frameworks>> section.
+
+In the examples below, latest versions of all dependencies are used.
 
 [%autowidth]
 |===
@@ -221,8 +225,7 @@ of the Gradle Scala Plugin on how to configure desired version of Zinc.
 Zinc compiled for Scala 2.12 is incompatible with the plugin,
 but Gradle anyway requires Zinc compiled for Scala 2.13 since version 7.5.
 
-=== Scala 3
-Example with all dependencies listed for Scala 3:
+=== Scala 3 with Scala.js
 
 [source,groovy,subs="+attributes"]
 ----
@@ -231,6 +234,8 @@ final String scala2versionMinor = '{version-scala2-minor}'
 final String scalaJsVersion     = '{version-scalajs}'
 
 dependencies {
+  zinc "org.scala-sbt:zinc_$scala2versionMinor:{version-zinc}"
+
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
@@ -242,21 +247,44 @@ dependencies {
 
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
-  // a test framework:
-  testImplementation "org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}"
+  // test framework(s) you use in tests:
+  /* JUnit4.js */  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
+  /* mUnit */      testImplementation 'org.scalameta:munit_sjs1_3:{version-framework-munit}'
+  /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_sjs1_3:{version-framework-scalacheck}'
+  /* ScalaTest */  testImplementation 'org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}'
+  /* specs2 */     testImplementation 'org.specs2:specs2-core_sjs1_3:{version-framework-specs2}'
+  /* uTest */      testImplementation 'com.lihaoyi:utest_sjs1_3:{version-framework-utest}'
 }
 ----
 
-And - with only the required dependencies:
+Besides the test framework dependencies, only the Scala library dependency
+`"org.scala-lang:scala3-library_3:$scalaVersion"` is required.
+
+=== Scala 3 without Scala.js
 
 [source,groovy,subs="+attributes"]
 ----
+final String scalaVersion       = '{version-scala}'
+final String scala2versionMinor = '{version-scala2-minor}'
+
 dependencies {
-  implementation "org.scala-lang:scala3-library_3:{version-scala}"
-  // a test framework:
-  testImplementation "org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}"
+  zinc "org.scala-sbt:zinc_$scala2versionMinor:{version-zinc}"
+
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+
+  // test framework(s) you use in tests:
+  /* JUnit4 */     testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
+  /* mUnit */      testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
+  /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_3:{version-framework-scalacheck}'
+  /* ScalaTest */  testImplementation 'org.scalatest:scalatest_3:{version-framework-scalatest}'
+  /* specs2 */     testImplementation 'org.specs2:specs2-core_3:{version-framework-specs2}'
+  /* uTest */      testImplementation 'com.lihaoyi:utest_3:{version-framework-utest}'
+  /* ZIO Test */   testImplementation 'dev.zio:zio-test-sbt_3:{version-framework-zio-test}'
 }
 ----
+
+Besides the test framework dependencies, only the Scala library dependency
+`"org.scala-lang:scala3-library_3:$scalaVersion"` is required.
 
 === Scala 2
 Example with explicit dependencies for Scala 2:
