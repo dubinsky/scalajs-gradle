@@ -8,9 +8,11 @@ object FingerprintWriter:
     case subclass : SubclassFingerprint  => s"false:${subclass.superclassName}:${subclass .isModule}:${subclass.requireNoArgConstructor}"
 
   def read(string: String): Fingerprint =
-    val parts: Array[String] = string.split(':')
-    val isAnnotated: Boolean = parts(0).toBoolean
+    val parts: Array[String] = string.split(":")
+    val isAnnotated: Boolean = parts(0) == "true"
+    val name: String = parts(1)
+    val isModule: Boolean = parts(2) == "true"
     if isAnnotated
-    then AnnotatedFingerprintImpl(annotationName = parts(1), isModule = parts(2).toBoolean)
-    else SubclassFingerprintImpl (superclassName = parts(1), isModule = parts(2).toBoolean, requireNoArgConstructor = parts(3).toBoolean)
+    then AnnotatedFingerprintImpl(annotationName = name, isModule = isModule)
+    else SubclassFingerprintImpl (superclassName = name, isModule = isModule, requireNoArgConstructor = parts(3) == "true")
   

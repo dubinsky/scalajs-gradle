@@ -16,12 +16,23 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   versionDefault = Version("1.18.2"), // Note: Scala.js version!
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
-) with ScalaDependency.MakerScala2Jvm:
-  // This is a Scala.js-only test framework
-  override protected def isJvmSupported: Boolean = false
-
-  // This framework does not support test tagging.
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] = Seq.empty
+  tagOptionStyle = OptionStyle.NotSupported,
+  includeTagsOption = "",
+  excludeTagsOption = "",
+  isJvmSupported = false, // This is a Scala.js-only test framework
+  // TODO on Scala 2.13, I get:
+  //   Error while loading test class org.podval.tools.test.JUnit4ScalaJSTest failed:
+  //   java.lang.ClassNotFoundException: Cannot find org.podval.tools.test.JUnit4ScalaJSTest$scalajs$junit$bootstrapper$
+  //     at org.scalajs.junit.JUnitTask.loadBootstrapper(main.js:13275)
+  //     at org.scalajs.junit.JUnitTask.execute(main.js:13365)
+  //     at <jscode>.{anonymous}()(main.js:6610)
+  //     at scala.scalajs.runtime.AnonFunction1.apply(main.js:18956)
+  //     at <jscode>.{anonymous}()(main.js:7834)
+  //     at scala.scalajs.runtime.AnonFunction1.apply(main.js:18956)
+  //     at scala.concurrent.impl.Promise$Transformation.run(main.js:30742)
+  //     at <jscode>.{anonymous}()(main.js:20970)
+  //     at <jscode>.processTicksAndRejections(node:internal/process/task_queues:96)
+  // but on Scala 3 everything works...
+  // What is going on?
+  isScala2Supported = false
+) with ScalaDependency.MakerScala2Jvm

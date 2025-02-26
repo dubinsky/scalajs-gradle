@@ -14,8 +14,8 @@ import sbt.testing.{Event, NestedTestSelector, Runner, Selector, Task, TaskDef, 
 import scala.util.control.NonFatal
 
 final class WorkerTestClassProcessor(
-  includeTags: Set[String],
-  excludeTags: Set[String],
+  includeTags: Array[String],
+  excludeTags: Array[String],
   runningInIntelliJIdea: Boolean,
   logLevelEnabled: LogLevel,
   idGenerator: IdGenerator[?],
@@ -122,7 +122,7 @@ final class WorkerTestClassProcessor(
    * Completes any pending or asynchronous processing. Blocks until all processing is complete.
    */
   override def stop(): Unit =
-    for (frameworkName: String, runner: Runner) <- runners.toSeq do
+    for (frameworkName: String, runner: Runner) <- runners do
       val summary: String = runner.done()
       output(message = s"$frameworkName summary:\n$summary")
 

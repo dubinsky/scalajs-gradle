@@ -6,9 +6,9 @@ import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile
 object Spec2Fixture extends Fixture(
   framework = org.podval.tools.test.framework.Specs2,
   testSources = Seq(SourceFile("Spec2Test",
-    s"""import org.specs2.*
+    s"""import org.specs2._
        |
-       |final class Spec2Test extends Specification:
+       |final class Spec2Test extends Specification {
        |  def is = s2\"\"\"
        |
        |  This is a specification to check the 'Hello world' string
@@ -30,6 +30,7 @@ object Spec2Fixture extends Fixture(
        |    def e2 = "Hello world" must startWith("Hello")
        |    def e3 = "Hello world" must endWith("world")
        |    def e4 = "Hello world" must endWith("xxx")
+       |}
        |""".stripMargin
   ))
 ):

@@ -21,17 +21,10 @@ object JUnit4 extends FrameworkDescriptor(
   artifact = "junit-interface",
   versionDefault = Version("0.13.3"),
   className = "com.novocode.junit.JUnitFramework",
-  sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
+  sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
+  tagOptionStyle = OptionStyle.ListWithEq, 
+  includeTagsOption = "--include-categories", 
+  excludeTagsOption = "--exclude-categories",
+  isScalaJSSupported = false // This is a JVM-only test framework
 ) with JavaDependency.Maker:
   def jUnitVersion: Version = Version("4.13.2")
-
-  // This is a JVM-only test framework
-  override protected def isScalaJSSupported: Boolean = false
-  
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] =
-//    Seq("--verbosity=3") ++
-    FrameworkDescriptor.listOption("--include-categories", includeTags) ++
-    FrameworkDescriptor.listOption("--exclude-categories", excludeTags)

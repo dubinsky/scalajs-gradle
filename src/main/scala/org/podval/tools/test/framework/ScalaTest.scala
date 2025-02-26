@@ -60,11 +60,8 @@ object ScalaTest extends FrameworkDescriptor(
   artifact = "scalatest",
   versionDefault = Version("3.2.19"),
   className = "org.scalatest.tools.Framework",
-  sharedPackages = List("org.scalatest")
-) with ScalaDependency.Maker:
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] =
-    FrameworkDescriptor.listOfOptions("-n", includeTags) ++
-    FrameworkDescriptor.listOfOptions("-l", excludeTags)
+  sharedPackages = List("org.scalatest"),
+  tagOptionStyle = OptionStyle.OptionPerValue,
+  includeTagsOption = "-n",
+  excludeTagsOption = "-l"
+) with ScalaDependency.Maker

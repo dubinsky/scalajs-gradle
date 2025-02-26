@@ -3,6 +3,14 @@ package org.podval.tools.test.framework
 import org.podval.tools.build.{ScalaDependency, Version}
 
 // https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestFramework.scala
+// https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala
+//  -t            testSearchTerm list
+//  -tags         list
+//  -ignore-tags  list
+//  -policy       testTaskPolicy - ignored
+//  -renderer     summary renderer; "intellij" or nothing; when IntelliJ, result code is always 0
+//  -summary      print summary or not: flag
+
 // Dependencies:
 // Scala:
 // dev.zio:zio-test-sbt_3
@@ -49,21 +57,10 @@ object ZioTest extends FrameworkDescriptor(
   artifact = "zio-test-sbt",
   versionDefault = Version("2.1.16"),
   className = "zio.test.sbt.ZTestFramework",
-  sharedPackages = List("zio.test.sbt")
-) with ScalaDependency.Maker:
+  sharedPackages = List("zio.test.sbt"),
+  tagOptionStyle = OptionStyle.OptionPerValue,
+  includeTagsOption = "-tags",
+  excludeTagsOption = "-ignore-tags",
   // TODO https://github.com/dubinsky/scalajs-gradle/issues/37
-  override def isScalaJSSupported: Boolean = false
-  
-  // https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala
-  //  -t            testSearchTerm list
-  //  -tags         list
-  //  -ignore-tags  list
-  //  -policy       testTaskPolicy - ignored
-  //  -renderer     summary renderer; "intellij" or nothing; when IntelliJ, result code is always 0
-  //  -summary      print summary or not: flag
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] =
-    FrameworkDescriptor.listOfOptions(       "-tags", includeTags) ++
-    FrameworkDescriptor.listOfOptions("-ignore-tags", excludeTags)
+  isScalaJSSupported = false
+) with ScalaDependency.Maker

@@ -15,17 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: test tagging for ZIO Test;
 - feat: support test tag inclusions;
 - feat: support JUnit4 assumptions;
+- feat: running tests on Scala 2.13 JVM and JS;
+- feat: running tests on Scala 2.12 JS;
 - doc: documented test framework dependencies;
 - doc: documented test framework test tagging;
+- cleanup: ScalaOnlyTest re-absorbed and removed;
 - cleanup: ScalaPlatform;
 - cleanup: Dependency.Maker;
+- cleanup: OptionStyle;
+- cleanup: FrameworkDescriptor;
 - cleanup: Scala.js actions;
-- cleanup: ScalaOnlyTest re-absorbed and removed;
-- cleanup: tests;
-- cleanup: exception converters;
 - cleanup: braces;
-- cleanup: docs;
-- cleanup: structure of the `testing` package;
+- cleanup: documentation;
+- cleanup: `testing` package (renamed `test`);
 - chore: dependency updates;
 
 ## [0.4.16] - 2025-02-02

@@ -11,17 +11,11 @@ object JUnit5 extends FrameworkDescriptor(
   artifact = "jupiter-interface",
   versionDefault = Version("0.13.3"),
   className = "com.github.sbt.junit.jupiter.api.JupiterFramework",
-  sharedPackages = List("com.github.sbt.junit.jupiter.api", "org.junit")
-) with JavaDependency.Maker:
-  // This is a JVM-only test framework
-  override protected def isScalaJSSupported: Boolean = false
-
+  sharedPackages = List("com.github.sbt.junit.jupiter.api", "org.junit"),
+  tagOptionStyle = OptionStyle.ListWithEq,
+  includeTagsOption = "--include-tags",
+  excludeTagsOption = "--exclude-tags",
+  isScalaJSSupported = false, // This is a JVM-only test framework
   // TODO https://github.com/dubinsky/scalajs-gradle/issues/38
-  override protected def isJvmSupported: Boolean = false
-
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] =
-    FrameworkDescriptor.listOption("--include-tags", includeTags) ++
-    FrameworkDescriptor.listOption("--exclude-tags", excludeTags)
+  isJvmSupported = false
+) with JavaDependency.Maker

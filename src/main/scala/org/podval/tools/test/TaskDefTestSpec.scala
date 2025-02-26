@@ -18,7 +18,7 @@ final class TaskDefTestSpec(
   // when not forked, the original instance is used.
   def write: String =
     val frameworkName: String = TaskDefTestSpec.frameworkName(frameworkOrName)
-    s"$frameworkName#${TaskDefWriter.write(taskDef)}"
+    s"$frameworkName@${TaskDefWriter.write(taskDef)}"
 
 object TaskDefTestSpec:
   type FrameworkOrName = Either[String, Framework]
@@ -28,16 +28,16 @@ object TaskDefTestSpec:
   def get(testClassRunInfo: TestClassRunInfo): TaskDefTestSpec = testClassRunInfo match
     case taskDefTestSpec: TaskDefTestSpec => taskDefTestSpec
     case _ =>
-      val parts: Array[String] = testClassRunInfo.getTestClassName.split("#")
+      val parts: Array[String] = testClassRunInfo.getTestClassName.split("@")
       TaskDefTestSpec(
-        frameworkOrName = Left(parts.head),
-        taskDef = TaskDefWriter.read(parts.tail.mkString("#"))
+        frameworkOrName = Left(parts(0)),
+        taskDef = TaskDefWriter.read(parts(1))
       )
 
   def makeRunner(
     frameworkOrName: FrameworkOrName,
-    includeTags: Set[String],
-    excludeTags: Set[String]
+    includeTags: Array[String],
+    excludeTags: Array[String]
   ): Runner =
     val framework: Framework = frameworkOrName match
       case Right(framework) =>
@@ -45,14 +45,17 @@ object TaskDefTestSpec:
         framework
       case Left(frameworkName) =>
         // forking: instantiate
-        FrameworkDescriptor(frameworkName)
+        FrameworkDescriptor
+          .forName(frameworkName)
           .newInstance
           .asInstanceOf[Framework]
 
-    val args: Seq[String] = FrameworkDescriptor(framework.name).args(
-      includeTags = includeTags,
-      excludeTags = excludeTags
-    )
+    val args: Seq[String] = FrameworkDescriptor
+      .forName(framework.name)
+      .args(
+        includeTags = includeTags,
+        excludeTags = excludeTags
+      )
 
     // Note: we are running the runner in *this* JVM, so remote arguments are not used?
     val remoteArgs: Seq[String] = Seq.empty

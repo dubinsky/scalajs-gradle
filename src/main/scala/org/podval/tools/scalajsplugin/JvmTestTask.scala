@@ -39,4 +39,6 @@ abstract class JvmTestTask extends TestTask:
 
         result
 
-      FrameworkDescriptor.jvmSupported.flatMap(maybeInstantiate)
+      FrameworkDescriptor
+        .jvmSupported
+        .flatMap(maybeInstantiate)

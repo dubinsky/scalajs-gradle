@@ -10,7 +10,7 @@ object ScalaTestFixture extends Fixture(
       s"""import org.scalatest.flatspec.AnyFlatSpec
          |import org.scalatest.matchers.should.Matchers
          |
-         |final class ScalaTestTest extends AnyFlatSpec, Matchers:
+         |final class ScalaTestTest extends AnyFlatSpec with Matchers {
          |  object Include extends org.scalatest.Tag("org.podval.tools.test.IncludedTest")
          |  object Exclude extends org.scalatest.Tag("org.podval.tools.test.ExcludedTest")
          |
@@ -24,15 +24,14 @@ object ScalaTestFixture extends Fixture(
          |    val sum = 1 + 1
          |    assert(sum === 2)
          |  }
+         |}
          |""".stripMargin
     ),
     SourceFile("StackSpec",
       s"""import org.scalatest.flatspec.AnyFlatSpec
          |import scala.collection.mutable
          |
-         |// Note: from the ScalaTest documentation
          |class StackSpec extends AnyFlatSpec {
-         |
          |  "A Stack" should "pop values in last-in-first-out order" in {
          |    val stack = new mutable.Stack[Int]
          |    stack.push(1)

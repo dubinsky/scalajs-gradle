@@ -6,11 +6,11 @@ import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile
 object ZioTestFixture extends Fixture(
   framework = org.podval.tools.test.framework.ZioTest,
   testSources = Seq(SourceFile("ZIOTestTest",
-    s"""import zio.test.*
+    s"""import zio.test._
        |import zio.Scope
        |
-       |object ZIOTestTest extends ZIOSpecDefault:
-       |  override def spec: Spec[TestEnvironment & Scope, Any] = suite("some suite")(
+       |object ZIOTestTest extends ZIOSpecDefault {
+       |  override def spec: Spec[TestEnvironment with Scope, Any] = suite("some suite")(
        |    test("successNotIncluded") { assertTrue(1 == 1) },
        |    test("success") { assert(1)(Assertion.equalTo(1)) } @@ TestAspect.tag("org.podval.tools.test.IncludedTest"),
        |    test("failure") { assert(1)(Assertion.equalTo(2)) } @@ TestAspect.tag("org.podval.tools.test.IncludedTest"),
@@ -20,6 +20,7 @@ object ZioTestFixture extends Fixture(
        |    ),
        |    test("failing test assertTrue") { val one = 1; assertTrue(one == 2) },
        |  )
+       |}
        |""".stripMargin
   ))
 ):

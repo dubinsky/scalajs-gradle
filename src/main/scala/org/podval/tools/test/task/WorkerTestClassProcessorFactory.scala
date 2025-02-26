@@ -21,8 +21,11 @@ final class WorkerTestClassProcessorFactory(
     actorFactory: ActorFactory,
     clock: Clock
   ): WorkerTestClassProcessor = WorkerTestClassProcessor(
-    includeTags = includeTags.toSet,
-    excludeTags = excludeTags.toSet,
+    // Converting arrays to sets here with `.toSet` results in
+    // java.lang.NoSuchMethodError: 'scala.collection.mutable.ArraySeq$ofRef scala.Predef$.wrapRefArray(java.lang.Object[])'
+    // on Scala 2.12.
+    includeTags = includeTags,
+    excludeTags = excludeTags,
     runningInIntelliJIdea = runningInIntelliJIdea,
     logLevelEnabled = logLevelEnabled,
     idGenerator = idGenerator,

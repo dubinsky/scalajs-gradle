@@ -33,16 +33,14 @@ import org.podval.tools.build.{ScalaDependency, Version}
 
 object Specs2 extends FrameworkDescriptor(
   name = "specs2",
-  displayName = "Spec2",
+  displayName = "Specs2",
   group = "org.specs2",
   artifact = "specs2-core",
   versionDefault = Version("5.5.8"),
   className = "org.specs2.runner.Specs2Framework",
-  sharedPackages = List("org.specs2.runner")
-) with ScalaDependency.Maker:
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] =
-    FrameworkDescriptor.listOptionNoEq("include", includeTags) ++
-    FrameworkDescriptor.listOptionNoEq("exclude", excludeTags)
+  sharedPackages = List("org.specs2.runner"),
+  tagOptionStyle = OptionStyle.ListWithoutEq,
+  includeTagsOption = "include",
+  excludeTagsOption = "exclude",
+  versionDefaultScala2 = Some(Version("4.20.9"))
+) with ScalaDependency.Maker

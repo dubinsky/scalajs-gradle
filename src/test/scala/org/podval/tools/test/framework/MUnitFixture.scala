@@ -6,7 +6,7 @@ import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile
 object MUnitFixture extends Fixture(
   framework = org.podval.tools.test.framework.MUnit,
   testSources = Seq(SourceFile("MUnitTest",
-    s"""class MUnitTest extends munit.FunSuite:
+    s"""class MUnitTest extends munit.FunSuite {
        |  val include = new munit.Tag("org.podval.tools.test.IncludedTest")
        |  val exclude = new munit.Tag("org.podval.tools.test.ExcludedTest")
        |
@@ -14,6 +14,7 @@ object MUnitFixture extends Fixture(
        |  test("success".tag(include)) { assertEquals(2, 2) }
        |  test("failure".tag(include)) { assertEquals(42, 43) }
        |  test("excluded".tag(include).tag(exclude)) {}
+       |}
        |""".stripMargin
   ))
 ):

@@ -25,10 +25,9 @@ object UTest extends FrameworkDescriptor(
   artifact = "utest",
   versionDefault = Version("0.8.5"),
   className = "utest.runner.Framework",
-  sharedPackages = List("utest.runner")
-) with ScalaDependency.Maker:
-  // This framework does not support test tagging.
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] = Seq.empty
+  sharedPackages = List("utest.runner"),
+  tagOptionStyle = OptionStyle.NotSupported, 
+  includeTagsOption = "",
+  excludeTagsOption = ""
+) with ScalaDependency.Maker
+

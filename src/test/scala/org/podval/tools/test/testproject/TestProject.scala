@@ -110,10 +110,10 @@ object TestProject:
           case ScalaBackend.JS(nodeVersion) => Some(nodeVersion)
           case _ => None,
         scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
-        zincDependency = Sbt.Zinc.dependencyWithVersion(platform),
+        zincDependency = Sbt.Zinc.dependencyWithVersion(platform, Sbt.Zinc.versionDefault),
         frameworks = frameworks.map((framework: FrameworkDescriptor) =>
           require(framework.isSupported(platform))
-          framework.dependencyWithVersion(platform)
+          framework.dependencyWithVersion(platform, framework.versionDefault(platform))
         ),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,

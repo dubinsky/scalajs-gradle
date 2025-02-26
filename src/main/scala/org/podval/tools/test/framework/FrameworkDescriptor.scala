@@ -5,28 +5,40 @@ import org.podval.tools.build.{Dependency, ScalaPlatform, Version}
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
 // TODO introduce optional backend-dependent dependency for the underlying framework.
 abstract class FrameworkDescriptor(
-  val name: String,
-  val displayName: String,
-  override val group: String,
-  override val artifact: String,
-  override val versionDefault: Version,
-  val className: String,
-  val sharedPackages: List[String]
-) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
-  final def isSupported(platform: ScalaPlatform): Boolean =
-    if platform.backend.isJS
-    then isScalaJSSupported
-    else isJvmSupported
-  
-  protected def isJvmSupported: Boolean = true
-
+  final val name: String,
+  final val displayName: String,
+  final override val group: String,
+  final override val artifact: String,
+  final override val versionDefault: Version,
+  final val className: String,
+  final val sharedPackages: List[String],
+  tagOptionStyle: OptionStyle,
+  includeTagsOption: String,
+  excludeTagsOption: String,
+  isScala2Supported: Boolean = true,
+  final val versionDefaultScala2: Option[Version] = None,
+  final val isJvmSupported: Boolean = true,
   // Note: if isScalaJSSupported, dependency must be a Scala one.
-  protected def isScalaJSSupported: Boolean = true
-
-  def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String]
+  final val isScalaJSSupported: Boolean = true
+) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
+  final def versionDefault(platform: ScalaPlatform): Version =
+    if platform.version.isScala3
+    then versionDefault
+    else versionDefaultScala2.getOrElse(versionDefault)
+  
+  final def isSupported(platform: ScalaPlatform): Boolean = 
+    (platform.version.isScala3 || isScala2Supported) && (
+      if platform.backend.isJS
+      then isScalaJSSupported
+      else isJvmSupported
+    )
+  
+  final def args(
+    includeTags: Array[String],
+    excludeTags: Array[String]
+  ): Seq[String] =
+    tagOptionStyle.toStrings(includeTagsOption, includeTags) ++
+    tagOptionStyle.toStrings(excludeTagsOption, excludeTags)
   
   final def newInstance: AnyRef = Class.forName(className)
     .getDeclaredConstructor()
@@ -48,22 +60,6 @@ object FrameworkDescriptor:
   def jvmSupported    : List[FrameworkDescriptor] = all.filter(_.isJvmSupported    )
   def scalaJSSupported: List[FrameworkDescriptor] = all.filter(_.isScalaJSSupported)
 
-  def apply(name: String): FrameworkDescriptor = all
+  def forName(name: String): FrameworkDescriptor = all
     .find(_.name == name)
     .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))
-
-  def listOption(name: String, values: Set[String]): Seq[String] =
-    if values.isEmpty
-    then Seq.empty
-    else
-      val valuesStr: String = values.mkString(",")
-      Seq(s"$name=$valuesStr")
-
-  def listOptionNoEq(name: String, values: Set[String]): Seq[String] =
-    if values.isEmpty
-    then Seq.empty
-    else Seq(name, values.mkString(","))
-
-  def listOfOptions(name: String, values: Set[String]): Seq[String] =
-    values.toIndexedSeq.flatMap((value: String) => Seq(name, value))
-    

@@ -33,11 +33,8 @@ object MUnit extends FrameworkDescriptor(
   artifact = "munit",
   versionDefault = Version("1.1.0"),
   className = "munit.Framework",
-  sharedPackages = List("munit")
-) with ScalaDependency.Maker:
-  override def args(
-    includeTags: Set[String],
-    excludeTags: Set[String]
-  ): Seq[String] =
-    FrameworkDescriptor.listOption("--include-tags", includeTags) ++
-    FrameworkDescriptor.listOption("--exclude-tags", excludeTags)
+  sharedPackages = List("munit"),
+  tagOptionStyle = OptionStyle.ListWithEq, 
+  includeTagsOption = "--include-tags", 
+  excludeTagsOption = "--exclude-tags"
+) with ScalaDependency.Maker

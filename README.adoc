@@ -20,6 +20,7 @@
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.5.8
+:version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.16
 // INCLUDED ATTRIBUTES
@@ -156,64 +157,58 @@ for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalate
 For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
 Same rules apply to the test framework dependencies listed in the <<_test_frameworks>> section.
 
+Besides the test framework dependencies, only the Scala library dependency
+`"org.scala-lang:scala3-library_3:$scalaVersion"` is required.
+
 In the examples below, latest versions of all dependencies are used.
 
 [%autowidth]
 |===
-|Name |goup:artifact |Version |Configuration |Notes
-
-|SBT Test Interface
-|org.scala-sbt:test-interface
-|{version-sbt-test-interface}
-|testImplementation
-|only when Scala.js is disabled
-
-|Scala.js compiler
-|org.scala-js:scalajs-compiler
-|Scala.js version
-|scalaCompilerPlugins
-|only for Scala 2
-
-|Scala.js-compiled Scala Library
-|org.scala-js:scalajs-library
-|Scala 3 version
-|implementation
-|only for Scala 3
-
-|Scala.js Library
-|org.scala-js:scalajs-library
-|{version-scalajs}
-|implementation
-|
-
-|Scala.js-compiled DOM manipulation Library
-|org.scala-js:scalajs-dom
-|{version-scalajs-dom}
-|implementation
-|
-
-|Scala.js Test Bridge
-|org.scala-js:scalajs-test-bridge
-|Scala.js version
-|testImplementation
-|
+|Name |goup:artifact |Configuration |Notes
 
 |Scala.js Linker
 |org.scala-js:scalajs-linker
-|Scala.js version
 |scalajs
 |
 
 |Scala.js Node.js Environment
 |org.scala-js:scalajs-env-jsdom-nodejs
-|{version-scalajs-env-jsdom-nodejs}
 |scalajs
 |
 
 |Scala.js Test Adapter
 |org.scala-js:scalajs-sbt-test-adapter
-|Scala.js version
 |scalajs
+|
+
+|Scala.js Compiler
+|org.scala-js:scalajs-compiler
+|scalaCompilerPlugins
+|only for Scala 2
+
+|Scala.js-compiled Scala Library
+|org.scala-lang:scala3-library_sjs1
+|implementation
+|only for Scala 3
+
+|Scala.js Library
+|org.scala-js:scalajs-library
+|implementation
+|
+
+|Scala.js-compiled DOM Library
+|org.scala-js:scalajs-dom_sjs1
+|implementation
+|
+
+|SBT Test Interface
+|org.scala-sbt:test-interface
+|testImplementation
+|only when Scala.js is disabled
+
+|Scala.js Test Bridge
+|org.scala-js:scalajs-test-bridge
+|testImplementation
 |
 
 |===
@@ -236,29 +231,26 @@ final String scalaJsVersion     = '{version-scalajs}'
 dependencies {
   zinc "org.scala-sbt:zinc_$scala2versionMinor:{version-zinc}"
 
+  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
+
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
   implementation "org.scala-js:scalajs-dom_sjs1_3:{version-scalajs-dom}"
 
-  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
-  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
-  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
-
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // Test framework(s) you use:
   /* JUnit4.js */  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
-  /* mUnit */      testImplementation 'org.scalameta:munit_sjs1_3:{version-framework-munit}'
+  /* MUnit */      testImplementation 'org.scalameta:munit_sjs1_3:{version-framework-munit}'
   /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_sjs1_3:{version-framework-scalacheck}'
   /* ScalaTest */  testImplementation 'org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}'
   /* specs2 */     testImplementation 'org.specs2:specs2-core_sjs1_3:{version-framework-specs2}'
   /* uTest */      testImplementation 'com.lihaoyi:utest_sjs1_3:{version-framework-utest}'
 }
 ----
-
-Besides the test framework dependencies, only the Scala library dependency
-`"org.scala-lang:scala3-library_3:$scalaVersion"` is required.
 
 === Scala 3 without Scala.js
 
@@ -272,9 +264,11 @@ dependencies {
 
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
+  testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
+
   // Test framework(s) you use:
   /* JUnit4 */     testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
-  /* mUnit */      testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
+  /* MUnit */      testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
   /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_3:{version-framework-scalacheck}'
   /* ScalaTest */  testImplementation 'org.scalatest:scalatest_3:{version-framework-scalatest}'
   /* specs2 */     testImplementation 'org.specs2:specs2-core_3:{version-framework-specs2}'
@@ -283,11 +277,7 @@ dependencies {
 }
 ----
 
-Besides the test framework dependencies, only the Scala library dependency
-`"org.scala-lang:scala3-library_3:$scalaVersion"` is required.
-
-=== Scala 2
-Example with explicit dependencies for Scala 2:
+=== Scala 2 with Scala.js
 
 [source,groovy,subs="+attributes"]
 ----
@@ -296,9 +286,7 @@ final String scala2versionMinor = '{version-scala2-minor}'
 final String scalaJsVersion     = '{version-scalajs}'
 
 dependencies {
-  implementation "org.scala-lang:scala-library:$scalaVersion"
-  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_2.13:{version-scalajs-dom}"
+  zinc "org.scala-sbt:zinc_$scala2versionMinor:{version-zinc}"
 
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -306,21 +294,42 @@ dependencies {
 
   scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
 
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-dom_sjs1_$scala2versionMinor:{version-scalajs-dom}"
+
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
-  // for ScalaTest tests:
-  testImplementation "org.scalatest:scalatest_sjs1_2.13:{version-framework-scalatest}"
+  // Test framework(s) you use:
+  /* MUnit */      testImplementation "org.scalameta:munit_sjs1_$scala2versionMinor:{version-framework-munit}"
+  /* ScalaCheck */ testImplementation "org.scalacheck:scalacheck_sjs1_$scala2versionMinor:{version-framework-scalacheck}"
+  /* ScalaTest */  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:{version-framework-scalatest}"
+  /* specs2 */     testImplementation "org.specs2:specs2-core_sjs1_$scala2versionMinor:{version-framework-specs2-scala2}"
+  /* uTest */      testImplementation "com.lihaoyi:utest_sjs1_$scala2versionMinor:{version-framework-utest}"
 }
 ----
 
-And - with only the required dependencies:
+=== Scala 2 without Scala.js
 
 [source,groovy,subs="+attributes"]
 ----
+final String scalaVersion       = '{version-scala2}'
+final String scala2versionMinor = '{version-scala2-minor}'
+
 dependencies {
-  implementation "org.scala-lang:scala-library:{version-scala2}"
-  // a test framework:
-  testImplementation "org.scalatest:scalatest_sjs1_{version-scala2-minor}:{version-framework-scalatest}"
+  zinc "org.scala-sbt:zinc_$scala2versionMinor:{version-zinc}"
+
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+
+  testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
+
+  // Test framework(s) you use:
+  /* MUnit */      testImplementation "org.scalameta:munit_$scala2versionMinor:{version-framework-munit}"
+  /* ScalaCheck */ testImplementation "org.scalacheck:scalacheck_$scala2versionMinor:{version-framework-scalacheck}"
+  /* ScalaTest */  testImplementation "org.scalatest:scalatest_$scala2versionMinor:{version-framework-scalatest}"
+  /* specs2 */     testImplementation "org.specs2:specs2-core_$scala2versionMinor:{version-framework-specs2-scala2}"
+  /* uTest */      testImplementation "com.lihaoyi:utest_$scala2versionMinor:{version-framework-utest}"
+  /* ZIO Test */   testImplementation "dev.zio:zio-test-sbt_$scala2versionMinor:{version-framework-zio-test}"
 }
 ----
 
@@ -369,7 +378,7 @@ what functionality is available also depends on the backend used - JVM or Scala.
 | run but not debug; running any runs all in the class
 
 
-| mUnit
+| MUnit
 | run and debug
 | run and debug; only the first detected; running it runs all test in the class
 | run but not debug
@@ -457,10 +466,10 @@ Currently, the following test frameworks are supported:
 | {version-scalajs}
 | Scala dependency - no `sjs1` suffix in the artifact; Scala.js only, no JVM; not updated since 2015
 
-| mUnit
+| MUnit
 | `org.scalameta:munit`
 | {version-framework-munit}
-| on JVM, brings in `junit:junit`
+| on JVM, brings in `junit:junit`; on JS - `org.scala-js:scalajs-junit-test-runtime`
 
 | ScalaCheck
 | `org.scalacheck:scalacheck`
@@ -474,8 +483,8 @@ Currently, the following test frameworks are supported:
 
 | Specs2
 | `org.specs2:specs2-core`
-| {version-framework-spec2}
-|
+| {version-framework-specs2}
+| latest version for Scala 2 is 4.20.9
 
 | uTest
 | `com.lihaoyi:utest`
@@ -503,6 +512,7 @@ test {
 ----
 
 Inclusion rules are:
+
 - if no inclusions nor exclusions are specified, all tests are included.
 - if only inclusions are specified, only tests tagged with one of them are included.
 - if only exclusions are specified, only tests not tagged with any of them are included.
@@ -692,8 +702,6 @@ all tasks of this type automatically depend on the `testClasses` task.
 Each of the tasks exposes a property `JSDirectory` that points to a directory
 with the resulting JavaScript, so that it can be copied where needed.
 For example:
-
-TODO use services to not call Task.getProject at execution time.
 
 [source,groovy]
 ----
@@ -945,8 +953,6 @@ but `ScalaTest` does not.
 === TODO
 
 Test test filtering. For example, why supplying `--tests "*"` is NOT the same as not supplying any?
-
-Document inability to debug Scala.js code or tests.
 
 Fine-tune the stack traces.
 

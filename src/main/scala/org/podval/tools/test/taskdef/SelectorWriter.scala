@@ -11,7 +11,7 @@ object SelectorWriter:
     case testWildcardSelector: TestWildcardSelector => s"TestWildcard:${testWildcardSelector.testWildcard}"
 
   def read(string: String): Selector =
-    val parts: Array[String] = string.split(':')
+    val parts: Array[String] = string.split(":")
     parts(0) match
       case "Suite"        => SuiteSelector       ()
       case "Test"         => TestSelector        (parts(1))

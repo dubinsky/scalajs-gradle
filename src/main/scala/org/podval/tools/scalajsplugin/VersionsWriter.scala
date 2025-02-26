@@ -43,6 +43,7 @@ object VersionsWriter:
     "framework-scalacheck" -> framework.ScalaCheck.versionDefault,
     "framework-scalatest" -> framework.ScalaTest.versionDefault,
     "framework-specs2" -> framework.Specs2.versionDefault,
+    "framework-specs2-scala2" -> framework.Specs2.versionDefaultScala2.get,
     "framework-utest" -> framework.UTest.versionDefault,
     "framework-zio-test" -> framework.ZioTest.versionDefault
   )

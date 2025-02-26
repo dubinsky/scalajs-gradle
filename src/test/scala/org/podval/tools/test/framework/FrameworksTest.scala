@@ -49,6 +49,15 @@ object FrameworksTest:
   )
 
   val platforms: Seq[ScalaPlatform] = Seq(
-    ScalaPlatform(ScalaVersion.Scala3.versionDefault, ScalaBackend.Jvm),
-    ScalaPlatform(ScalaVersion.Scala3.versionDefault, ScalaBackend.JS ()),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackend.Jvm),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackend.JS ()),
+
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackend.Jvm),
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackend.JS ()),
+
+    // TODO this does not work so far
+//    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackend.Jvm),
+    
+    // TODO this works - although Scala.js 1.0 does not support Scala 2.12?!
+    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackend.JS ()),
   )

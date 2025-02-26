@@ -11,7 +11,7 @@ object JUnit5Fixture extends Fixture(
        |import org.junit.jupiter.api.{AfterAll, AfterEach, BeforeAll, BeforeEach, Disabled, Test}
        |
        |@Test
-       |final class JUnit5Test:
+       |final class JUnit5Test {
        |  @BeforeAll def initAll(): Unit = ()
        |  @AfterAll def tearDownAll(): Unit = ()
        |  @BeforeEach def init(): Unit = ()
@@ -24,10 +24,11 @@ object JUnit5Fixture extends Fixture(
        |    // not executed
        |    ()
        |
-       |  @Test def abortedTest(): Unit =
+       |  @Test def abortedTest(): Unit = {
        |    assumeTrue("abc".contains("Z"))
        |    fail("test should have been aborted")
-       |
+       |  }
+       |}
        |""".stripMargin
   ))
 ):

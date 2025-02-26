@@ -48,7 +48,7 @@ object Dependency:
     
     def dependency(platform: P): Dependency
     
-    final def dependencyWithVersion(platform: P, version: Version = versionDefault): WithVersion =
+    final def dependencyWithVersion(platform: P, version: Version): WithVersion =
       dependency(platform).withVersion(version)
 
     final def required(
