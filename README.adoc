@@ -2,7 +2,7 @@
 :toc:
 :toclevels: 4
 // INCLUDED ATTRIBUTES
-:version-gradle: 8.12
+:version-gradle: 8.13
 :version-plugin: 0.4.16
 :version-scala: 3.6.3
 :version-scala2-minor: 2.13
@@ -21,7 +21,7 @@
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.5.8
 :version-framework-utest: 0.8.5
-:version-framework-zio-test: 2.1.15
+:version-framework-zio-test: 2.1.16
 // INCLUDED ATTRIBUTES
 
 == Summary
@@ -247,7 +247,7 @@ dependencies {
 
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
-  // test framework(s) you use in tests:
+  // Test framework(s) you use:
   /* JUnit4.js */  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
   /* mUnit */      testImplementation 'org.scalameta:munit_sjs1_3:{version-framework-munit}'
   /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_sjs1_3:{version-framework-scalacheck}'
@@ -272,7 +272,7 @@ dependencies {
 
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
-  // test framework(s) you use in tests:
+  // Test framework(s) you use:
   /* JUnit4 */     testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
   /* mUnit */      testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
   /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_3:{version-framework-scalacheck}'

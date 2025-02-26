@@ -20,7 +20,7 @@ import java.io.File
 // so I just patch the Readme.adoc...
 object VersionsWriter:
   private val versions: Seq[(String, Any)] = Seq(
-    "gradle" -> "8.12",
+    "gradle" -> "8.13",
     "plugin" -> "0.4.16",
     
     "scala" -> ScalaVersion.Scala3.versionDefault,

@@ -20,7 +20,7 @@ dependencies {
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$zincVersion"
 
-  compileOnly 'ch.qos.logback:logback-classic:1.5.16'
+  compileOnly 'ch.qos.logback:logback-classic:1.5.17'
 
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
 

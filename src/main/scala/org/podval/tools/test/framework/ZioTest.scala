@@ -47,7 +47,7 @@ object ZioTest extends FrameworkDescriptor(
   displayName = "ZioTest",
   group = "dev.zio",
   artifact = "zio-test-sbt",
-  versionDefault = Version("2.1.15"),
+  versionDefault = Version("2.1.16"),
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt")
 ) with ScalaDependency.Maker:
