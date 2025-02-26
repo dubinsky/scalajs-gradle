@@ -491,8 +491,8 @@ list fully-qualified names of tagging classes or traits.
 trait IncludedTest
 trait ExcludedTest
 @org.junit.experimental.categories.Category(Array(
-  classOf[org.podval.tools.testing.IncludedTest],
-  classOf[org.podval.tools.testing.ExcludedTest]
+  classOf[org.podval.tools.test.IncludedTest],
+  classOf[org.podval.tools.test.ExcludedTest]
 ))
 @Test def excluded(): Unit = ()
 ----
@@ -514,8 +514,8 @@ Tag tests with values that are instances of `munit.Tag`:
 
 [source, scala]
 ----
-val include = new munit.Tag("org.podval.tools.testing.ExcludedTest")
-val exclude = new munit.Tag("org.podval.tools.testing.ExcludedTest")
+val include = new munit.Tag("org.podval.tools.test.ExcludedTest")
+val exclude = new munit.Tag("org.podval.tools.test.ExcludedTest")
 test("excluded".tag(include).tag(exclude)) {}
 ----
 
@@ -530,8 +530,8 @@ Tag tests with objects that extend `org.scalatest.Tag`:
 
 [source, scala]
 ----
-object Include extends org.scalatest.Tag("org.podval.tools.testing.IncludedTest")
-object Exclude extends org.scalatest.Tag("org.podval.tools.testing.ExcludedTest")
+object Include extends org.scalatest.Tag("org.podval.tools.test.IncludedTest")
+object Exclude extends org.scalatest.Tag("org.podval.tools.test.ExcludedTest")
 "excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe false }
 ----
 
@@ -541,8 +541,8 @@ Tag tests with tag names:
 [source,scala]
 ----
 exclude tests tagged for exclusion $excludedTest ${tag(
-  "org.podval.tools.testing.IncludedTest",
-  "org.podval.tools.testing.ExcludedTest"
+  "org.podval.tools.test.IncludedTest",
+  "org.podval.tools.test.ExcludedTest"
 )}
 ----
 
@@ -555,8 +555,8 @@ Tag tests with tag names using `TestAspect.tag`:
 [source, scala]
 ----
 test("excluded") { assertTrue(1 == 0) } @@ TestAspect.tag(
-  "org.podval.tools.testing.IncludedTest",
-  "org.podval.tools.testing.ExcludedTest"
+  "org.podval.tools.test.IncludedTest",
+  "org.podval.tools.test.ExcludedTest"
 )
 ----
 
@@ -876,12 +876,12 @@ Note: Because tests are scoped by the workers, it does not seem possible to grou
 === Testing the Tests
 I coded a neat way to test the plugin itself and
 various features of the various frameworks and their support by the plugin:
-link:src/test/scala/org/podval/tools/testing/testproject/Feature.scala[Feature],
-link:src/test/scala/org/podval/tools/testing/testproject/Fixture.scala[Fixture],
-link:src/test/scala/org/podval/tools/testing/testproject/ForClass.scala[ForClass],
-link:src/test/scala/org/podval/tools/testing/testproject/GroupingFunSpec.scala[GroupingFunSpec],
-link:src/test/scala/org/podval/tools/testing/testproject/SourceFile.scala[SourceFile],
-link:src/test/scala/org/podval/tools/testing/testproject/TestProject.scala[TestProject].
+link:src/test/scala/org/podval/tools/test/testproject/Feature.scala[Feature],
+link:src/test/scala/org/podval/tools/test/testproject/Fixture.scala[Fixture],
+link:src/test/scala/org/podval/tools/test/testproject/ForClass.scala[ForClass],
+link:src/test/scala/org/podval/tools/test/testproject/GroupingFunSpec.scala[GroupingFunSpec],
+link:src/test/scala/org/podval/tools/test/testproject/SourceFile.scala[SourceFile],
+link:src/test/scala/org/podval/tools/test/testproject/TestProject.scala[TestProject].
 
 === Test Framework Peculiarities
 JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:

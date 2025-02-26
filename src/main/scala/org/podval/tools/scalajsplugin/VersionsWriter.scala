@@ -3,7 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.podval.tools.build.ScalaVersion
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.testing.{Sbt, framework}
+import org.podval.tools.test.{Sbt, framework}
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
 

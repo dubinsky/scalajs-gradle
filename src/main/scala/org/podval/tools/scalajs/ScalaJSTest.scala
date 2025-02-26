@@ -1,7 +1,7 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.testing.TestEnvironment
-import org.podval.tools.testing.framework.FrameworkDescriptor
+import org.podval.tools.test.TestEnvironment
+import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import org.scalajs.testing.adapter.TestAdapter
 import sbt.testing.Framework

@@ -3,7 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.podval.tools.build.{DependencyRequirement, ScalaPlatform}
-import org.podval.tools.testing.Sbt
+import org.podval.tools.test.Sbt
 
 class JvmDelegate extends ScalaJSPlugin.Delegate:
   override def beforeEvaluate(project: Project): Unit =
