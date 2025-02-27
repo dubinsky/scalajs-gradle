@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.17] - 2025-02-
+## [0.5.0] - 2025-02-27
 - feat: support JUnit4 Scala.js framework;
 - feat: test tagging for JUnit4;
 - feat: test tagging for MUnit;
