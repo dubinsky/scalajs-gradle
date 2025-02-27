@@ -25,9 +25,6 @@ object UTest extends FrameworkDescriptor(
   artifact = "utest",
   versionDefault = Version("0.8.5"),
   className = "utest.runner.Framework",
-  sharedPackages = List("utest.runner"),
-  tagOptionStyle = OptionStyle.NotSupported, 
-  includeTagsOption = "",
-  excludeTagsOption = ""
+  sharedPackages = List("utest.runner")
 ) with ScalaDependency.Maker
 

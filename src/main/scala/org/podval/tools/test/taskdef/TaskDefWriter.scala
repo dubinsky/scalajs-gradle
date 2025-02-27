@@ -1,5 +1,6 @@
 package org.podval.tools.test.taskdef
 
+import org.podval.tools.util.Scala212Collections.arrayMap
 import sbt.testing.{Fingerprint, Selector, TaskDef}
 
 object TaskDefWriter:
@@ -13,17 +14,8 @@ object TaskDefWriter:
     val fullyQualifiedName: String = parts(0)
     val explicitlySpecified: Boolean = parts(1) == "true"
     val fingerprint: Fingerprint = FingerprintWriter.read(parts(2))
-    val selectorStrings: Array[String] = parts(3).split("-")
-    // Using `val selectors: Array[Selector] = selectorStrings.map(SelectorWriter.read)` here results in
-    // java.lang.NoSuchMethodError: 'java.lang.Object scala.Predef$.refArrayOps(java.lang.Object[])
-    // on Scala 2.12.
-    // TODO this can probably be less ugly...
-    val selectors: Array[Selector] = new Array[Selector](selectorStrings.length)
-    var i = 0
-    while i < selectorStrings.length do
-      selectors(i) = SelectorWriter.read(selectorStrings(i))
-      i = i + 1
-
+    val selectors: Array[Selector] = arrayMap(parts(3).split("-"), SelectorWriter.read)
+      
     TaskDef(
       fullyQualifiedName,
       fingerprint,

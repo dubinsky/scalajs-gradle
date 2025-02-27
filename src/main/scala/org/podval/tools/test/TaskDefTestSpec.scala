@@ -39,31 +39,26 @@ object TaskDefTestSpec:
     includeTags: Array[String],
     excludeTags: Array[String]
   ): Runner =
-    val framework: Framework = frameworkOrName match
-      case Right(framework) =>
-        // not forking: just use the framework and its classloader
-        framework
-      case Left(frameworkName) =>
-        // forking: instantiate
-        FrameworkDescriptor
-          .forName(frameworkName)
-          .newInstance
-          .asInstanceOf[Framework]
+    val frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forName(frameworkName(frameworkOrName))
 
-    val args: Seq[String] = FrameworkDescriptor
-      .forName(framework.name)
-      .args(
-        includeTags = includeTags,
-        excludeTags = excludeTags
-      )
-
+    val args: Array[String] = frameworkDescriptor.args(
+      includeTags = includeTags,
+      excludeTags = excludeTags
+    )
+    
     // Note: we are running the runner in *this* JVM, so remote arguments are not used?
-    val remoteArgs: Seq[String] = Seq.empty
+    val remoteArgs: Array[String] = Array.empty
+
+    val framework: Framework = frameworkOrName match
+      // not forking: just use the framework and its classloader
+      case Right(framework) => framework
+      // forking: instantiate
+      case Left(_) => frameworkDescriptor.newInstance.asInstanceOf[Framework]
 
     val frameworkClassLoader: ClassLoader = framework.getClass.getClassLoader
 
     framework.runner(
-      args.toArray,
-      remoteArgs.toArray,
+      args,
+      remoteArgs,
       frameworkClassLoader
     )

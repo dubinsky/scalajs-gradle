@@ -919,6 +919,46 @@ link:src/test/scala/org/podval/tools/test/testproject/GroupingFunSpec.scala[Grou
 link:src/test/scala/org/podval/tools/test/testproject/SourceFile.scala[SourceFile],
 link:src/test/scala/org/podval/tools/test/testproject/TestProject.scala[TestProject].
 
+=== Scala 2.12
+When running on JVM (and not on Scala.js), tests are forked into a separate JVM.
+Code involved in this is running on the project's, not the plugin's, version of Scala.
+
+If the project uses Scala 2.13, Scala 3 classes like `scala/runtime/LazyVals$`
+are missing; this is remedied by adding Scala 3 library to the
+worker's implementation classpath in `TestFramework`.
+
+If that version is 2.12, any use of 2.13-exclusive features breaks the code,
+so I wrote it defensively, to support 2.12 even though the code was compiled by Scala 3.
+Essentially, I use arrays and my own implementations of the array operations.
+
+Some of the issues:
+
+- `"true".toBoolean`
+- `array.head`
+- `string.split('.')`: java.lang.NoClassDefFoundError: scala/collection/StringOps$
+- `array.map()`: java.lang.NoSuchMethodError: java.lang.Object scala.Predef$.refArrayOps(java.lang.Object[])
+- `array.toSet` or `.mkString`: java.lang.NoSuchMethodError: scala.collection.mutable.ArraySeq$ofRef scala.Predef$.wrapRefArray(java.lang.Object[])
+- `coll1 ++ coll2`: java.lang.NoClassDefFoundError: scala/collection/IterableOnce
+- `map.updated`: java.lang.NoSuchMethodError: scala.collection.immutable.MapOps scala.collection.immutable.Map.updated(java.lang.Object, java.lang.Object)
+
+Affected code:
+
+- TaskDefTestSpecEncodingTestClassProcessor
+- WorkerTestClassProcessorFactory
+- WorkerTestClassProcessor
+- TaskDefTestSpec
+- TaskDefWriter and its helpers
+- FrameworkDescriptor
+- OptionStyle
+- TestInterface
+
+Some of the affected code runs even when using Scala.js,
+and it works without those compatibility changes;
+this is probably because within the JVM running Gradle,
+Scala 2.13 library is on the classpath, even if the project uses Scala 2.12...
+
+I'd rather uglify my code a little than fight with classpath though ;)
+
 === Test Framework Peculiarities
 JUnit4 (and MUnit which seems to be based on JUnit4) report incorrect class and method names for test method events:
 both are `<class name>.<method name>`; method names like this just look stupid, but class names look

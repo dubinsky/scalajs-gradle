@@ -2,6 +2,7 @@ package org.podval.tools.test
 
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
+import org.podval.tools.util.Scala212Collections.{arrayMap, arrayMkString, arrayZipForAll}
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, NestedSuiteSelector, NestedTestSelector, Selector, Status, 
   SubclassFingerprint, SuiteSelector, Task, TaskDef, TestSelector, TestWildcardSelector}
 
@@ -20,14 +21,14 @@ object TestInterface:
       case annotated: AnnotatedFingerprint => s"@${annotated.annotationName} ${className(annotated.isModule)}"
       case subclass: SubclassFingerprint => s"${className(subclass.isModule)} extends ${subclass.superclassName}"
 
-    val selectors: String = taskDef.selectors.map(_.toString).mkString("[", ", ", "]")
+    val selectors: String = arrayMkString(arrayMap(taskDef.selectors, _.toString), "[", ", ", "]")
 
     s"$name selectors=$selectors explicitlySpecified=${taskDef.explicitlySpecified}"
 
   def getSelector(task: Task): Selector =
     val taskDef: TaskDef = task.taskDef
     require(taskDef.selectors.length == 1, "Exactly one Selector is required")
-    taskDef.selectors.head
+    taskDef.selectors()(0)
 
   def isTest(selector: Selector): Boolean = selector match
     case _: TestSelector | _: NestedTestSelector | _: TestWildcardSelector => true
@@ -58,7 +59,7 @@ object TestInterface:
     fingerprintsEqual(left.fingerprint, right.fingerprint) &&
     left.explicitlySpecified == right.explicitlySpecified &&
     left.selectors.length == right.selectors.length &&
-    left.selectors.zip(right.selectors).forall(selectorsEqual)
+    arrayZipForAll(left.selectors, right.selectors, selectorsEqual)
 
   // Note: I can't rely on all the frameworks providing equals() on their Fingerprint implementations...
   private def fingerprintsEqual(left: Fingerprint, right: Fingerprint): Boolean = (left, right) match

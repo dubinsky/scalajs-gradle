@@ -10,9 +10,12 @@ import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.{TaskDefTestSpec, TestInterface}
 import org.podval.tools.test.exception.ExceptionConverter
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach, arrayMap, arrayMkString, 
+  arrayPartition, stripPrefix}
 import sbt.testing.{Event, NestedTestSelector, Runner, Selector, Task, TaskDef, TestSelector}
 import scala.util.control.NonFatal
 
+// TODO Scala 2.12: there is still a reference to scala/Predef$.refArrayOps somewhere...
 final class WorkerTestClassProcessor(
   includeTags: Array[String],
   excludeTags: Array[String],
@@ -47,7 +50,7 @@ final class WorkerTestClassProcessor(
         case _ => None
       match
         case None => DefaultTestClassDescriptor(testId, className)
-        case Some(methodName) => DefaultTestMethodDescriptor(testId, className, methodName.stripPrefix(className + "."))
+        case Some(methodName) => DefaultTestMethodDescriptor(testId, className, stripPrefix(methodName, className + "."))
 
     testResultProcessor.started(
       testDescriptorInternal,
@@ -104,27 +107,27 @@ final class WorkerTestClassProcessor(
     override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
     override def trace(throwable: Throwable): Unit = failure(testId, throwable)
 
-  private var runners: Map[String, Runner] = Map.empty
-
+  // I'd go with var runners: Map[String, Runner]; runners.getOrElse; runners.updated;
+  // but since `map.updated` does not work with Scala 2.12...
+  private var runners: Array[(String, Runner)] = Array.empty
   private def getRunner(frameworkOrName: TaskDefTestSpec.FrameworkOrName): Runner = synchronized:
     val frameworkName: String = TaskDefTestSpec.frameworkName(frameworkOrName)
-    runners.getOrElse(frameworkName, {
+    arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
       val runner: Runner = TaskDefTestSpec.makeRunner(
         frameworkOrName,
         includeTags,
         excludeTags
       )
-      runners = runners.updated(frameworkName, runner)
+      runners = arrayAppend(runners, (frameworkName, runner))
       runner
-    })
 
   /**
    * Completes any pending or asynchronous processing. Blocks until all processing is complete.
    */
-  override def stop(): Unit =
-    for (frameworkName: String, runner: Runner) <- runners do
-      val summary: String = runner.done()
-      output(message = s"$frameworkName summary:\n$summary")
+  override def stop(): Unit = arrayForEach(runners, (frameworkName: String, runner: Runner) =>
+    val summary: String = runner.done()
+    output(message = s"$frameworkName summary:\n$summary")
+  )
 
   /**
    * Stops any pending or asynchronous processing immediately.
@@ -144,12 +147,13 @@ final class WorkerTestClassProcessor(
 
     if reportEvents then reportTasks(taskDefTestSpec, tasks)
 
-    for task: Task <- tasks do
+    arrayForEach(tasks, (task: Task) =>
       require(!TestInterface.isTest(TestInterface.getSelector(task)))
       run(
         parentId = null,
         task = task
       )
+    )
 
   // Note: although this looks recursive,
   // there are only two levels possible with the current rules on test nesting:
@@ -174,19 +178,19 @@ final class WorkerTestClassProcessor(
     )
 
     try
-      val nestedTasks: Seq[Task] =
+      val nestedTasks: Array[Task] =
         try
           if reportEvents then output(s"--- Task(${TestInterface.toString(task)}).execute()")
           val eventHandler: EventHandler = EventHandler(testId, className, selector)
           task.execute(
             eventHandler.handleEvent(_),
             Array(testLogger(testId))
-          ).toSeq
+          )
         catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
           failure(testId, throwable)
-          Seq.empty
+          Array.empty
 
-      for nestedTask: Task <- nestedTasks do
+      arrayForEach(nestedTasks, (nestedTask: Task) =>
         if reportEvents then output(s"--- NESTED TASK FOR $className $selector: ${TestInterface.toString(nestedTask)}")
         val nestedSelector: Selector = TestInterface.getSelector(nestedTask)
         require(!TestInterface.isTest(selector), s"Individual tests like $selector can not have nested tests like $nestedSelector")
@@ -195,6 +199,7 @@ final class WorkerTestClassProcessor(
           parentId = testId,
           task = nestedTask
         )
+      )
     finally completed(
       testId = testId,
       endTime = clock.getCurrentTime,
@@ -215,7 +220,7 @@ final class WorkerTestClassProcessor(
   ):
     // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
     // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
-    private var skipped: Set[Selector] = Set.empty
+    private var skipped: Array[Selector] = Array.empty
     
     def handleEvent(event: Event): Unit =
       val endTime: Long = clock.getCurrentTime
@@ -246,7 +251,7 @@ final class WorkerTestClassProcessor(
       // - Gradle calculates overall result from the outcomes of the individual tests.
       // JUnit4 emits overall class failure events with a `TestSelector`.
       val forClass: Boolean = !isTest && (isSameSelector || TestInterface.selectorsEqual(eventSelector, TestSelector(className)))
-      if !forClass && !skipped.exists(TestInterface.selectorsEqual(_, eventSelector)) then
+      if !forClass && arrayFind(skipped, TestInterface.selectorsEqual(_, eventSelector)).isEmpty then
         val isNested: Boolean = !isTest
         val eventTestId: AnyRef = if !isNested then testId else idGenerator.generateId()
 
@@ -271,15 +276,15 @@ final class WorkerTestClassProcessor(
             .orElse(if !isNested then None else Some(Exception("A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE")))
             .foreach(failure(eventTestId, _))
           case ResultType.SUCCESS => if isNested then completed(eventTestId, endTime, eventResult)
-          case ResultType.SKIPPED => skipped = skipped.incl(eventSelector)
+          case ResultType.SKIPPED => skipped = arrayAppend(skipped, eventSelector)
 
   private def reportTasks(
     taskDefTestSpec: TaskDefTestSpec,
     tasks: Array[Task]
   ): Unit =
     val taskDef: TaskDef = taskDefTestSpec.taskDef
-    val (same: Array[Task], different: Array[Task]) =
-      tasks.partition((task: Task) => TestInterface.taskDefsEqual(taskDef, task.taskDef))
+    val (same: Array[Task], different: Array[Task]) = 
+      arrayPartition(tasks, (task: Task) => TestInterface.taskDefsEqual(taskDef, task.taskDef))
 
     def out(message: String): Unit =
       val frameworkName: String = TaskDefTestSpec.frameworkName(taskDefTestSpec.frameworkOrName)
@@ -291,7 +296,7 @@ final class WorkerTestClassProcessor(
       then out(s"REJECTED $taskDefString")
       else out(s"ACCEPTED $taskDefString")
     else
-      val differentStr: String = different.map(TestInterface.toString).mkString("\n")
+      val differentStr: String = arrayMkString(arrayMap(different, TestInterface.toString), "", "\n", "")
       if same.isEmpty
       then out(s"REPLACED $taskDefString with: $differentStr")
       else out(s"ADDED TO $taskDefString: $differentStr")

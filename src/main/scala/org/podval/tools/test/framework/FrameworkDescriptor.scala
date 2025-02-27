@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
 import org.podval.tools.build.{Dependency, ScalaPlatform, Version}
+import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
 // TODO introduce optional backend-dependent dependency for the underlying framework.
@@ -12,9 +13,9 @@ abstract class FrameworkDescriptor(
   final override val versionDefault: Version,
   final val className: String,
   final val sharedPackages: List[String],
-  tagOptionStyle: OptionStyle,
-  includeTagsOption: String,
-  excludeTagsOption: String,
+  tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
+  includeTagsOption: String = "",
+  excludeTagsOption: String = "",
   isScala2Supported: Boolean = true,
   final val versionDefaultScala2: Option[Version] = None,
   final val isJvmSupported: Boolean = true,
@@ -36,30 +37,30 @@ abstract class FrameworkDescriptor(
   final def args(
     includeTags: Array[String],
     excludeTags: Array[String]
-  ): Seq[String] =
-    tagOptionStyle.toStrings(includeTagsOption, includeTags) ++
+  ): Array[String] = arrayConcat(
+    tagOptionStyle.toStrings(includeTagsOption, includeTags),
     tagOptionStyle.toStrings(excludeTagsOption, excludeTags)
-  
+  )
+
   final def newInstance: AnyRef = Class.forName(className)
     .getDeclaredConstructor()
     .newInstance()
 
 object FrameworkDescriptor:
-  val all: List[FrameworkDescriptor] = List(
-    ScalaTest,
-    ScalaCheck,
-    Specs2,
+  def all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,
     JUnit5,
     MUnit,
+    ScalaTest,
+    ScalaCheck,
+    Specs2,
     UTest,
     ZioTest
   )
 
-  def jvmSupported    : List[FrameworkDescriptor] = all.filter(_.isJvmSupported    )
-  def scalaJSSupported: List[FrameworkDescriptor] = all.filter(_.isScalaJSSupported)
+  def jvmSupported    : List[FrameworkDescriptor] = all.toList.filter(_.isJvmSupported    )
+  def scalaJSSupported: List[FrameworkDescriptor] = all.toList.filter(_.isScalaJSSupported)
 
-  def forName(name: String): FrameworkDescriptor = all
-    .find(_.name == name)
+  def forName(name: String): FrameworkDescriptor = arrayFind(all, _.name == name)
     .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))

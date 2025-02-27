@@ -19,6 +19,9 @@ object JUnit4Fixture extends Fixture(
        |trait IncludedTest
        |trait ExcludedTest
        |
+       |// On Scala 2.12, without type annotations on allOf/anyOf, Scala compiler crashes with
+       |//   trying to do lub/glb of typevar ?T
+       |  
        |@Test
        |final class JUnit4Test {
        |  @Test def successNotIncluded(): Unit = assertFalse("should be false", false)
@@ -50,9 +53,9 @@ object JUnit4Fixture extends Fixture(
        |
        |  // Core Hamcrest Matchers with assertThat
        |  @Test def testAssertThatHamcrestCoreMatchers(): Unit = {
-       |    assertThat("good", allOf(equalTo("good"), startsWith("good")))
-       |    assertThat("good", not(allOf(equalTo("bad"), equalTo("good"))))
-       |    assertThat("good", anyOf(equalTo("bad"), equalTo("good")))
+       |    assertThat("good", allOf[String](equalTo("good"), startsWith("good")))
+       |    assertThat("good", not(allOf[String](equalTo("bad"), equalTo("good"))))
+       |    assertThat("good", anyOf[String](equalTo("bad"), equalTo("good")))
        |    assertThat(7, not(CombinableMatcher.either[Int](equalTo(3)).or(equalTo(4))))
        |    assertThat(new Object, not(sameInstance(new Object)))
        |  }

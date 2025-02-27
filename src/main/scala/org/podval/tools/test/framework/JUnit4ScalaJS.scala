@@ -16,9 +16,6 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   versionDefault = Version("1.18.2"), // Note: Scala.js version!
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
-  tagOptionStyle = OptionStyle.NotSupported,
-  includeTagsOption = "",
-  excludeTagsOption = "",
   isJvmSupported = false, // This is a Scala.js-only test framework
   // TODO on Scala 2.13, I get:
   //   Error while loading test class org.podval.tools.test.JUnit4ScalaJSTest failed:

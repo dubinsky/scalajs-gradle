@@ -98,12 +98,9 @@ class TestFramework(
       //	at org.podval.tools.test.framework.FrameworkDescriptor$.<clinit>(FrameworkDescriptor.scala:37)
       //	at org.podval.tools.test.TaskDefTestSpec$.makeRunner(TaskDefTestSpec.scala:48)
       //	at org.podval.tools.test.processor.WorkerTestClassProcessor.getRunner$$anonfun$1(WorkerTestClassProcessor.scala:115)
-      // when trying to look up FrameworkDescriptor by name,
-      // which can be avoided when running on Scala.js (where tests run in the same JVM),
-      // but it does not seem to break anything:
-      // JUnit4 for Scala.js is broken, but not because of this...
-      // TODO what will happen with Scala 2.12?
-      // Maybe there is a chance to avoid this altogether by moving the lists of FrameworkDescriptors into a separate object...
+      // when trying to look up FrameworkDescriptor by name when running forked (on JVM, not JS);
+      // it does not seem to break anything even on Scala.js and even on Scala 2.12
+      // (JUnit4 for Scala.js is broken, but not because of this...).
       "scala3-library_3"
     )
   )
@@ -120,7 +117,7 @@ class TestFramework(
 
   private val sharedPackages: List[String] =
     // testing framework jars themselves are already on the classpath
-    FrameworkDescriptor.all.flatMap(_.sharedPackages) ++ List(
+    FrameworkDescriptor.all.toList.flatMap(_.sharedPackages) ++ List(
       // Scala 3 and Scala 2 libraries;
       // when running on Scala 3, both jars themselves are already on the classpath;
       // when running on Scala 2, Scala 2 library jar is already ion the classpath,

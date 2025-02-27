@@ -3,7 +3,7 @@ package org.podval.tools.build
 import scala.CanEqual
 
 final class Version(override val toString: String) derives CanEqual:
-  private val segments: Array[String] = toString.split('.')
+  private val segments: Array[String] = toString.split("\\.")
   
   override def equals(other: Any): Boolean = other match
     case that: Version => this.toString == that.toString

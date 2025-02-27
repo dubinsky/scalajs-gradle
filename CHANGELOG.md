@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.0] - 2025-02-27
+## [0.5.0] - 2025-02-28
 - feat: support JUnit4 Scala.js framework;
 - feat: test tagging for JUnit4;
 - feat: test tagging for MUnit;
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: support test tag inclusions;
 - feat: support JUnit4 assumptions;
 - feat: running tests on Scala 2.13 JVM and JS;
-- feat: running tests on Scala 2.12 JS;
+- feat: running tests on Scala 2.12 JVM and JS;
 - doc: documented test framework dependencies;
 - doc: documented test framework test tagging;
 - cleanup: ScalaOnlyTest re-absorbed and removed;

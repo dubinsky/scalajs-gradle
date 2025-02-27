@@ -24,8 +24,5 @@ object ScalaCheck extends FrameworkDescriptor(
   artifact = "scalacheck",
   versionDefault = Version("1.18.1"),
   className = "org.scalacheck.ScalaCheckFramework",
-  sharedPackages = List("org.scalacheck"),
-  tagOptionStyle = OptionStyle.NotSupported,
-  includeTagsOption = "",
-  excludeTagsOption = ""
+  sharedPackages = List("org.scalacheck")
 ) with ScalaDependency.Maker
