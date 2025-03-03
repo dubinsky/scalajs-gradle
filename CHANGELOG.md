@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-03-13
+- feat: support Scala.js JUnit4 on Scala 2;
+- feat: support filtering multiple specific tests in a class;
+- doc: test filtering;
+- cleanup: underlying test framework;
+- cleanup: ScalaJSPlugin.Delegate;
+- cleanup: test filtering;
+- cleanup: test detection;
+- cleanup: taskdef;
+- cleanup: RunningTestClassProcessor;
+- chore: dependency updates;
+
 ## [0.5.0] - 2025-02-28
 - feat: support JUnit4 Scala.js framework;
 - feat: test tagging for JUnit4;

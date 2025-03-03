@@ -44,7 +44,7 @@ abstract class SourceMapper:
     // Gradle's org.gradle.internal.serialize.ExceptionPlaceholder serializes exceptions with lots of details;
     // org.scalajs.testing.common.Serializer.ThrowableSerializer - not so much: they all become
     // "org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3";
-    // since source mapping is used only for ScalaJS, there is no point trying to preserve the original
+    // since source mapping is used only for Scala.js, there is no point trying to preserve the original
     // exception here: it is already lost...
     // So, I might as well just wrap what remains in:
     val throwableMapped: Throwable = TestExecutionException(s"$message$location", throwable.getCause)

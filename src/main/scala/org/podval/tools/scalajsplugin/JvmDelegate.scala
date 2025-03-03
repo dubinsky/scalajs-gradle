@@ -9,12 +9,19 @@ class JvmDelegate extends ScalaJSPlugin.Delegate:
   override def beforeEvaluate(project: Project): Unit =
     project.getTasks.replace("test", classOf[JvmTestTask])
 
-  override def afterEvaluate(
+  override def configurationToAddToClassPath: Option[String] = None
+
+  override def configureProject(
+    project: Project,
+    projectScalaPlatform: ScalaPlatform
+  ): Unit = ()
+  
+  override def dependencyRequirements(
     project: Project,
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
-  ): Unit =
-    val sbtTestInterfaceDependencyRequirement: DependencyRequirement = Sbt.TestInterface.required(
+  ): Seq[DependencyRequirement] = Seq(
+    Sbt.TestInterface.required(
       platform = projectScalaPlatform,
       version = Sbt.TestInterface.versionDefault,
       reason =
@@ -23,5 +30,4 @@ class JvmDelegate extends ScalaJSPlugin.Delegate:
           |""".stripMargin,
       configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
     )
-    
-    sbtTestInterfaceDependencyRequirement.applyToConfiguration(project)
+  )

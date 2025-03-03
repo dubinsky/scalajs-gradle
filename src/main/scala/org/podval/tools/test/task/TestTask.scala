@@ -5,10 +5,9 @@ import org.gradle.StartParameter
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.api.tasks.testing.{AbstractTestTask, Test, TestListener}
+import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.{SourceSet, TaskAction}
 import org.gradle.api.Action
-import org.gradle.internal.event.ListenerBroadcast
 import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
@@ -17,7 +16,7 @@ import org.podval.tools.build.Gradle
 import org.podval.tools.test.{SourceMapper, TestEnvironment}
 import org.podval.tools.util.Files
 import java.io.File
-import java.lang.reflect.{Field, Method}
+import java.lang.reflect.Method
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
@@ -30,12 +29,6 @@ abstract class TestTask extends Test:
   getDependsOn.add(Gradle.getClassesTask(getProject, sourceSetName))
   private def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
 
-  // Note: Deferring creation of the test framework by using
-  // `getTestFrameworkProperty.convention(project.provider(() => createTestFramework))` did not work out,
-  // nor did the approach that would result in creating the test framework twice when it is set explicitly in the build file:
-  // `getTestFrameworkProperty.convention(createTestFramework)`.
-  // So, I am sticking with pre-applying the test framework at the task creation time;
-  // options seem to work...
   useSbt()
 
   final def useSbt(@DelegatesTo(classOf[TestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
@@ -46,9 +39,9 @@ abstract class TestTask extends Test:
     // Method is private and too short to bother with reflection, so it is reproduced here.
     Actions.`with`(Cast.cast(classOf[TestFrameworkOptions], getOptions), testFrameworkConfigure)
 
-  final def useSbt(): Unit = TestTask.useTestFramework(this, createTestFramework)
+  final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
 
-  private def createTestFramework: TestFramework =
+  private lazy val sbtTestFramework: TestFramework =
     // Note: scalaCompile.getAnalysisFiles is empty, so I had to hard-code the path:
     val analysisFile: File = Files.file(
       getProject.getLayout.getBuildDirectory.get.getAsFile,
@@ -62,7 +55,7 @@ abstract class TestTask extends Test:
       analysisFile = analysisFile,
       // delayed: not available at the time of the TestFramework construction (task creation)
       testEnvironment = () => testEnvironment,
-      runningInIntelliJIdea = () => TestTask.runningInIntelliJIdea(TestTask.this)
+      runningInIntelliJIdea = () => IntelliJIdea.runningIn(TestTask.this)
     )
 
   @TaskAction override def executeTests(): Unit =
@@ -97,28 +90,8 @@ abstract class TestTask extends Test:
   protected def testEnvironment: TestEnvironment
 
 object TestTask:
+  // TODO [Gradle PR]
   private def useTestFramework(task: Test, value: TestFramework): Unit =
     val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[org.gradle.api.internal.tasks.testing.TestFramework])
     useTestFramework.setAccessible(true)
     useTestFramework.invoke(task, value)
-
-  // see https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
-  private def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
-    var result: Boolean = false
-
-    // TODO Gradle PR: figure this out from the environment - or introduce method to avoid the use of reflection
-    val testListenerSubscriptions: Field = classOf[AbstractTestTask].getDeclaredField("testListenerSubscriptions")
-    testListenerSubscriptions.setAccessible(true)
-
-    val broadcastSubscriptionsGet: Method = Class.forName("org.gradle.api.tasks.testing.AbstractTestTask$BroadcastSubscriptions").getDeclaredMethod("get")
-    broadcastSubscriptionsGet.setAccessible(true)
-    broadcastSubscriptionsGet
-      .invoke(
-        testListenerSubscriptions.get(task)
-      )
-      .asInstanceOf[ListenerBroadcast[TestListener]]
-      .visitListeners((testListener: TestListener) =>
-        if testListener.getClass.getName == "IJTestEventLogger$1" then result = true
-      )
-
-    result

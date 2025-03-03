@@ -1,10 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{Dependency, ScalaPlatform, Version}
+import org.podval.tools.build.{Dependency, ScalaDependency, ScalaPlatform, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Note: based on sbt.TestFramework from org.scala-sbt.testing
-// TODO introduce optional backend-dependent dependency for the underlying framework.
 abstract class FrameworkDescriptor(
   final val name: String,
   final val displayName: String,
@@ -20,8 +19,11 @@ abstract class FrameworkDescriptor(
   final val versionDefaultScala2: Option[Version] = None,
   final val isJvmSupported: Boolean = true,
   // Note: if isScalaJSSupported, dependency must be a Scala one.
-  final val isScalaJSSupported: Boolean = true
+  final val isScalaJSSupported: Boolean = true,
+  final val jvmUnderlying: Option[Dependency.Maker[?]] = None,
+  final val scalaJSUnderlying: Option[ScalaDependency.Maker] = None
 ) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
+  
   final def versionDefault(platform: ScalaPlatform): Version =
     if platform.version.isScala3
     then versionDefault
@@ -34,6 +36,11 @@ abstract class FrameworkDescriptor(
       else isJvmSupported
     )
   
+  final def underlying(platform: ScalaPlatform): Option[Dependency.Maker[?]] =
+    if platform.backend.isJS
+    then scalaJSUnderlying
+    else jvmUnderlying
+    
   final def args(
     includeTags: Array[String],
     excludeTags: Array[String]

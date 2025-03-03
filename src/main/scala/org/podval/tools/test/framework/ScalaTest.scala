@@ -5,7 +5,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 // implementation: https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala
 // runner arguments: https://www.scalatest.org/user_guide/using_the_runner
 // Note: no nested tasks
-// DOES NOT bring in test-interface (in non-ScalaJS variant)!
+// DOES NOT bring in test-interface (in non-Scala.js variant)!
 
 // Dependencies:
 // Scala:
@@ -30,7 +30,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 // also:
 //   org.scala-lang:scala3-library_3:3.1.3 -> 3.6.3 (*)
 //
-// ScalaJS:
+// Scala.js:
 // org.scalatest:scalatest_sjs1_3:3.2.19
 //   org.scalatest:scalatest-core_sjs1_3
 //     org.scalactic:scalactic_sjs1_3

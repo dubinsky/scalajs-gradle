@@ -3,12 +3,13 @@ package org.podval.tools.test.task
 import org.gradle.api.Action
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.logging.LogLevel
+import org.gradle.api.logging.{LogLevel, Logger, Logging}
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.podval.tools.build.GradleClassPath
 import org.podval.tools.test.TestEnvironment
 import org.podval.tools.test.detect.{TestFilter, TestFrameworkDetector}
 import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.test.processor.RunTestClassProcessorFactory
 import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.Field
@@ -24,6 +25,8 @@ class TestFramework(
   runningInIntelliJIdea: () => Boolean
 ) extends org.gradle.api.internal.tasks.testing.TestFramework:
 
+  private val logger: Logger = Logging.getLogger(classOf[TestFramework])
+
   private val options: TestFrameworkOptions = new TestFrameworkOptions
   override def getOptions: TestFrameworkOptions = options
 
@@ -32,11 +35,17 @@ class TestFramework(
 
   private var detectorOpt: Option[TestFrameworkDetector] = None
   override def getDetector: TestFrameworkDetector =
-    if detectorOpt.isEmpty then detectorOpt = Some(TestFrameworkDetector(
-      testEnvironment(),
-      analysisFile,
-      TestFilter(testFilter)
-    ))
+    if detectorOpt.isEmpty then detectorOpt = Some:
+      logger.lifecycle(s"--tests ${testFilter.getCommandLineIncludePatterns}")
+      TestFrameworkDetector(
+        testEnvironment(),
+        analysisFile,
+        TestFilter(
+          includes = testFilter.getIncludePatterns.asScala.toSet,
+          excludes = testFilter.getExcludePatterns.asScala.toSet,
+          commandLineIncludes = testFilter.getCommandLineIncludePatterns.asScala.toSet
+        )
+      )
     detectorOpt.get
 
   // TODO why am I not getting a call from the CompositeStoppable in the Gradle's Test task even when the tests succeed?
@@ -44,7 +53,7 @@ class TestFramework(
     detectorOpt.get.close()
     detectorOpt = None
 
-  override def getProcessorFactory: WorkerTestClassProcessorFactory = WorkerTestClassProcessorFactory(
+  override def getProcessorFactory: RunTestClassProcessorFactory = RunTestClassProcessorFactory(
     includeTags = options.getIncludeCategories.asScala.toArray,
     excludeTags = options.getExcludeCategories.asScala.toArray,
     runningInIntelliJIdea = runningInIntelliJIdea(),
@@ -99,8 +108,7 @@ class TestFramework(
       //	at org.podval.tools.test.TaskDefTestSpec$.makeRunner(TaskDefTestSpec.scala:48)
       //	at org.podval.tools.test.processor.WorkerTestClassProcessor.getRunner$$anonfun$1(WorkerTestClassProcessor.scala:115)
       // when trying to look up FrameworkDescriptor by name when running forked (on JVM, not JS);
-      // it does not seem to break anything even on Scala.js and even on Scala 2.12
-      // (JUnit4 for Scala.js is broken, but not because of this...).
+      // it does not seem to break anything even on Scala.js and even on Scala 2.12.
       "scala3-library_3"
     )
   )
@@ -140,6 +148,8 @@ class TestFramework(
     val builder: DefaultWorkerProcessBuilder = builderInterface.asInstanceOf[DefaultWorkerProcessBuilder]
 
     builder.setImplementationClasspath((
+      // TODO [Gradle PR] to get implementation classpath without reflection - or, better still,
+      // to introduce a method for adding to it.
       TestFramework.getImplementationClassPath(builder).asScala.toList ++
       implementationClassPathAdditions
     ).asJava)

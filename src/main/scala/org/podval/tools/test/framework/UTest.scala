@@ -11,7 +11,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 // also:
 //   org.scala-lang:scala3-library_3
 //
-// ScalaJS:
+// Scala.js:
 // com.lihaoyi:utest_sjs1_3:0.8.5
 //   org.scala-js:scalajs-test-interface_2.13
 //   org.portable-scala:portable-scala-reflect_sjs1_2.13

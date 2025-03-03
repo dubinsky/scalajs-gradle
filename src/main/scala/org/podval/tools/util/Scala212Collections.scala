@@ -2,9 +2,8 @@ package org.podval.tools.util
 
 import scala.reflect.ClassTag
 
+// Array operations that avoid issues with missing classes/methods while running on Scala 2.12
 object Scala212Collections:
-  // Using `array.map()` from Scala 3 on Scala 2.12 results in
-  // java.lang.NoSuchMethodError: java.lang.Object scala.Predef$.refArrayOps(java.lang.Object[])
   def arrayMap[A, B: ClassTag](array: Array[A], f: A => B): Array[B] =
     val result: Array[B] = new Array[B](array.length)
     var i: Int = 0; while i < array.length do { result(i) = f(array(i)); i = i + 1 }
@@ -26,9 +25,7 @@ object Scala212Collections:
       if p(array(i)) then result = Some(array(i))
       i = i + 1
     result
-
-  // Using `seq1 ++ seq2` from Scala 3 on Scala 2.12 results in
-  // java.lang.NoClassDefFoundError: scala/collection/IterableOnce
+  
   def arrayConcat[A: ClassTag](left: Array[A], right: Array[A]): Array[A] =
     val result: Array[A] = new Array[A](left.length + right.length)
     var l: Int = 0; while l < left .length do { result(l) = left(l)               ; l = l + 1 }
@@ -53,14 +50,23 @@ object Scala212Collections:
       i = i + 1
     (left, right)
 
-  // left.zip(right).forall(p) is not compatible with Scala 2.12, so:
+  def arrayForAll[A](
+    array: Array[A],
+    p: A => Boolean
+  ): Boolean =
+    var result: Boolean = true
+    var i: Int = 0
+    while result && (i < array.length) do
+      result = p(array(i))
+      i = i + 1
+    result
+    
   def arrayZipForAll[A](
     left: Array[A],
     right: Array[A],
     p: (A, A) => Boolean
   ): Boolean =
-    require(left.length == right.length)
-    var result: Boolean = true
+    var result: Boolean = left.length == right.length
     var i: Int = 0
     while result && (i < left.length) do
       result = p(left(i), right(i))

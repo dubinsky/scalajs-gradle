@@ -13,9 +13,12 @@ object ScalaJS:
   ) extends ScalaDependency.MakerScala2Jvm:
     final override def versionDefault: Version = ScalaJS.versionDefault
     final override def group: String = ScalaJS.group
-    
-  object Library       extends Maker("scalajs-library")
+
+  // compiler plugins for Scala 2
   object Compiler      extends Maker("scalajs-compiler", isScalaVersionFull = true)
+  object JUnitPlugin   extends Maker("scalajs-junit-test-plugin", isScalaVersionFull = true)
+  
+  object Library       extends Maker("scalajs-library")
   object Linker        extends Maker("scalajs-linker")
   object TestBridge    extends Maker("scalajs-test-bridge")
   object TestAdapter   extends Maker("scalajs-sbt-test-adapter")

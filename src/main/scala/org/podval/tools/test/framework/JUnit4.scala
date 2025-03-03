@@ -25,6 +25,7 @@ object JUnit4 extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.ListWithEq, 
   includeTagsOption = "--include-categories", 
   excludeTagsOption = "--exclude-categories",
-  isScalaJSSupported = false // This is a JVM-only test framework
-) with JavaDependency.Maker:
-  def jUnitVersion: Version = Version("4.13.2")
+  // This is a JVM-only test framework
+  isScalaJSSupported = false,
+  jvmUnderlying = Some(JUnit4Underlying)
+) with JavaDependency.Maker

@@ -7,8 +7,6 @@ import org.podval.tools.test.{Sbt, framework}
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
 
-// TODO write README tables also!
-
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
@@ -21,7 +19,7 @@ import java.io.File
 object VersionsWriter:
   private val versions: Seq[(String, Any)] = Seq(
     "gradle" -> "8.13",
-    "plugin" -> "0.5.0",
+    "plugin" -> "0.5.1",
     
     "scala" -> ScalaVersion.Scala3.versionDefault,
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
@@ -36,7 +34,7 @@ object VersionsWriter:
     
     "node" -> NodeDependency.versionDefault,
 
-    "junit" -> framework.JUnit4.jUnitVersion,
+    "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
     "framework-munit" -> framework.MUnit.versionDefault,

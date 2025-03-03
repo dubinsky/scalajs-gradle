@@ -23,10 +23,13 @@ import java.io.File
 import java.util.ArrayList
 import scala.jdk.CollectionConverters.*
 
-// Note: translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter
-// Note: this is the only Gradle class that I need to modify
-// to incorporate NonForkingTestClassProcessor needed for ScalaJS tests.
-// TODO Gradle PR for make it unnecessary to copy this file
+// Note: Translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter.
+// This is the only Gradle class that I need to modify
+// to incorporate NonForkingTestClassProcessor needed for Scala.js tests.
+// To make it unnecessary to copy this file, I filed:
+//   https://github.com/gradle/gradle/issues/32666
+//   https://github.com/gradle/gradle/pull/32656
+// which was rejected...
 class DefaultTestExecuter(
   workerFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,
@@ -91,7 +94,8 @@ class DefaultTestExecuter(
         //  java.lang.NoSuchMethodError:
         //    'org.gradle.internal.impldep.com.google.common.collect.ImmutableList
         //    org.gradle.api.internal.tasks.testing.worker.ForkedTestClasspath.getApplicationClasspath()'
-        val applicationClassPath = classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
+        val applicationClassPath: java.util.List[File] =
+          classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
         result.setTestClasspath(applicationClassPath)
         result
 
@@ -126,7 +130,13 @@ class DefaultTestExecuter(
   private def getMaxParallelForks(testExecutionSpec: JvmTestExecutionSpec): Int =
     var maxParallelForks: Int = testExecutionSpec.getMaxParallelForks
     if maxParallelForks > maxWorkerCount then
-      logger.info("{}.maxParallelForks ({}) is larger than max-workers ({}), forcing it to {}", testExecutionSpec.getPath, maxParallelForks, maxWorkerCount, maxWorkerCount)
+      logger.info(
+        "{}.maxParallelForks ({}) is larger than max-workers ({}), forcing it to {}",
+        testExecutionSpec.getPath,
+        maxParallelForks,
+        maxWorkerCount, 
+        maxWorkerCount
+      )
       maxParallelForks = maxWorkerCount
 
     maxParallelForks

@@ -3,7 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.{Plugin, Project}
-import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class ScalaJSPlugin extends Plugin[Project]:
@@ -22,20 +22,32 @@ final class ScalaJSPlugin extends Plugin[Project]:
       val projectScalaLibrary: ScalaLibrary = 
         ScalaLibrary.getFromConfiguration(Gradle.getConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME))
 
-      // AnalysisDetector, which runs during execution of TestTask, needs Zinc classes;
-      // if I ever get rid of it, this classpath expansion goes away.
-      // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
-      GradleClassPath.addTo(this, Gradle.getConfiguration(project, ScalaBasePlugin.ZINC_CONFIGURATION_NAME).asScala)
+      val projectScalaPlatform: ScalaPlatform =
+        projectScalaLibrary.toPlatform(if isJSDisabled then ScalaBackend.Jvm else ScalaBackend.JS())
 
-      delegate.afterEvaluate(
+      delegate.configureProject(
+        project,
+        projectScalaPlatform
+      )
+
+      delegate.dependencyRequirements(
         project,
         pluginScalaPlatform = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm),
-        projectScalaPlatform = projectScalaLibrary.toPlatform(if isJSDisabled then ScalaBackend.Jvm else ScalaBackend.JS())
-      )
+        projectScalaPlatform = projectScalaPlatform
+      ).foreach(_.applyToConfiguration(project))
 
       projectScalaLibrary.verify(
         ScalaLibrary.getFromClasspath(Gradle.getConfiguration(project, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).asScala)
       )
+
+      // TODO [classpath] instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
+      def addConfigurationToClassPath(configurationName: String): Unit =
+        GradleClassPath.addTo(this, Gradle.getConfiguration(project, configurationName).asScala)
+
+      // AnalysisDetector, which runs during execution of TestTask, needs Zinc classes;
+      // if I ever get rid of it, this classpath expansion goes away.
+      addConfigurationToClassPath(ScalaBasePlugin.ZINC_CONFIGURATION_NAME)
+      delegate.configurationToAddToClassPath.foreach(addConfigurationToClassPath)
 
 object ScalaJSPlugin:
   private val disabledProperty: String = "org.podval.tools.scalajs.disabled"
@@ -44,8 +56,15 @@ object ScalaJSPlugin:
   abstract class Delegate:
     def beforeEvaluate(project: Project): Unit
 
-    def afterEvaluate(
+    def configurationToAddToClassPath: Option[String]
+
+    def configureProject(
+      project: Project,
+      projectScalaPlatform: ScalaPlatform
+    ): Unit
+
+    def dependencyRequirements(
       project: Project,
       pluginScalaPlatform: ScalaPlatform,
       projectScalaPlatform: ScalaPlatform
-    ): Unit
+    ): Seq[DependencyRequirement]

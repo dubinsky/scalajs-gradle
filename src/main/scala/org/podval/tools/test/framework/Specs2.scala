@@ -19,7 +19,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 //   org.scala-lang:scala3-library_3
 //   org.scala-lang:scala-library:2.13.x
 //
-// ScalaJS:
+// Scala.js:
 // org.specs2:specs2-core_sjs1_3:5.5.8
 //   org.specs2:specs2-common_sjs1_3
 //   org.specs2:specs2-matcher_sjs1_3

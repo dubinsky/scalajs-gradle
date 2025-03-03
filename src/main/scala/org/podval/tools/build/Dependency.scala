@@ -47,7 +47,7 @@ object Dependency:
     def findable(platform: P): FindableDependency[?]
     
     def dependency(platform: P): Dependency
-    
+
     final def dependencyWithVersion(platform: P, version: Version): WithVersion =
       dependency(platform).withVersion(version)
 

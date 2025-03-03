@@ -13,8 +13,8 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
 import org.podval.tools.test.SourceMapper
-import org.podval.tools.test.processor.{NonForkingTestClassProcessor, TaskDefTestSpecEncodingTestClassProcessor}
-import org.podval.tools.test.result.{FixUpRootTestOutputTestResultProcessor, SourceMappingTestResultProcessor,
+import org.podval.tools.test.processor.{RunTestClassProcessorFactory, WriteTestClassProcessor}
+import org.podval.tools.test.result.{RootTestSuiteOutputFixingTestResultProcessor, SourceMappingTestResultProcessor,
   TracingTestResultProcessor}
 
 class TestExecuter(
@@ -44,7 +44,7 @@ class TestExecuter(
   ): Unit =
     // Note: deeper down, TestMainAction wraps testResultProcessorEffective in AttachParentTestResultProcessor.
     val testResultProcessorEffective: TestResultProcessor =
-      FixUpRootTestOutputTestResultProcessor(
+      RootTestSuiteOutputFixingTestResultProcessor(
         SourceMappingTestResultProcessor(
           TracingTestResultProcessor(
             testResultProcessor,
@@ -66,20 +66,15 @@ class TestExecuter(
     workerConfigurationAction: Action[WorkerProcessBuilder],
     documentationRegistry: DocumentationRegistry
   ): TestClassProcessor =
-    // ScalaJS tests must be run in the same JVM where they are discovered.
-    // TODO provide a way to not fork Scala tests?
+    // Scala.js tests must be run in the same JVM where their frameworks were instantiated.
     val doNotFork: Boolean = !canFork
     if doNotFork then
-      NonForkingTestClassProcessor(
-        workerTestClassProcessorFactory,
-        actorFactory,
-        clock
-      )
+      workerTestClassProcessorFactory.asInstanceOf[RunTestClassProcessorFactory].createNonForking(clock)
     else
-      // Encoding of TaskDefTestSpec happens at the end of the TestClassProcessor chain,
+      // Encoding of TestClassRun happens at the end of the TestClassProcessor chain,
       // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor
       // can do their jobs.
-      TaskDefTestSpecEncodingTestClassProcessor(
+      WriteTestClassProcessor(
         super.createTestClassProcessor(
           workerLeaseService,
           workerProcessFactory,

@@ -9,6 +9,7 @@ import org.gradle.api.tasks.scala.ScalaCompile
 import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
+import org.podval.tools.test.framework.JUnit4ScalaJS
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class ScalaJSDelegate extends ScalaJSPlugin.Delegate:
@@ -28,45 +29,54 @@ class ScalaJSDelegate extends ScalaJSPlugin.Delegate:
     val test    : ScalaJSRunTask .Test = project.getTasks.replace ("test"    , classOf[ScalaJSRunTask .Test])
     test.dependsOn(linkTest)
 
-  override def afterEvaluate(
+  // Needed to access ScalaJS linking functionality in LinkTask.
+  // Dynamically-loaded classes can only be loaded after they are added to the classpath,
+  // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
+  // That is why dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
+  override def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
+
+  override def configureProject(
+    project: Project,
+    projectScalaPlatform: ScalaPlatform
+  ): Unit =
+    if projectScalaPlatform.version.isScala3 then
+      ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.MAIN_SOURCE_SET_NAME)
+      ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
+    
+    // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s.
+    project.getTasks.asScala.foreach:
+      case linkTask: ScalaJSLinkTask =>
+        linkTask.getRuntimeClassPath.setFrom(Gradle.getSourceSet(project, linkTask.sourceSetName).getRuntimeClasspath)
+      case _ =>
+  
+  override def dependencyRequirements(
     project: Project,
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
-  ): Unit =
+  ): Seq[DependencyRequirement] =
     val scalaJSVersion: Version = ScalaJS.Library
       .findable(projectScalaPlatform)
       .findInConfiguration(Gradle.getConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME))
       .map(_.version)
       .getOrElse(ScalaJS.versionDefault)
 
+    val isJUnit4Present: Boolean = JUnit4ScalaJS
+      .findable(projectScalaPlatform)
+      .findInConfiguration(Gradle.getConfiguration(project, JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME))
+      .isDefined
+    
     ScalaJSDelegate.forPlugin(
       pluginScalaPlatform,
       scalaJSVersion
-    ).foreach(_.applyToConfiguration(project))
-
-    ScalaJSDelegate.forProject(
+    ) ++ ScalaJSDelegate.forProject(
       projectScalaPlatform,
-      scalaJSVersion
-    ).foreach(_.applyToConfiguration(project))
-
-    // Needed to access ScalaJS linking functionality in LinkTask.
-    // Dynamically-loaded classes can only be loaded after they are added to the classpath,
-    // or Gradle decorating code breaks at the plugin load time for the Task subclasses.
-    // That is why dynamically-loaded classes are mentioned indirectly, only in the ScalaJS class.
-    // TODO instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
-    GradleClassPath.addTo(this, Gradle.getConfiguration(project, ScalaJSDelegate.scalaJSConfigurationName).asScala)
-
-    if projectScalaPlatform.version.isScala3 then
-      ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.MAIN_SOURCE_SET_NAME)
-      ScalaJSDelegate.configureScalaCompileForScalaJs(project, SourceSet.TEST_SOURCE_SET_NAME)
-
-    // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s.
-    project.getTasks.asScala.foreach:
-      case linkTask: ScalaJSLinkTask =>
-        linkTask.getRuntimeClassPath.setFrom(Gradle.getSourceSet(project, linkTask.sourceSetName).getRuntimeClasspath)
-      case _ =>
+      scalaJSVersion,
+      isJUnit4Present = isJUnit4Present
+    )
 
 object ScalaJSDelegate:
+  private val scalaJSConfigurationName: String = "scalajs"
+
   private def configureScalaCompileForScalaJs(project: Project, sourceSetName: String): Unit =
     val scalaCompile: ScalaCompile = Gradle.getScalaCompile(project, sourceSetName)
     val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // Note: nullable
@@ -79,9 +89,7 @@ object ScalaJSDelegate:
       scalaCompile
         .getScalaCompileOptions
         .setAdditionalParameters((parameters :+ "-scalajs").asJava)
-
-  private val scalaJSConfigurationName: String = "scalajs"
-
+  
   private def forPlugin(
     pluginScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version
@@ -97,17 +105,6 @@ object ScalaJSDelegate:
       reason = "because it is needed for running/testing with DOM man manipulations",
       configurationName = scalaJSConfigurationName
     ),
-    //      ScalaJSDependencies.TestInterface.require(
-    //        scalaPlatform = pluginScalaPlatform,
-    //        version = scalaJSVersion,
-    //        reason =
-    //          """Zio Test on Scala.js seems to use `scalajs-test-interface`,
-    //            |although TestAdapter, confusingly, brings in `test-interface`
-    //            | - and so do most of the test frameworks (except for ScalaTest);
-    //            |even with this I get no test events from ZIO Test on Scala.js though...
-    //            |""".stripMargin,
-    //        scalaJSConfigurationName = scalaJSConfigurationName
-    //      ),
     ScalaJS.TestAdapter.required(
       platform = pluginScalaPlatform,
       version = scalaJSVersion,
@@ -118,8 +115,28 @@ object ScalaJSDelegate:
 
   private def forProject(
     projectScalaPlatform: ScalaPlatform,
-    scalaJSVersion: Version
+    scalaJSVersion: Version,
+    isJUnit4Present: Boolean
   ): Seq[DependencyRequirement] =
+    // only for Scala 2
+    (if projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
+      ScalaJS.Compiler.required(
+        platform = projectScalaPlatform,
+        version = scalaJSVersion,
+        reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
+        configurationName = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
+      )
+    )) ++
+    // only for Scala 2 and only when JUnit4 is in use
+    // (without JUnit on classpath this compiler plugin causes compiler errors)
+    (if projectScalaPlatform.version.isScala3 || !isJUnit4Present then Seq.empty else Seq(
+      ScalaJS.JUnitPlugin.required(
+        platform = projectScalaPlatform,
+        version = scalaJSVersion,
+        reason = "because it is needed to generate bootstrappers for JUnit tests on Scala 2",
+        configurationName = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
+      )
+    )) ++
     // only for Scala 3
     (if !projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
       // org.scala-lang:scala3-library_3:
@@ -133,15 +150,6 @@ object ScalaJSDelegate:
         version = projectScalaPlatform.scalaVersion,
         reason = "because it is needed for linking of the ScalaJS code",
         configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
-      )
-    )) ++
-    // only for Scala 2
-    (if projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
-      ScalaJS.Compiler.required(
-        platform = projectScalaPlatform,
-        version = scalaJSVersion,
-        reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
-        configurationName = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
       )
     )) ++ Seq(
       ScalaJS.Library.required(

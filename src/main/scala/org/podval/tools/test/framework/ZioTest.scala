@@ -26,7 +26,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 //   org.scala-sbt:test-interface:1.0
 //   org.scala-lang:scala3-library_3
 //
-// ScalaJS:
+// Scala.js:
 // dev.zio:zio-test-sbt_sjs1_3
 //   dev.zio:zio-test_sjs1_3
 //   dev.zio:zio_sjs1_3
@@ -61,6 +61,5 @@ object ZioTest extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-tags",
   excludeTagsOption = "-ignore-tags",
-  // TODO https://github.com/dubinsky/scalajs-gradle/issues/37
   isScalaJSSupported = false
 ) with ScalaDependency.Maker

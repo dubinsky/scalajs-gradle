@@ -1,22 +1,16 @@
 package org.podval.tools.test.detect
 
 import sbt.internal.inc.{Analysis, Relations}
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, SuiteSelector, TaskDef}
+import sbt.testing.{Fingerprint, Framework, SuiteSelector, TaskDef}
 import xsbt.api.{Discovered, Discovery}
 import xsbti.VirtualFileRef
 import xsbti.api.{ClassLike, Companions, Definition}
 import xsbti.compile.FileAnalysisStore
 import java.io.File
 
+// TODO what about tests that are not a part of this Gradle project but come from a dependency?
+// TODO I may want to try replacing AnalysisDetector with reading the class files.
 object AnalysisDetector:
-  private final class Detector(
-    val isAnnotation: Boolean,
-    val name: String,
-    val isModule: Boolean,
-    val fingerprint: Fingerprint,
-    val framework: Framework
-  )
-
   def detectTests(
     loadedFrameworks: Seq[Framework],
     analysisFile: File
@@ -49,28 +43,13 @@ object AnalysisDetector:
         case c: ClassLike => c.topLevel
         case _ => false
 
-    val detectors: Seq[Detector] =
-      val detectorOpts: Seq[Option[Detector]] = for
+    val detectors: Seq[Detector] = (
+      for
         framework: Framework <- loadedFrameworks
         fingerprint: Fingerprint <- framework.fingerprints
-      yield fingerprint match
-        case sub: SubclassFingerprint => Some(Detector(
-          isAnnotation = false,
-          name = sub.superclassName,
-          isModule = sub.isModule,
-          fingerprint = sub,
-          framework = framework
-        ))
-        case ann: AnnotatedFingerprint => Some(Detector(
-          isAnnotation = true,
-          name = ann.annotationName,
-          isModule = ann.isModule,
-          fingerprint = ann,
-          framework = framework
-        ))
-        case _ => None
-
-      detectorOpts.flatten
+      yield
+        Detector.get(fingerprint, framework)
+    ).flatten
 
     for
       case (definition: Definition, discovered: Discovered) <-
@@ -80,10 +59,7 @@ object AnalysisDetector:
         )(
           definitions
         )
-      detector: Detector <-
-        detectors.filter: (detector: Detector) =>
-          (discovered.isModule == detector.isModule) &&
-          (if detector.isAnnotation then discovered.annotations else discovered.baseClasses).contains(detector.name)
+      detector: Detector <- detectors.filter(_.is(discovered))
     yield
       val className: String = definition.asInstanceOf[ClassLike].name
       val sourceFile: VirtualFileRef = relations.definesClass(className).head
@@ -99,6 +75,7 @@ object AnalysisDetector:
         taskDef = TaskDef(
           className,
           detector.fingerprint,
+          // defaults set here will be adjusted by TestClass.set() called from TestFrameworkDetector.processTestClass
           false,
           Array(new SuiteSelector)
         )

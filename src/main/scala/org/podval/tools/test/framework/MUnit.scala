@@ -17,7 +17,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 // also:
 //   org.scala-lang:scala3-library_3
 //
-// ScalaJS:
+// Scala.js:
 // org.scalameta:munit_sjs1_3:1.0.4
 //   org.scalameta:munit-diff_sjs1_3:1.0.4
 //   org.scala-js:scalajs-junit-test-runtime_2.13
@@ -36,5 +36,9 @@ object MUnit extends FrameworkDescriptor(
   sharedPackages = List("munit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
   includeTagsOption = "--include-tags", 
-  excludeTagsOption = "--exclude-tags"
+  excludeTagsOption = "--exclude-tags",
+  // on JVM, uses underlying JUni4 - via its own internal interface
+  jvmUnderlying = Some(JUnit4Underlying),
+  // on Scala.js, uses JUnit4 for Scala.js
+  scalaJSUnderlying = Some(JUnit4ScalaJS)
 ) with ScalaDependency.Maker
