@@ -106,11 +106,13 @@ object TestTask:
   private def runningInIntelliJIdea(task: AbstractTestTask): Boolean =
     var result: Boolean = false
 
-    // TODO Gradle PR: figure this out from the environment - or introduce method to avoid the use of reflection
+    // TODO [Gradle PR] figure this out from the environment - or introduce method to avoid the use of reflection
     val testListenerSubscriptions: Field = classOf[AbstractTestTask].getDeclaredField("testListenerSubscriptions")
     testListenerSubscriptions.setAccessible(true)
 
-    val broadcastSubscriptionsGet: Method = Class.forName("org.gradle.api.tasks.testing.AbstractTestTask$BroadcastSubscriptions").getDeclaredMethod("get")
+    val broadcastSubscriptionsGet: Method = Class
+      .forName("org.gradle.api.tasks.testing.AbstractTestTask$BroadcastSubscriptions")
+      .getDeclaredMethod("get")
     broadcastSubscriptionsGet.setAccessible(true)
     broadcastSubscriptionsGet
       .invoke(

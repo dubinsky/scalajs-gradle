@@ -70,7 +70,7 @@ object TestProject:
     "org",
     "podval",
     "tools",
-    "testing",
+    "test",
     s"$name.scala"
   )
 

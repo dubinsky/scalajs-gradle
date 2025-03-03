@@ -6,8 +6,8 @@ import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.processor.WorkerTestClassProcessor
 
-// Note: this class gets serialized into the worker (and is the only such class);
-// thus it, its parameters and everything reachable from it must be serializable,
+// Note: this class gets serialized into the worker (and is the only such class?);
+// thus it, its parameters, and everything reachable from it must be serializable,
 // and thus it can not be an inner class of TestFramework,
 // so no further simplifications seems feasible.
 final class WorkerTestClassProcessorFactory(

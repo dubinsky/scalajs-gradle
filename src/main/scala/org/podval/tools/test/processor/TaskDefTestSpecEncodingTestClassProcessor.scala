@@ -1,7 +1,7 @@
 package org.podval.tools.test.processor
 
 import org.gradle.api.internal.tasks.testing.{DefaultTestClassRunInfo, TestClassProcessor, TestClassRunInfo, TestResultProcessor}
-import org.podval.tools.test.TaskDefTestSpec
+import org.podval.tools.test.taskdef.TaskDefTestSpec
 
 class TaskDefTestSpecEncodingTestClassProcessor(delegate: TestClassProcessor) extends TestClassProcessor:
   override def startProcessing(testResultProcessor: TestResultProcessor): Unit = delegate.startProcessing(testResultProcessor)

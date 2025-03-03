@@ -26,7 +26,7 @@ import scala.jdk.CollectionConverters.*
 // Note: translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter
 // Note: this is the only Gradle class that I need to modify
 // to incorporate NonForkingTestClassProcessor needed for ScalaJS tests.
-// TODO Gradle PR for make it unnecessary to copy this file
+// TODO [Gradle PR] to make it unnecessary to copy this file
 class DefaultTestExecuter(
   workerFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,
@@ -91,7 +91,8 @@ class DefaultTestExecuter(
         //  java.lang.NoSuchMethodError:
         //    'org.gradle.internal.impldep.com.google.common.collect.ImmutableList
         //    org.gradle.api.internal.tasks.testing.worker.ForkedTestClasspath.getApplicationClasspath()'
-        val applicationClassPath = classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
+        val applicationClassPath: java.util.List[File] =
+          classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
         result.setTestClasspath(applicationClassPath)
         result
 
@@ -126,7 +127,13 @@ class DefaultTestExecuter(
   private def getMaxParallelForks(testExecutionSpec: JvmTestExecutionSpec): Int =
     var maxParallelForks: Int = testExecutionSpec.getMaxParallelForks
     if maxParallelForks > maxWorkerCount then
-      logger.info("{}.maxParallelForks ({}) is larger than max-workers ({}), forcing it to {}", testExecutionSpec.getPath, maxParallelForks, maxWorkerCount, maxWorkerCount)
+      logger.info(
+        "{}.maxParallelForks ({}) is larger than max-workers ({}), forcing it to {}",
+        testExecutionSpec.getPath,
+        maxParallelForks,
+        maxWorkerCount, 
+        maxWorkerCount
+      )
       maxParallelForks = maxWorkerCount
 
     maxParallelForks

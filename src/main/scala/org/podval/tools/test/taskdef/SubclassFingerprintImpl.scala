@@ -2,7 +2,7 @@ package org.podval.tools.test.taskdef
 
 import sbt.testing.SubclassFingerprint
 
-final class SubclassFingerprintImpl(
+private final class SubclassFingerprintImpl(
   override val superclassName: String,
   override val isModule: Boolean,
   override val requireNoArgConstructor: Boolean

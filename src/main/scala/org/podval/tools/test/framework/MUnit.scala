@@ -36,5 +36,9 @@ object MUnit extends FrameworkDescriptor(
   sharedPackages = List("munit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
   includeTagsOption = "--include-tags", 
-  excludeTagsOption = "--exclude-tags"
+  excludeTagsOption = "--exclude-tags",
+  // on JVM, uses underlying JUni4 - via its own internal interface
+  jvmUnderlying = Some(JUnit4Underlying),
+  // on Scala.js, uses JUnit4 for Scala.js
+  scalaJSUnderlying = Some(JUnit4ScalaJS)
 ) with ScalaDependency.Maker

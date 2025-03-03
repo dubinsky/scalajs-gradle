@@ -7,11 +7,6 @@ import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor3, TableFor4}
 // Note: heavily based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcherTest
 //   see https://raw.githubusercontent.com/gradle/gradle/master/subprojects/testing-base/src/test/groovy/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcherTest.groovy
 class MatchesClassTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
-
-  //
-  //# the second iteration of a parameterized test
-  // '*ParameterizedTest.*[2]'
-
   //Note that the wildcard '*' has no special understanding of the '.' package separator.
   // It’s purely text based. So --tests *.SomeTestClass will match any package, regardless of its 'depth'.
 
@@ -40,54 +35,54 @@ class MatchesClassTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
   //  //only ui tests from integration tests, by some naming convention
   //  "*IntegTest*ui"
 
-  it should "calculate included methods" in {
-    import TestFilter.Matches
+  it should "work with empty patterns" in :
+    TestFilter(Set.empty, Set.empty, Set.empty).mayIncludeClass("anything") shouldBe true
 
-    val data: TableFor3[String, String, Option[Matches]] = Table(
+  it should "calculate included methods" in:
+    val data: TableFor3[String, String, Option[TestFilterMatch]] = Table(
       ("input", "className", "match"),
 
       // include specific method in any of the tests
 //      ("*UiCheck", "Foo", Some(Matches.Tests(true, Set.empty, Set("UiCheck")))) // TODO [filter]
 
       // include all tests from package
-      ("org.gradle.internal.*", "org.gradle.internal.Foo", Some(Matches.Suite(true))),
+      ("org.gradle.internal.*", "org.gradle.internal.Foo", Some(TestFilterMatch.Suite(true))),
 
       // include all integration tests
-      ("*IntegTest", "XIntegTest", Some(Matches.Suite(true))),
+      ("*IntegTest", "XIntegTest", Some(TestFilterMatch.Suite(true))),
 
       // Executes all tests in SomeTestClass
-      ("SomeTestClass", "SomeTestClass", Some(Matches.Suite(true))),
+      ("SomeTestClass", "SomeTestClass", Some(TestFilterMatch.Suite(true))),
 
       // Executes a single specified test in SomeTestClass
-      ("SomeTestClass.someSpecificMethod", "SomeTestClass", Some(Matches.Tests(Set("someSpecificMethod"), Set.empty))),
+      ("SomeTestClass.someSpecificMethod", "SomeTestClass", Some(TestFilterMatch.Tests(Set("someSpecificMethod"), Set.empty))),
 
       // Executes specified tests in SomeTestClass
-      ("SomeTestClass.*someMethod*", "SomeTestClass", Some(Matches.Tests(Set.empty, Set("someMethod")))),
+      ("SomeTestClass.*someMethod*", "SomeTestClass", Some(TestFilterMatch.Tests(Set.empty, Set("someMethod")))),
 
       // method name containing spaces
-      ("org.gradle.SomeTestClass.some method containing spaces", "org.gradle.SomeTestClass", Some(Matches.Tests(Set("some method containing spaces"), Set.empty))),
+      ("org.gradle.SomeTestClass.some method containing spaces", "org.gradle.SomeTestClass", Some(TestFilterMatch.Tests(Set("some method containing spaces"), Set.empty))),
 
       // all classes at specific package (recursively)
-      ("all.in.specific.package*", "all.in.specific.package.Foo", Some(Matches.Suite(true))),
-      ("all.in.specific.package*", "all.in.specific.package.sub.Foo", Some(Matches.Suite(true))),
-      ("all.in.specific.package*", "all.in.specific.package1.Foo", Some(Matches.Suite(true))),
+      ("all.in.specific.package*", "all.in.specific.package.Foo", Some(TestFilterMatch.Suite(true))),
+      ("all.in.specific.package*", "all.in.specific.package.sub.Foo", Some(TestFilterMatch.Suite(true))),
+      ("all.in.specific.package*", "all.in.specific.package1.Foo", Some(TestFilterMatch.Suite(true))),
       ("all.in.specific.package*", "all.in.another.package.Foo", None),
 
       // specific method at specific package (recursively)
-      ("all.in.specific.package*.someSpecificMethod", "all.in.specific.package.Foo", Some(Matches.Tests(Set("someSpecificMethod"), Set.empty))),
-      ("all.in.specific.package*.some*", "all.in.specific.package.Foo", Some(Matches.Tests(Set.empty, Set("some"))))
+      ("all.in.specific.package*.someSpecificMethod", "all.in.specific.package.Foo", Some(TestFilterMatch.Tests(Set("someSpecificMethod"), Set.empty))),
+      ("all.in.specific.package*.some*", "all.in.specific.package.Foo", Some(TestFilterMatch.Tests(Set.empty, Set("some"))))
 
+      //# the second iteration of a parameterized test
+      // '*ParameterizedTest.*[2]'
       // '*ParameterizedTest.foo*'
     )
 
     forAll(data) { (input, className, expected) =>
       TestFilter(Set(input), Set.empty, Set.empty).matchesClass(className) shouldBe expected
     }
-  }
-
-  // TODO [filter] when executed as a part of the class, it is not being reported AT ALL!?
-  // Something with the maybeNested?
-  it should "exclude as many classes as possible" in {
+  
+  it should "exclude as many classes as possible" in:
     val data: TableFor3[String, String, Boolean] = Table(
       ("input", "className", "expected"),
       (".", "FooTest", false),
@@ -146,16 +141,13 @@ class MatchesClassTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
     )
 
     forAll(data)((input: String, className: String, expected: Boolean) =>
-      TestFilter(Set(input), Set.empty, Set.empty).mayIncludeClass(className) shouldBe expected
-      TestFilter(Set.empty, Set.empty, Set(input)).mayIncludeClass(className) shouldBe expected
+      assert(
+        TestFilter(Set(input), Set.empty, Set.empty).mayIncludeClass(className) === expected &&
+        TestFilter(Set.empty, Set.empty, Set(input)).mayIncludeClass(className) === expected
+      )
     )
-  }
-
-  it should "work with empty patterns" in {
-    TestFilter(Set.empty, Set.empty, Set.empty).mayIncludeClass("anything") shouldBe true
-  }
-
-  it should "work with multiple patterns" in {
+  
+  it should "work with multiple patterns" in:
     val data: TableFor4[String, String, String, Boolean] = Table(
       ("pattern1", "pattern2", "className", "expected"),
       ("FooTest*", "FooTest", "FooTest", true),
@@ -168,4 +160,4 @@ class MatchesClassTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
     forAll(data) { (pattern1: String, pattern2: String, className: String, expected: Boolean) =>
       TestFilter(Set(pattern1), Set.empty, Set(pattern2)).mayIncludeClass(className) shouldBe expected
     }
-  }
+    

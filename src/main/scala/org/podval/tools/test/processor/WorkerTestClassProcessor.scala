@@ -8,14 +8,14 @@ import org.gradle.api.tasks.testing.TestOutputEvent
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
-import org.podval.tools.test.{TaskDefTestSpec, TestInterface}
+import org.podval.tools.test.RootTestSuiteItPlaceholder
 import org.podval.tools.test.exception.ExceptionConverter
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach, arrayMap, arrayMkString, 
+import org.podval.tools.test.taskdef.{Selectors, TaskDefTestSpec, TaskDefs, Tasks}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach, arrayMap, arrayMkString,
   arrayPartition, stripPrefix}
-import sbt.testing.{Event, NestedTestSelector, Runner, Selector, Task, TaskDef, TestSelector}
+import sbt.testing.{Event, NestedTestSelector, Runner, Selector, Status, Task, TaskDef, TestSelector}
 import scala.util.control.NonFatal
 
-// TODO Scala 2.12: there is still a reference to scala/Predef$.refArrayOps somewhere...
 final class WorkerTestClassProcessor(
   includeTags: Array[String],
   excludeTags: Array[String],
@@ -41,8 +41,11 @@ final class WorkerTestClassProcessor(
     startTime: Long
   ): Unit =
     // JUnit4 - and thus MUnit which is based on it - set both the event's fullyQualifiedName and the selector
-    // to something like <class name>.<method name>, which confuses Gradle into thinking
-    // that that is a new class name, since the event fingerprint says so...
+    // to something like <class name>.<method name>;
+    // method names like this just look stupid,
+    // but class names look like new classes to Gradle (since the event fingerprint says so),
+    // which corrupts test reports.
+    // I had to work around this.
     val testDescriptorInternal: TestDescriptorInternal = selector
       match
         case testSelector: TestSelector => Some(testSelector.testName)
@@ -93,7 +96,7 @@ final class WorkerTestClassProcessor(
     )
 
   private def output(message: String): Unit = output(
-    testId = TestInterface.rootTestSuiteIdPlaceholder,
+    testId = RootTestSuiteItPlaceholder.value,
     message = message,
     logLevel = LogLevel.LIFECYCLE,
   )
@@ -141,19 +144,17 @@ final class WorkerTestClassProcessor(
   override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
     val taskDefTestSpec: TaskDefTestSpec = TaskDefTestSpec.get(testClassRunInfo)
 
-    // Note: tasks() can take more that one taskDef; I feed them in one by one.
-    // Note: task.taskDef: Returns the TaskDef that was used to request this Task.
+    // Note: Runner.tasks() can take more that one taskDef; I feed them in one by one.
+    // Note: for each returned Task, task.taskDef is what was passed to Runner.tasks().
     val tasks: Array[Task] = getRunner(taskDefTestSpec.frameworkOrName).tasks(Array(taskDefTestSpec.taskDef))
 
     if reportEvents then reportTasks(taskDefTestSpec, tasks)
 
-    arrayForEach(tasks, (task: Task) =>
-      require(!TestInterface.isTest(TestInterface.getSelector(task)))
-      run(
-        parentId = null,
-        task = task
-      )
-    )
+    // Note: when running individual test method(s), selector of the task is for a test, not a suite.
+    arrayForEach(tasks, (task: Task) => run(
+      parentId = null,
+      task = task
+    ))
 
   // Note: although this looks recursive,
   // there are only two levels possible with the current rules on test nesting:
@@ -165,7 +166,7 @@ final class WorkerTestClassProcessor(
   ): Unit =
     val startTime: Long = clock.getCurrentTime
     val testId: AnyRef = idGenerator.generateId()
-    val selector: Selector = TestInterface.getSelector(task)
+    val selector: Selector = Tasks.getSelector(task)
     val className: String = task.taskDef.fullyQualifiedName
     if reportEvents then output(s"--- TestClassProcessor.run($className, $selector)")
 
@@ -180,7 +181,7 @@ final class WorkerTestClassProcessor(
     try
       val nestedTasks: Array[Task] =
         try
-          if reportEvents then output(s"--- Task(${TestInterface.toString(task)}).execute()")
+          if reportEvents then output(s"--- Task(${Tasks.toString(task)}).execute()")
           val eventHandler: EventHandler = EventHandler(testId, className, selector)
           task.execute(
             eventHandler.handleEvent(_),
@@ -191,10 +192,10 @@ final class WorkerTestClassProcessor(
           Array.empty
 
       arrayForEach(nestedTasks, (nestedTask: Task) =>
-        if reportEvents then output(s"--- NESTED TASK FOR $className $selector: ${TestInterface.toString(nestedTask)}")
-        val nestedSelector: Selector = TestInterface.getSelector(nestedTask)
-        require(!TestInterface.isTest(selector), s"Individual tests like $selector can not have nested tests like $nestedSelector")
-        require(TestInterface.isTest(nestedSelector), s"Only individual tests can be nested, not $nestedSelector")
+        if reportEvents then output(s"--- NESTED TASK FOR $className $selector: ${Tasks.toString(nestedTask)}")
+        val nestedSelector: Selector = Tasks.getSelector(nestedTask)
+        require(!Selectors.isTest(selector), s"Individual tests like $selector can not have nested tests like $nestedSelector")
+        require(Selectors.isTest(nestedSelector), s"Only individual tests can be nested, not $nestedSelector")
         run(
           parentId = testId,
           task = nestedTask
@@ -224,17 +225,11 @@ final class WorkerTestClassProcessor(
     
     def handleEvent(event: Event): Unit =
       val endTime: Long = clock.getCurrentTime
-      val eventResult: ResultType = TestInterface.toResultType(event.status)
-      val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
+
       val eventSelector: Selector = event.selector
-
-      val isSameSelector: Boolean = TestInterface.selectorsEqual(selector, eventSelector)
-      val isTest: Boolean = TestInterface.isTest(selector)
-      val isEventTest: Boolean = TestInterface.isTest(eventSelector)
-
-      // TODO verify event.fullyQualifiedName also?
-      require(isSameSelector || !isTest && isEventTest)
-
+      val eventResult: ResultType = WorkerTestClassProcessor.toResultType(event.status)
+      val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
+      
       if reportEvents then output(
         s"""--- GOT EVENT
            |className=$className
@@ -246,12 +241,25 @@ final class WorkerTestClassProcessor(
            |""".stripMargin
       )
 
-      // We ignore events with overall results of suits:
+      val isSameSelector: Boolean = Selectors.equal(selector, eventSelector)
+      val isTest: Boolean = Selectors.isTest(selector)
+
+      // Note: when running individual test method(s), the following is false:
+      //   require(isSameSelector || !isTest && Selectors.isTest(eventSelector))
+      
+      // Note: when running individual test method(s),
+      // test framework may (and JUnit4 does) emit events for skipped methods;
+      // such events are not currently propagated by the code - which is, I think, correct:
+      // if I am running one test method, I do not want to see other method mentioned in the test report,
+      // just as I do not want to see other skipped tests class there.
+      
+      // Note: we ignore events with overall results of suits:
       // - started/completed Gradle events are emitted in run();
       // - Gradle calculates overall result from the outcomes of the individual tests.
       // JUnit4 emits overall class failure events with a `TestSelector`.
-      val forClass: Boolean = !isTest && (isSameSelector || TestInterface.selectorsEqual(eventSelector, TestSelector(className)))
-      if !forClass && arrayFind(skipped, TestInterface.selectorsEqual(_, eventSelector)).isEmpty then
+      
+      val forClass: Boolean = !isTest && (isSameSelector || Selectors.equal(eventSelector, TestSelector(className)))
+      if !forClass && arrayFind(skipped, Selectors.equal(_, eventSelector)).isEmpty then
         val isNested: Boolean = !isTest
         val eventTestId: AnyRef = if !isNested then testId else idGenerator.generateId()
 
@@ -284,19 +292,39 @@ final class WorkerTestClassProcessor(
   ): Unit =
     val taskDef: TaskDef = taskDefTestSpec.taskDef
     val (same: Array[Task], different: Array[Task]) = 
-      arrayPartition(tasks, (task: Task) => TestInterface.taskDefsEqual(taskDef, task.taskDef))
+      arrayPartition(tasks, (task: Task) => TaskDefs.taskDefsEqual(taskDef, task.taskDef))
 
     def out(message: String): Unit =
       val frameworkName: String = TaskDefTestSpec.frameworkName(taskDefTestSpec.frameworkOrName)
       output(s"--- $frameworkName $message")
 
-    val taskDefString: String = TestInterface.toString(taskDef)
+    val taskDefString: String = TaskDefs.toString(taskDef)
     if same.length > 1 then out(s"MULTIPLE TASKS FOR THE $taskDefString") else if different.isEmpty then
       if same.isEmpty
       then out(s"REJECTED $taskDefString")
       else out(s"ACCEPTED $taskDefString")
     else
-      val differentStr: String = arrayMkString(arrayMap(different, TestInterface.toString), "", "\n", "")
+      val differentStr: String = arrayMkString(arrayMap(different, Tasks.toString), "", "\n", "")
       if same.isEmpty
       then out(s"REPLACED $taskDefString with: $differentStr")
       else out(s"ADDED TO $taskDefString: $differentStr")
+
+object WorkerTestClassProcessor:
+  def toResultType(status: Status): ResultType =
+    // When `scalajs-test-interface` is used instead of the `test-interface`, I get:
+    //   Class sbt.testing.Status does not have member field 'sbt.testing.Status Success'
+    //    given CanEqual[Status, Status] = CanEqual.derived
+    //    status match
+    //    case Status.Success  => ResultType.SUCCESS
+    //    case Status.Error    => ResultType.FAILURE
+    //    case Status.Failure  => ResultType.FAILURE
+    //    case Status.Skipped  => ResultType.SKIPPED
+    //    case Status.Ignored  => ResultType.SKIPPED
+    //    case Status.Canceled => ResultType.SKIPPED
+    //    case Status.Pending  => ResultType.SKIPPED
+    // This approach works for both:
+    val name: String = status.name()
+    if name == "Success" then ResultType.SUCCESS else
+    if name == "Error"   then ResultType.FAILURE else
+    if name == "Failure" then ResultType.FAILURE else
+      ResultType.SKIPPED

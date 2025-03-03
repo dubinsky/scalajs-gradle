@@ -3,7 +3,7 @@ package org.podval.tools.test.task
 import org.gradle.api.Action
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.logging.LogLevel
+import org.gradle.api.logging.{Logger, Logging, LogLevel}
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.podval.tools.build.GradleClassPath
 import org.podval.tools.test.TestEnvironment
@@ -24,6 +24,8 @@ class TestFramework(
   runningInIntelliJIdea: () => Boolean
 ) extends org.gradle.api.internal.tasks.testing.TestFramework:
 
+  private val logger: Logger = Logging.getLogger(classOf[TestFrameworkDetector])
+
   private val options: TestFrameworkOptions = new TestFrameworkOptions
   override def getOptions: TestFrameworkOptions = options
 
@@ -32,11 +34,17 @@ class TestFramework(
 
   private var detectorOpt: Option[TestFrameworkDetector] = None
   override def getDetector: TestFrameworkDetector =
-    if detectorOpt.isEmpty then detectorOpt = Some(TestFrameworkDetector(
-      testEnvironment(),
-      analysisFile,
-      TestFilter(testFilter)
-    ))
+    if detectorOpt.isEmpty then detectorOpt = Some:
+      logger.lifecycle(s"--tests ${testFilter.getCommandLineIncludePatterns}")
+      TestFrameworkDetector(
+        testEnvironment(),
+        analysisFile,
+        TestFilter(
+          includes = testFilter.getIncludePatterns.asScala.toSet,
+          excludes = testFilter.getExcludePatterns.asScala.toSet,
+          commandLineIncludes = testFilter.getCommandLineIncludePatterns.asScala.toSet
+        )
+      )
     detectorOpt.get
 
   // TODO why am I not getting a call from the CompositeStoppable in the Gradle's Test task even when the tests succeed?
@@ -140,6 +148,8 @@ class TestFramework(
     val builder: DefaultWorkerProcessBuilder = builderInterface.asInstanceOf[DefaultWorkerProcessBuilder]
 
     builder.setImplementationClasspath((
+      // TODO [Gradle PR] to get implementation classpath without reflection - or, better still,
+      // to introduce a method for adding to it.
       TestFramework.getImplementationClassPath(builder).asScala.toList ++
       implementationClassPathAdditions
     ).asJava)

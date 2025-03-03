@@ -15,7 +15,20 @@ object JUnit5 extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.ListWithEq,
   includeTagsOption = "--include-tags",
   excludeTagsOption = "--exclude-tags",
-  isScalaJSSupported = false, // This is a JVM-only test framework
+  // This is a JVM-only test framework
+  isScalaJSSupported = false,
   // TODO https://github.com/dubinsky/scalajs-gradle/issues/38
+  //Comment on the JupiterTestFingerprint.annotationName() says:
+  //
+  //> return The name of this class. This is to ensure that SBT does not find
+  //> any tests so that we can use JUnit Jupiter's test discovery mechanism.
+  //
+  //Well, mission accomplished: my test scanner does not find any tests, and since
+  //I have no idea what "JUnit Jupiter's test discovery mechanism" is,
+  //I get the Gradle message "No tests found for given includes".
+  //So, no JUnit5 support for now :(
+  //
+  //I _might_ try to use framework-specific test discovery instead of the Scala Analysis one in the Scala-only setting,
+  //but it is not a priority :)
   isJvmSupported = false
 ) with JavaDependency.Maker

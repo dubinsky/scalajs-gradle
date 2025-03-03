@@ -5,10 +5,10 @@ import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile
 
 object Spec2Fixture extends Fixture(
   framework = org.podval.tools.test.framework.Specs2,
-  testSources = Seq(SourceFile("Spec2Test",
+  testSources = Seq(SourceFile("Specs2Test",
     s"""import org.specs2._
        |
-       |final class Spec2Test extends Specification {
+       |final class Specs2Test extends Specification {
        |  def is = s2\"\"\"
        |
        |  This is a specification to check the 'Hello world' string
@@ -37,7 +37,7 @@ object Spec2Fixture extends Fixture(
   override def checks(feature: Feature): Seq[ForClass] = feature match
     case FrameworksTest.basicFunctionality => 
       Seq(
-        forClass("Spec2Test",
+        forClass("Specs2Test",
           passed("start with 'Hello'"),
           passed("end with 'world'"),
           failed("fail to end with 'xxx'"),
@@ -52,7 +52,7 @@ object Spec2Fixture extends Fixture(
       )
     case FrameworksTest.withTagInclusions =>
       Seq(
-        forClass("Spec2Test",
+        forClass("Specs2Test",
           absent("start with 'Hello'"),
           passed("end with 'world'"),
           failed("fail to end with 'xxx'"),

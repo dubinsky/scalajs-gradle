@@ -36,7 +36,7 @@ object VersionsWriter:
     
     "node" -> NodeDependency.versionDefault,
 
-    "junit" -> framework.JUnit4.jUnitVersion,
+    "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
     "framework-munit" -> framework.MUnit.versionDefault,

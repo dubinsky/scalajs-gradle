@@ -1,8 +1,7 @@
-package org.podval.tools.test
+package org.podval.tools.test.taskdef
 
 import org.gradle.api.internal.tasks.testing.TestClassRunInfo
 import org.podval.tools.test.framework.FrameworkDescriptor
-import org.podval.tools.test.taskdef.TaskDefWriter
 import sbt.testing.{Framework, Runner, TaskDef}
 
 // This is used to convey the data about the test to the TestClassProcessor.
@@ -18,7 +17,7 @@ final class TaskDefTestSpec(
   // when not forked, the original instance is used.
   def write: String =
     val frameworkName: String = TaskDefTestSpec.frameworkName(frameworkOrName)
-    s"$frameworkName@${TaskDefWriter.write(taskDef)}"
+    s"$frameworkName@${TaskDefs.write(taskDef)}"
 
 object TaskDefTestSpec:
   type FrameworkOrName = Either[String, Framework]
@@ -31,7 +30,7 @@ object TaskDefTestSpec:
       val parts: Array[String] = testClassRunInfo.getTestClassName.split("@")
       TaskDefTestSpec(
         frameworkOrName = Left(parts(0)),
-        taskDef = TaskDefWriter.read(parts(1))
+        taskDef = TaskDefs.read(parts(1))
       )
 
   def makeRunner(
