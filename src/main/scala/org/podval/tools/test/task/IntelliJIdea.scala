@@ -4,8 +4,6 @@ import org.gradle.api.tasks.testing.{AbstractTestTask, TestListener}
 import org.gradle.internal.event.ListenerBroadcast
 import java.lang.reflect.{Field, Method}
 
-// TODO do I even need this?
-// TODO [Gradle PR] figure this out from the environment - or introduce method to avoid the use of reflection
 // see:
 // https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy
 // https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLoggerInit.gradle

@@ -33,8 +33,7 @@ final class ScalaJSRunCommon(
     case ModuleKind.ESModule       => Input.ESModule(mainModulePath)
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
-  def mkJsEnv: JSEnv =
-    JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
-      .withExecutable(nodePath)
-      .withEnv(nodeEnvironment)
-    )
+  def mkJsEnv: JSEnv = JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
+    .withExecutable(nodePath)
+    .withEnv(nodeEnvironment)
+  )

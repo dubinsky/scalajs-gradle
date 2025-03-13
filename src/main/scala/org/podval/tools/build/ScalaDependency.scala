@@ -1,6 +1,5 @@
 package org.podval.tools.build
 
-import org.gradle.api.Project
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(

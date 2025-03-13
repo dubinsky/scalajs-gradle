@@ -5,7 +5,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.sys.process.{Process, ProcessLogger}
 
 object Exec:
-  private lazy val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger: Logger = LoggerFactory.getLogger(Exec.getClass)
 
   def which(what: String): Option[File] =
     attempt(command = s"which $what").map(File(_))

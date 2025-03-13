@@ -34,9 +34,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
   private val os: Os = Os.get
   private val isWindows: Boolean = os == Os.Windows
   private val architecture: Architecture = Architecture.get
-
-// TODO override def toString: String = s"Node v$version for $os on $architecture"
-
+  
   private val osName: String = os match
     case Os.Windows => "win"
     case Os.Mac     => "darwin"

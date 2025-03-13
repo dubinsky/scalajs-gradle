@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
 import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.scalajs.ScalaJS
 
 // https://github.com/scala-js/scala-js/tree/main/junit-runtime/src/main/scala
 // https://github.com/scala-js/scala-js/blob/main/junit-runtime/src/main/scala/org/scalajs/junit/JUnitFramework.scala
@@ -11,7 +12,7 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   displayName = "JUnit4 Scala.js",
   group = "org.scala-js",
   artifact = "scalajs-junit-test-runtime",
-  versionDefault = Version("1.18.2"), // Note: Scala.js version!
+  versionDefault = ScalaJS.versionDefault,
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
   // This is a Scala.js-only test framework

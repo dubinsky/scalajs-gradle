@@ -398,11 +398,11 @@ tasks.withType(ScalaCompile) {
 === Linking
 
 For linking of the main code, plugin adds `link` task of type
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Main];
+link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSLinkMainTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkMainTask];
 all tasks of this type automatically depend on the `classes` task.
 
 For linking of the test code, plugin adds `linkTest` task of type
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSLinkTask.scala[org.podval.tools.scalajsplugin.ScalaJSLinkTask.Test];
+link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSLinkTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkTestTask];
 all tasks of this type automatically depend on the `testClasses` task.
 
 Each of the tasks exposes a property `JSDirectory` that points to a directory
@@ -459,9 +459,9 @@ Plugin adds `run` task for running the main code (if it is an application and no
 this task automatically depends on the `link` task.
 
 Additional tasks of type
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTask.Main]
+link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSRunMainTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSRunMainTask]
 can be added manually;
-their dependency on a corresponding `ScalaJSLinkTask.Main` task must be set manually too.
+their dependency on a corresponding `ScalaJSLinkMainTask` task must be set manually too.
 
 === Node.js
 
@@ -595,17 +595,18 @@ so they are not forked;
 - plugin applies its own Gradle test framework (`useSbt`) to each test task;
 re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported;
 - test filtering support is detailed in <<_test_filtering>>;
-- test tagging support is detailed in <<_test_tagging>>.
+- test tagging support is detailed in <<_test_tagging>>;
+- dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
 
 If there is a need to have test runs with different configurations,
 more testing tasks can be added manually.
 
 For plain Scala projects (no Scala.js), the type of the test task is
-link:src/main/scala/org/podval/tools/scalajsplugin/JvmTestTask.scala[org.podval.tools.scalajsplugin.JvmTestTask].
+link:src/main/scala/org/podval/tools/scalajsplugin/jvm/JvmTestTask.scala[org.podval.tools.scalajsplugin.jvm.JvmTestTask].
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
 For Scala.js projects the type of the test task is
-link:src/main/scala/org/podval/tools/scalajsplugin/ScalaJSRunTask.scala[org.podval.tools.scalajsplugin.ScalaJSRunTas.Test].
+link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSTestTask].
 Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 
@@ -682,13 +683,14 @@ even the restricted test case selection means of the SBT test interface:
   run all test cases in the class;
 - `specs2` does the right thing when individual test case names are used
   but if test case wildcards are used it runs all test cases in the class;
-- `ScalaCheck` either does not run any test cases or runs all of them (TODO BUG?);
+- `ScalaCheck`'s test filtering functionality is not available:
+  [issue](https://github.com/dubinsky/scalajs-gradle/issues/43);
 - `ZIO test` treats specific test case inclusions as wildcards
   and instead of running just the named test cases runs all whose names contain
   the specified string, because the only test case name-based filtering that ZIO Test supports is "search terms", which
   https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/FilteredSpec.scala#L32[work as wildcards];
 - `ZIO Test` in the presence of wildcard test case inclusions
-  runs all tests in the class because of a https://github.com/zio/zio/pull/9680[bug].
+  runs all tests in the class because of a https://github.com/dubinsky/scalajs-gradle/issues/45[bug].
 
 === Test Tagging
 
@@ -993,7 +995,8 @@ in this regard to Gradle -
 but then I realized that I can encode additional information I need to get to the worker in the test class name!
 So now there is only one Gradle file that I need to modify: `DefaultTestExecuter`.
 Modification needed is - not to fork the JVM when running Scala.js tests (they have to run in the same JVM
-where the test frameworks were loaded).
+where the test frameworks were loaded;
+see org.scalajs.sbtplugin.ScalaJSPluginInternal.
 
 === Test Ids and Serialization
 `org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer`
@@ -1034,6 +1037,27 @@ link:src/test/scala/org/podval/tools/test/testproject/ForClass.scala[ForClass],
 link:src/test/scala/org/podval/tools/test/testproject/GroupingFunSpec.scala[GroupingFunSpec],
 link:src/test/scala/org/podval/tools/test/testproject/SourceFile.scala[SourceFile],
 link:src/test/scala/org/podval/tools/test/testproject/TestProject.scala[TestProject].
+
+=== Gradle Internals
+To stop tests from being forked - which is needed to run tests on Scala.js -
+I had to fork `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter`
+(see link:src/main/scala/org/podval/tools/test/task/DefaultTestExecuter.scala).
+This is suboptimal, since I now have to track changes to the forked class.
+My proposal to expose an extension point that would allow to avoid the fork was rejected:
+https://github.com/gradle/gradle/issues/32666[32666],
+https://github.com/gradle/gradle/pull/32656[32656];
+that made it pretty clear that other modifications to Gradle that would make my code
+cleaner would be to, so I did not even bother:
+
+- to determine if Gradle is being run by IntelliJ Idea
+(see link:src/main/scala/org/podval/tools/test/task/IntelliJIdea.scala)
+I have to access non-public classes and methods using reflection;
+- to add to the implementation class path of `WorkerProcessBuilder`,
+I had to use reflection
+(see link:src/main/scala/org/podval/tools/test/task/TestFramework.scala);
+- to set test framework on the test task, I had to use reflection
+(see link:src/main/scala/org/podval/tools/test/task/TestTask.scala).
+
 
 === Scala 2.12
 When running on JVM (and not on Scala.js), tests are forked into a separate JVM.
@@ -1120,12 +1144,3 @@ UTest uses `NestedTestSelector` for this, while others use `TestSelector`.
 ScalaTest does not return nested tasks for nested suites
 (or anything, according to the documentation of its Runner);
 events for the tests in the nested suites have `NestedTestSelector`.
-
-TODO I get no events from ScalaTest nested test suit when running on JVM -
-but I do when running on Scala.js!
-
-=== TODO
-
-Add new tags to the plugin's portal page: manually at https://github.com/gradle/plugin-portal-requests !
-
-Look at Gradle's new test hotness: JVM test suite plugin.

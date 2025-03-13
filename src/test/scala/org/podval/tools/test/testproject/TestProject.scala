@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 
 final class TestProject(projectDir: File):
-  private def gradleRunner: GradleRunner = GradleRunner.create().withProjectDir(projectDir)
+  private def gradleRunner: GradleRunner = GradleRunner.create.withProjectDir(projectDir)
 
   def test(commandLineIncludeTestNames: Seq[String]): (List[TestClassResult], String) =
     val testsArgument: List[String] =
@@ -208,6 +208,7 @@ object TestProject:
        |  testLogging.lifecycle {
        |    events("STARTED", "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR")
        |  }
+       |  useSbtAnalysisTestDetection = true
        |  useSbt {
        |    includeCategories = $includeTagsString
        |    excludeCategories = $excludeTagsString
