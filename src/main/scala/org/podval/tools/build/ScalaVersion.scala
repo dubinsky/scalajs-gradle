@@ -34,7 +34,7 @@ object ScalaVersion:
     override def versionSuffix(scalaVersion: Version): String = scalaVersion.major.toString
     override protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
     
-    val versionDefault: Version = Version("3.6.3")
+    val versionDefault: Version = Version("3.6.4")
 
     override protected object ScalaLibrary extends JavaDependency.Maker:
       override def versionDefault: Version = Scala3.versionDefault

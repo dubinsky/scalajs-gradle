@@ -3,8 +3,8 @@
 :toclevels: 4
 // INCLUDED ATTRIBUTES
 :version-gradle: 8.13
-:version-plugin: 0.5.0
-:version-scala: 3.6.3
+:version-plugin: 0.5.1
+:version-scala: 3.6.4
 :version-scala2-minor: 2.13
 :version-scala2: 2.13.16
 :version-zinc: 1.10.8
