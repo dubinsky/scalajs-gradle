@@ -3,7 +3,10 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.{Plugin, Project}
-import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.scalajsplugin.jvm.JvmDelegate
+import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
+import java.io.File
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class ScalaJSPlugin extends Plugin[Project]:
@@ -14,7 +17,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
       Option(project.findProperty(ScalaJSPlugin.maiflaiProperty )).isDefined ||
       Option(project.findProperty(ScalaJSPlugin.disabledProperty)).exists(_.toString.toBoolean)
 
-    val delegate: ScalaJSPlugin.Delegate = if isJSDisabled then JvmDelegate() else ScalaJSDelegate()
+    val delegate: BackendDelegate = if isJSDisabled then JvmDelegate() else ScalaJSDelegate()
 
     delegate.beforeEvaluate(project)
 
@@ -30,41 +33,27 @@ final class ScalaJSPlugin extends Plugin[Project]:
         projectScalaPlatform
       )
 
-      delegate.dependencyRequirements(
-        project,
-        pluginScalaPlatform = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm),
-        projectScalaPlatform = projectScalaPlatform
-      ).foreach(_.applyToConfiguration(project))
+      delegate
+        .dependencyRequirements(
+          project,
+          pluginScalaPlatform = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm),
+          projectScalaPlatform = projectScalaPlatform
+        )
+        .foreach(_.applyToConfiguration(project))
+
+      def getConfiguration(name: String): Iterable[File] = Gradle.getConfiguration(project, name).asScala
 
       projectScalaLibrary.verify(
-        ScalaLibrary.getFromClasspath(Gradle.getConfiguration(project, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).asScala)
+        ScalaLibrary.getFromClasspath(getConfiguration(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME))
       )
 
-      // TODO [classpath] instead, add configuration itself to whatever configuration lists dependencies available to the plugin... "classpath"?
-      def addConfigurationToClassPath(configurationName: String): Unit =
-        GradleClassPath.addTo(this, Gradle.getConfiguration(project, configurationName).asScala)
-
-      // AnalysisDetector, which runs during execution of TestTask, needs Zinc classes;
-      // if I ever get rid of it, this classpath expansion goes away.
-      addConfigurationToClassPath(ScalaBasePlugin.ZINC_CONFIGURATION_NAME)
-      delegate.configurationToAddToClassPath.foreach(addConfigurationToClassPath)
+      // Expanding plugin's classpath.
+      (
+        Seq(ScalaBasePlugin.ZINC_CONFIGURATION_NAME) ++ // for analysis-based test detection
+        delegate.configurationToAddToClassPath.toSeq
+      )
+        .foreach((configurationName: String) => GradleClassPath.addTo(this, getConfiguration(configurationName)))
 
 object ScalaJSPlugin:
   private val disabledProperty: String = "org.podval.tools.scalajs.disabled"
   private val maiflaiProperty : String = "com.github.maiflai.gradle-scalatest.mode"
-
-  abstract class Delegate:
-    def beforeEvaluate(project: Project): Unit
-
-    def configurationToAddToClassPath: Option[String]
-
-    def configureProject(
-      project: Project,
-      projectScalaPlatform: ScalaPlatform
-    ): Unit
-
-    def dependencyRequirements(
-      project: Project,
-      pluginScalaPlatform: ScalaPlatform,
-      projectScalaPlatform: ScalaPlatform
-    ): Seq[DependencyRequirement]

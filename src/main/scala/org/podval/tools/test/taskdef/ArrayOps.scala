@@ -8,7 +8,7 @@ class ArrayOps[T: ClassTag](ops: Ops[T], separator: String) extends Ops[Array[T]
     arrayMkString(arrayMap(values, _.toString), "[", ", ", "]")
 
   final override protected def toStrings(value: Array[T]): Array[String] =
-    value.map(ops.write)
+    arrayMap(value, ops.write)
 
   final override protected def fromStrings(strings: Array[String]): Array[T] =
     arrayMap(strings, ops.read)

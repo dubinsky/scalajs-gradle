@@ -7,7 +7,7 @@ import org.podval.tools.build.{JavaDependency, Version}
 // https://github.com/junit-team/junit4
 // https://github.com/junit-team/junit4/blob/main/src/main/java/org/junit/experimental/categories/Category.java
 //
-// Note: no nested tasks
+// No nested tasks.
 // Dependencies:
 // Scala:
 // com.github.sbt:junit-interface:0.13.3

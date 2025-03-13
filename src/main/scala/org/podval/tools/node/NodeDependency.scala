@@ -6,14 +6,6 @@ import org.podval.tools.util.Strings
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-// Heavily inspired by (read: copied and reworked from :)) https://github.com/srs/gradle-node-plugin by srs.
-// That plugin is not used directly because its tasks are not reusable unless the plugin is applied to the project,
-// and I do not want to apply Node plugin to every project that uses my ScalaJS Gradle plugin, for instance
-// (https://github.com/dubinsky/scalajs-gradle).
-// Also, I want to be able to run npm from within my code without creating tasks.
-// Also, I would like to be able to use Node available via GraalVM's polyglot support.
-// My simplified Node support is under 300 lines.
-
 // Describes Node distribution's packaging and structure.
 object NodeDependency extends SimpleDependency[NodeDependency.type](
   group = "org.nodejs",
@@ -34,9 +26,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
   private val os: Os = Os.get
   private val isWindows: Boolean = os == Os.Windows
   private val architecture: Architecture = Architecture.get
-
-// TODO override def toString: String = s"Node v$version for $os on $architecture"
-
+  
   private val osName: String = os match
     case Os.Windows => "win"
     case Os.Mac     => "darwin"

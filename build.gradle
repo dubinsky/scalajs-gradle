@@ -2,13 +2,13 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.5.0'
+  id 'org.podval.tools.scalajs' version '0.5.1'
   id 'com.gradle.plugin-publish' version '1.3.1'
 }
 
 group = 'org.podval.tools'
 version = version_plugin
-description = 'Gradle plugin for ScalaJS'
+description = 'Gradle plugin for Scala.js'
 
 final String scalaVersion       = version_scala
 final String scala2versionMinor = version_scala2_minor
@@ -20,12 +20,13 @@ dependencies {
 
   zinc "org.scala-sbt:zinc_$scala2versionMinor:$zincVersion"
 
-  compileOnly 'ch.qos.logback:logback-classic:1.5.17'
-
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
 
-  // Note: transitive dependencies: zinc-persist -> zinc-core -> zinc-apiinfo, io, compiler-interface
+  // for SbtTestFrameworkDetector.detectFromAnalysis
+  // transitive dependencies: zinc-persist -> zinc-core -> zinc-apiinfo, io, compiler-interface
   compileOnly "org.scala-sbt:zinc-persist_$scala2versionMinor:$zincVersion"
+  // for TestClassVisitor (Gradle internal copy under "impldep" is not accessible to the plugin)
+  implementation "org.ow2.asm:asm:9.7.1"
 
   compileOnly "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
@@ -40,10 +41,15 @@ dependencies {
   compileOnly "org.scalameta:munit_3:$version_framework_munit"
   compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.15"
 
+  // Test framework used to test this project
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+dependencyUpdates {
+  revision="release"
+}
 
 tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {
@@ -98,7 +104,7 @@ publishing {
         'https://oss.sonatype.org/content/repositories/snapshots' :
         'https://oss.sonatype.org/service/local/staging/deploy/maven2'
 
-      // Note: this will use mavenCentralUsername and mavenCentralPassword properties - if they are available
+      // This will use mavenCentralUsername and mavenCentralPassword properties - if they are available.
       credentials(PasswordCredentials)
     }
   }

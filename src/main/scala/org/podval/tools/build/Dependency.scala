@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-import org.gradle.api.Project
+import org.slf4j.{Logger, LoggerFactory}
 
 abstract class Dependency(
   final override val group: String,
@@ -17,17 +17,17 @@ abstract class Dependency(
   final def verifyRequired(
     found: Dependency.WithVersion,
     version: Version,
-    isVersionExact: Boolean,
-    project: Project
+    isVersionExact: Boolean
   ): Unit =
-    if isVersionExact && found.version != version then project.getLogger.info(
-      s"Found $found, but the project uses version $version", null, null, null
-    )
+    if isVersionExact && found.version != version then
+      Dependency.logger.warn(s"Found $found, but the project uses version $version")
     verifyRequiredMore()
 
   protected def verifyRequiredMore(): Unit = ()
 
 object Dependency:
+  private val logger: Logger = LoggerFactory.getLogger(Dependency.getClass)
+  
   open class WithVersion(
     dependency: Dependency,
     version: Version

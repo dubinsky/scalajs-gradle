@@ -41,7 +41,7 @@ object ScalaVersion:
       override def group: String = ScalaVersion.group
       override def artifact: String = "scala3-library_3"
 
-    // Note: there is no Scala 2 equivalent
+    // There is no Scala 2 equivalent
     object ScalaLibraryJS extends ScalaDependency.Maker:
       override def versionDefault: Version = Scala3.versionDefault
       override def group: String = ScalaVersion.group
@@ -53,7 +53,7 @@ object ScalaVersion:
     override def versionSuffix(scalaVersion: Version): String = scalaVersion.majorAndMinorString
     override protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
     
-    // Note: Scala 2 version used by Scala 3 from 3.0.0 to the current is 2.13
+    // Scala 2 version used by Scala 3 from 3.0.0 to the current is 2.13.
     val majorAndMinor: Version = Version("2.13")
     
     override protected object ScalaLibrary extends JavaDependency.Maker:

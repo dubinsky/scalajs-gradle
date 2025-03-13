@@ -1,7 +1,6 @@
 package org.podval.tools.node
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.{Input, TaskAction}
 
 abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNode:
@@ -14,7 +13,7 @@ abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNo
   // setArguments() can not be declared here, and is instead declared in subclasses,
   // since it is annotated - and annotation arguments must be constant...
 
-  @TaskAction final def execute(): Unit = command(node)(arguments, getLogger.log(LogLevel.LIFECYCLE, _))
+  @TaskAction final def execute(): Unit = command(node)(arguments, getLogger.lifecycle(_))
   
   protected def command(node: Node): (String, String => Unit) => Unit
 

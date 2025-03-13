@@ -2,10 +2,7 @@ package org.podval.tools.test.taskdef
 
 import sbt.testing.{NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, TestSelector, TestWildcardSelector}
 
-// Note: Selector subclasses are final and override equals(),
-// so `left.equals(right)` should work just fine,
-// but with ScalaCheck running on Scala.js (but not on JVM)
-// I get TestSelector(test) != TestSelector(test) ...
+// I can not rely on the test framework implementing `equals()` on `Selector`s correctly.
 object Selectors extends Ops[Selector](":"):
   object Many extends ArrayOps[Selector](Selectors, "--")
 

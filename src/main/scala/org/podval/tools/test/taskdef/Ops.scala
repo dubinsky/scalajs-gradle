@@ -1,11 +1,11 @@
 package org.podval.tools.test.taskdef
 
-import org.podval.tools.util.Scala212Collections.arrayZipForAll
+import org.podval.tools.util.Scala212Collections.{arrayMkString, arrayZipForAll}
 
 abstract class Ops[T](separator: String):
   final def equal(left: T, right: T): Boolean = arrayZipForAll(toStrings(left), toStrings(right), _ == _)
   
-  final def write(value: T): String = toStrings(value).mkString(separator)
+  final def write(value: T): String = arrayMkString(toStrings(value), "", separator, "")
 
   protected def toStrings(value: T): Array[String]
 

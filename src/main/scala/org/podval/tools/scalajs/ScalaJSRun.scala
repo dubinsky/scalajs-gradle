@@ -2,15 +2,16 @@ package org.podval.tools.scalajs
 
 import org.podval.tools.files.PipeOutputThread
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
+import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import java.io.InputStream
 
-final class ScalaJSRun(common: ScalaJSRunCommon):
+final class ScalaJSRun(runCommon: ScalaJSRunCommon):
   def run(): Unit =
-    val jsEnv: JSEnv = common.mkJsEnv
-    common.common.logger.lifecycle(s"Running ${common.mainModulePath} on ${jsEnv.name}\n")
+    val jsEnv: JSEnv = runCommon.mkJsEnv
+    runCommon.common.logLifecycle(s"Running ${runCommon.mainModulePath} on ${jsEnv.name}\n")
 
     /* The list of threads that are piping output to System.out and
      * System.err. This is not an AtomicReference or any other thread-safe
@@ -32,12 +33,12 @@ final class ScalaJSRun(common: ScalaJSRunCommon):
      * server mode.
      */
     val config: RunConfig = RunConfig()
-      .withLogger(common.common.jsLogger)
+      .withLogger(runCommon.common.loggerJS)
       .withInheritOut(false)
       .withInheritErr(false)
       .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => pipeOutputThreads =
-        PipeOutputThread.pipe(out, common.common.logger.lifecycle, "out: ") :::
-        PipeOutputThread.pipe(err, common.common.logger.error    , "err: ")
+        PipeOutputThread.pipe(out, runCommon.common.logLifecycle, "out: ") :::
+        PipeOutputThread.pipe(err, ScalaJSRun.logger.error      , "err: ")
       )
 
     // TODO Without this delay (or with a shorter one)
@@ -47,7 +48,7 @@ final class ScalaJSRun(common: ScalaJSRunCommon):
     Thread.sleep(2000)
 
     try
-      val run: JSRun = jsEnv.start(Seq(common.input), config)
+      val run: JSRun = jsEnv.start(Seq(runCommon.input), config)
       Await.result(awaitable = run.future, atMost = Duration.Inf)
     finally
       /* Wait for the pipe output threads to be done, to make sure that we
@@ -60,3 +61,7 @@ final class ScalaJSRun(common: ScalaJSRunCommon):
        * the interrupted exception will shadow any error from the run).
        */
       pipeOutputThreads.foreach(_.join)
+
+object ScalaJSRun:
+  private val logger: Logger = LoggerFactory.getLogger(ScalaJSRun.getClass)
+  

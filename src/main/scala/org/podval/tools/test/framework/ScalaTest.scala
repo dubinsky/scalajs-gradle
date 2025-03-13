@@ -4,7 +4,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 
 // implementation: https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala
 // runner arguments: https://www.scalatest.org/user_guide/using_the_runner
-// Note: no nested tasks
+// No nested tasks.
 // DOES NOT bring in test-interface (in non-Scala.js variant)!
 
 // Dependencies:

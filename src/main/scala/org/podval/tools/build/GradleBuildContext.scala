@@ -4,16 +4,20 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.{Configuration, Dependency}
 import org.gradle.api.artifacts.repositories.{ArtifactRepository, IvyArtifactRepository, IvyPatternRepositoryLayout}
 import org.gradle.api.file.CopySpec
-import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.SourceSet
 import org.gradle.process.{ExecOperations, JavaExecSpec}
+import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
+
+object GradleBuildContext:
+  private val logger: Logger = LoggerFactory.getLogger(GradleBuildContext.getClass)
 
 final class GradleBuildContext(project: Project, execOperations: ExecOperations)
   extends GradleBuildContextCore(
-    gradleUserHomeDir = project.getGradle.getGradleUserHomeDir,
-    logger = project.getLogger
-  ) with BuildContext[Logger]:
+    gradleUserHomeDir = project.getGradle.getGradleUserHomeDir
+  ) with BuildContext:
+  
+  import GradleBuildContext.logger
   
   override def getArtifact(
     repository: Option[Repository],
@@ -41,8 +45,8 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
         newRepository.metadataSources((metadataSources: IvyArtifactRepository.MetadataSources) =>
           metadataSources.artifact(); // Indicates that this repository may not contain metadata files...
         )
-        
-    info(s"Resolving $dependencyNotation")
+
+    logger.info(s"Resolving $dependencyNotation")
 
     val dependency: Dependency = project.getDependencies.create(dependencyNotation)
     val configuration: Configuration = project.getConfigurations.detachedConfiguration(dependency)
@@ -51,7 +55,7 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
 
     try
       val result: File = configuration.getSingleFile
-      info(s"Resolved: $result")
+      logger.info(s"Resolved: $result")
       Some(result)
     catch
       case _: IllegalStateException =>
@@ -64,7 +68,7 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
         project.getRepositories.addAll(allRepositories)
 
   override def unpackArchive(file: File, isZip: Boolean, into: File): Unit =
-    info(s"Unpacking $file into $into")
+    logger.info(s"Unpacking $file into $into")
 
     into.mkdir()
     project.copy: (copySpec: CopySpec) =>
@@ -74,7 +78,7 @@ final class GradleBuildContext(project: Project, execOperations: ExecOperations)
       ()
 
   override def javaexec(mainClass: String, args: String*): Unit =
-    info(s"Running $mainClass(${args.mkString(", ")})")
+    logger.info(s"Running $mainClass(${args.mkString(", ")})")
 
     execOperations.javaexec: (exec: JavaExecSpec) =>
       exec.setClasspath(Gradle.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getRuntimeClasspath)

@@ -23,13 +23,9 @@ import java.io.File
 import java.util.ArrayList
 import scala.jdk.CollectionConverters.*
 
-// Note: Translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter.
-// This is the only Gradle class that I need to modify
-// to incorporate NonForkingTestClassProcessor needed for Scala.js tests.
-// To make it unnecessary to copy this file, I filed:
-//   https://github.com/gradle/gradle/issues/32666
-//   https://github.com/gradle/gradle/pull/32656
-// which was rejected...
+// Translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter.
+// This is the only Gradle class that I need to fork, modify and maintain
+// (to use NonForkingTestClassProcessor needed for Scala.js tests).
 class DefaultTestExecuter(
   workerFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,
@@ -89,13 +85,11 @@ class DefaultTestExecuter(
       if !testExecutionSpec.isScanForTestClasses || testFramework.getDetector == null then None else Some:
         val result: TestFrameworkDetector = testFramework.getDetector
         result.setTestClasses(java.util.ArrayList[File](testExecutionSpec.getTestClassesDirs.getFiles))
-        // TODO [classpath] switch to classpath.getApplicationClasspath() without reflection -
-        // when it actually starts working instead of throwing
-        //  java.lang.NoSuchMethodError:
-        //    'org.gradle.internal.impldep.com.google.common.collect.ImmutableList
-        //    org.gradle.api.internal.tasks.testing.worker.ForkedTestClasspath.getApplicationClasspath()'
-        val applicationClassPath: java.util.List[File] =
-          classpath.getClass.getMethod("getApplicationClasspath").invoke(classpath).asInstanceOf[java.util.List[File]]
+        val applicationClassPath: java.util.List[File] = classpath
+          .getClass
+          .getMethod("getApplicationClasspath")
+          .invoke(classpath)
+          .asInstanceOf[java.util.List[File]]
         result.setTestClasspath(applicationClassPath)
         result
 

@@ -2,7 +2,7 @@ package org.podval.tools.util
 
 import scala.reflect.ClassTag
 
-// Array operations that avoid issues with missing classes/methods while running on Scala 2.12
+// Array operations that avoid issues with missing classes/methods while running on Scala 2.12.
 object Scala212Collections:
   def arrayMap[A, B: ClassTag](array: Array[A], f: A => B): Array[B] =
     val result: Array[B] = new Array[B](array.length)

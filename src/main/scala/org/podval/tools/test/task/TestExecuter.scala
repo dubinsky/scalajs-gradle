@@ -12,13 +12,12 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
-import org.podval.tools.test.SourceMapper
-import org.podval.tools.test.processor.{RunTestClassProcessorFactory, WriteTestClassProcessor}
-import org.podval.tools.test.result.{RootTestSuiteOutputFixingTestResultProcessor, SourceMappingTestResultProcessor,
-  TracingTestResultProcessor}
+import org.podval.tools.test.environment.SourceMapper
+import org.podval.tools.test.run.{FixRootTestSuiteOutputTestResultProcessor, RunTestClassProcessorFactory, 
+  SourceMappingTestResultProcessor, TracingTestResultProcessor, WriteTestClassProcessor}
 
 class TestExecuter(
-  canFork: Boolean,
+  isScalaJS: Boolean,
   sourceMapper: Option[SourceMapper],
   testFilter: DefaultTestFilter,
   maxWorkerCount: Int,
@@ -42,14 +41,12 @@ class TestExecuter(
     testExecutionSpec: JvmTestExecutionSpec,
     testResultProcessor: TestResultProcessor
   ): Unit =
-    // Note: deeper down, TestMainAction wraps testResultProcessorEffective in AttachParentTestResultProcessor.
+    // Deeper down, TestMainAction wraps testResultProcessorEffective in AttachParentTestResultProcessor.
     val testResultProcessorEffective: TestResultProcessor =
-      RootTestSuiteOutputFixingTestResultProcessor(
+      FixRootTestSuiteOutputTestResultProcessor(
         SourceMappingTestResultProcessor(
           TracingTestResultProcessor(
-            testResultProcessor,
-            clock,
-            isEnabled = false
+            testResultProcessor
           ),
           sourceMapper
         )
@@ -66,14 +63,12 @@ class TestExecuter(
     workerConfigurationAction: Action[WorkerProcessBuilder],
     documentationRegistry: DocumentationRegistry
   ): TestClassProcessor =
-    // Scala.js tests must be run in the same JVM where their frameworks were instantiated.
-    val doNotFork: Boolean = !canFork
-    if doNotFork then
+    if isScalaJS then
       workerTestClassProcessorFactory.asInstanceOf[RunTestClassProcessorFactory].createNonForking(clock)
     else
-      // Encoding of TestClassRun happens at the end of the TestClassProcessor chain,
-      // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor
-      // can do their jobs.
+      // WriteTestClassProcessor is at the end of the TestClassProcessor chain created in DefaultTestExecuter,
+      // right before the ForkingTestClassProcessor,
+      // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor can do their jobs.
       WriteTestClassProcessor(
         super.createTestClassProcessor(
           workerLeaseService,

@@ -1,34 +1,37 @@
 package org.podval.tools.scalajs
 
-// TODO disentangle from Gradle - use org.slf4j.Logger?
-import org.gradle.api.logging.{Logger, LogLevel as GLevel}
+import org.slf4j.{Logger, LoggerFactory}
 import org.scalajs.linker.interface.ModuleKind as ModuleKindSJS
-import org.scalajs.logging.Level as JSLevel
+import org.scalajs.logging.{Level as LevelJS, Logger as LoggerJS}
 import java.io.File
 
 final class ScalaJSCommon(
   val jsDirectory: File,
   val reportBinFile: File,
   val moduleKind: ModuleKind,
-  val logger: Logger,
   val logSource: String,
+  val logLifecycle: String => Unit,
   val abort: String => Exception
 ):
-  def jsLogger: org.scalajs.logging.Logger = new org.scalajs.logging.Logger:
+  private val logger: Logger = LoggerFactory.getLogger(classOf[ScalaJSCommon])
+  
+  def loggerJS: LoggerJS = new LoggerJS:
     override def trace(t: => Throwable): Unit =
       logger.error(s"$logSource Error", t)
-    override def log(level: JSLevel, message: => String): Unit =
-      logger.log(ScalaJSCommon.scalajs2gradleLevel(level), s"$logSource: $message")
+
+    override def log(level: LevelJS, message: => String): Unit =
+      val toLog: String = s"$logSource: $message"
+
+      // Gradle has its own copy of org.slf4j API, which predates introduction of logger.atLevel().
+      given CanEqual[LevelJS, LevelJS] = CanEqual.derived
+      level match
+        case LevelJS.Error => logger.error(toLog)
+        case LevelJS.Warn  => logger.warn (toLog)
+        case LevelJS.Info  => logger.info (toLog)
+        case LevelJS.Debug => logger.debug(toLog)
 
   def moduleKindSJS: ModuleKindSJS = moduleKind match
     case ModuleKind.NoModule       => ModuleKindSJS.NoModule
     case ModuleKind.ESModule       => ModuleKindSJS.ESModule
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
 
-object ScalaJSCommon:
-  private given CanEqual[JSLevel, JSLevel] = CanEqual.derived
-  private def scalajs2gradleLevel(level: JSLevel): GLevel = level match
-    case JSLevel.Error => GLevel.ERROR
-    case JSLevel.Warn  => GLevel.WARN
-    case JSLevel.Info  => GLevel.INFO
-    case JSLevel.Debug => GLevel.DEBUG

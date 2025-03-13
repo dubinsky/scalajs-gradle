@@ -3,7 +3,7 @@ package org.podval.tools.test.framework
 import org.podval.tools.build.{Dependency, ScalaDependency, ScalaPlatform, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
-// Note: based on sbt.TestFramework from org.scala-sbt.testing
+// Based on sbt.TestFramework.
 abstract class FrameworkDescriptor(
   final val name: String,
   final val displayName: String,
@@ -15,26 +15,23 @@ abstract class FrameworkDescriptor(
   tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
   includeTagsOption: String = "",
   excludeTagsOption: String = "",
-  isScala2Supported: Boolean = true,
   final val versionDefaultScala2: Option[Version] = None,
   final val isJvmSupported: Boolean = true,
-  // Note: if isScalaJSSupported, dependency must be a Scala one.
   final val isScalaJSSupported: Boolean = true,
   final val jvmUnderlying: Option[Dependency.Maker[?]] = None,
   final val scalaJSUnderlying: Option[ScalaDependency.Maker] = None
 ) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
-  
+  if isScalaJSSupported then require(this.isInstanceOf[ScalaDependency.Maker])
+
   final def versionDefault(platform: ScalaPlatform): Version =
     if platform.version.isScala3
     then versionDefault
     else versionDefaultScala2.getOrElse(versionDefault)
   
   final def isSupported(platform: ScalaPlatform): Boolean = 
-    (platform.version.isScala3 || isScala2Supported) && (
       if platform.backend.isJS
       then isScalaJSSupported
       else isJvmSupported
-    )
   
   final def underlying(platform: ScalaPlatform): Option[Dependency.Maker[?]] =
     if platform.backend.isJS
@@ -54,7 +51,7 @@ abstract class FrameworkDescriptor(
     .newInstance()
 
 object FrameworkDescriptor:
-  def all: Array[FrameworkDescriptor] = Array(
+  private def all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,
     JUnit5,

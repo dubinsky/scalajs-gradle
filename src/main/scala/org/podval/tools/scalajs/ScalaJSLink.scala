@@ -1,10 +1,11 @@
 package org.podval.tools.scalajs
 
 import org.podval.tools.util.Files
-import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig, 
+import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,
   ModuleInitializer as ModuleInitializerSJS, ModuleSplitStyle as ModuleSplitStyleSJS}
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.testing.adapter.TestAdapterInitializer
+import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -19,7 +20,7 @@ final class ScalaJSLink(common: ScalaJSCommon):
     prettyPrint: Boolean,
     runtimeClassPath: Seq[File],
   ): Unit =
-    // Note: tests use fixed entry point
+    // Tests use fixed entry point.
     val moduleInitializersSJS: Seq[ModuleInitializerSJS] = moduleInitializers
       .map(_.map(ScalaJSLink.toModuleInitializerSJS))
       .getOrElse(Seq(ModuleInitializerSJS.mainMethod(
@@ -39,7 +40,7 @@ final class ScalaJSLink(common: ScalaJSCommon):
       )
       .withPrettyPrint(prettyPrint)
 
-    common.logger.info(
+    ScalaJSLink.logger.info(
       s"""${common.logSource}:
          |JSDirectory = ${common.jsDirectory}
          |reportFile = $reportTextFile
@@ -59,7 +60,7 @@ final class ScalaJSLink(common: ScalaJSCommon):
           irFiles = irFiles,
           moduleInitializers = moduleInitializersSJS,
           output = PathOutputDirectory(common.jsDirectory.toPath),
-          logger = common.jsLogger
+          logger = common.loggerJS
         ))
       )
 
@@ -69,6 +70,8 @@ final class ScalaJSLink(common: ScalaJSCommon):
       case e: LinkingException => throw common.abort("ScalaJS link error: " + e.getMessage)
 
 object ScalaJSLink:
+  private val logger: Logger = LoggerFactory.getLogger(ScalaJSLink.getClass)
+  
   private def toModuleInitializerSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
     val clazz: String = moduleInitializer.className
     val method: String = moduleInitializer.mainMethodName.getOrElse("main")

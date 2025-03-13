@@ -1,9 +1,15 @@
 package org.podval.tools.build
 
 import org.podval.tools.util.Files
+import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
+private object InstallableDependency:
+  private val logger: Logger = LoggerFactory.getLogger(InstallableDependency.getClass)
+
 trait InstallableDependency[T] extends Dependency:
+  import InstallableDependency.logger
+  
   def repository: Option[Repository] = None
 
   // Where retrieved distributions are cached
@@ -22,13 +28,13 @@ trait InstallableDependency[T] extends Dependency:
 
   def fromOs: Option[T] = None
 
-  final def getInstalled(version: Option[String], context: BuildContextCore[?]): T = get(
+  final def getInstalled(version: Option[String], context: BuildContextCore): T = get(
     version = version,
     context = context,
     ifDoesNotExist = (dependencyWithVersion, _) => context.fatalError(s"Needed dependency does not exist: $dependencyWithVersion")
   )
 
-  final def getInstalledOrInstall(version: Option[String], context: BuildContext[?]): T = get(
+  final def getInstalledOrInstall(version: Option[String], context: BuildContext): T = get(
     version = version,
     context = context,
     ifDoesNotExist = (dependencyWithVersion, result) => install(context, dependencyWithVersion, result)
@@ -36,7 +42,7 @@ trait InstallableDependency[T] extends Dependency:
 
   private def get(
     version: Option[String],
-    context: BuildContextCore[?],
+    context: BuildContextCore,
     ifDoesNotExist: (Dependency.WithVersion, T) => Unit
   ): T = version match
     case None =>
@@ -51,19 +57,19 @@ trait InstallableDependency[T] extends Dependency:
       )
 
       if exists(result)
-      then context.info(s"Existing $dependencyWithVersion detected: $result")
+      then logger.info(s"Existing $dependencyWithVersion detected: $result")
       else ifDoesNotExist(dependencyWithVersion, result)
       result
 
-  private def installsInto(context: BuildContextCore[?], dependencyWithVersion: Dependency.WithVersion): File =
+  private def installsInto(context: BuildContextCore, dependencyWithVersion: Dependency.WithVersion): File =
     Files.file(context.frameworks, cacheDirectory, dependencyWithVersion.fileName)
 
   private def install(
-    context: BuildContext[?],
+    context: BuildContext,
     dependencyWithVersion: Dependency.WithVersion,
     result: T
   ): Unit =
-    context.lifecycle(s"Installing $dependencyWithVersion as $result")
+    logger.warn(s"Installing $dependencyWithVersion as $result")
 
     val artifact: File = context.getArtifact(
       repository,

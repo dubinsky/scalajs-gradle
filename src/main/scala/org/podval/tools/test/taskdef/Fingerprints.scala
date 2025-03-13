@@ -2,8 +2,14 @@ package org.podval.tools.test.taskdef
 
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint}
 
-// Note: I can't rely on all the frameworks providing equals() on their Fingerprint implementations...
+// I can't rely on the test frameworks implementing `equals()` on `Fingerprint`s correctly.
 object Fingerprints extends Ops[Fingerprint](":"):
+  def toString(value: Fingerprint): String = value match
+    case annotated: AnnotatedFingerprint =>
+      s"AnnotatedFingerprint(${annotated.annotationName}, isModule=${annotated.isModule})"
+    case subclass: SubclassFingerprint =>
+      s"SubclassFingerprint(${subclass.superclassName}, isModule=${subclass.isModule}, requireNoArgConstructor=${subclass.requireNoArgConstructor})"
+
   override protected def toStrings(value: Fingerprint): Array[String] = value match
     case annotated: AnnotatedFingerprint => Array(
       Ops.toString(true),

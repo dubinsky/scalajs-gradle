@@ -9,3 +9,5 @@ final class TestClassRunNonForking(
   taskDef
 ):
   override def frameworkName: String = framework.name
+
+  override def toString: String = TaskDefs.toString(taskDef)

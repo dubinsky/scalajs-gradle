@@ -9,7 +9,7 @@ final class NodeInstallation(
 ):
   override def toString: String = s"Node installation for version $nodeVersion with root $root"
 
-  // Note: if installation was not installed from the distribution, root is meaningless
+  // If installation was not installed from a distribution, root is meaningless.
   def root: File =
     val result: File = node.getParentFile
     if result.getName == "bin" then result.getParentFile else result

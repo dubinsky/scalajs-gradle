@@ -7,7 +7,7 @@ import java.nio.file.Paths
 import scala.io.Source
 
 object Files:
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private val logger: Logger = LoggerFactory.getLogger(Files.getClass)
   
   def nameAndExtension(fullName: String): (String, Option[String]) = Strings.split(fullName, '.')
   
@@ -19,7 +19,7 @@ object Files:
 
   def read(file: File): Seq[String] =
     val source = Source.fromFile(file)
-    // Note: toList materializes the iterator before closing the source
+    // `toList` materializes the iterator before closing the source
     val result = source.getLines().toList
     source.close
     result

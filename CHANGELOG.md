@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- fix: remaining Scala 2.12 incompatibilities;
+- feat: classfile-based test detection (including JUnit4 for Scala.js);
+- feat: dry run support;
+- cleanup: TODOs;
+- cleanup: `test.filter`;
+- cleanup: `test.environment`;
+- cleanup: `scalajsplugin`;
+- cleanup: `TestEnvironment`;
+- cleanup: logging;
+- cleanup: notes;
 
 ## [0.5.1] - 2025-03-13
 - feat: support Scala.js JUnit4 on Scala 2;

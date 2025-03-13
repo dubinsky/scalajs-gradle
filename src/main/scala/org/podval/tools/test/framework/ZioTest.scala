@@ -50,7 +50,7 @@ import org.podval.tools.build.{ScalaDependency, Version}
 //   org.scala-js:scalajs-library_2.13
 
 object ZioTest extends FrameworkDescriptor(
-  // Note: this must be exactly as reported by the framework:
+  // This must be exactly as reported by the framework!
   name = s"${io.AnsiColor.UNDERLINED}ZIO Test${io.AnsiColor.RESET}",
   displayName = "ZioTest",
   group = "dev.zio",

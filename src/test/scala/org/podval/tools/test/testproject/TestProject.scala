@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 
 final class TestProject(projectDir: File):
-  private def gradleRunner: GradleRunner = GradleRunner.create().withProjectDir(projectDir)
+  private def gradleRunner: GradleRunner = GradleRunner.create.withProjectDir(projectDir)
 
   def test(commandLineIncludeTestNames: Seq[String]): (List[TestClassResult], String) =
     val testsArgument: List[String] =
@@ -19,7 +19,7 @@ final class TestProject(projectDir: File):
       then List.empty
       else List("--tests", commandLineIncludeTestNames.mkString("\"", ", ", "\""))
 
-    // Note: I assume that there are failing tests among the tests being tested
+    // I assume that there are failing tests among the tests being executed.
     val testOutput: String = gradleRunner
       .withArguments((List("clean", "test") ++ testsArgument).asJava)
       .buildAndFail

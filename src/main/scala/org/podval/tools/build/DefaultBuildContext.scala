@@ -1,17 +1,11 @@
 package org.podval.tools.build
 
-import org.podval.tools.util.Logging
-import org.slf4j.Logger
 import java.io.File
 
 final class DefaultBuildContext(
-  override val logger: Logger,
   override val frameworks: File = File(Option(System.getenv("HOME")).map(_ + "/.gradle").getOrElse("/tmp"))
-) extends BuildContext[Logger]:
-  Logging.setWarn(logger)
+) extends BuildContext:
   
-  override def lifecycle(message: String): Unit = logger.warn(message)
-
   override def fatalError(message: String): Nothing = throw IllegalArgumentException(s"Fatal error in $this: $message")
 
   override def getArtifact(repository: Option[Repository], dependencyNotation: String): Option[File] = None
