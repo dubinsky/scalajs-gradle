@@ -1,5 +1,6 @@
 package org.podval.tools.test.environment
 
+import org.podval.tools.build.GradleClassPath
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework
@@ -8,7 +9,13 @@ import java.io.File
 // Based on org.scalajs.testing.adapter.TestAdapter.
 abstract class TestEnvironment:
   final def loadedFrameworks(testClassPath: Iterable[File]): List[Framework] =
-    val result: List[Framework] = loadFrameworks(testClassPath, frameworksToLoad)
+    // This is the only way I know to:
+    // - instantiate test frameworks from a classloader that has them and
+    // - return sbt.testing.Framework used elsewhere, instead of something loaded from a different classloader
+    //  (and thus can not be cast)
+    if expandClassPath then GradleClassPath.addTo(this, testClassPath)
+
+    val result: List[Framework] = loadFrameworks(frameworksToLoad)
     
     val report: String = result.map(framework => FrameworkDescriptor.forName(framework.name).displayName).mkString(", ")
     TestEnvironment.logger.info(s"Loaded test frameworks: $report")
@@ -19,12 +26,11 @@ abstract class TestEnvironment:
     
     result
 
+  protected def expandClassPath: Boolean
+  
   protected def frameworksToLoad: List[FrameworkDescriptor]
 
-  protected def loadFrameworks(
-    testClassPath: Iterable[File],
-    frameworksToLoad: List[FrameworkDescriptor]
-  ): List[Framework]
+  protected def loadFrameworks(frameworksToLoad: List[FrameworkDescriptor]): List[Framework]
   
   def sourceMapper: Option[SourceMapper]
   

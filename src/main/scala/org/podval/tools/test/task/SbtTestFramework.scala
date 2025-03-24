@@ -4,18 +4,19 @@ import org.gradle.api.Action
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.logging.{LogLevel, Logger, Logging}
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.podval.tools.build.GradleClassPath
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
-import org.podval.tools.test.environment.TestEnvironment
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.test.run.RunTestClassProcessorFactory
 import org.podval.tools.util.Files
+import org.slf4j.{Logger, LoggerFactory}
+import sbt.testing.Framework
 import java.io.File
 import java.lang.reflect.Field
 import java.net.URL
@@ -29,14 +30,9 @@ class SbtTestFramework(
   moduleRegistry: ModuleRegistry,
   testTaskTemporaryDir: Factory[File],
   dryRun: Provider[java.lang.Boolean],
-  // TODO changing this to
-  //   loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
-  // hangs the tests
-  testEnvironmentGetter: () => TestEnvironment,
+  loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
   runningInIntelliJIdea: () => Boolean
 ) extends TestFramework:
-
-  private val logger: Logger = Logging.getLogger(classOf[SbtTestFramework])
 
   override def getOptions: SbtTestFrameworkOptions = options
 
@@ -51,16 +47,14 @@ class SbtTestFramework(
       this.moduleRegistry,
       this.testTaskTemporaryDir,
       this.dryRun,
-      this.testEnvironmentGetter,
+      this.loadedFrameworks,
       this.runningInIntelliJIdea
     )
-
-  private lazy val testEnvironment: TestEnvironment = testEnvironmentGetter()
-
-  override def close(): Unit = testEnvironment.close()
+  
+  override def close(): Unit = ()
 
   override lazy val getDetector: SbtTestFrameworkDetector =
-//    logger.lifecycle(s"--tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}")
+    SbtTestFramework.logger.info(s"SbtTestFramework: --tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}")
 
     val testFilter: TestFilter = TestFilter(
       includes = defaultTestFilter.getIncludePatterns.asScala.toSet,
@@ -70,7 +64,7 @@ class SbtTestFramework(
 
     SbtTestFrameworkDetector(
       isScalaJS,
-      (testClassPath: Iterable[File]) => testEnvironment.loadedFrameworks(testClassPath),
+      loadedFrameworks,
       testFilter,
       testTaskTemporaryDir
     )
@@ -190,6 +184,8 @@ class SbtTestFramework(
     ()
 
 object SbtTestFramework:
+  private val logger: Logger = LoggerFactory.getLogger(classOf[SbtTestFramework])
+
   private def getImplementationClassPath(builder: DefaultWorkerProcessBuilder): java.util.List[URL] =
     val implementationClassPath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
     implementationClassPath.setAccessible(true)

@@ -390,7 +390,7 @@ For linking of the main code, plugin adds `link` task of type
 link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSLinkMainTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkMainTask];
 all tasks of this type automatically depend on the `classes` task.
 
-For linking of the test code, plugin adds `linkTest` task of type
+For linking of the test code, plugin adds `testLink` task of type
 link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSLinkTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkTestTask];
 all tasks of this type automatically depend on the `testClasses` task.
 
@@ -569,14 +569,7 @@ ZIO Test is currently not supported on Scala.js because of a bug in ZIO Test
 TestNG is not supported: its
 https://github.com/sbt/sbt-testng[SBT interface] is long since abandoned.
 
-JUnit5 is not supported: it uses its own test discovery mechanism;
-as a comment on the `JupiterTestFingerprint.annotationName()` says:
-
-> return The name of this class. This is to ensure that SBT does not find
-> any tests so that we can use JUnit Jupiter's test discovery mechanism.
-
-Well, mission accomplished: my test detector does not find any tests either.
-
+JUnit5 is not supported, since it insists on using its own test discovery mechanism.
 Since both Gradle and IntelliJ Idea support JUnit5 out of the box,
 and since there is no JUnit5 for Scala.js,
 there is not much the plugin can add anyway.
@@ -603,28 +596,10 @@ Any such task will automatically depend on the `testClasses` task (and `testRunt
 
 For Scala.js projects the type of the test task is
 link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSTestTask].
-Such test tasks have to depend on a `TestLink` task. The `test` task added by the plugin does it automatically;
+Such test tasks have to depend on a
+`org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkTestTask task`.
+The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
-
-[#testing-scalajs]
-=== Scala.js
-
-Scala.js tests must be run in the same JVM where their frameworks were instantiated
-(see org.scalajs.sbtplugin.ScalaJSPluginInternal).
-
-Because of this, `TestExecuter` uses makes sure that the tests are not forked,
-and `TestTask` overrides
-`org.gradle.api.tasks.testing.Test.getMaxParallelForks()`
-to return `1` on `Scala.js` to prevent `MaxNParallelTestClassProcessor`
-from forking.
-
-On JVM, exceptions are serialized in Gradle's `org.gradle.internal.serialize.ExceptionPlaceholder`, which contains lots of details;
-on Scala.js, `org.scalajs.testing.common.Serializer.ThrowableSerializer`
-turns them all into `org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3`;
-since source mapping is used only for Scala.js,
-there is no point trying to preserve the original exception:
-it is already lost...
-We might as well just wrap what remains in `TestExecutionException`.
 
 [#test-filtering]
 === Test Filtering
@@ -659,7 +634,6 @@ Gradle inclusion/exclusion patterns can contain wildcards "*";
 semantics of matching against those patterns is complicated,
 sometimes surprising and difficult (for me) to understand;
 that is why I followed Gradle implementation as closely as possible.
-
 Plugin implements test _class_ inclusion/exclusion itself,
 but individual test _case_ inclusion/exclusion is handled by the test framework used.
 
@@ -704,20 +678,14 @@ even the restricted test case selection means of the SBT test interface:
   run all test cases in the class;
 - `specs2` does the right thing when individual test case names are used
   but if test case wildcards are used it runs all test cases in the class;
-- `ScalaCheck`'s test filtering functionality is not available:
-  [issue](https://github.com/dubinsky/scalajs-gradle/issues/43);
+- `ScalaCheck` 's test filtering functionality is not available:
+  https://github.com/dubinsky/scalajs-gradle/issues/43[issue];
 - `ZIO test` treats specific test case inclusions as wildcards
   and instead of running just the named test cases runs all whose names contain
   the specified string, because the only test case name-based filtering that ZIO Test supports is "search terms", which
   https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/FilteredSpec.scala#L32[work as wildcards];
 - `ZIO Test` in the presence of wildcard test case inclusions
   runs all tests in the class because of a https://github.com/dubinsky/scalajs-gradle/issues/45[bug].
-
-When I am running some test methods explicitly included by a filter,
-I do not want to see skipped methods mentioned in the test report
-just as I do not want to see other skipped tests class there.
-But I do want to see tests explicitly ignored in code (e.g., in ScalaTest, or JUnit4's falsified assumptions).
-In a dry run, though, I want to see *everything* that was skipped.
 
 [#test-tagging]
 === Test Tagging
@@ -824,6 +792,18 @@ test("excluded") { assertTrue(1 == 0) } @@ TestAspect.tag(
 )
 ----
 
+=== Reporting Skipped Tests
+When running some test methods explicitly included by a filter,
+I do not want to see skipped methods mentioned in the test report
+just as I do not want to see other skipped test classes there.
+
+I do want to see tests explicitly ignored in code
+(e.g., in ScalaTest, or JUnit4's falsified assumptions).
+
+During a dry run, though, I want to see _everything_ that was skipped,
+including test classes that were skipped entirely;
+for such, a test case named `dry run` is reported as skipped.
+
 [#intellij-idea-integration]
 == IntelliJ Idea Integration
 
@@ -860,7 +840,7 @@ As usual, you can run all tests from the project tree using any of the nodes:
 As usual, you can run all tests from a package using the package's node in the project tree.
 Idea supplies Gradle test filter "selected.package.*".
 
-As usual, you can run individual test *for the frameworks Idea recognizes* using either:
+As usual, you can run individual test for _the frameworks Idea recognizes_ using either:
 
 - test's node in the project tree or
 - gutter icon in the tests's file
@@ -886,25 +866,25 @@ Not recognized are:
 - ScalaCheck
 - ZIO Test
 
-Since ZIO Test tests are  objects with main method,
+Since `ZIO Test` tests are  objects with main method,
 they can be run from Idea (when not using Scala.js),
 but there is no test result tree nor test counts displayed,
 and since Gradle is not involved, no test reports.
 
-For JUnit4 and JUnit4 for Scala.js,
+For `JUnit4` and `JUnit4 for Scala.js`,
 Idea also recognizes individual test methods within a test class;
 they can be run using their gutter icons.
 Idea supplies Gradle test filter "fully.qualified.TestClass.testMethod".
 
-For MUnit, only the first test method gets a gutter icon,
+For `MUnit`, only the first test method gets a gutter icon,
 but Idea supplies test filter "fully.qualified.TestClass",
 so that icon runs the whole class, not the test method it is for.
 
-For ScalaTest, every test method gets a gutter icon,
+For `ScalaTest`, every test method gets a gutter icon,
 but Idea supplies test filter "fully.qualified.TestClass",
 so that icon runs the whole class, not the test method it is for.
 
-For specs2 and uTest, there are no gutter icons for individual test methods.
+For `specs2` and `uTest`, there are no gutter icons for individual test methods.
 
 == Notes and Credits
 
@@ -925,6 +905,25 @@ I also looked at
 - https://github.com/gtache/scalajs-gradle[Old Scala.js Gradle plugin] by https://github.com/gtache[gtache]
 - https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
 - https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
+
+=== Scala.js Testing
+
+Scala.js tests must be run in the same JVM where their frameworks were instantiated
+(see https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal]).
+
+Because of this, `TestExecuter` uses makes sure that the tests are not forked,
+and `TestTask` overrides
+`org.gradle.api.tasks.testing.Test.getMaxParallelForks()`
+to return `1` on `Scala.js` to prevent `MaxNParallelTestClassProcessor`
+from forking.
+
+On JVM, exceptions are serialized in Gradle's `org.gradle.internal.serialize.ExceptionPlaceholder`, which contains lots of details;
+on Scala.js, `org.scalajs.testing.common.Serializer.ThrowableSerializer`
+turns them all into `org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3`;
+since source mapping is used only for Scala.js,
+there is no point trying to preserve the original exception:
+it is already lost...
+We might as well just wrap what remains in `TestExecutionException`.
 
 === Dynamic Dependencies
 I coded a neat way to add dependencies dynamically,
@@ -1024,7 +1023,12 @@ Plugin needs to associate a test framework with each test,
 so it uses its own test detector;
 this is why file-name based test scan is not supported,
 (`isScanForTestClasses` must be at its default value `true`);
-this is also why `JUnit5` is not supported: it insists on discovering the tests itself.
+this is also why `JUnit5` is not supported: it insists on discovering the tests itself, as a comment on the `JupiterTestFingerprint.annotationName()` says:
+
+> return The name of this class. This is to ensure that SBT does not find
+> any tests so that we can use JUnit Jupiter's test discovery mechanism.
+
+Well, mission accomplished: my test detector does not find any tests either.
 
 Plugin provides two mechanisms for test detection.
 
@@ -1309,3 +1313,13 @@ UTest uses `NestedTestSelector` for this, while others use `TestSelector`.
 ScalaTest does not return nested tasks for nested suites
 (or anything, according to the documentation of its Runner);
 events for the tests in the nested suites have `NestedTestSelector`.
+
+=== AsciiDoc
+GitHub stupidly disables AsciDoc includes in README;
+see https://github.com/github/markup/issues/1095.
+
+One include (of the `versions.adoc` in `README.adoc`.)
+is not enough to bother with AsciiDoctor Reducer (https://github.com/asciidoctor/asciidoctor-reducer),
+so I just patch the Readme.adoc...
+
+I also write versions to `gradle.properties` and use them in `gradle.build`.

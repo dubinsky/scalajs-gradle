@@ -9,7 +9,7 @@ import org.slf4j.Logger
 import sbt.testing.Framework
 import java.io.File
 
-class ScalaJSTestEnvironment(runCommon: ScalaJSRunCommon) extends TestEnvironment:
+final class ScalaJSTestEnvironment(runCommon: ScalaJSRunCommon) extends TestEnvironment:
   private val testAdapter: TestAdapter = TestAdapter(
     jsEnv = runCommon.mkJsEnv,
     input = Seq(runCommon.input),
@@ -18,12 +18,11 @@ class ScalaJSTestEnvironment(runCommon: ScalaJSRunCommon) extends TestEnvironmen
 
   override def close(): Unit = testAdapter.close()
 
+  protected def expandClassPath: Boolean = false
+
   override protected def frameworksToLoad: List[FrameworkDescriptor] = FrameworkDescriptor.scalaJSSupported
 
-  override protected def loadFrameworks(
-    testClassPath: Iterable[File],
-    frameworksToLoad: List[FrameworkDescriptor]
-  ): List[Framework] = testAdapter
+  override protected def loadFrameworks(frameworksToLoad: List[FrameworkDescriptor]): List[Framework] = testAdapter
     .loadFrameworks(frameworksToLoad.map((descriptor: FrameworkDescriptor) => List(descriptor.className)))
     .flatten
 

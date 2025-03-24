@@ -1,6 +1,6 @@
 package org.podval.tools.scalajsplugin
 
-import org.podval.tools.build.{ScalaParallelCollectionsModule, ScalaVersion}
+import org.podval.tools.build.{ScalaModules, ScalaVersion}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.ScalaJS
 import org.podval.tools.test.{SbtTestInterface, framework}
@@ -10,12 +10,6 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
-
-// GitHub stupidly disables AsciDoc includes are disabled in README;
-// see https://github.com/github/markup/issues/1095.
-// One include (of the `versions.adoc` in `README.adoc`.)
-// is not enough to bother with AsciiDoctor Reducer (https://github.com/asciidoctor/asciidoctor-reducer),
-// so I just patch the Readme.adoc...
 object VersionsWriter:
   private val versions: Seq[(String, Any)] = Seq(
     "gradle" -> "8.13",
@@ -25,7 +19,7 @@ object VersionsWriter:
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
     "scala2" -> ScalaVersion.Scala2.Scala213.versionDefault,
 
-    "scala-parallel-collections" -> ScalaParallelCollectionsModule.versionDefault,
+    "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
 
     "sbt-test-interface" -> SbtTestInterface.versionDefault,
     

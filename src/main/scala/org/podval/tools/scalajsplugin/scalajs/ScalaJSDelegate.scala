@@ -6,8 +6,8 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaParallelCollectionsModule,
-  ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaModules,  ScalaPlatform, 
+  ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
 import org.podval.tools.scalajsplugin.BackendDelegate
@@ -27,8 +27,7 @@ class ScalaJSDelegate extends BackendDelegate:
     val linkMain: ScalaJSLinkMainTask = project.getTasks.register("link"    , classOf[ScalaJSLinkMainTask]).get()
     val run     : ScalaJSRunMainTask  = project.getTasks.register("run"     , classOf[ScalaJSRunMainTask ]).get()
     run.dependsOn (linkMain)
-    // TODO rename `linkTest` to `testLink`
-    val linkTest: ScalaJSLinkTestTask = project.getTasks.register("linkTest", classOf[ScalaJSLinkTestTask]).get()
+    val linkTest: ScalaJSLinkTestTask = project.getTasks.register("testLink", classOf[ScalaJSLinkTestTask]).get()
     val test    : ScalaJSTestTask     = project.getTasks.replace ("test"    , classOf[ScalaJSTestTask    ])
     test.dependsOn(linkTest)
 
@@ -94,7 +93,7 @@ object ScalaJSDelegate:
     pluginScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version
   ): Seq[DependencyRequirement] = Seq(
-//    ScalaParallelCollectionsModule.required(
+//    ScalaModules.ParallelCollections.required(
 //      platform = pluginScalaPlatform,
 //      reason = "Scala.js linker (and possibly other Scala.js dependencies) uses it but does not bring it in somehow",
 //      configurationName = scalaJSConfigurationName

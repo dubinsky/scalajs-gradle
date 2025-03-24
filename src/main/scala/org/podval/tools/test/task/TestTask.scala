@@ -45,7 +45,7 @@ abstract class TestTask extends Test:
     testTaskTemporaryDir = getTemporaryDirFactory,
     dryRun = getDryRun,
     // delayed: not available at the time of the TestFramework construction (task creation)
-    testEnvironmentGetter = () => testEnvironment,
+    loadedFrameworks = testEnvironment.loadedFrameworks,
     runningInIntelliJIdea = () => IntelliJIdea.runningIn(TestTask.this)
   )
 
@@ -60,9 +60,11 @@ abstract class TestTask extends Test:
     require(isScanForTestClasses,
       "File-name based test scan is not supported by this plugin, `isScanForTestClasses` must be `true`!")
 
-    super.executeTests()
-
-//    testEnvironment.close()
+    // close testEnvironment even if some tests failed lest we run out of memory ;)
+    try
+      super.executeTests()
+    finally
+      testEnvironment.close()
 
   final override def createTestExecuter: TestExecuter = TestExecuter(
     isScalaJS = isScalaJS,
