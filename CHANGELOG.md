@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: `TestEnvironment`;
 - cleanup: logging;
 - cleanup: notes;
+- cleanup: removed analysis-based test detection;
 
 ## [0.5.1] - 2025-03-13
 - feat: support Scala.js JUnit4 on Scala 2;

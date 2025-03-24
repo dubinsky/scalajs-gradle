@@ -7,14 +7,8 @@ import org.gradle.internal.Factory
 import org.podval.tools.test.filter.{TestFilter, TestFilterMatch}
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.podval.tools.test.taskdef.TestClassRunNonForking
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import sbt.internal.inc.{Analysis, Relations}
+import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, TaskDef}
-import xsbt.api.{Discovered, Discovery}
-import xsbti.VirtualFileRef
-import xsbti.api.{ClassLike, Companions, Definition}
-import xsbti.compile.FileAnalysisStore
 import scala.jdk.CollectionConverters.*
 import java.io.File
 
@@ -23,9 +17,7 @@ final class SbtTestFrameworkDetector(
   isScalaJS: Boolean,
   loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
   testFilter: TestFilter,
-  testTaskTemporaryDir: Factory[File],
-  useSbtAnalysisTestDetection: Boolean,
-  analysisFile: File
+  testTaskTemporaryDir: Factory[File]
 ) extends TestFrameworkDetector:
 
   import SbtTestFrameworkDetector.logger
@@ -79,15 +71,11 @@ final class SbtTestFrameworkDetector(
   // Called by org.gradle.api.internal.tasks.testing.detection.DefaultTestClassScanner.
   override def processTestClass(relativeFile: RelativeFile): Boolean =
     val testClassRun: Option[TestClassRunNonForking] =
-      if useSbtAnalysisTestDetection
-      then
-        testClassesDetectedFromAnalysis.get(relativeFile.getFile.getAbsolutePath)
-      else
-        val testClassVisitor: TestClassVisitor = processClassFile(relativeFile.getFile)
-        testClassVisitor.className.flatMap((className: String) => filter(
-          className = className,
-          detectors = testClassVisitor.getApplicableDetectors
-        ))
+      val testClassVisitor: TestClassVisitor = processClassFile(relativeFile.getFile)
+      testClassVisitor.className.flatMap((className: String) => filter(
+        className = className,
+        detectors = testClassVisitor.getApplicableDetectors
+      ))
 
     testClassRun.foreach(testClassProcessor.get.processTestClass)
     testClassRun.isDefined
@@ -151,60 +139,6 @@ final class SbtTestFrameworkDetector(
         superTypes = superTypes.updated(superTypeFile, detectors)
         detectors
       }))
-
-  // --- analysis detection
-
-  private lazy val testClassesDetectedFromAnalysis: Map[String, TestClassRunNonForking] = detectFromAnalysis.flatten.toMap
-
-  private def detectFromAnalysis: Seq[Option[(String, TestClassRunNonForking)]] =
-    val analysis: Analysis = FileAnalysisStore
-      .getDefault(analysisFile)
-      .get
-      .get
-      .getAnalysis
-      .asInstanceOf[Analysis]
-
-    val relations: Relations = analysis.relations
-
-    val definitions: Seq[Definition] = analysis
-      .apis
-      .internal
-      .values
-      .toSeq
-      .map(_.api)
-      .flatMap: (companions: Companions) =>
-        Seq(
-          companions.classApi,
-          companions.objectApi
-        ) ++
-          companions.classApi .structure.declared .toSeq ++
-          companions.classApi .structure.inherited.toSeq ++
-          companions.objectApi.structure.declared .toSeq ++
-          companions.objectApi.structure.inherited.toSeq
-      .filter:
-        case c: ClassLike => c.topLevel
-        case _ => false
-
-    for
-      case (definition: Definition, discovered: Discovered) <-
-        Discovery(
-          subclasses  = subclassDetectors .map(_.name).toSet,
-          annotations = annotatedDetectors.map(_.name).toSet
-        )(
-          definitions
-        )
-    yield
-      val className: String = definition.asInstanceOf[ClassLike].name
-      filter(
-        className, 
-        detectors.toSet.filter(_.isDiscovered(discovered))
-      ).map: (testClassRun: TestClassRunNonForking) =>
-        // Is this really the way to get the class file path?!
-        val sourceFile: VirtualFileRef = relations.definesClass(className).head
-        val dollar: String = if !discovered.isModule then "" else "$"
-        val classFileName: String = className.replace('.', '/') + dollar + ".class"
-        val classFilePath: String = relations.products(sourceFile).map(_.id).find(_.endsWith(classFileName)).get
-        classFilePath -> testClassRun
 
 object SbtTestFrameworkDetector:
   private val logger: Logger = LoggerFactory.getLogger(classOf[SbtTestFrameworkDetector])

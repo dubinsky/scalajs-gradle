@@ -1,9 +1,9 @@
 package org.podval.tools.scalajsplugin
 
-import org.podval.tools.build.ScalaVersion
+import org.podval.tools.build.{ScalaParallelCollectionsModule, ScalaVersion}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.test.{Sbt, framework}
+import org.podval.tools.test.{SbtTestInterface, framework}
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
 
@@ -24,9 +24,10 @@ object VersionsWriter:
     "scala" -> ScalaVersion.Scala3.versionDefault,
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
     "scala2" -> ScalaVersion.Scala2.Scala213.versionDefault,
-    
-    "zinc" -> Sbt.Zinc.versionDefault,
-    "sbt-test-interface" -> Sbt.TestInterface.versionDefault,
+
+    "scala-parallel-collections" -> ScalaParallelCollectionsModule.versionDefault,
+
+    "sbt-test-interface" -> SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaJS.versionDefault,
     "scalajs-dom" -> ScalaJS.DomSJS.versionDefault,

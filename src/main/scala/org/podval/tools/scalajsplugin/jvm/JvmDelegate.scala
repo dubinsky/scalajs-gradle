@@ -4,7 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.podval.tools.build.{DependencyRequirement, ScalaPlatform}
 import org.podval.tools.scalajsplugin.BackendDelegate
-import org.podval.tools.test.Sbt
+import org.podval.tools.test.SbtTestInterface
 
 class JvmDelegate extends BackendDelegate:
   override def beforeEvaluate(project: Project): Unit =
@@ -22,9 +22,8 @@ class JvmDelegate extends BackendDelegate:
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
   ): Seq[DependencyRequirement] = Seq(
-    Sbt.TestInterface.required(
+    SbtTestInterface.required(
       platform = projectScalaPlatform,
-      version = Sbt.TestInterface.versionDefault,
       reason =
         """because some test frameworks (ScalaTest :)) do not bring it in in,
           |and it needs to be on the testImplementation classpath

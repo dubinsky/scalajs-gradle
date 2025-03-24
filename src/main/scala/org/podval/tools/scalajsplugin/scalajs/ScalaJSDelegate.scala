@@ -6,7 +6,8 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{DependencyRequirement, Gradle, GradleClassPath, ScalaParallelCollectionsModule,
+  ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
 import org.podval.tools.scalajsplugin.BackendDelegate
@@ -26,10 +27,11 @@ class ScalaJSDelegate extends BackendDelegate:
     val linkMain: ScalaJSLinkMainTask = project.getTasks.register("link"    , classOf[ScalaJSLinkMainTask]).get()
     val run     : ScalaJSRunMainTask  = project.getTasks.register("run"     , classOf[ScalaJSRunMainTask ]).get()
     run.dependsOn (linkMain)
+    // TODO rename `linkTest` to `testLink`
     val linkTest: ScalaJSLinkTestTask = project.getTasks.register("linkTest", classOf[ScalaJSLinkTestTask]).get()
     val test    : ScalaJSTestTask     = project.getTasks.replace ("test"    , classOf[ScalaJSTestTask    ])
     test.dependsOn(linkTest)
-  
+
   override def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
 
   override def configureProject(
@@ -65,7 +67,8 @@ class ScalaJSDelegate extends BackendDelegate:
     ScalaJSDelegate.forPlugin(
       pluginScalaPlatform,
       scalaJSVersion
-    ) ++ ScalaJSDelegate.forProject(
+    ) ++
+    ScalaJSDelegate.forProject(
       projectScalaPlatform,
       scalaJSVersion,
       isJUnit4Present = isJUnit4Present
@@ -91,6 +94,11 @@ object ScalaJSDelegate:
     pluginScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version
   ): Seq[DependencyRequirement] = Seq(
+//    ScalaParallelCollectionsModule.required(
+//      platform = pluginScalaPlatform,
+//      reason = "Scala.js linker (and possibly other Scala.js dependencies) uses it but does not bring it in somehow",
+//      configurationName = scalaJSConfigurationName
+//    ),
     ScalaJS.Linker.required(
       platform = pluginScalaPlatform,
       version = scalaJSVersion,

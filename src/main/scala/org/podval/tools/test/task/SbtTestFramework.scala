@@ -29,8 +29,6 @@ class SbtTestFramework(
   moduleRegistry: ModuleRegistry,
   testTaskTemporaryDir: Factory[File],
   dryRun: Provider[java.lang.Boolean],
-  useSbtAnalysisTestDetection: Provider[java.lang.Boolean],
-  analysisFile: File,
   // TODO changing this to
   //   loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
   // hangs the tests
@@ -53,8 +51,6 @@ class SbtTestFramework(
       this.moduleRegistry,
       this.testTaskTemporaryDir,
       this.dryRun,
-      this.useSbtAnalysisTestDetection,
-      this.analysisFile,
       this.testEnvironmentGetter,
       this.runningInIntelliJIdea
     )
@@ -76,9 +72,7 @@ class SbtTestFramework(
       isScalaJS,
       (testClassPath: Iterable[File]) => testEnvironment.loadedFrameworks(testClassPath),
       testFilter,
-      testTaskTemporaryDir,
-      useSbtAnalysisTestDetection.get,
-      analysisFile
+      testTaskTemporaryDir
     )
 
   override def getProcessorFactory: RunTestClassProcessorFactory = RunTestClassProcessorFactory(

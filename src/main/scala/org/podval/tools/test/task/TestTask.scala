@@ -7,16 +7,14 @@ import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.api.provider.Property
 import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.{Input, Internal, SourceSet, TaskAction}
+import org.gradle.api.tasks.{Internal, SourceSet, TaskAction}
 import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.Gradle
 import org.podval.tools.test.environment.TestEnvironment
-import org.podval.tools.util.Files
 import java.io.File
 import java.lang.reflect.Method
 
@@ -26,10 +24,6 @@ abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
   getDependsOn.add(Gradle.getClassesTask(getProject, sourceSetName))
   private def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
-
-  // TODO move into SbtTestFrameworkOptions
-  @Input def getUseSbtAnalysisTestDetection: Property[java.lang.Boolean]
-  getUseSbtAnalysisTestDetection.convention(false)
 
   useSbt()
 
@@ -42,27 +36,18 @@ abstract class TestTask extends Test:
 
   final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
 
-  private lazy val sbtTestFramework: SbtTestFramework =
-    // `scalaCompile.getAnalysisFiles` is empty, so I had to hard-code the path:
-    val analysisFile: File = Files.file(
-      getProject.getLayout.getBuildDirectory.get.getAsFile,
-      s"tmp/scala/compilerAnalysis/${Gradle.getScalaCompile(getProject, sourceSetName).getName}.analysis"
-    )
-
-    SbtTestFramework(
-      isScalaJS = isScalaJS,
-      logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
-      defaultTestFilter = getFilter.asInstanceOf[DefaultTestFilter],
-      options = SbtTestFrameworkOptions(),
-      moduleRegistry = getModuleRegistry,
-      testTaskTemporaryDir = getTemporaryDirFactory,
-      dryRun = getDryRun,
-      useSbtAnalysisTestDetection = getUseSbtAnalysisTestDetection,
-      analysisFile = analysisFile,
-      // delayed: not available at the time of the TestFramework construction (task creation)
-      testEnvironmentGetter = () => testEnvironment,
-      runningInIntelliJIdea = () => IntelliJIdea.runningIn(TestTask.this)
-    )
+  private lazy val sbtTestFramework: SbtTestFramework = SbtTestFramework(
+    isScalaJS = isScalaJS,
+    logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
+    defaultTestFilter = getFilter.asInstanceOf[DefaultTestFilter],
+    options = SbtTestFrameworkOptions(),
+    moduleRegistry = getModuleRegistry,
+    testTaskTemporaryDir = getTemporaryDirFactory,
+    dryRun = getDryRun,
+    // delayed: not available at the time of the TestFramework construction (task creation)
+    testEnvironmentGetter = () => testEnvironment,
+    runningInIntelliJIdea = () => IntelliJIdea.runningIn(TestTask.this)
+  )
 
   private lazy val testEnvironment: TestEnvironment = createTestEnvironment
   protected def createTestEnvironment: TestEnvironment

@@ -5,7 +5,6 @@ import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, Test
 import org.gradle.testkit.runner.GradleRunner
 import org.podval.tools.build.{Dependency, JavaDependency, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.test.framework.FrameworkDescriptor
-import org.podval.tools.test.Sbt
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
@@ -21,7 +20,8 @@ final class TestProject(projectDir: File):
 
     // I assume that there are failing tests among the tests being executed.
     val testOutput: String = gradleRunner
-      .withArguments((List("clean", "test") ++ testsArgument).asJava)
+      .withArguments((List("clean", "test", "-i") ++ testsArgument).asJava)
+      .forwardOutput
       .buildAndFail
       .getOutput
 
@@ -110,7 +110,6 @@ object TestProject:
           case ScalaBackend.JS(nodeVersion) => Some(nodeVersion)
           case _ => None,
         scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
-        zincDependency = Sbt.Zinc.dependencyWithVersion(platform, Sbt.Zinc.versionDefault),
         frameworks = frameworks.map((framework: FrameworkDescriptor) =>
           require(framework.isSupported(platform))
           framework.dependencyWithVersion(platform, framework.versionDefault(platform))
@@ -164,7 +163,6 @@ object TestProject:
   private def buildGradle(
     nodeVersion: Option[Version],
     scalaLibraryDependency: Dependency.WithVersion,
-    zincDependency: Dependency.WithVersion,
     frameworks: Seq[Dependency.WithVersion],
     includeTestNames: Seq[String],
     excludeTestNames: Seq[String],
@@ -192,7 +190,6 @@ object TestProject:
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |
        |dependencies {
-       |  zinc '${zincDependency.dependencyNotation}'
        |  implementation '${scalaLibraryDependency.dependencyNotation}'
        |$frameworksString
        |}

@@ -13,26 +13,26 @@ description = 'Gradle plugin for Scala.js'
 final String scalaVersion       = version_scala
 final String scala2versionMinor = version_scala2_minor
 final String scalaJsVersion     = version_scalajs
-final String zincVersion        = version_zinc
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
-  zinc "org.scala-sbt:zinc_$scala2versionMinor:$zincVersion"
-
-  compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
-
-  // for SbtTestFrameworkDetector.detectFromAnalysis
-  // transitive dependencies: zinc-persist -> zinc-core -> zinc-apiinfo, io, compiler-interface
-  compileOnly "org.scala-sbt:zinc-persist_$scala2versionMinor:$zincVersion"
-  // for TestClassVisitor (Gradle internal copy under "impldep" is not accessible to the plugin)
+  // for TestClassVisitor
   implementation "org.ow2.asm:asm:9.7.1"
 
+  // for Scala.js Linker
+  // TODO adding this dynamically did not work!
+  implementation "org.scala-lang.modules:scala-parallel-collections_$scala2versionMinor:$version_scala_parallel_collections"
+
+  // for running tests
+  compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
+
+  // for Scala.js support
   compileOnly "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:$version_scalajs_env_jsdom_nodejs"
 
-  // For framework-specific exceptions
+  // for framework-specific exceptions
   compileOnly "junit:junit:$version_junit" // runner: "com.github.sbt:junit-interface:0.13.3"
   compileOnly "org.scalatest:scalatest_3:$version_framework_scalatest"
   compileOnly "org.scalacheck:scalacheck_3:$version_framework_scalacheck"
@@ -41,7 +41,7 @@ dependencies {
   compileOnly "org.scalameta:munit_3:$version_framework_munit"
   compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.15"
 
-  // Test framework used to test this project
+  // test framework used to test this project
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }
 

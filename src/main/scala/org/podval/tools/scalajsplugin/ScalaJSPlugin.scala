@@ -48,10 +48,9 @@ final class ScalaJSPlugin extends Plugin[Project]:
       )
 
       // Expanding plugin's classpath.
-      (
-        Seq(ScalaBasePlugin.ZINC_CONFIGURATION_NAME) ++ // for analysis-based test detection
-        delegate.configurationToAddToClassPath.toSeq
-      )
+      delegate
+        .configurationToAddToClassPath
+        .toSeq
         .foreach((configurationName: String) => GradleClassPath.addTo(this, getConfiguration(configurationName)))
 
 object ScalaJSPlugin:
