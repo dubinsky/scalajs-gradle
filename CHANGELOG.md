@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - fix: remaining Scala 2.12 incompatibilities;
 - feat: classfile-based test detection (including JUnit4 for Scala.js);
+- cleanup: removed analysis-based test detection;
 - feat: dry run support;
 - cleanup: TODOs;
 - cleanup: `test.filter`;
@@ -15,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: `TestEnvironment`;
 - cleanup: logging;
 - cleanup: notes;
-- cleanup: removed analysis-based test detection;
+- build: GitHub CI workflows;
 
 ## [0.5.1] - 2025-03-13
 - feat: support Scala.js JUnit4 on Scala 2;

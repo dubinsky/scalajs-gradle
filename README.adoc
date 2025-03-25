@@ -1,6 +1,7 @@
 = Gradle plugin for Scala.js
 :toc:
 :toclevels: 4
+:toc: preamble
 // INCLUDED ATTRIBUTES
 :version-gradle: 8.13
 :version-plugin: 0.5.1
@@ -24,6 +25,8 @@
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.16
 // INCLUDED ATTRIBUTES
+
+image::https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
 
 == Summary
 
@@ -511,12 +514,16 @@ Currently, the following test frameworks are supported:
 | JUnit4
 | `com.github.sbt:junit-interface`
 | {version-framework-junit4}
-| JVM only, no Scala.js; Java dependency, no Scala version in the artifact
+a|
+- JVM only, no Scala.js
+- Java dependency, no Scala version in the artifact
 
 | JUnit4 for Scala.js
 | `org.scala-js:scalajs-junit-test-runtime`
 | {version-scalajs}
-| Scala.js only, no JVM; Scala dependency, no `sjs1` suffix in the artifact
+a|
+- Scala.js only, no JVM
+- Scala dependency, no `sjs1` suffix in the artifact
 
 | MUnit
 | `org.scalameta:munit`
