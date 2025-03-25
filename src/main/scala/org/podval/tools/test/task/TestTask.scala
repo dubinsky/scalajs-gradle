@@ -45,11 +45,21 @@ abstract class TestTask extends Test:
     testTaskTemporaryDir = getTemporaryDirFactory,
     dryRun = getDryRun,
     // delayed: not available at the time of the TestFramework construction (task creation)
-    loadedFrameworks = testEnvironment.loadedFrameworks,
+    loadedFrameworks = (testClassPath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClassPath),
     runningInIntelliJIdea = () => IntelliJIdea.runningIn(TestTask.this)
   )
 
-  private lazy val testEnvironment: TestEnvironment = createTestEnvironment
+  private var testEnvironment: Option[TestEnvironment] = None
+
+  private def getTestEnvironment: TestEnvironment =
+    if testEnvironment.isEmpty then testEnvironment = Some(createTestEnvironment)
+    testEnvironment.get
+
+  private def closeTestEnvironment(): Unit =
+    if testEnvironment.isDefined then
+      testEnvironment.get.close()
+      testEnvironment = None
+      
   protected def createTestEnvironment: TestEnvironment
 
   // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
@@ -60,15 +70,15 @@ abstract class TestTask extends Test:
     require(isScanForTestClasses,
       "File-name based test scan is not supported by this plugin, `isScanForTestClasses` must be `true`!")
 
-    // close testEnvironment even if some tests failed lest we run out of memory ;)
+    // close and discard testEnvironment even if some tests failed - lest we run out of memory ;)
     try
       super.executeTests()
     finally
-      testEnvironment.close()
+      closeTestEnvironment()
 
   final override def createTestExecuter: TestExecuter = TestExecuter(
     isScalaJS = isScalaJS,
-    sourceMapper = testEnvironment.sourceMapper,
+    sourceMapper = getTestEnvironment.sourceMapper,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
     clock = getServices.get(classOf[Clock]),

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: logging;
 - cleanup: notes;
 - build: GitHub CI workflows;
+- doc: README notes cleanup;
 
 ## [0.5.1] - 2025-03-13
 - feat: support Scala.js JUnit4 on Scala 2;
