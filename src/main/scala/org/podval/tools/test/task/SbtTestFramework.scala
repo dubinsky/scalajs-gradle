@@ -51,9 +51,15 @@ class SbtTestFramework(
       this.runningInIntelliJIdea
     )
   
-  override def close(): Unit = ()
+  private var detector: Option[SbtTestFrameworkDetector] = None
 
-  override lazy val getDetector: SbtTestFrameworkDetector =
+  override def getDetector: SbtTestFrameworkDetector =
+    if detector.isEmpty then detector = Some(createDetector)
+    detector.get
+
+  override def close(): Unit = detector = None
+
+  private def createDetector: SbtTestFrameworkDetector =  
     SbtTestFramework.logger.info(s"SbtTestFramework: --tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}")
 
     val testFilter: TestFilter = TestFilter(

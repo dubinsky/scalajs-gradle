@@ -104,7 +104,7 @@ and if you need `JUnit5` _that_ is probably the way to go,
 since my plugin does not support `JUnit5`
 (it does support `Scala.js` though :)).
 
-== Applying to a Gradle project
+== Applying to a Gradle Project
 
 Plugin is https://plugins.gradle.org/plugin/org.podval.tools.scalajs[published]
 on the Gradle Plugin Portal; to apply it to a Gradle project:
@@ -500,6 +500,33 @@ those tasks can be used from the command line like this:
 
 == Testing
 
+=== Test Task
+Test task added by the plugin is derived from the normal Gradle `test` task,
+and can be configured  in the traditional way - with some caveats:
+
+- ScalaJS tests must be run in the same JVM where they are discovered,
+so they are not forked;
+- plugin applies its own Gradle test framework (`useSbt`) to each test task;
+re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported;
+- `isScanForTestClasses` must be at its default value `true`;
+- test filtering support is detailed in <<test-filtering>>;
+- test tagging support is detailed in <<test-tagging>>;
+- dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
+
+If there is a need to have test runs with different configurations,
+more testing tasks can be added manually.
+
+For plain Scala projects (no Scala.js), the type of the test task is
+link:src/main/scala/org/podval/tools/scalajsplugin/jvm/JvmTestTask.scala[org.podval.tools.scalajsplugin.jvm.JvmTestTask].
+Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
+
+For Scala.js projects the type of the test task is
+link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSTestTask].
+Such test tasks have to depend on a
+`org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkTestTask task`.
+The `test` task added by the plugin does it automatically;
+for manually added tasks this dependency has to be added manually.
+
 [#test-frameworks]
 === Test Frameworks
 Plugin replaces the `test` task with one that supports running
@@ -577,36 +604,9 @@ TestNG is not supported: its
 https://github.com/sbt/sbt-testng[SBT interface] is long since abandoned.
 
 JUnit5 is not supported, since it insists on using its own test discovery mechanism.
-Since both Gradle and IntelliJ Idea support JUnit5 out of the box,
+Both Gradle and IntelliJ Idea support JUnit5 out of the box,
 and since there is no JUnit5 for Scala.js,
 there is not much the plugin can add anyway.
-
-=== Test Task
-Test task added by the plugin is derived from the normal Gradle `test` task,
-and can be configured  in the traditional way - with some caveats:
-
-- ScalaJS tests must be run in the same JVM where they are discovered,
-so they are not forked;
-- plugin applies its own Gradle test framework (`useSbt`) to each test task;
-re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported;
-- `isScanForTestClasses` must be at its default value `true`: plugin needs to attribute each detected test to a specific test framework, and the name of the test class is not sufficient for that;
-- test filtering support is detailed in <<test-filtering>>;
-- test tagging support is detailed in <<test-tagging>>;
-- dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
-
-If there is a need to have test runs with different configurations,
-more testing tasks can be added manually.
-
-For plain Scala projects (no Scala.js), the type of the test task is
-link:src/main/scala/org/podval/tools/scalajsplugin/jvm/JvmTestTask.scala[org.podval.tools.scalajsplugin.jvm.JvmTestTask].
-Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
-
-For Scala.js projects the type of the test task is
-link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSTestTask].
-Such test tasks have to depend on a
-`org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkTestTask task`.
-The `test` task added by the plugin does it automatically;
-for manually added tasks this dependency has to be added manually.
 
 [#test-filtering]
 === Test Filtering
@@ -716,7 +716,7 @@ Inclusion rules are:
 - if only exclusions are specified, only tests not tagged with any of them are included.
 - if both inclusions and exclusions are specified, only tests tagged with one of the inclusions and not tagged with any of the exclusions are included.
 
-==== JUnit
+==== JUnit4
 Tag tests with classes or traits
 that do not have to be derived from anything JUnit-specific;
 In the Gradle build file, `excludeCategories` and `includeCategories`
@@ -733,12 +733,12 @@ trait ExcludedTest
 @Test def excluded(): Unit = ()
 ----
 
-==== Scala.js JUnit test framework
+==== JUnit4 for Scala.js
 Does not support test tagging.
 
 ==== MUnit
 MUnit is based on JUnit4, so it supports the `Category`-based exclusion and inclusion;
-since on Scala.js MUnit uses `Scala.js JUnit test framework`,
+since on Scala.js MUnit uses `JUnit4 for Scala.js`,
 which does not support this mechanism,
 MUnit does not support it either.
 
@@ -799,7 +799,7 @@ test("excluded") { assertTrue(1 == 0) } @@ TestAspect.tag(
 )
 ----
 
-=== Reporting Skipped Tests
+=== Skipped Tests
 When running some test methods explicitly included by a filter,
 I do not want to see skipped methods mentioned in the test report
 just as I do not want to see other skipped test classes there.
@@ -898,10 +898,10 @@ For `specs2` and `uTest`, there are no gutter icons for individual test methods.
 === Scala.js Linking
 It is reasonably easy - if repetitive - to configure the Scala compiler and add needed Scala.js dependencies by hand;
 what really pushed me to build this plugin is the difficulty and ugliness involved in
-manually setting up Scala.js linking in a Gradle script.
+manually setting up Scala.js linking in a Gradle build script.
 
 A Stack Overflow https://stackoverflow.com/a/65777102/670095[answer]
-by https://stackoverflow.com/users/1149944/gzm0[gzm0] was *extremely* helpful
+by https://stackoverflow.com/users/1149944/gzm0[gzm0] was _extremely_ helpful
 for understanding how the Scala.js linker should be called. Thanks!
 
 I also looked at
@@ -913,76 +913,10 @@ I also looked at
 - https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
 - https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
 
-=== Scala.js Testing
-
-Scala.js tests must be run in the same JVM where their frameworks were instantiated
-(see https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal]).
-
-Because of this, `TestExecuter` uses makes sure that the tests are not forked,
-and `TestTask` overrides
-`org.gradle.api.tasks.testing.Test.getMaxParallelForks()`
-to return `1` on `Scala.js` to prevent `MaxNParallelTestClassProcessor`
-from forking.
-
-On JVM, exceptions are serialized in Gradle's `org.gradle.internal.serialize.ExceptionPlaceholder`, which contains lots of details;
-on Scala.js, `org.scalajs.testing.common.Serializer.ThrowableSerializer`
-turns them all into `org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3`;
-since source mapping is used only for Scala.js,
-there is no point trying to preserve the original exception:
-it is already lost...
-We might as well just wrap what remains in `TestExecutionException`.
-
-=== Dynamic Dependencies
-I coded a neat way to add dependencies dynamically,
-
-Code to do this is in
-link:src/main/scala/org/podval/tools/build/[org.podval.tools.build].
-It can:
-
-- detect versions of Scala and specific dependencies;
-- add dependencies to configurations;
-- expand the classpath.
-
-This allows the plugin to add dependencies
-with correct versions and built for correct version of Scala
-which may be different from the one
-plugin uses (so that Scala 2.12 can be supported).
-
-Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
-by https://github.com/machaval[machaval] - thanks for the encouragement!
-
-Classpath expansion allows the plugin to use classes from dependencies
-that are added dynamically, but since they become available only after
-classpath is expanded, they can only be used indirectly;
-that is why such classes are only mentioned by name in dedicated intermediate classes:
-
-- `RunTestClassProcessor` uses `ExceptionConverter`, which uses
-`JUnitFrameworkComparisonFailureConverter` and friends, which mention
-test framework-specific exceptions;
-- Scala.js task use Scala.js support classes (`ScalaJSCommon` and friends),
-which mention Scala.js-specific classes.
-
-
-=== Node.js
-
-`Node.js` support that the plugin provides
-is heavily inspired by (read: copied and reworked from :))
-https://github.com/srs/gradle-node-plugin[gradle-node-plugin]
-by https://github.com/srs[srs].
-
-That plugin is not used directly because its tasks are not reusable
-unless the plugin is applied to the project,
-and I do not want to apply Node plugin to every project that uses my
-ScalaJS Gradle plugin.
-
-Also, I want to be able to run `npm` from within my code without creating tasks.
-Also, I would like to be able to use Node available via GraalVM's polyglot support.
-
-My simplified Node support is under 300 lines.
-
 === Testing
 
-Basic testing functionality was https://github.com/dubinsky/scalajs-gradle/issues/7[requested]
+Basic testing functionality was
+https://github.com/dubinsky/scalajs-gradle/issues/7[requested]
 by https://github.com/zstone1[zstone1] - thanks for the encouragement!
 
 To figure out how `sbt` itself integrates with testing frameworks, I had to untangle some `sbt` code, including:
@@ -993,12 +927,17 @@ To figure out how `sbt` itself integrates with testing frameworks, I had to unta
 - `sbt.ForkTests`
 - `org.scalajs.sbtplugin.ScalaJSPluginInternal`
 
-Turns out, internals of `sbt` are a maze of twisted (code) passages, all alike, where pieces of
-code are stored in key-value maps, and addition of such maps is used as an override mechanism.
+Turns out, internals of `sbt` are a maze of twisted (code) passages,
+all alike, where pieces of code are stored in key-value maps,
+and addition of such maps is used as an override mechanism.
 What a disaster!
 
-Just being able to run the tests with no integration with Gradle or IntelliJ Idea seemed
-suboptimal, so I decided to look into proper integrations of things like
+There are _two_ testing interfaces in `org.scala-sbt:test-interface:1.0`;
+I use the one used by the Scala.js sbt plugin - presumably the "new" one ;)
+
+Just being able to run the tests with no integration with
+Gradle or IntelliJ Idea seemed suboptimal,
+so I decided to look into proper integrations of things like
 `org.scala-js:scalajs-sbt-test-adapter` and
 https://github.com/sbt/test-interface[org.scala-sbt:test-interface].
 
@@ -1008,112 +947,73 @@ I perused code from:
 - https://github.com/JetBrains/intellij-community[IntelliJ Idea];
 - https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin].
 
-This took _by far_ the most of my time (and takes up more than 3/4 of the plugin code),
+This took _by far_ the most of my time
+(and takes up more than 3/4 of the plugin code),
 and uncovered a number of surprises.
 
-=== Test Interface
-sbt's testing interface is supported by a number of test frameworks, and once I had
-a Gradle/Idea integration with it in Scala.js context, it was reasonably easy to re-use it
-to run tests on sbt-compatible frameworks _without_ any Scala.js involved - in plain Scala projects.
+IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` -
+but _only_ if the task is of type `org.gradle.api.tasks.testing.Test`,
+so that is what I derive my test task from.
 
-There are _two_ testing interfaces in `org.scala-sbt:test-interface:1.0`;
-I use the one used by the Scala.js sbt plugin - presumably the "new" one ;)
+Once I worked out how to integrate tests on Scala.js with Gardle and IntelliJ Idea,
+it was reasonably easy to re-use this integration to run tests
+using sbt-compatible frameworks _without_ any Scala.js involved -
+in plain Scala projects.
 
-=== Running in IntelliJ Idea
-IntelliJ Idea instruments Gradle test task with its `IJTestEventLogger` - but _only_ if the task is of type
-`org.gradle.api.tasks.testing.Test`,
-so I must derive my test task from it.
+=== Testing on Scala.js
 
-[#test-detection]
-=== Test Detection
-Plugin needs to associate a test framework with each test,
-so it uses its own test detector;
-this is why file-name based test scan is not supported,
-(`isScanForTestClasses` must be at its default value `true`);
-this is also why `JUnit5` is not supported: it insists on discovering the tests itself, as a comment on the `JupiterTestFingerprint.annotationName()` says:
+Scala.js tests must be run in the same JVM where their frameworks were instantiated
+(see https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal]).
+`TestExecuter` makes sure that the tests are not forked,
+and `TestTask` overrides
+`org.gradle.api.tasks.testing.Test.getMaxParallelForks()`
+to return `1` on `Scala.js` to prevent `MaxNParallelTestClassProcessor`
+from forking.
 
-> return The name of this class. This is to ensure that SBT does not find
-> any tests so that we can use JUnit Jupiter's test discovery mechanism.
+On JVM, exceptions are serialized in Gradle's `org.gradle.internal.serialize.ExceptionPlaceholder`, which contains lots of details;
+on Scala.js, `org.scalajs.testing.common.Serializer.ThrowableSerializer`
+turns them all into `org.scalajs.testing.common.Serializer$ThrowableSerializer$$anon$3`;
+since source mapping is used only on Scala.js,
+there is no point trying to preserve the original exception:
+it is already lost;
+so just wrap what remains in `TestExecutionException`.
 
-Well, mission accomplished: my test detector does not find any tests either.
+=== Node.js
 
-Plugin provides two mechanisms for test detection.
+`Node.js` support that the plugin provides
+is heavily inspired by (read: copied and reworked from :))
+https://github.com/srs/gradle-node-plugin[gradle-node-plugin]
+by https://github.com/srs[srs].
 
-One is based on scanning the class files (it was coded last),
-similar to the mechanism used by Gradle for test detection with `JUnit4` and `TestNG`.
-This mechanism is used by the plugin by default.
+That plugin is not used directly because its tasks are not reusable
+unless the plugin is applied to the project,
+and I do not want to apply Node Gradle plugin to every project that uses my
+Scala.js Gradle plugin.
 
-If a class file is recognized by more than one framework
-(e.g. MUnit tests, which are also JUnit4 tests),
-it is attributed to the framework whose fingerprint is closer to
-the test class in the hierarchy (e.g. MUnit).
+Also, I want to be able to run `npm` from within my code without creating tasks.
+Also, I would like to be able to use Node available via GraalVM's polyglot support.
 
-If a test class is encountered with more than one framework claiming it
-at the same distance in the hierarchy
-(which does not happen naturally, but can be constructed),
-mistake is assumed, a warning is issued and the class is ignored.
+My simplified Node support is under 300 lines.
 
-On `Scala.js`, annotation are not available at runtime
-(Scala.js compiler does not add `RuntimeVisibleAnnotations` to the class file),
-so this mechanism won't detect tests that are marked as such using annotations.
-Currently, the only test framework that marks tests as tests using annotations
-is `JUnit4` for `Scala.js`.
+=== Test Run Data
+Test detection produces more information than just the class name:
 
+- framework that recognized the test
+- fingerprint
+- selectors
 
-Absence of annotations at runtime on `Scala.js` is the reason behind
-the Scala.js JUnit Compiler Plugin on Scala 2 (see <<junit4-scalajs-scala-2>>):
-it discovers the tests based on their annotations
-at compile time, and generates special `$scalajs$junit$bootstrapper` classes for each test.
+I need to deliver this additional information to forked test processors.
 
-Theoretically, it is possible to look for those classes and re-discover the tests
-belonging to `JUnit4` for `Scala.js`, but plugin does not do this.
-Instead, if test frameworks using annotation-based test detection
-are present on the test classpath, plugin switches to an alternative
-mechanism.
+For a while, I used modified serializer for this;
+of course, serializer is hard-coded in the Gradle code,
+so to use mine I had to modify three Gradle files...
 
-Alternative mechanism uses analysis file generated by the Scala compiler
-(this was coded first).
-This compiler analysis makes information about superclasses and annotations
-readily available, obviating the need to scan ancestors of the class.
+I even made a https://github.com/gradle/gradle/pull/24088[pull request]
+to add flexibility in this regard to Gradle -
+but then I realized that I can encode additional information I need
+to get to the worker in the test class name!
 
-Ambiguities in attributing a test class to a specific test framework
-do not arise, apparently because only annotations on the class itself are reported,
-but not on its supertypes - which probably means that if a JUnit4
-test class is derived from an abstract class annotated with `@Test`
-but the class itself is not annotated, it will not be detected. TODO
-
-This mechanism has a limitation: only tests that were compiled as a part of the project (i.e., test whose sources are a part of this project) will be detected;
-tests residing in a different project that are incorporated into this project
-as a dependency won't be detected.
-
-When annotation-based test detection is not needed,
-plugin uses class-file mechanism unless Gradle build file sets
-property `test.useSbtAnalysisTestDetection` to true.
-
-When annotation-based test detection is needed
-(running on `Scala.js` with `JUnit4` for `Scala.js` on the test classpath),
-compiler analysis test detection is used by the plugin even if
-the above property is set to false.
-
-=== Test Output
-Gradle controls the formatting of the test output:
-
-- indenting is hard-coded in the
-https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/TestEventLogger.java#L63[TestEventLogger.onOutput()];
-- addition of the test name and the name of the output stream at the top of each indented batch
-(output of the same test) is hard-coded in the
-https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/AbstractTestLogger.java#L51[AbstractTestLogger.logEvent()].
-
-IntelliJ Idea, in `addTestListener.groovy`:
-
-- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L30[suppresses]
-the output and error events and
-- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L29[adds]
-its own test and output listener
-https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
-that does no batching, indenting or adding.
-
-=== Proxying Test Events
+=== Test Events
 Turns out that IntelliJ Idea integration only works when all the calls to
 the IJ listener happen from the same thread
 (it probably uses some thread-local variable to set up cross-process communications).
@@ -1124,27 +1024,9 @@ I coded an event queue with its own thread, but then discovered that:
 
 - Gradle provides a mechanism that ensures that all the calls are made from the same thread: `Actor.createActor.getProxy`;
 - when tests are forked, `MaxNParallelTestClassProcessor` is used, which already does that, so I do not need to;
-- when running on `Scala.js` everything is single-threaded.
+- when running on `Scala.js` everything is single-threaded anyway.
 
-=== Additional Test Information
-Test detection produces more information than just the class name:
-
-- fingerprint
-- selectors
-- framework that recognized the test
-
-I need to deliver this additional information to forked test processors.
-
-For a while, I used modified serializer for this;
-of course, serializer is hard-coded in the Gradle code,
-so to use mine I had to modify three Gradle files...
-I even made a https://github.com/gradle/gradle/pull/24088[pull request]
-to add flexibility in this regard to Gradle -
-but then I realized that I can encode additional information I need
-to get to the worker in the test class name!
-
-
-=== Test Ids and Serialization
+=== Test Ids
 `org.gradle.internal.remote.internal.hub.DefaultMethodArgsSerializer`
 seems to make a decision which serializer registry to use based on the
 outcome of the `SerializerRegistry.canSerialize()` call
@@ -1154,7 +1036,7 @@ Without some tricks like registering a serializer for `AnyRef` and disambiguatin
 in the `SerializerRegistry.build()` call,
 neither `null` nor `String` are going to work as ids.
 
-This is probably the reason why Gradle:
+This is _probably_ the reason why Gradle:
 
 - makes all test ids `CompositeIdGenerator.CompositeId`
 - registers a `Serializer[CompositeIdGenerator.CompositeId]` in `TestEventSerializer`.
@@ -1174,11 +1056,34 @@ a composite of exactly two Longs!
 
 Because tests are scoped by the workers, it does not seem possible to group test results by framework.
 
+=== Test Output
 Since I can not use the real `rootTestSuiteId` that `DefaultTestExecuter`
 supplies to the `TestMainAction` - because it is a `String` -
 and I am not keen on second-guessing what it is anyway,
 I use a `idPlaceholder` in `WorkerTestClassProcessor`
 and change it to the real one in `FixUpRootTestOutputTestResultProcessor`.
+
+Gradle controls the formatting of the test output:
+
+- indenting is hard-coded in the
+https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/TestEventLogger.java#L63[TestEventLogger.onOutput()];
+- addition of the test name and the name of the output stream at the top of each indented batch
+(output of the same test) is hard-coded in the
+https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/AbstractTestLogger.java#L51[AbstractTestLogger.logEvent()].
+
+IntelliJ Idea, in `addTestListener.groovy`:
+
+- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L30[suppresses]
+the output and error events and
+- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L29[adds]
+its own test and output listener
+https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
+that does no batching, indenting or adding.
+
+MUnit (but not JUnit4!) and uTest write to standard output/error
+instead of logging via supplied sbt logger,
+so their output does not go through my `TestClassProcessor.output()`;
+do I need to modify capturing to get their output?
 
 === Testing the Tests
 I coded a neat way to test the plugin itself and
@@ -1190,35 +1095,34 @@ link:src/test/scala/org/podval/tools/test/testproject/GroupingFunSpec.scala[Grou
 link:src/test/scala/org/podval/tools/test/testproject/SourceFile.scala[SourceFile],
 link:src/test/scala/org/podval/tools/test/testproject/TestProject.scala[TestProject].
 
-=== Gradle Internals
-To stop tests from being forked - which is needed to run tests on Scala.js -
-I had to fork `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter`
-(see link:src/main/scala/org/podval/tools/test/task/DefaultTestExecuter.scala).
-This is suboptimal, since I now have to track changes to the forked class.
-My proposal to expose an extension point that would allow to avoid the fork was rejected:
-https://github.com/gradle/gradle/issues/32666[32666],
-https://github.com/gradle/gradle/pull/32656[32656];
-that made it pretty clear that other modifications to Gradle that would make my code
-cleaner would be to, so I did not even bother:
+=== Dynamic Dependencies
+I coded a neat way to add dependencies dynamically,
 
-- to determine if Gradle is being run by IntelliJ Idea
-(see link:src/main/scala/org/podval/tools/test/task/IntelliJIdea.scala)
-I have to access non-public classes and methods using reflection;
-- to add to the implementation class path of `WorkerProcessBuilder`,
-I had to use reflection
-(see link:src/main/scala/org/podval/tools/test/task/TestFramework.scala);
-- to set test framework on the test task, I had to use reflection
-(see link:src/main/scala/org/podval/tools/test/task/TestTask.scala);
-- to set options on the test framework, I copied
-`org.gradle.api.tasks.testing.Test.options`: it is private and too short to bother with reflection;
-- to call `ForkedTestClasspath.getApplicationClasspath()` I had to use reflection,
-since it returns `org.gradle.internal.impldep.com.google.common.collect.ImmutableList`,
-which is not accessible from the plugin and results in `java.lang.NoSuchMethodError`;
-- since Gradle's internal copy of `org.ow2.asm:asm` is under "impldep" and is not accessible to the plugin, I had to add an explicit dependency on `org.ow2.asm:asm`;
-- `org.gradle.api.tasks.testing.Test.testsAreNotFiltered()` calls `Test.noCategoryOrTagOrGroupSpecified()`,
-which recognizes only the test frameworks explicitly supported by Gradle (`JUnit` and `TestNG`); since I can not override it, I just use
-`org.gradle.api.tasks.testing.junit.JUnitOptions` as `SbtTestFrameworkOptions`.
+Code to do this is in
+link:src/main/scala/org/podval/tools/build/[org.podval.tools.build].
+It can:
 
+- detect versions of Scala and specific dependencies;
+- add dependencies to configurations;
+- expand the classpath.
+
+This allows the plugin to add dependencies
+with correct versions and built for correct version of Scala
+which may be different from the one
+plugin uses, so that Scala 2.12 can be supported.
+Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
+by https://github.com/machaval[machaval] - thanks for the encouragement!
+
+Classpath expansion allows the plugin to use classes from dependencies
+that are added dynamically, but since they become available only after
+classpath is expanded, they can only be used indirectly;
+that is why such classes are only mentioned by name in dedicated intermediate classes:
+
+- `RunTestClassProcessor` uses `ExceptionConverter`, which uses
+`JUnitFrameworkComparisonFailureConverter` and friends, which mention
+test framework-specific exceptions;
+- Scala.js tasks use `ScalaJSCommon` and friends,
+which mention Scala.js-specific classes.
 
 === Scala 2.12
 When running on JVM (and not on Scala.js), tests are forked into a separate JVM.
@@ -1244,12 +1148,14 @@ Some of the issues:
 
 Affected code:
 
-- TaskDefTestSpecEncodingTestClassProcessor
-- WorkerTestClassProcessorFactory
-- WorkerTestClassProcessor
-- TaskDefTestSpec and its helpers
 - FrameworkDescriptor
 - OptionStyle
+- DryRunSbtTask
+- RunTestClassProcessor
+- Fingerprints
+- Selectors
+- TaskDefs
+- TestClassRunForking
 
 Some of the affected code runs even when using Scala.js,
 and it works without those compatibility changes;
@@ -1258,34 +1164,46 @@ Scala 2.13 library is on the classpath, even if the project uses Scala 2.12...
 
 I'd rather uglify my code a little than fight with classpath though ;)
 
-=== JUnit4 test names
-JUnit4 - and thus MUnit which is based on it - set both the event's
-fullyQualifiedName and the selector to something like <class name>.<method name>;
+=== Nested Tasks
+`ScalaCheck` processes test _methods_ as nested tasks;
+other frameworks just run them and report the results via event handler.
+
+`uTest `uses `NestedTestSelector` for this, while others use `TestSelector`.
+
+`ScalaTest` does not return nested tasks for nested suites
+(or anything, according to the documentation of its Runner);
+events for the tests in the nested suites have `NestedTestSelector`.
+
+=== JUnit4 Test Names
+`JUnit4` - and thus `MUnit` which is based on it - set both the event's
+`fullyQualifiedName` and the `selector` to something like <class name>.<method name>;
 method names like this just look stupid,
 but class names look like new classes to Gradle (since the event fingerprint says so),
 which corrupts test reports.
 I had to work around this.
 
-=== JUnit4 for Scala.js throwable
+=== JUnit4 for Scala.js Throwable
 It is possible, albeit not nice, for the test framework to not populate
 the `event.throwable` of the `Failure` event;
-JUnit4 for Scala.js used to do this (see https://github.com/scala-js/scala-js/pull/5132).
+`JUnit4 for Scala.js` used to do this (see https://github.com/scala-js/scala-js/pull/5132).
 
 Gradle treats a test as failed only when it receives a `throwable` for the test -
 otherwise, although XML report does record the failure, HTML report does not,
 nor does Gradle build fail.
 
-This is why I supply a synthesized event for *method* failures
+This is why I supply a synthesized event for _method_ failures
 if one did not come up from the framework.
 
 [#junit4-scalajs-scala-2]
 === JUnit4 for Scala.js and Scala 2
-Turns out, JUnit4 for Scala.js assumes existence of a `bootstrapper`
-in every test class - apparently, because test discovery for JUnit4
+Turns out, `JUnit4 for Scala.js` assumes existence of a `bootstrapper`
+in every test class - apparently, because test discovery for `JUnit4`
 is based on annotations, and reflection on Scala.js is not powerful enough,
-so tests are pre-discovered at compile time, and JUnit4-specific bootstrapper
-added to them. I do my own test class discovery,
-but even when fed a test class directly, JUnit4 breaks:
+so tests are pre-discovered _at compile time_,
+and JUnit4-specific bootstrappers generated for them.
+
+On Scala 3, bootstrappers are generated by the `Scala.js` compiler;
+on Scala 2, they are not, resulting in:
 
 [source]
 ----
@@ -1295,9 +1213,10 @@ java.lang.ClassNotFoundException: Cannot find org.podval.tools.test.JUnit4ScalaJ
   at org.scalajs.junit.JUnitTask.execute(main.js:13365)
 ----
 
-Solution is: on Scala 2, add yet another Scala compiler plugin
-that generates whatever it is JUnit need - but only if JUnit is actually
-on the classpath, or Scala compiler fails ;)
+To get the bootsrappers generated on Scala 2,
+a dedicated Scala compiler plugin has to be added: `scalajs-junit-test-plugin`.
+This compiler plugin can _only_ be added when `JUnit4 for Scala.js`
+is actually on the classpath - or Scala compiler breaks ;)
 
 see:
 
@@ -1305,28 +1224,91 @@ see:
 - https://github.com/scala-js/scala-js/commit/269d1aaf1fa20afbcc3940b9dba58e99ee010dc1
 - https://github.com/scala-js/scala-js/issues/4191
 
-=== MUnit and uTest output
-MUnit (but not JUnit4!) and uTest write to standard output/error
-instead of logging via supplied sbt logger,
-so their output does not go through my `TestClassProcessor.output()`;
-do I need to modify capturing to get their output?
+[#test-detection]
+=== Test Detection
+Plugin needs to associate a test framework and a fingerprint with each test class,
+so it uses its own test detector.
 
-=== Nested Tasks
-ScalaCheck processes test *methods* as nested tasks;
-other frameworks just run them and report the results via event handler.
+This is why file-name based test scan is not supported
+(`isScanForTestClasses` must be at its default value `true`):
+name of the test class is not sufficient to determine which test framework
+the class belongs to.
 
-UTest uses `NestedTestSelector` for this, while others use `TestSelector`.
+This is also why `JUnit5` is not supported:
+it insists on discovering the tests itself, as a comment on the `JupiterTestFingerprint.annotationName()` says:
 
-ScalaTest does not return nested tasks for nested suites
-(or anything, according to the documentation of its Runner);
-events for the tests in the nested suites have `NestedTestSelector`.
+> return The name of this class. This is to ensure that SBT does not find
+> any tests so that we can use JUnit Jupiter's test discovery mechanism.
+
+Well, mission accomplished: my test detector does not find any tests either.
+
+Originally, I coded a test detection mechanism that used
+analysis file generated by the Scala compiler.
+This code was later replaced with a traditional mechanism
+based on scanning the class files,
+similar to the mechanism used by Gradle for test detection with `JUnit4` and `TestNG`.
+
+If a class file is recognized by more than one framework
+(e.g. `MUnit` tests, which are also `JUnit4` tests),
+it is attributed to the framework whose fingerprint is closer to
+the test class in the hierarchy (e.g. `MUnit`).
+
+If a test class is encountered with more than one framework claiming it
+at the same distance in the hierarchy
+(which does not happen naturally, but can be constructed),
+mistake is assumed, a warning is issued, and the class is ignored.
+
+On `Scala.js`, annotation are not available at runtime
+(Scala.js compiler does not add `RuntimeVisibleAnnotations` to the class file),
+so this mechanism alone does not detect tests that are marked as such
+using annotations.
+
+Currently, the only test framework that marks tests as tests using annotations
+is `JUnit4 for Scala.js`.
+When `JUnit4 for Scala.js` is on the classpath,
+for each test class candidate
+plugin looks for the bootstrapper left behind by the Scala.js compiler
+(or, on Scala 2, Scala compiler plugin that generates bootstrappers).
+Presence of a bootstrapper `TestClass$scalajs$junit$bootstrapper$`
+is treated as a presence of the `@Test` annotation on `TestClass`,
+which marks it as a test belonging to the `JUnit4 for Scala.js` test framework.
+
+=== Gradle Internals
+To stop tests from being forked - which is needed to run tests on Scala.js -
+I had to fork `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter`
+(see link:src/main/scala/org/podval/tools/test/task/DefaultTestExecuter.scala[DefaultTestExecuter]).
+This is suboptimal, since I now have to track changes to the forked class.
+My proposal to expose an extension point that would allow to avoid the fork was rejected:
+https://github.com/gradle/gradle/issues/32666[32666],
+https://github.com/gradle/gradle/pull/32656[32656];
+that made it pretty clear that other modifications to Gradle that would make my code
+cleaner would be to, so I did not even bother;
+here are examples of resulting ugliness:
+
+- to determine if Gradle is being run by IntelliJ Idea
+I had to access non-public classes and methods using reflection
+in link:src/main/scala/org/podval/tools/test/task/IntelliJIdea.scala[IntelliJIdea];
+- to add to the implementation class path of `WorkerProcessBuilder`,
+I had to use reflection in
+link:src/main/scala/org/podval/tools/test/task/SbtTestFramework.scala[SbtTestFramework];
+- to set test framework on the test task, I had to use reflection
+in link:src/main/scala/org/podval/tools/test/task/TestTask.scala[TestTask];
+- to set options on the test framework, I copied
+`org.gradle.api.tasks.testing.Test.options`: it is private and too short to bother with reflection;
+- to call `ForkedTestClasspath.getApplicationClasspath()` I had to use reflection,
+since it returns `org.gradle.internal.impldep.com.google.common.collect.ImmutableList`,
+which is not accessible from the plugin and results in `java.lang.NoSuchMethodError`;
+- since Gradle's internal copy of `org.ow2.asm:asm` is under `impldep` and is not accessible to the plugin, I had to add an explicit dependency on `org.ow2.asm:asm`;
+- `org.gradle.api.tasks.testing.Test.testsAreNotFiltered()` calls `Test.noCategoryOrTagOrGroupSpecified()`,
+which recognizes only the test frameworks explicitly supported by Gradle (`JUnit` and `TestNG`); since I can not override it, I just use
+`org.gradle.api.tasks.testing.junit.JUnitOptions` as `SbtTestFrameworkOptions`.
 
 === AsciiDoc
 GitHub stupidly disables AsciDoc includes in README;
 see https://github.com/github/markup/issues/1095.
 
 One include (of the `versions.adoc` in `README.adoc`.)
-is not enough to bother with AsciiDoctor Reducer (https://github.com/asciidoctor/asciidoctor-reducer),
+is not enough to bother with https://github.com/asciidoctor/asciidoctor-reducer[AsciiDoctor Reducer],
 so I just patch the Readme.adoc...
 
 I also write versions to `gradle.properties` and use them in `gradle.build`.
