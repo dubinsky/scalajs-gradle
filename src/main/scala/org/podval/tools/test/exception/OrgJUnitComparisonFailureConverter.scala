@@ -1,7 +1,7 @@
 package org.podval.tools.test.exception
 
-import org.gradle.api.tasks.testing.TestFailure
 import org.junit.ComparisonFailure
+import org.gradle.api.tasks.testing.TestFailure
 
 object OrgJUnitComparisonFailureConverter extends ExceptionConverter:
   override def toTestFailure(throwable: Throwable): TestFailure =

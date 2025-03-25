@@ -53,6 +53,6 @@ final class ScalaJSPlugin extends Plugin[Project]:
         .toSeq
         .foreach((configurationName: String) => GradleClassPath.addTo(this, getConfiguration(configurationName)))
 
-object ScalaJSPlugin:
+private object ScalaJSPlugin:
   private val disabledProperty: String = "org.podval.tools.scalajs.disabled"
   private val maiflaiProperty : String = "com.github.maiflai.gradle-scalatest.mode"

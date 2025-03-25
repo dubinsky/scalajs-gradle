@@ -11,7 +11,7 @@ object Scala212Collections:
 
   def arrayFlatMap[A, B: ClassTag](array: Array[A], f: A => Array[B]): Array[B] =
     var result: Array[B] = Array.empty
-    var i: Int = 0;
+    var i: Int = 0
     while i < array.length do { result = arrayConcat(result, f(array(i))); i = i + 1 }
     result
 

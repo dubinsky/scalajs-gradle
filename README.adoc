@@ -256,7 +256,6 @@ dependencies {
 [source,groovy,subs="+attributes"]
 ----
 final String scalaVersion       = '{version-scala}'
-final String scala2versionMinor = '{version-scala2-minor}'
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
@@ -850,7 +849,7 @@ Idea supplies Gradle test filter "selected.package.*".
 As usual, you can run individual test for _the frameworks Idea recognizes_ using either:
 
 - test's node in the project tree or
-- gutter icon in the tests's file
+- gutter icon in the test's file
 
 Idea supplies Gradle test filter "fully.qualified.TestClass".
 

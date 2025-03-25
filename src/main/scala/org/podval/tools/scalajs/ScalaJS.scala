@@ -22,7 +22,7 @@ object ScalaJS:
   object Linker        extends Maker("scalajs-linker")
   object TestBridge    extends Maker("scalajs-test-bridge")
   object TestAdapter   extends Maker("scalajs-sbt-test-adapter")
-  object TestInterface extends Maker("scalajs-test-interface")
+//  object TestInterface extends Maker("scalajs-test-interface")
   
   object JSDomNodeJS extends ScalaDependency.MakerScala2Jvm:
     override val versionDefault: Version = Version("1.1.0")

@@ -99,7 +99,7 @@ final class SbtTestFrameworkDetector(
       )
     result
 
-  // JUni4 for Scala.js annotated detector if running on Scala.js with JUnit for for Scala.js on classpath.
+  // JUni4 for Scala.js annotated detector if running on Scala.js with JUnit for Scala.js on classpath.
   private lazy val jUnit4ScalaJSAnnotatedDetector: Option[AnnotatedFingerprintDetector] =
     if !isScalaJS then None else annotatedDetectors.find(_.framework.name == JUnit4ScalaJS.name)
 
