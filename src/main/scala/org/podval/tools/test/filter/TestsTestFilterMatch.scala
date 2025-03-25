@@ -15,7 +15,7 @@ final case class TestsTestFilterMatch(
     testWildCards.toArray.map(TestWildcardSelector(_))
 
   override def intersect(other: TestFilterMatch): TestFilterMatch = other match
-    case that: SuiteTestFilterMatch => this
+    case _   : SuiteTestFilterMatch => this
     case that: TestsTestFilterMatch => TestsTestFilterMatch(
       testNames = this.testNames.intersect(that.testNames) ++
         this.testNames.filter(l => that.testWildCards.exists(l.contains)), // TODO [filter]

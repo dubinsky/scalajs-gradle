@@ -12,7 +12,7 @@ object Exec:
 
   def unameM: String = Exec("uname -m")
 
-  def attempt(command: String): Option[String] =
+  private def attempt(command: String): Option[String] =
     try Some(Exec(command)) catch case _: Exception => None
 
   def apply(command: String): String = Process(command).!!.trim

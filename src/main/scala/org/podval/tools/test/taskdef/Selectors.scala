@@ -7,7 +7,7 @@ object Selectors extends Ops[Selector](":"):
   object Many extends ArrayOps[Selector](Selectors, "--")
 
   override protected def toStrings(value: Selector): Array[String] = value match
-    case suiteSelector       : SuiteSelector        => Array("Suite")
+    case _                   : SuiteSelector        => Array("Suite")
     case testSelector        : TestSelector         => Array("Test", testSelector.testName)
     case nestedSuiteSelector : NestedSuiteSelector  => Array("NestedSuite", nestedSuiteSelector.suiteId)
     case nestedTestSelector  : NestedTestSelector   => Array("NestedTest", nestedTestSelector.suiteId, nestedTestSelector.testName)
