@@ -146,9 +146,29 @@ the ScalaTest one ;)
 == Dependencies
 
 Plugin automatically adds certain dependencies to various Gradle configurations
-if they are not configured explicitly;
-one of those configurations is `scalajs` - configuration that plugin creates.
-Table below lists what is added to what configuration.
+if they are not added explicitly.
+
+In the examples below, latest versions of all dependencies are used.
+
+Unless you want to override a version of some dependency that the plugin adds,
+the only dependencies you need to add to the project are
+the Scala library and test framework(s) that you use.
+
+=== JVM
+
+When running on JVM, plugin adds SBT Test Interface
+`org.scala-sbt:test-interface:1.0` to the `testImplementation`
+configuration: it is used by the plugin to run the tests,
+and is normally brought in by the test frameworks themselves,
+but since `ScalaTest` does not bring it in,
+plugin adds it.
+
+When running on Scala.js, its Scala.js analogue
+`org.scala-js:scalajs-test-interface` is brought in transitively
+by the Scala.js Test Adapter `org.scala-js:scalajs-sbt-test-adapter`
+(among others), which plugin adds.
+
+=== Scala.js
 
 Scala.js dependencies are added only if Scala.js is enabled;
 if `scalajs-library` dependency is specified explicitly,
@@ -159,9 +179,15 @@ for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalate
 For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
 Same rules apply to the test framework dependencies listed in the <<test-frameworks>> section.
 
-Unless you want to override a version of some dependency that the plugin adds,
-the only dependencies you need to add to the project are
-the Scala library and test framework(s) that you use.
+When running on Scala.js, plugin creates two configurations in the project:
+- `scalajs` - for Scala.js dependencies used by the plugin itself;
+- `scalajsCompilerPlugins` - for Scala compiler plugins needed for compiling
+Scala.js on Scala 2;
+pre-existing `scalaCompilerPlugins` configuration is not used,
+since it would add the plugins to all Scala compilation tasks,
+which is not correct for the projects that contain both JVM and Scala.js code.
+
+Table below lists what is added to what configuration when running on Scala.js.
 
 [%autowidth]
 |===
@@ -169,12 +195,12 @@ the Scala library and test framework(s) that you use.
 
 |Scala.js Compiler
 |org.scala-js:scalajs-compiler
-|scalaCompilerPlugins
+|scalajsCompilerPlugins
 |only for Scala 2
 
 |Scala.js JUnit Compiler Plugin
 |org.scala-js:scalajs-junit-test-plugin
-|scalaCompilerPlugins
+|scalajsCompilerPlugins
 |only for Scala 2 and only if JUnit4 for Scala.js is used
 
 |Scala.js Linker
@@ -212,14 +238,7 @@ the Scala library and test framework(s) that you use.
 |testImplementation
 |
 
-|SBT Test Interface
-|org.scala-sbt:test-interface
-|testImplementation
-|only when Scala.js is disabled
-
 |===
-
-In the examples below, latest versions of all dependencies are used.
 
 === Scala 3 with Scala.js
 
@@ -286,8 +305,8 @@ dependencies {
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
 
-  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
-  scalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:$scalaJsVersion"
+  scalajsCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
+  scalajsCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:$scalaJsVersion"
 
   implementation "org.scala-lang:scala-library:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
@@ -355,7 +374,7 @@ If the project uses Scala 2, Scala.js compiler plugin dependency needs to be dec
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:{version-scalajs}"
+  scalajsCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:{version-scalajs}"
 }
 ----
 
@@ -366,25 +385,13 @@ If the project uses Scala 2 _and_ JUnit 4 for Scala.js, a JUnit Scala compiler p
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  scalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:{version-scalajs}"
+  scalajsCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:{version-scalajs}"
 }
 ----
 
 Plugin adds this automatically also.
 
-To enable Scala compiler plugins, their classpaths need to be given to the compiler
-via a `-Xplugin:` option. Examples of the Gradle build script code that do that abound:
-
-[source,groovy]
-----
-tasks.withType(ScalaCompile) {
-  scalaCompileOptions.additionalParameters = [
-    '-Xplugin:' + configurations.scalaCompilerPlugin.asPath
-  ]
-}
-----
-
-Such code is _not needed_, since Gradle `Scala` plugin does this automatically.
+There is no need to add `-Xplugin:` Scala compiler parameters for the compiler plugins.
 
 === Linking
 

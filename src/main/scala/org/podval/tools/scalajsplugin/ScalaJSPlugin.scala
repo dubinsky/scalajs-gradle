@@ -28,11 +28,6 @@ final class ScalaJSPlugin extends Plugin[Project]:
       val projectScalaPlatform: ScalaPlatform =
         projectScalaLibrary.toPlatform(if isJSDisabled then ScalaBackend.Jvm else ScalaBackend.JS())
 
-      delegate.configureProject(
-        project,
-        projectScalaPlatform
-      )
-
       delegate
         .dependencyRequirements(
           project,
@@ -40,6 +35,12 @@ final class ScalaJSPlugin extends Plugin[Project]:
           projectScalaPlatform = projectScalaPlatform
         )
         .foreach(_.applyToConfiguration(project))
+
+      delegate
+        .configureProject(
+          project,
+          projectScalaPlatform
+        )
 
       def getConfiguration(name: String): Iterable[File] = Gradle.getConfiguration(project, name).asScala
 
