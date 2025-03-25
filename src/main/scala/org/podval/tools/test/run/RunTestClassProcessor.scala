@@ -13,7 +13,7 @@ import org.podval.tools.test.exception.ExceptionConverter
 import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForAll, arrayForEach, arrayMap,
   arrayMkString, arrayPartition, stripPrefix}
-import sbt.testing.{Event, NestedTestSelector, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector,
+import sbt.testing.{Event, NestedTestSelector, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector,
   TestWildcardSelector}
 import scala.util.control.NonFatal
 
@@ -88,7 +88,7 @@ final class RunTestClassProcessor(
       )
     )
 
-  private def testLogger(testId: AnyRef): sbt.testing.Logger = new sbt.testing.Logger:
+  private def testLogger(testId: AnyRef): Logger = new Logger:
     private def log(logLevel: LogLevel, message: String): Unit = output(message, logLevel, testId)
     override def ansiCodesSupported: Boolean = true // TODO !runningInIntelliJIdea?
     override def error(message: String): Unit = log(LogLevel.ERROR, message)

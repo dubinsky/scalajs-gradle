@@ -569,7 +569,8 @@ a|
 | Specs2
 | `org.specs2:specs2-core`
 | {version-framework-specs2}
-| latest version for Scala 2 is 4.20.9
+a|
+- latest version for Scala 2 is 4.20.9
 
 | uTest
 | `com.lihaoyi:utest`
