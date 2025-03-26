@@ -21,35 +21,35 @@ final class ScalaJSPlugin extends Plugin[Project]:
       Option(project.findProperty(ScalaJSPlugin.maiflaiProperty )).isDefined ||
       Option(project.findProperty(ScalaJSPlugin.disabledProperty)).exists(_.toString.toBoolean)
 
-    val delegate: BackendDelegate =
+    val delegates: Seq[BackendDelegate] =
       if isJSDisabled
-      then JvmDelegate(project)
-      else ScalaJSDelegate(project)
+      then Seq(JvmDelegate(project))
+      else Seq(ScalaJSDelegate(project))
 
-    delegate.setUpProject()
+    delegates.foreach(_.setUpProject())
 
     project.afterEvaluate: (project: Project) =>
+      def getConfiguration(name: String): Iterable[File] = Gradle.getConfiguration(project, name).asScala
+
       val projectScalaLibrary: ScalaLibrary = 
         ScalaLibrary.getFromConfiguration(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
 
       val projectScalaPlatform: ScalaPlatform =
         projectScalaLibrary.toPlatform(if isJSDisabled then ScalaBackend.Jvm else ScalaBackend.JS())
 
-      delegate
-        .dependencyRequirements(
-          pluginScalaPlatform = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm),
-          projectScalaPlatform = projectScalaPlatform
-        )
+      val pluginScalaPlatform: ScalaPlatform =
+        ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm)
+        
+      delegates
+        .flatMap(_.dependencyRequirements(pluginScalaPlatform, projectScalaPlatform))
         .foreach(_.applyToConfiguration(project))
 
-      delegate.configureProject(projectScalaPlatform)
-
-      def getConfiguration(name: String): Iterable[File] = Gradle.getConfiguration(project, name).asScala
-
+      delegates
+        .foreach(_.configureProject(projectScalaPlatform))
+      
       // Expanding plugin's classpath.
-      delegate
-        .configurationToAddToClassPath
-        .toSeq
+      delegates
+        .flatMap(_.configurationToAddToClassPath)
         .foreach((configurationName: String) => GradleClassPath.addTo(this, getConfiguration(configurationName)))
 
       projectScalaLibrary.verify(
