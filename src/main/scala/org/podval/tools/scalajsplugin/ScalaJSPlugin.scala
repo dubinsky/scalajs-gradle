@@ -1,5 +1,6 @@
 package org.podval.tools.scalajsplugin
 
+import org.gradle.api.file.Directory
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.{Plugin, Project}
@@ -7,24 +8,44 @@ import org.gradle.api.plugins.scala.ScalaPlugin
 import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
 import org.podval.tools.scalajsplugin.jvm.JvmDelegate
 import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
+import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class ScalaJSPlugin extends Plugin[Project]:
+  import ScalaJSPlugin.logger
+  
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
-//    println(project.getLayout.getProjectDirectory)
-//    println(Gradle.getSourceSets(project).asScala)
-
+    val isMixed: Boolean =
+      def rootFileExists(name: String): Boolean = File(project.getLayout.getProjectDirectory.getAsFile, name).exists
+      val sourceRootPresent: Boolean = Set(JvmDelegate.sourceRoot, ScalaJSDelegate.sourceRoot).exists(rootFileExists)
+      val srcPresent: Boolean = rootFileExists("src")
+      if sourceRootPresent && srcPresent then
+        logger.warn("ScalaJSPlugin: Both 'src' and platform-specific source roots are present! Ignoring 'src'.")
+      sourceRootPresent
+    
     val isJSDisabled: Boolean =
       Option(project.findProperty(ScalaJSPlugin.maiflaiProperty )).isDefined ||
       Option(project.findProperty(ScalaJSPlugin.disabledProperty)).exists(_.toString.toBoolean)
 
     val delegates: Seq[BackendDelegate] =
       if isJSDisabled
-      then Seq(JvmDelegate(project))
-      else Seq(ScalaJSDelegate(project))
+      then
+        logger.info("ScalaJSPlugin: running in JVM mode; Scala.js is disabled.")
+        Seq(JvmDelegate(project, isMixed = false))
+      else
+        if !isMixed
+        then
+          logger.info("ScalaJSPlugin: running in Scala.js mode.")
+          Seq(ScalaJSDelegate(project, isMixed = false))
+        else
+          logger.info("ScalaJSPlugin: running in mixed mode.")
+          Seq(
+            JvmDelegate(project, isMixed = true),
+//            ScalaJSDelegate(project, isMixed = true)
+          )
 
     delegates.foreach(_.setUpProject())
 
@@ -57,5 +78,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
       )
       
 private object ScalaJSPlugin:
+  private val logger: Logger = LoggerFactory.getLogger(ScalaJSPlugin.getClass)
+  
   private val disabledProperty: String = "org.podval.tools.scalajs.disabled"
   private val maiflaiProperty : String = "com.github.maiflai.gradle-scalatest.mode"

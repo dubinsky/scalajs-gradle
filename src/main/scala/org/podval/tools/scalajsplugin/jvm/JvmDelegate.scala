@@ -6,7 +6,10 @@ import org.podval.tools.build.{DependencyRequirement, ScalaPlatform}
 import org.podval.tools.scalajsplugin.BackendDelegate
 import org.podval.tools.test.SbtTestInterface
 
-final class JvmDelegate(project: Project) extends BackendDelegate(project):
+object JvmDelegate:
+  final val sourceRoot: String = "jvm"
+  
+final class JvmDelegate(project: Project, isMixed: Boolean) extends BackendDelegate(project):
   override def setUpProject(): Unit =
     project.getTasks.replace("test", classOf[JvmTestTask])
 

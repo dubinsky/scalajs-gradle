@@ -13,7 +13,7 @@ import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
-final class ScalaJSDelegate(project: Project) extends BackendDelegate(project):
+final class ScalaJSDelegate(project: Project, isMixed: Boolean) extends BackendDelegate(project):
   override def setUpProject(): Unit =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
@@ -68,6 +68,8 @@ final class ScalaJSDelegate(project: Project) extends BackendDelegate(project):
 
 object ScalaJSDelegate:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSDelegate.getClass)
+
+  final val sourceRoot: String = "js"
 
   private val scalaJSConfigurationName: String = "scalajs"
   private val scalaJSCompilerPluginsConfigurationName: String = "scalajsCompilerPlugins"
