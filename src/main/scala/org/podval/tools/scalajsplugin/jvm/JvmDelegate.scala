@@ -6,19 +6,15 @@ import org.podval.tools.build.{DependencyRequirement, ScalaPlatform}
 import org.podval.tools.scalajsplugin.BackendDelegate
 import org.podval.tools.test.SbtTestInterface
 
-class JvmDelegate extends BackendDelegate:
-  override def beforeEvaluate(project: Project): Unit =
+final class JvmDelegate(project: Project) extends BackendDelegate(project):
+  override def setUpProject(): Unit =
     project.getTasks.replace("test", classOf[JvmTestTask])
 
   override def configurationToAddToClassPath: Option[String] = None
 
-  override def configureProject(
-    project: Project,
-    projectScalaPlatform: ScalaPlatform
-  ): Unit = ()
+  override def configureProject(projectScalaPlatform: ScalaPlatform): Unit = ()
   
   override def dependencyRequirements(
-    project: Project,
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
   ): Seq[DependencyRequirement] = Seq(

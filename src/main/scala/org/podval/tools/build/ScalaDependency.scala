@@ -1,5 +1,6 @@
 package org.podval.tools.build
 
+import org.gradle.api.Project
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(
@@ -94,10 +95,16 @@ object ScalaDependency:
       isScalaVersionFull
     )
 
+    final def findInConfiguration(
+      scalaPlatform: ScalaPlatform,
+      project: Project,
+      configurationName: String
+    ): Option[Dependency.WithVersion] = 
+      findable(scalaPlatform).findInConfiguration(project, configurationName)
+  
     final override def dependency(scalaPlatform: ScalaPlatform): WithScalaVersion =
       findable(scalaPlatform).withScalaVersion(scalaVersion(adjusted(scalaPlatform)))
-
-
+  
   trait MakerScala2Jvm extends Maker:
     final override def jvm: Boolean = true
     final override def scala2: Boolean = true

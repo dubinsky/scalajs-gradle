@@ -4,7 +4,7 @@ import org.gradle.api.{Project, Task}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.{SourceSet, TaskProvider}
+import org.gradle.api.tasks.{SourceSet, SourceSetContainer, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
 import scala.jdk.CollectionConverters.SetHasAsScala
 
@@ -12,12 +12,20 @@ object Gradle:
   def getConfiguration(project: Project, name: String): Configuration = project
     .getConfigurations
     .getByName(name)
-  
-  def getSourceSet(project: Project, name: String): SourceSet = project
+
+  def createConfiguration(project: Project, name: String, description: String): Configuration =
+    val result: Configuration = project.getConfigurations.create(name)
+    result.setVisible(false)
+    result.setCanBeConsumed(false)
+    result.setDescription(description)
+    result
+    
+  def getSourceSets(project: Project): SourceSetContainer = project
     .getExtensions
     .getByType(classOf[JavaPluginExtension])
     .getSourceSets
-    .getByName(name)
+  
+  def getSourceSet(project: Project, name: String): SourceSet = getSourceSets(project).getByName(name)
   
   def getClassesTask(project: Project, sourceSetName: String): Task = project
     .getTasks

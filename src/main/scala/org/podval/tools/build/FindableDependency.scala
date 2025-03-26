@@ -1,12 +1,19 @@
 package org.podval.tools.build
 
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.Project
 import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
 
 trait FindableDependency[D <: Dependency] extends DependencyCoordinates:
-  final def findInConfiguration(configuration: Configuration): Option[Dependency.WithVersion] =
-    find(configuration.getDependencies.asScala.flatMap(DependencyData.fromGradleDependency))
+  final def findInConfiguration(
+    project: Project,
+    configurationName: String
+  ): Option[Dependency.WithVersion] = find(Gradle
+    .getConfiguration(project, configurationName)
+    .getDependencies
+    .asScala
+    .flatMap(DependencyData.fromGradleDependency)
+  )
 
   final def findInClassPath(classPath: Iterable[File]): Option[Dependency.WithVersion] =
     find(classPath.flatMap(DependencyData.fromFile))

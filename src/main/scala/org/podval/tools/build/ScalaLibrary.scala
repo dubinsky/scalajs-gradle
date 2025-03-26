@@ -1,5 +1,6 @@
 package org.podval.tools.build
 
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import java.io.File
 
@@ -32,10 +33,13 @@ final class ScalaLibrary(
     )
 
 object ScalaLibrary:
-  def getFromConfiguration(configuration: Configuration): ScalaLibrary =
+  def getFromConfiguration(
+    project: Project,
+    configurationName: String
+  ): ScalaLibrary =
     ScalaLibrary(
-      scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(configuration),
-      scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(configuration)
+      scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(project, configurationName),
+      scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(project, configurationName)
     )
 
   def getFromClasspath(classPath: Iterable[File]): ScalaLibrary =
