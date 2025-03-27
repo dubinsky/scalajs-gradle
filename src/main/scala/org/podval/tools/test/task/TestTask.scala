@@ -8,7 +8,7 @@ import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.{Internal, SourceSet, TaskAction}
+import org.gradle.api.tasks.{Internal, TaskAction}
 import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
@@ -22,8 +22,6 @@ import java.lang.reflect.Method
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
 abstract class TestTask extends Test:
   setGroup(JavaBasePlugin.VERIFICATION_GROUP)
-  getDependsOn.add(Gradle.getClassesTask(getProject, sourceSetName))
-  private def sourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
 
   useSbt()
 

@@ -4,19 +4,17 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, InputFiles, Optional, OutputDirectory, OutputFile, TaskAction}
 import org.gradle.api.DefaultTask
-import org.podval.tools.build.Gradle
 import org.podval.tools.scalajs.{ModuleInitializer, ModuleKind, ModuleSplitStyle, Optimization, ScalaJSLink}
 import org.podval.tools.util.Files
 import java.io.File
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-abstract class ScalaJSLinkTask extends DefaultTask with ScalaJSTask:
+abstract class ScalaJSLinkTask(
+  final override protected val flavour: String
+) extends DefaultTask with ScalaJSTask:
   setGroup("build")
   setDescription(s"$flavour ScalaJS${optimization.description}")
-  getDependsOn.add(Gradle.getClassesTask(getProject, sourceSetName))
-
-  def sourceSetName: String
-
+  
   @TaskAction final def execute(): Unit = ScalaJSLink(scalaJSCommon).link(
     reportTextFile = linkTask.getReportTextFile,
     optimization = optimization,
