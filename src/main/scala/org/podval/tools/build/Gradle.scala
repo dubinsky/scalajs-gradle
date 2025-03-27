@@ -19,12 +19,12 @@ object Gradle:
     result.setCanBeConsumed(false)
     result.setDescription(description)
     result
-    
+
   def getSourceSets(project: Project): SourceSetContainer = project
     .getExtensions
     .getByType(classOf[JavaPluginExtension])
     .getSourceSets
-  
+
   def getSourceSet(project: Project, name: String): SourceSet = getSourceSets(project).getByName(name)
   
   def getClassesTask(project: Project, sourceSetName: String): Task = project

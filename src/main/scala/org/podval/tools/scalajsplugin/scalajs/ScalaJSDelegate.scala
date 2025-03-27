@@ -2,6 +2,7 @@ package org.podval.tools.scalajsplugin.scalajs
 
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.scala.ScalaCompile
@@ -13,7 +14,16 @@ import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
-final class ScalaJSDelegate(project: Project, isMixed: Boolean) extends BackendDelegate(project):
+final class ScalaJSDelegate(
+  project: Project,
+  objectFactory: ObjectFactory,
+  isMixed: Boolean
+) extends BackendDelegate(
+  project,
+  objectFactory
+):
+  override def sourceRoot: String = ScalaJSDelegate.sourceRoot
+
   override def setUpProject(): Unit =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
@@ -59,7 +69,7 @@ final class ScalaJSDelegate(project: Project, isMixed: Boolean) extends BackendD
     ScalaJSDelegate.configureScalaCompile(project, SourceSet.TEST_SOURCE_SET_NAME, isScala3)
 
     // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
-    
+
     // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s.
     project.getTasks.asScala.foreach:
       case linkTask: ScalaJSLinkTask =>
