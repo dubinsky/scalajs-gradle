@@ -4,7 +4,6 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.{ComponentIdentifier, ProjectComponentIdentifier}
 import org.gradle.api.{Action, Project, Task}
 import org.gradle.api.file.{DirectoryProperty, FileCollection, FileTreeElement, RegularFileProperty, SourceDirectorySet}
-import org.gradle.api.internal.ConventionMapping
 import org.gradle.api.internal.lambdas.SerializableLambdas
 import org.gradle.api.internal.tasks.{DefaultSourceSet, DefaultSourceSetOutput}
 import org.gradle.api.internal.plugins.DslObject
@@ -31,6 +30,10 @@ abstract class BackendDelegate(
 ):
   def sourceRoot: String
 
+  def mainSourceSetName: String
+  
+  def testSourceSetName: String
+
   def setUpProject(): Unit
 
   def configurationToAddToClassPath: Option[String]
@@ -42,60 +45,88 @@ abstract class BackendDelegate(
     projectScalaPlatform: ScalaPlatform
   ): Seq[DependencyRequirement]
 
-  // following was copied, translates and adjusted for jvm/js/shared split from the Gradle sources...
+  // -------------------------------------------------------------------------------------------
+  // following code for setting up source sets, configurations and other Gradle things for Scala
+  // was copied, translates and adjusted for jvm/js/shared split from the Gradle sources...
+  // -------------------------------------------------------------------------------------------
 
+  // To create a pair of platform-specific sourceSets, say `mainJS` and `testJS`,
+  // we need to start all the way back from `ScalaBasePlugin.apply()` and `ScalaPlugin.apply()`,
+  // and track into JavaPlugin...
+  protected final def createBackendSpecificSetup(
+    
+  ) = ()
+    
   // TODO when creating a Scala.js set of source sets, more from ScalaBasePlugin.apply():
   // configureConfigurations()
   // configureCompileDefaults()
   // configureScaladoc()
-
+  
   // see org.gradle.api.plugins.scala.ScalaBasePlugin.configureSourceSetDefaults
+  // we can not assume that there are only `test` and `main` sourceSets,
+  // we need to name names:
   protected final def configureSourceSetDefaults(isCreate: Boolean): Unit =
-    Gradle.getSourceSets(project).all: (sourceSet: SourceSet) =>
-      val scalaSource: ScalaSourceDirectorySet =
-        if isCreate then
-          val scalaSource: ScalaSourceDirectorySet = createScalaSourceDirectorySet(sourceSet)
-          sourceSet.getExtensions.add(classOf[ScalaSourceDirectorySet], "scala", scalaSource)
-          scalaSource
-        else
-          sourceSet.getExtensions.getByType(classOf[ScalaSourceDirectorySet])
+    configureSourceSetDefaults(Gradle.getSourceSet(project, mainSourceSetName), isCreate)
+    configureSourceSetDefaults(Gradle.getSourceSet(project, testSourceSetName), isCreate)
 
-      scalaSource.setSrcDirs(
-        Seq(
-          s"$sourceRoot/src/${sourceSet.getName}/scala",
-          s"${BackendDelegate.sharedSourceRoot}/src/${sourceSet.getName}/scala"
-        )
-          .map(project.file)
-          .asJava
-      )
-
-      // Explicitly capture only a FileCollection in the lambda below for compatibility with configuration-cache.
-      val scalaSourceFiles: FileCollection = scalaSource
-      sourceSet.getResources.getFilter.exclude(
-        SerializableLambdas.spec(
-          (element: FileTreeElement) => scalaSourceFiles.contains(element.getFile)
-        )
-      )
-
-      sourceSet.getAllJava.source(scalaSource)
-      sourceSet.getAllSource.source(scalaSource)
-
+  protected final def configureSourceSetDefaults(
+    sourceSet: SourceSet,
+    isCreate: Boolean
+  ): Unit =
+    val scalaSource: ScalaSourceDirectorySet =
       if isCreate then
-        ()
-      // TODO   project.getConfigurations.getByName(sourceSet.getImplementationConfigurationName).getDependencies.addLater(createScalaDependency(scalaPluginExtension))
+        val scalaSource: ScalaSourceDirectorySet = createScalaSourceDirectorySet(sourceSet)
+        sourceSet.getExtensions.add(classOf[ScalaSourceDirectorySet], "scala", scalaSource)
+        scalaSource
+      else
+        sourceSet.getExtensions.getByType(classOf[ScalaSourceDirectorySet])
 
-      val incrementalAnalysis: Configuration =
-        if isCreate then
-          ??? // TODO createIncrementalAnalysisConfigurationFor(project.getConfigurations, incrementalAnalysisCategory, incrementalAnalysisUsage, sourceSet)
-        else
-          project.getConfigurations.getByName(s"incrementalScalaAnalysisFor${sourceSet.getName}")
-
-      createScalaCompileTask(
-        isCreate,
-        sourceSet,
-        scalaSource,
-        incrementalAnalysis
+    scalaSource.setSrcDirs(
+      Seq(
+        s"$sourceRoot/src/${sourceSet.getName}/scala",
+        s"${BackendDelegate.sharedSourceRoot}/src/${sourceSet.getName}/scala"
       )
+        .map(project.file)
+        .asJava
+    )
+
+    // Explicitly capture only a FileCollection in the lambda below for compatibility with configuration-cache.
+    val scalaSourceFiles: FileCollection = scalaSource
+    sourceSet.getResources.getFilter.exclude(
+      SerializableLambdas.spec(
+        (element: FileTreeElement) => scalaSourceFiles.contains(element.getFile)
+      )
+    )
+
+    sourceSet.getAllJava.source(scalaSource)
+    sourceSet.getAllSource.source(scalaSource)
+
+    if isCreate then
+      ()
+    // TODO   project.getConfigurations.getByName(sourceSet.getImplementationConfigurationName).getDependencies.addLater(createScalaDependency(scalaPluginExtension))
+
+    // TODO - this is reported by `./gradlew resolvableConfigurations` even without me touching anything:
+    // Consumable configurations with identical capabilities within a project
+    // (other than the default configuration) must have unique attributes,
+    // but configuration ':incrementalScalaAnalysisFormain' and [configuration ':incrementalScalaAnalysisElements']
+    // contain identical attribute sets.
+    // Consider adding an additional attribute to one of the configurations to disambiguate them.
+    // For more information, please refer to
+    // https://docs.gradle.org/8.13/userguide/upgrading_version_7.html#unique_attribute_sets
+    // in the Gradle documentation.
+
+    val incrementalAnalysis: Configuration =
+      if isCreate then
+        ??? // TODO createIncrementalAnalysisConfigurationFor(project.getConfigurations, incrementalAnalysisCategory, incrementalAnalysisUsage, sourceSet)
+      else
+        project.getConfigurations.getByName(s"incrementalScalaAnalysisFor${sourceSet.getName}")
+
+    createScalaCompileTask(
+      isCreate,
+      sourceSet,
+      scalaSource,
+      incrementalAnalysis
+    )
 
   // see org.gradle.api.plugins.scala.ScalaBasePlugin.createScalaSourceDirectorySet
   /**

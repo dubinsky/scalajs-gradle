@@ -12,6 +12,8 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 import javax.inject.Inject
 
+// TODO use TaskProviders for all created tasks:
+// use register() instead of create() and move task configuration into actions.
 final class ScalaJSPlugin @Inject(
   objectFactory: ObjectFactory
 ) extends Plugin[Project]:

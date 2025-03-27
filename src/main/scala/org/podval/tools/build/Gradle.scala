@@ -8,6 +8,7 @@ import org.gradle.api.tasks.{SourceSet, SourceSetContainer, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
 import scala.jdk.CollectionConverters.SetHasAsScala
 
+// TODO move everything into BackendDelegate and dissolve.
 object Gradle:
   def getConfiguration(project: Project, name: String): Configuration = project
     .getConfigurations
@@ -26,6 +27,10 @@ object Gradle:
     .getSourceSets
 
   def getSourceSet(project: Project, name: String): SourceSet = getSourceSets(project).getByName(name)
+
+  def getClassesTask(project: Project, sourceSet: SourceSet): Task = project
+    .getTasks
+    .getByName(sourceSet.getClassesTaskName)
   
   def getClassesTask(project: Project, sourceSetName: String): Task = project
     .getTasks
