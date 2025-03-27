@@ -24,6 +24,16 @@ final class ScalaJSDelegate(
 ):
   override def sourceRoot: String = ScalaJSDelegate.sourceRoot
 
+  override def mainSourceSetName: String =
+    if !isMixed
+    then SourceSet.MAIN_SOURCE_SET_NAME
+    else ScalaJSDelegate.mainJSSourceSetName
+
+  override def testSourceSetName: String =
+    if !isMixed
+    then SourceSet.TEST_SOURCE_SET_NAME
+    else ScalaJSDelegate.testJSSourceSetName
+
   override def setUpProject(): Unit =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
@@ -70,16 +80,26 @@ final class ScalaJSDelegate(
 
     // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
 
-    // Now that whatever needs to be on the classpath already is, configure `LinkTask.runtimeClassPath` for all `LinkTask`s.
     project.getTasks.asScala.foreach:
       case linkTask: ScalaJSLinkTask =>
-        linkTask.getRuntimeClassPath.setFrom(Gradle.getSourceSet(project, linkTask.sourceSetName).getRuntimeClasspath)
+        val sourceSetName: String = linkTask match
+          case _: ScalaJSLinkMainTask => mainSourceSetName
+          case _: ScalaJSLinkTestTask => testSourceSetName
+
+        val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
+        linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
+        linkTask.getDependsOn.add(Gradle.getClassesTask(project, sourceSet))
+
+      case testTask: ScalaJSTestTask =>
+        testTask.getDependsOn.add(Gradle.getClassesTask(project, testSourceSetName))
       case _ =>
 
 object ScalaJSDelegate:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSDelegate.getClass)
 
   final val sourceRoot: String = "js"
+  private val mainJSSourceSetName: String = "mainJS"
+  private val testJSSourceSetName: String = "testJS"
 
   private val scalaJSConfigurationName: String = "scalajs"
   private val scalaJSCompilerPluginsConfigurationName: String = "scalajsCompilerPlugins"
