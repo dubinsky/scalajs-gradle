@@ -2,7 +2,7 @@ package org.podval.tools.scalajsplugin
 
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.{Plugin, Project}
+import org.gradle.api.{Plugin, Project, Task}
 import org.gradle.api.plugins.scala.ScalaPlugin
 import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
 import org.podval.tools.scalajsplugin.jvm.JvmDelegate
@@ -12,8 +12,6 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 import javax.inject.Inject
 
-// TODO use TaskProviders for all created tasks:
-// use register() instead of create() and move task configuration into actions.
 final class ScalaJSPlugin @Inject(
   objectFactory: ObjectFactory
 ) extends Plugin[Project]:
@@ -23,15 +21,11 @@ final class ScalaJSPlugin @Inject(
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
     val isMixed: Boolean =
-      val sourceRootPresent: Boolean = Set(
-        JvmDelegate.sourceRoot,
-        ScalaJSDelegate.sourceRoot
-      )
-        .exists(project.file(_).exists)
+      val sourceRootPresent: Boolean =
+        project.file(JvmDelegate    .sourceRoot).exists ||
+        project.file(ScalaJSDelegate.sourceRoot).exists
 
-      val srcPresent: Boolean = project.file("src").exists
-
-      if sourceRootPresent && srcPresent then
+      if sourceRootPresent && project.file("src").exists then
         logger.warn("ScalaJSPlugin: Both 'src' and platform-specific source roots are present! Ignoring 'src'.")
 
       sourceRootPresent
@@ -76,7 +70,10 @@ final class ScalaJSPlugin @Inject(
         .foreach(_.applyToConfiguration(project))
 
       delegates
-        .foreach(_.configureProject(projectScalaPlatform))
+        .foreach(_.configureProject(projectScalaPlatform.version.isScala3))
+
+      delegates
+        .foreach((delegate: BackendDelegate) => project.getTasks.asScala.foreach(delegate.configureTask))
 
       // Expanding plugin's classpath.
       delegates

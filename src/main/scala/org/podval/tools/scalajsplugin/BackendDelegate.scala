@@ -31,14 +31,17 @@ abstract class BackendDelegate(
   def sourceRoot: String
 
   def mainSourceSetName: String
-  
-  def testSourceSetName: String
 
-  def setUpProject(): Unit
+  def testSourceSetName: String
 
   def configurationToAddToClassPath: Option[String]
 
-  def configureProject(projectScalaPlatform: ScalaPlatform): Unit
+  // TODO switch from Tasks to TaskProviders and move stuff from configureTask() to setUpProject()
+  def setUpProject(): Unit
+
+  def configureTask(task: Task): Unit
+
+  def configureProject(isScala3: Boolean): Unit
 
   def dependencyRequirements(
     pluginScalaPlatform: ScalaPlatform,
@@ -61,7 +64,7 @@ abstract class BackendDelegate(
   // configureConfigurations()
   // configureCompileDefaults()
   // configureScaladoc()
-  
+
   // see org.gradle.api.plugins.scala.ScalaBasePlugin.configureSourceSetDefaults
   // we can not assume that there are only `test` and `main` sourceSets,
   // we need to name names:
@@ -146,7 +149,7 @@ abstract class BackendDelegate(
 
   // see org.gradle.api.plugins.scala.ScalaBasePlugin.createScalaCompileTask
   private def createScalaCompileTask(
-    isCreate: Boolean, // TODO
+    isCreate: Boolean,
     sourceSet: SourceSet,
     scalaSource: ScalaSourceDirectorySet,
     incrementalAnalysis: Configuration
@@ -173,8 +176,7 @@ abstract class BackendDelegate(
     configureOutputDirectoryForSourceSet(sourceSet, scalaSource, compileTask)
  
     if isCreate then
-      val action: Action[Task] = _.dependsOn(compileTask)
-      project.getTasks.named(sourceSet.getClassesTaskName, action)
+      project.getTasks.named(sourceSet.getClassesTaskName, toAction((task: Task) => task.dependsOn(compileTask)))
 
   // see org.gradle.api.plugins.internal.JvmPluginsHelper.configureAnnotationProcessorPath
   private def configureAnnotationProcessorPath(
@@ -258,21 +260,23 @@ abstract class BackendDelegate(
       )
     )
 
+  protected final def toAction[T](action: T => Unit): Action[T] = action(_)
+
   protected final def createConfiguration(name: String, description: String): Configuration =
     val result: Configuration = project.getConfigurations.create(name)
     result.setVisible(false)
     result.setCanBeConsumed(false)
     result.setDescription(description)
     result
-    
+
   protected final def getClassesTask(sourceSet: SourceSet): Task = project
     .getTasks
     .getByName(sourceSet.getClassesTaskName)
-  
+
   protected final def getClassesTask(sourceSetName: String): Task = project
     .getTasks
     .getByName(Gradle.getSourceSet(project, sourceSetName).getClassesTaskName)
-  
+
   protected final def getScalaCompile(sourceSetName: String): ScalaCompile = getClassesTask(sourceSetName)
     .getDependsOn
     .asScala
@@ -280,4 +284,3 @@ abstract class BackendDelegate(
     .get
     .asInstanceOf[TaskProvider[ScalaCompile]]
     .get
-  
