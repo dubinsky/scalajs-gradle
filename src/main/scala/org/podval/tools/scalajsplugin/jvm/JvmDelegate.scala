@@ -47,7 +47,7 @@ final class JvmDelegate(
   override def configureProject(projectScalaPlatform: ScalaPlatform): Unit =
     project.getTasks.asScala.foreach:
       case testTask: JvmTestTask =>
-        testTask.getDependsOn.add(Gradle.getClassesTask(project, testSourceSetName))
+        testTask.getDependsOn.add(getClassesTask(testSourceSetName))
       case _ =>
 
 object JvmDelegate:
