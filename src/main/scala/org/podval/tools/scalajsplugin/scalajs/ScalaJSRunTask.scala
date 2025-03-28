@@ -8,6 +8,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 trait ScalaJSRunTask extends ScalaJSTask:
   protected def linkTaskClass: Class[? <: ScalaJSLinkTask]
 
+  // TODO when switching to TaskProviders, adjust this:
   final override protected def linkTask: ScalaJSLinkTask = getDependsOn
     .asScala
     .find((candidate: AnyRef) => linkTaskClass.isAssignableFrom(candidate.getClass))
