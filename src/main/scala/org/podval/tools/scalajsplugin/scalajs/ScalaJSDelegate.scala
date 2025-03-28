@@ -1,6 +1,6 @@
 package org.podval.tools.scalajsplugin.scalajs
 
-import org.gradle.api.Project
+import org.gradle.api.{Project, Task}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
@@ -34,6 +34,8 @@ final class ScalaJSDelegate(
     then SourceSet.TEST_SOURCE_SET_NAME
     else ScalaJSDelegate.testJSSourceSetName
 
+  override def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
+
   override def setUpProject(): Unit =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
@@ -48,7 +50,25 @@ final class ScalaJSDelegate(
     val test    : ScalaJSTestTask     = project.getTasks.replace ("test"    , classOf[ScalaJSTestTask    ])
     test.dependsOn(linkTest)
 
-  override def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
+  override def configureTask(task: Task): Unit = task match
+    case linkTask: ScalaJSLinkTask =>
+      val sourceSetName: String = linkTask match
+        case _: ScalaJSLinkMainTask => mainSourceSetName
+        case _: ScalaJSLinkTestTask => testSourceSetName
+
+      val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
+      linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
+      linkTask.getDependsOn.add(getClassesTask(sourceSet))
+
+    case testTask: ScalaJSTestTask =>
+      testTask.getDependsOn.add(getClassesTask(testSourceSetName))
+
+    case _ =>
+
+  override def configureProject(isScala3: Boolean): Unit =
+    // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
+    configureScalaCompile(SourceSet.MAIN_SOURCE_SET_NAME, isScala3)
+    configureScalaCompile(SourceSet.TEST_SOURCE_SET_NAME, isScala3)
 
   override def dependencyRequirements(
     pluginScalaPlatform: ScalaPlatform,
@@ -72,27 +92,6 @@ final class ScalaJSDelegate(
       scalaJSVersion,
       isJUnit4Present = isJUnit4Present
     )
-
-  override def configureProject(projectScalaPlatform: ScalaPlatform): Unit =
-    val isScala3: Boolean = projectScalaPlatform.version.isScala3
-    configureScalaCompile(SourceSet.MAIN_SOURCE_SET_NAME, isScala3)
-    configureScalaCompile(SourceSet.TEST_SOURCE_SET_NAME, isScala3)
-
-    // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
-
-    project.getTasks.asScala.foreach:
-      case linkTask: ScalaJSLinkTask =>
-        val sourceSetName: String = linkTask match
-          case _: ScalaJSLinkMainTask => mainSourceSetName
-          case _: ScalaJSLinkTestTask => testSourceSetName
-
-        val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
-        linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-        linkTask.getDependsOn.add(getClassesTask(sourceSet))
-
-      case testTask: ScalaJSTestTask =>
-        testTask.getDependsOn.add(getClassesTask(testSourceSetName))
-      case _ =>
 
   private def configureScalaCompile(
     sourceSetName: String,
