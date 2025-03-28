@@ -1,6 +1,6 @@
 package org.podval.tools.scalajsplugin.jvm
 
-import org.gradle.api.Project
+import org.gradle.api.{Project, Task}
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.SourceSet
@@ -25,11 +25,19 @@ final class JvmDelegate(
 
   override def configurationToAddToClassPath: Option[String] = None
 
+  override def configureProject(isScala3: Boolean): Unit = ()
+
   override def setUpProject(): Unit =
     project.getTasks.replace("test", classOf[JvmTestTask])
 
     if isMixed then configureSourceSetDefaults(isCreate = false)
-  
+
+  override def configureTask(task: Task): Unit = task match
+    case testTask: JvmTestTask =>
+      testTask.getDependsOn.add(getClassesTask(testSourceSetName))
+
+    case _ =>
+
   override def dependencyRequirements(
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
@@ -44,11 +52,6 @@ final class JvmDelegate(
     )
   )
 
-  override def configureProject(projectScalaPlatform: ScalaPlatform): Unit =
-    project.getTasks.asScala.foreach:
-      case testTask: JvmTestTask =>
-        testTask.getDependsOn.add(getClassesTask(testSourceSetName))
-      case _ =>
 
 object JvmDelegate:
   final val sourceRoot: String = "jvm"
