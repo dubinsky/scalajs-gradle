@@ -257,3 +257,27 @@ abstract class BackendDelegate(
         s"$sourceRoot/$path/${sourceDirectorySet.getName}/${sourceSet.getName}"
       )
     )
+
+  protected final def createConfiguration(name: String, description: String): Configuration =
+    val result: Configuration = project.getConfigurations.create(name)
+    result.setVisible(false)
+    result.setCanBeConsumed(false)
+    result.setDescription(description)
+    result
+    
+  protected final def getClassesTask(sourceSet: SourceSet): Task = project
+    .getTasks
+    .getByName(sourceSet.getClassesTaskName)
+  
+  protected final def getClassesTask(sourceSetName: String): Task = project
+    .getTasks
+    .getByName(Gradle.getSourceSet(project, sourceSetName).getClassesTaskName)
+  
+  protected final def getScalaCompile(sourceSetName: String): ScalaCompile = getClassesTask(sourceSetName)
+    .getDependsOn
+    .asScala
+    .find(classOf[TaskProvider[ScalaCompile]].isInstance)
+    .get
+    .asInstanceOf[TaskProvider[ScalaCompile]]
+    .get
+  
