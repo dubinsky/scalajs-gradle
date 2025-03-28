@@ -38,8 +38,8 @@ final class ScalaJSDelegate(
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
 
-    Gradle.createConfiguration(project, ScalaJSDelegate.scalaJSConfigurationName, "ScalaJS dependencies used by the ScalaJS plugin.")
-    Gradle.createConfiguration(project, ScalaJSDelegate.scalaJSCompilerPluginsConfigurationName, "ScalaJS Scala compiler plugins.")
+    createConfiguration(ScalaJSDelegate.scalaJSConfigurationName, "ScalaJS dependencies used by the ScalaJS plugin.")
+    createConfiguration(ScalaJSDelegate.scalaJSCompilerPluginsConfigurationName, "ScalaJS Scala compiler plugins.")
 
     val linkMain: ScalaJSLinkMainTask = project.getTasks.register("link"    , classOf[ScalaJSLinkMainTask]).get()
     val run     : ScalaJSRunMainTask  = project.getTasks.register("run"     , classOf[ScalaJSRunMainTask ]).get()
@@ -75,8 +75,8 @@ final class ScalaJSDelegate(
 
   override def configureProject(projectScalaPlatform: ScalaPlatform): Unit =
     val isScala3: Boolean = projectScalaPlatform.version.isScala3
-    ScalaJSDelegate.configureScalaCompile(project, SourceSet.MAIN_SOURCE_SET_NAME, isScala3)
-    ScalaJSDelegate.configureScalaCompile(project, SourceSet.TEST_SOURCE_SET_NAME, isScala3)
+    configureScalaCompile(SourceSet.MAIN_SOURCE_SET_NAME, isScala3)
+    configureScalaCompile(SourceSet.TEST_SOURCE_SET_NAME, isScala3)
 
     // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
 
@@ -88,11 +88,38 @@ final class ScalaJSDelegate(
 
         val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
         linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-        linkTask.getDependsOn.add(Gradle.getClassesTask(project, sourceSet))
+        linkTask.getDependsOn.add(getClassesTask(sourceSet))
 
       case testTask: ScalaJSTestTask =>
-        testTask.getDependsOn.add(Gradle.getClassesTask(project, testSourceSetName))
+        testTask.getDependsOn.add(getClassesTask(testSourceSetName))
       case _ =>
+
+  private def configureScalaCompile(
+    sourceSetName: String,
+    isScala3: Boolean
+  ): Unit =
+    val scalaCompile: ScalaCompile = getScalaCompile(sourceSetName)
+
+    if isScala3 then
+      val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // nullable
+        .map(_.asScala.toList)
+        .getOrElse(List.empty)
+
+      if !parameters.contains("-scalajs") then
+        ScalaJSDelegate.logger.info(s"scalaCompileOptions.additionalParameters of the $sourceSetName ScalaCompile task: adding '-scalajs'.")
+        scalaCompile
+          .getScalaCompileOptions
+          .setAdditionalParameters((parameters :+ "-scalajs").asJava)
+    else
+      // There seems to be no need to add `"-Xplugin:" + plugin.getPath` parameters:
+      // just adding plugins to the list is sufficient.
+      val scalaJSCompilerPlugins: FileCollection = Gradle.getConfiguration(project, ScalaJSDelegate.scalaJSCompilerPluginsConfigurationName)
+      if scalaJSCompilerPlugins.asScala.nonEmpty then
+        ScalaJSDelegate.logger.info(s"scalaCompilerPlugins of the $sourceSetName ScalaCompile task: adding ${scalaJSCompilerPlugins.asScala}.")
+        val plugins: FileCollection = Option(scalaCompile.getScalaCompilerPlugins)
+          .map((existingPlugins: FileCollection) => existingPlugins.plus(scalaJSCompilerPlugins))
+          .getOrElse(scalaJSCompilerPlugins)
+        scalaCompile.setScalaCompilerPlugins(plugins)
 
 object ScalaJSDelegate:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSDelegate.getClass)
@@ -193,31 +220,3 @@ object ScalaJSDelegate:
         configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
       )
   )
-
-  private def configureScalaCompile(
-    project: Project,
-    sourceSetName: String,
-    isScala3: Boolean
-  ): Unit =
-    val scalaCompile: ScalaCompile = Gradle.getScalaCompile(project, sourceSetName)
-
-    if isScala3 then
-      val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // nullable
-        .map(_.asScala.toList)
-        .getOrElse(List.empty)
-
-      if !parameters.contains("-scalajs") then
-        logger.info(s"scalaCompileOptions.additionalParameters of the $sourceSetName ScalaCompile task: adding '-scalajs'.")
-        scalaCompile
-          .getScalaCompileOptions
-          .setAdditionalParameters((parameters :+ "-scalajs").asJava)
-    else
-      // There seems to be no need to add `"-Xplugin:" + plugin.getPath` parameters:
-      // just adding plugins to the list is sufficient.
-      val scalaJSCompilerPlugins: FileCollection = Gradle.getConfiguration(project, scalaJSCompilerPluginsConfigurationName)
-      if scalaJSCompilerPlugins.asScala.nonEmpty then
-        logger.info(s"scalaCompilerPlugins of the $sourceSetName ScalaCompile task: adding ${scalaJSCompilerPlugins.asScala}.")
-        val plugins: FileCollection = Option(scalaCompile.getScalaCompilerPlugins)
-          .map((existingPlugins: FileCollection) => existingPlugins.plus(scalaJSCompilerPlugins))
-          .getOrElse(scalaJSCompilerPlugins)
-        scalaCompile.setScalaCompilerPlugins(plugins)
