@@ -206,6 +206,7 @@ final class RunTestClassProcessor(
           isNested = true
         )
       )
+    // There seems to be no need to send completed events for a suite.
     finally completed(
       testId = testId,
       endTime = clock.getCurrentTime,
@@ -228,16 +229,27 @@ final class RunTestClassProcessor(
     // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
     // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
     private var skipped: Array[Selector] = Array.empty
-    
+
+    // Nested test cases belong to the suite other than the one being run,
+    // so instead of sending `started` for the suite being run to Gradle in the `run()` method,
+    // we do it on-demand when first encountering a test case from a suite.
+    // That is why we keep track of suites that already started with their ids.
+    private var startedSuites: Array[(String, AnyRef)] = Array.empty
+
     def handleEvent(event: Event): Unit =
       val endTime: Long = clock.getCurrentTime
 
       val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
+
+      val eventClassName: String = event.selector match
+        case nestedTest: NestedTestSelector => nestedTest.suiteId
+        case _ => className
       
       output(
         s"""RunTestClassProcessor.EventHandler.handleEvent:
            |className=$className
            |selector=$selector
+           |eventClassName=$eventClassName
            |event.fullyQualifiedName=${event.fullyQualifiedName}
            |event.selector=${event.selector}
            |event.status=${event.status}
