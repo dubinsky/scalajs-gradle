@@ -48,15 +48,6 @@ object ScalaTestFixture extends Fixture(
          |  }
          |}
          |""".stripMargin
-    ),
-    SourceFile("ScalaTestNested",
-      s"""import org.scalatest._
-         |
-         |class ScalaTestNested extends Suites(
-         |  new ScalaTestTest,
-         |  //  new StackSpec
-         |)
-         |""".stripMargin
     )
   )
 ):

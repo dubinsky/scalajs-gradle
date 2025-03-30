@@ -113,8 +113,8 @@ class GroupingFunSpec extends AnyFunSpec:
       mainSources = fixtures.flatMap(_.mainSources),
       testSources = fixtures.flatMap(_.testSources),
       frameworks = fixtures.map(_.framework),
-      includeTestNames = feature.includeTestNames,
-      excludeTestNames = feature.excludeTestNames,
+      includeTestNames = fixtures.flatMap(_.includeTestNames),
+      excludeTestNames = fixtures.flatMap(_.excludeTestNames),
       includeTags = feature.includeTags,
       excludeTags = feature.excludeTags,
       maxParallelForks = feature.maxParallelForks,
@@ -124,7 +124,7 @@ class GroupingFunSpec extends AnyFunSpec:
     test(
       project,
       checks = fixtures.flatMap(_.checks(feature)),
-      commandLineIncludeTestNames = feature.commandLineIncludeTestNames
+      commandLineIncludeTestNames = fixtures.flatMap(_.commandLineIncludeTestNames)
     )
 
     if !manyFixtures then

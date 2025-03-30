@@ -8,7 +8,10 @@ final class TestFilterPatterns(patterns: Set[TestFilterPattern]):
       val result: Set[TestFilterPatternMatch] = patterns.flatMap(_.matchClass(className))
       if result.isEmpty then None else
         if result.contains(TestFilterPatternMatch.Suite)
-        then Some(SuiteTestFilterMatch(explicitlySpecified = true))
+        // Even when a class is singled out by name,
+        // `explicitlySpecified` should be `false`;
+        // see https://github.com/dubinsky/scalajs-gradle/issues/32
+        then Some(SuiteTestFilterMatch(explicitlySpecified = false))
         else Some(TestsTestFilterMatch(
           testNames     = for case TestFilterPatternMatch.TestName    (testName    ) <- result yield testName,
           testWildCards = for case TestFilterPatternMatch.TestWildCard(testWildCard) <- result yield testWildCard
