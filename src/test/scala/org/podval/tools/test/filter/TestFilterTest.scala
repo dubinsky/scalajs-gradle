@@ -13,10 +13,10 @@ class TestFilterTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
       ("input", "className", "match"),
 
       // all tests in a package
-      ("some.package.*", "some.package.Foo", Some(SuiteTestFilterMatch(true))),
-      ("some.package*", "some.package.Foo", Some(SuiteTestFilterMatch(true))),
-      ("some.package*", "some.package.sub.Foo", Some(SuiteTestFilterMatch(true))),
-      ("some.package*", "some.package1.Foo", Some(SuiteTestFilterMatch(true))),
+      ("some.package.*", "some.package.Foo", Some(SuiteTestFilterMatch(false))),
+      ("some.package*", "some.package.Foo", Some(SuiteTestFilterMatch(false))),
+      ("some.package*", "some.package.sub.Foo", Some(SuiteTestFilterMatch(false))),
+      ("some.package*", "some.package1.Foo", Some(SuiteTestFilterMatch(false))),
       ("some.package*", "some.other.package.Foo", None),
 
       // method in a package
@@ -24,12 +24,12 @@ class TestFilterTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
       ("some.package*.some*", "some.package.Foo", Some(TestsTestFilterMatch(Set.empty, Set("some")))),
 
       // all tests in some class
-      ("SomeClass", "SomeClass", Some(SuiteTestFilterMatch(true))),
-      ("some.package.SomeClass", "some.package.SomeClass", Some(SuiteTestFilterMatch(true))),
+      ("SomeClass", "SomeClass", Some(SuiteTestFilterMatch(false))),
+      ("some.package.SomeClass", "some.package.SomeClass", Some(SuiteTestFilterMatch(false))),
 
       // all tests in some class in any package
-      ("SomeClass", "any.package.SomeClass", Some(SuiteTestFilterMatch(true))),
-      ("*.SomeClass", "any.package.SomeClass", Some(SuiteTestFilterMatch(true))),
+      ("SomeClass", "any.package.SomeClass", Some(SuiteTestFilterMatch(false))),
+      ("*.SomeClass", "any.package.SomeClass", Some(SuiteTestFilterMatch(false))),
 
       // single specified test in some class
       ("SomeClass.someMethod", "SomeClass", Some(TestsTestFilterMatch(Set("someMethod"), Set.empty))),
@@ -47,7 +47,7 @@ class TestFilterTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
       ("org.gradle.SomeTestClass.some method containing spaces", "org.gradle.SomeTestClass", Some(TestsTestFilterMatch(Set("some method containing spaces"), Set.empty))),
 
       // include all integration tests
-      ("*IntegTest", "XIntegTest", Some(SuiteTestFilterMatch(true))),
+      ("*IntegTest", "XIntegTest", Some(SuiteTestFilterMatch(false))),
 
       // include specific method in any of the tests
       // TODO     ("*UiCheck", "Foo", Some(Matches.Tests(true, Set.empty, Set("UiCheck")))) // TODO [filter]
