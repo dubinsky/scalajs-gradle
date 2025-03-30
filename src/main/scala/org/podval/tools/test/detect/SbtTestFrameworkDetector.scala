@@ -88,13 +88,13 @@ final class SbtTestFrameworkDetector(
     testClassesDirectories.toList.flatten ++ testClasspathFiles.filter(_.isDirectory)
 
   private lazy val classFileExtractionManager: ClassFileExtractionManager =
-    logger.info(s"SbtTestFrameworkDetector.testClasspath: $testClasspathFiles")
-    logger.info(s"SbtTestFrameworkDetector.detectors: $detectors")
+    logger.debug(s"SbtTestFrameworkDetector.testClasspath: $testClasspathFiles")
+    logger.debug(s"SbtTestFrameworkDetector.detectors: $detectors")
     val result: ClassFileExtractionManager = ClassFileExtractionManager(testTaskTemporaryDir)
     testClasspathFiles
       .filter((file: File) => file.isFile && file.getPath.endsWith(".jar"))
       .foreach((libraryJar: File) =>
-        logger.info(s"SbtTestFrameworkDetector: libraryJar $libraryJar")
+        logger.debug(s"SbtTestFrameworkDetector: libraryJar $libraryJar")
         result.addLibraryJar(libraryJar)
       )
     result

@@ -1175,7 +1175,7 @@ I'd rather uglify my code a little than fight with classpath though ;)
 `ScalaCheck` processes test _methods_ as nested tasks;
 other frameworks just run them and report the results via event handler.
 
-`uTest `uses `NestedTestSelector` for this, while others use `TestSelector`.
+`uTest` uses `NestedTestSelector` for this, while others use `TestSelector`.
 
 `ScalaTest` does not return nested tasks for nested suites
 (or anything, according to the documentation of its Runner);
