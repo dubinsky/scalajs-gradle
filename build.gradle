@@ -18,7 +18,7 @@ dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
 
   // for TestClassVisitor
-  implementation "org.ow2.asm:asm:9.7.1"
+  implementation "org.ow2.asm:asm:9.8"
 
   // for Scala.js Linker
   // TODO adding this dynamically did not work!

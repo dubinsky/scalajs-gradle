@@ -13,8 +13,8 @@ import org.podval.tools.test.exception.ExceptionConverter
 import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForAll, arrayForEach, arrayMap,
   arrayMkString, arrayPartition, stripPrefix}
-import sbt.testing.{Event, NestedTestSelector, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector,
-  TestWildcardSelector}
+import sbt.testing.{Event, Logger, NestedSuiteSelector, NestedTestSelector, Runner, Selector, SuiteSelector, Task,
+  TaskDef, TestSelector, TestWildcardSelector}
 import scala.util.control.NonFatal
 
 final class RunTestClassProcessor(
@@ -156,25 +156,31 @@ final class RunTestClassProcessor(
     isNested: Boolean
   ): Unit =
     val startTime: Long = clock.getCurrentTime
-    val testId: AnyRef = idGenerator.generateId()
-    val className: String = task.taskDef.fullyQualifiedName
-    val selectors: Array[Selector] = task.taskDef.selectors
+
     output(s"RunTestClassProcessor.run(${RunTestClassProcessor.toString(task)})", LogLevel.INFO)
 
+    val selectors: Array[Selector] = task.taskDef.selectors
     val isTests: Boolean = arrayForAll(selectors, RunTestClassProcessor.isTest)
 
-    if !isNested then
-      if !isTests then
-        require(selectors.length == 1, "If not all non-nested selectors are tests, there can only be one")
-        val selector: Selector = selectors(0)
-        require(Selectors.equal(selector, SuiteSelector()), s"If not all non-nested selectors are tests, there can only be SuiteSelector, not $selector")
-    else
-      require(selectors.length == 1, "Only one selector can be nested")
-      val nestedSelector: Selector = selectors(0)
-      require(RunTestClassProcessor.isTest(nestedSelector), s"Only individual tests can be nested, not $nestedSelector")
+    val selector: Selector =
+      if !isNested then
+        if isTests then
+          // reconstruct the suite
+          SuiteSelector()
+        else
+          require(selectors.length == 1, "If not all non-nested selectors are tests, there can only be one")
+          val selector: Selector = selectors(0)
+          require(Selectors.equal(selector, SuiteSelector()), s"If not all non-nested selectors are tests, there can only be SuiteSelector, not $selector")
+          selector
+      else
+        require(selectors.length == 1, "Only one selector can be nested")
+        val nestedSelector: Selector = selectors(0)
+        require(RunTestClassProcessor.isTest(nestedSelector), s"Only individual tests can be nested, not $nestedSelector")
+        nestedSelector
 
-    // reconstruct the suite
-    val selector: Selector = if !isNested && isTests then SuiteSelector() else selectors(0)
+    val testId: AnyRef = idGenerator.generateId()
+
+    val className: String = task.taskDef.fullyQualifiedName
 
     started(
       parentId,
@@ -188,7 +194,12 @@ final class RunTestClassProcessor(
       val nestedTasks: Array[Task] =
         try
           output(s"RunTestClassProcessor: Task(${RunTestClassProcessor.toString(task)}).execute()", LogLevel.INFO)
-          val eventHandler: EventHandler = EventHandler(testId, className, selector, isTests)
+          val eventHandler: EventHandler = EventHandler(
+            testId,
+            className,
+            selector,
+            isTests
+          )
           task.execute(
             eventHandler.handleEvent(_),
             Array(testLogger(testId))
@@ -198,7 +209,7 @@ final class RunTestClassProcessor(
           Array.empty
 
       arrayForEach(nestedTasks, (nestedTask: Task) =>
-        output(s"RunTestClassProcessor: nested task in $className.$selector: ${RunTestClassProcessor.toString(nestedTask)}", LogLevel.INFO)
+        output(s"RunTestClassProcessor: nested task ${RunTestClassProcessor.toString(nestedTask)}", LogLevel.INFO)
         require(!RunTestClassProcessor.isTest(selector), s"Individual tests like $selector can not have nested tests")
         run(
           parentId = testId,
@@ -222,6 +233,7 @@ final class RunTestClassProcessor(
 
   final private class EventHandler(
     testId: AnyRef,
+    // TODO      val className: String = event.fullyQualifiedName
     className: String,
     selector: Selector,
     isTests: Boolean
@@ -273,7 +285,7 @@ final class RunTestClassProcessor(
         def reconstructStarted(): Unit = started(
           parentId = testId,
           testId = eventTestId,
-          className = className,
+          className = eventClassName,
           selector = event.selector,
           startTime = endTime - event.duration // TODO deal with negative durations?
         )
@@ -308,4 +320,4 @@ object RunTestClassProcessor:
 
   def isTest(selector: Selector): Boolean = selector match
     case _: TestSelector | _: NestedTestSelector | _: TestWildcardSelector => true
-    case _ => false
+    case _: SuiteSelector | _: NestedSuiteSelector => false

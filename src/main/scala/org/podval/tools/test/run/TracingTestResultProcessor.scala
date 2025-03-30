@@ -8,9 +8,7 @@ class TracingTestResultProcessor(delegate: TestResultProcessor) extends TestResu
   private val logger: Logger = LoggerFactory.getLogger(classOf[TracingTestResultProcessor])
   
   private def trace(message: String): Unit = logger.info(s"TracingTestResultProcessor: $message")
-
-  trace(s"TestResultProcessor class: ${delegate.getClass.getName}")
-
+  
   override def output(testId: AnyRef, event: TestOutputEvent): Unit =
     // Not tracing the output: it already gets printed at level INFO by Gradle
     //trace(s"output: id=$testId message=${event.getMessage}")

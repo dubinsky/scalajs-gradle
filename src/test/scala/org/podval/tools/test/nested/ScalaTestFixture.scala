@@ -7,6 +7,14 @@ object ScalaTestFixture extends Fixture(
   framework = org.podval.tools.test.framework.ScalaTest,
   includeTestNames = Seq("org.podval.tools.test.ScalaTestNesting"),
   testSources = Seq(
+    SourceFile("ScalaTestNesting",
+      s"""import org.scalatest.Suites
+         |
+         |class ScalaTestNesting extends Suites(
+         |  new ScalaTestNested
+         |)
+         |""".stripMargin
+    ),
     SourceFile("ScalaTestNested",
       s"""import org.scalatest.flatspec.AnyFlatSpec
          |import org.scalatest.matchers.should.Matchers
@@ -16,14 +24,6 @@ object ScalaTestFixture extends Fixture(
          |  "failure" should "fail" in { 2 * 2 shouldBe 5 }
          |}
          |""".stripMargin
-    ),
-    SourceFile("ScalaTestNesting",
-      s"""import org.scalatest.Suites
-         |
-         |class ScalaTestNesting extends Suites(
-         |  new ScalaTestNested
-         |)
-         |""".stripMargin
     )
   )
 ):
@@ -31,12 +31,13 @@ object ScalaTestFixture extends Fixture(
     case NestedSuitesTest.nestedSuites =>
       Seq(
         forClass("ScalaTestNesting",
+          // nested test cases are attributed to the nested suite
+          testCount(0)
+        ),
+        forClass("ScalaTestNested",
           passed("success should pass"),
           testCount(2),
           failedCount(1)
-        ),
-        forClass("ScalaTestNested",
-          absentClass
         )
       )
 
