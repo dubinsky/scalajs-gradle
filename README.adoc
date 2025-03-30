@@ -1171,8 +1171,19 @@ Scala 2.13 library is on the classpath, even if the project uses Scala 2.12...
 
 I'd rather uglify my code a little than fight with classpath though ;)
 
+=== Tags
+Although it is tempting to help the test frameworks out by
+filtering tests based on their tags
+returned by the test framework in `task.tags`, it is:
+
+- unnecessary, since all the test frameworks plugin supports
+that support tagging accept
+arguments that allow them to do the filtering internally;
+- destructive, since none of the test frameworks plugin supports
+populate `task.tags`, so with explicit tag inclusions, none of the tests run!
+
 === Nested Tasks
-`ScalaCheck` processes test _methods_ as nested tasks;
+`ScalaCheck` processes test _methods_ as nested tasks (with `TestSelector`);
 other frameworks just run them and report the results via event handler.
 
 `uTest` uses `NestedTestSelector` for this, while others use `TestSelector`.
