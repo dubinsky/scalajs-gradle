@@ -1171,7 +1171,7 @@ Scala 2.13 library is on the classpath, even if the project uses Scala 2.12...
 
 I'd rather uglify my code a little than fight with classpath though ;)
 
-=== Tags
+=== Test Tagging
 Although it is tempting to help the test frameworks out by
 filtering tests based on their tags
 returned by the test framework in `task.tags`, it is:

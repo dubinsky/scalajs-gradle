@@ -43,7 +43,7 @@ object FrameworksTest:
     MUnitFixture,
     ScalaCheckFixture,
     ScalaTestFixture,
-    Spec2Fixture,
+    Specs2Fixture,
     UTestFixture,
     ZioTestFixture
   )

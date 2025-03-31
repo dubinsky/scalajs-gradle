@@ -14,6 +14,7 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   versionDefault = ScalaJS.versionDefault,
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
+  includesClassNameInTestName = true,
   // This is a Scala.js-only test framework
   isJvmSupported = false
 ) with ScalaDependency.MakerScala2Jvm

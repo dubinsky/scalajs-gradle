@@ -37,18 +37,6 @@ object Scala212Collections:
     val elementArray: Array[A] = new Array[A](1)
     elementArray(0) = element
     arrayConcat(array, elementArray)
-  
-  def arrayPartition[A: ClassTag](array: Array[A], p: A => Boolean): (Array[A], Array[A]) =
-    var left: Array[A] = Array.empty
-    var right: Array[A] = Array.empty
-    var i: Int = 0
-    while i < array.length do
-      val x = array(i)
-      if p(x)
-      then left  = arrayAppend(left , x)
-      else right = arrayAppend(right, x)
-      i = i + 1
-    (left, right)
 
   def arrayForAll[A](
     array: Array[A],
@@ -86,9 +74,3 @@ object Scala212Collections:
       result = result.concat(array(i))
       i = i + 1
     result.concat(end)
-
-  // methodName.stripPrefix(className + ".") is not compatible with Scala 2.12, so:
-  def stripPrefix(string: String, prefix: String): String =
-    if !string.startsWith(prefix)
-    then string
-    else string.substring(prefix.length)

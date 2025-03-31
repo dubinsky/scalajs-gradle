@@ -1,8 +1,7 @@
 package org.podval.tools.test.run
 
 import org.gradle.api.internal.tasks.testing.{DefaultTestClassDescriptor, DefaultTestMethodDescriptor,
-  DefaultTestOutputEvent, TestClassProcessor, TestClassRunInfo, TestCompleteEvent, TestDescriptorInternal,
-  TestResultProcessor, TestStartEvent}
+  DefaultTestOutputEvent, TestClassProcessor, TestClassRunInfo, TestCompleteEvent, TestResultProcessor, TestStartEvent}
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.testing.TestOutputEvent
 import org.gradle.api.tasks.testing.TestResult.ResultType
@@ -11,9 +10,12 @@ import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.exception.ExceptionConverter
 import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForAll, arrayForEach, stripPrefix}
-import sbt.testing.{Event, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForAll, arrayForEach}
+import sbt.testing.{Event, Logger, Runner, Selector, Task, TaskDef, TestSelector}
 import scala.util.control.NonFatal
+
+object RunTestClassProcessor:
+  val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
 
 final class RunTestClassProcessor(
   includeTags: Array[String],
@@ -36,14 +38,19 @@ final class RunTestClassProcessor(
     testId: AnyRef,
     className: String,
     selector: Selector,
+    frameworkIncludesClassNameInTestName: Boolean,
     startTime: Long
   ): Unit =
-    val testDescriptorInternal: TestDescriptorInternal = Selectors.testName(selector) match
-      case None             => DefaultTestClassDescriptor (testId, className)
-      case Some(methodName) => DefaultTestMethodDescriptor(testId, className, stripPrefix(methodName, className + "."))
-
+    val (testClassName: String, testName: Option[String]) = Selectors.testClassAndTestName(
+      className,
+      selector,
+      frameworkIncludesClassNameInTestName
+    )
+    
     testResultProcessor.started(
-      testDescriptorInternal,
+      testName match
+        case None           => DefaultTestClassDescriptor (testId, testClassName)
+        case Some(testName) => DefaultTestMethodDescriptor(testId, testClassName, testName),
       TestStartEvent(startTime, parentId)
     )
 
@@ -122,47 +129,41 @@ final class RunTestClassProcessor(
     require(tasks.length == 1)
     val task: Task = tasks(0)
     require(TaskDefs.equal(task.taskDef, taskDef))
-
-    // see TestFilterMatch
-    val selectors: Array[Selector] = taskDef.selectors
-    val isAllTests: Boolean = arrayForAll(selectors, Selectors.isTestFromTestFilterMatch)
-    if !isAllTests then
-      require(selectors.length == 1, "If not all selectors are tests, there can only be one!")
-      val selector: Selector = selectors(0)
-      require(Selectors.equal(selector, SuiteSelector()), s"If not all selectors are tests, there can only be SuiteSelector, not $selector!")
     
     run(
       parentId = null,
-      selector = if isAllTests then SuiteSelector() else selectors(0),
-      task = task
+      selector = Selectors.fromTestFilterMatch(taskDef.selectors),
+      task = task,
+      frameworkIncludesClassNameInTestName = testClassRun.frameworkDescriptor.includesClassNameInTestName
     )
 
   private def run(
     parentId: AnyRef,
     selector: Selector,
-    task: Task
+    task: Task,
+    frameworkIncludesClassNameInTestName: Boolean
   ): Unit =
-    output(s"RunTestClassProcessor.run(${RunTestClassProcessor.toString(task)})", LogLevel.INFO)
+    output(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})", LogLevel.INFO)
 
     val startTime: Long = clock.getCurrentTime
     val testId: AnyRef = idGenerator.generateId()
     val className: String = task.taskDef.fullyQualifiedName
     
     started(
-      parentId,
-      testId,
-      className,
-      selector,
-      startTime
+      parentId = parentId,
+      testId = testId,
+      className = className,
+      selector = selector,
+      frameworkIncludesClassNameInTestName = frameworkIncludesClassNameInTestName,
+      startTime = startTime
     )
     
     try
-      output(s"RunTestClassProcessor: Task(${RunTestClassProcessor.toString(task)}).execute()", LogLevel.INFO)
-      
       val eventHandler: EventHandler = EventHandler(
         testId,
         className,
         selector,
+        frameworkIncludesClassNameInTestName,
         isAllTests = arrayForAll(task.taskDef.selectors, Selectors.isTest)
       )
       
@@ -171,11 +172,16 @@ final class RunTestClassProcessor(
         Array(testLogger(testId))
       )
       
-      arrayForEach(nestedTasks, (nestedTask: Task) => runNestedTask(
-        parentSelector = selector,
-        parentId = testId,
-        task = nestedTask
-      ))
+      arrayForEach(nestedTasks, (nestedTask: Task) =>
+        output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(task.taskDef)}", LogLevel.INFO)
+
+        run(
+          parentId = testId,
+          selector = Selectors.nestedSelector(selector, nestedTask.taskDef.selectors),
+          task = nestedTask,
+          frameworkIncludesClassNameInTestName = frameworkIncludesClassNameInTestName
+        )
+      )
       
     catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
       failure(testId, throwable)
@@ -186,40 +192,18 @@ final class RunTestClassProcessor(
         endTime = clock.getCurrentTime,
         result = null
       )
-
-  private def runNestedTask(
-    parentSelector: Selector,
-    parentId: AnyRef,
-    task: Task
-  ): Unit =
-    output(s"RunTestClassProcessor: nested task ${RunTestClassProcessor.toString(task)}", LogLevel.INFO)
-    
-    require(Selectors.canHaveNested(parentSelector), s"$parentSelector can not have nested tests!")
-    val selectors: Array[Selector] = task.taskDef.selectors
-
-    require(selectors.length == 1, "Only one selector can be nested!")
-    val selector: Selector = selectors(0)
-    
-    require(Selectors.canBeNested(selector), s"$selector can not be nested")
-    
-    run(
-      parentId = parentId,
-      selector = selector,
-      task = task
-    )
-
+  
   final private class EventHandler(
     testId: AnyRef,
     // TODO      val className: String = event.fullyQualifiedName
     className: String,
     selector: Selector,
+    frameworkIncludesClassNameInTestName: Boolean,
     isAllTests: Boolean
   ):
     // Are we running a suite or an individual test case?
     private val isRunningSuite: Boolean = Selectors.isRunningSuite(selector)
     
-    // TODO if isTests then require(isRunningSuite)
-
     // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
     // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
     private var skipped: Array[Selector] = Array.empty
@@ -227,7 +211,6 @@ final class RunTestClassProcessor(
     def handleEvent(event: Event): Unit =
       val endTime: Long = clock.getCurrentTime
       val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
-
       val isEventForTest: Boolean = Selectors.isEventForTest(event.selector)
 
       output(
@@ -262,14 +245,16 @@ final class RunTestClassProcessor(
         then
           def reconstructStarted(): AnyRef =
             val eventTestId: AnyRef = idGenerator.generateId()
+            
             started(
               parentId = testId,
               testId = eventTestId,
-              // attribute nested test cases to the nested, not the nesting, suite
-              className = Selectors.suiteId(event.selector).getOrElse(className),
+              className = className,
               selector = event.selector,
+              frameworkIncludesClassNameInTestName = frameworkIncludesClassNameInTestName,
               startTime = endTime - event.duration // TODO deal with negative durations?
             )
+            
             eventTestId
 
           event.status.name match
@@ -283,8 +268,3 @@ final class RunTestClassProcessor(
               skipped = arrayAppend(skipped, event.selector)
               if !isAllTests || throwable.nonEmpty || dryRun then
                 completed(reconstructStarted(), endTime, ResultType.SKIPPED)
-
-object RunTestClassProcessor:
-  val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
-  
-  def toString(task: Task): String = TaskDefs.toString(task.taskDef)

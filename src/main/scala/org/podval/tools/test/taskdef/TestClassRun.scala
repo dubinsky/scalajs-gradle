@@ -10,7 +10,7 @@ abstract class TestClassRun(
 
   final override def getTestClassName: String = taskDef.fullyQualifiedName
 
-  final protected def frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forName(frameworkName)
+  final def frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forName(frameworkName)
 
   def frameworkName: String
 

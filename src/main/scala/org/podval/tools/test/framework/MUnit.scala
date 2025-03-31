@@ -37,6 +37,7 @@ object MUnit extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.ListWithEq, 
   includeTagsOption = "--include-tags", 
   excludeTagsOption = "--exclude-tags",
+  includesClassNameInTestName = true,
   // on JVM, uses underlying JUni4 - via its own internal interface
   jvmUnderlying = Some(JUnit4Underlying),
   // on Scala.js, uses JUnit4 for Scala.js

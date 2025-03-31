@@ -15,6 +15,8 @@ abstract class FrameworkDescriptor(
   tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
   includeTagsOption: String = "",
   excludeTagsOption: String = "",
+  additionalOptions: Array[String] = Array.empty,
+  final val includesClassNameInTestName: Boolean = false,
   final val versionDefaultScala2: Option[Version] = None,
   final val isJvmSupported: Boolean = true,
   final val isScalaJSSupported: Boolean = true,
@@ -41,11 +43,11 @@ abstract class FrameworkDescriptor(
   final def args(
     includeTags: Array[String],
     excludeTags: Array[String]
-  ): Array[String] = arrayConcat(
+  ): Array[String] = arrayConcat(additionalOptions, arrayConcat(
     tagOptionStyle.toStrings(includeTagsOption, includeTags),
-    tagOptionStyle.toStrings(excludeTagsOption, excludeTags)
-  )
-
+    tagOptionStyle.toStrings(excludeTagsOption, excludeTags),
+  ))
+  
   final def newInstance: AnyRef = Class.forName(className)
     .getDeclaredConstructor()
     .newInstance()
