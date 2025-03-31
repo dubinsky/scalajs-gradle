@@ -13,7 +13,7 @@ import java.io.File
 object VersionsWriter:
   private val versions: Seq[(String, Any)] = Seq(
     "gradle" -> "8.13",
-    "plugin" -> "0.6.0",
+    "plugin" -> "0.6.1",
     
     "scala" -> ScalaVersion.Scala3.versionDefault,
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,

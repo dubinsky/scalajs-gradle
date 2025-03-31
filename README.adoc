@@ -4,7 +4,7 @@
 :toc: preamble
 // INCLUDED ATTRIBUTES
 :version-gradle: 8.13
-:version-plugin: 0.6.0
+:version-plugin: 0.6.1
 :version-scala: 3.6.4
 :version-scala2-minor: 2.13
 :version-scala2: 2.13.16
@@ -35,6 +35,10 @@ This is a `Gradle` plugin that supports:
 - compiling, linking and running `Scala.js` code;
 - testing it using `sbt`-compatible testing frameworks;
 - testing plain Scala code (without Scala.js) using `sbt`-compatible testing frameworks.
+
+Currently, plugin does NOT support Gradle projects that
+contain both JVM and Scala.js code;
+this is https://github.com/dubinsky/scalajs-gradle/issues/4[in the works].
 
 If needed, plugin automatically:
 
@@ -78,8 +82,8 @@ which uses
 https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin[Scala.js sbt plugin];
 I want to be able to use my preferred build tool - https://gradle.org[Gradle].
 
-Existing Scala.js Gradle https://github.com/gtache/scalajs-gradle[plugin] by
-https://github.com/gtache[gtache] seems to be no longer maintained.
+Existing Scala.js Gradle https://github.com/gtache/scalajs-gradle[plugin]
+seems to be no longer maintained.
 
 Hence, this plugin.
 
@@ -92,9 +96,9 @@ Multiple test frameworks can be used in the same project at the same time
 but sbt does it, so I must too ;)).
 
 For years, I used https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]
-to run my Scala Tests; thank you, https://github.com/maiflai[maiflai]!
+to run my Scala Tests.
 Since my plugin integrates with Gradle - and through it, with IntelliJ Idea -
-some of the issues that maiflai's plugin has my does not:
+some of the issues that that plugin has my does not:
 https://github.com/maiflai/gradle-scalatest/issues/67[Test events were not received],
 https://github.com/maiflai/gradle-scalatest/issues/69[ASCII Control Characters Printed].
 
@@ -479,18 +483,23 @@ node {
 If Node.js version is not specified, plugin uses "ambient" Node.js -
 the one installed on the machine where it is running.
 
-If Node.js version is specified, plugin will install it (under `~/.gradle/nodejs`) and use it.
+TODO install default version if there is no ambient one.
 
-Scala.js does not support versions of Node.js newer than "{version-node}", so none of the "17.9.1", "18.15.0", "19.8.1".
-I do not know anything about Node.js, and find this surprising - but I am sure there is a good
-technical or political reason for this ;)
+If Node.js version is specified, plugin will install it
+(under `~/.gradle/nodejs`) and use it.
+
+Scala.js does not support versions of Node.js newer than "{version-node}",
+so none of the "17.9.1", "18.15.0", "19.8.1".
+I do not know anything about Node.js, and find this surprising -
+but I am sure there is a good technical or political reason for this ;)
 
 If no Node modules to install are listed, plugin installs the `jsdom` module,
 which is required for `org.scala-js:scalajs-env-jsdom-nodejs`.
 
 To get better traces, one can add `source-map-support` module.
 
-Node modules for the project are installed in the `node_modules` directory in the project root.
+Node modules for the project are installed in the `node_modules`
+directory in the project root.
 
 If `package.json` file does not exist, plugin runs `npm init private`.
 
@@ -818,6 +827,90 @@ During a dry run, though, I want to see _everything_ that was skipped,
 including test classes that were skipped entirely;
 for such, a test case named `dry run` is reported as skipped.
 
+=== Nested Test Suites
+
+Some test frameworks have a notion of _nested test suites_,
+where nesting test class aggregates nested test classes.
+
+Plugin supports such scenario and attributes test cases from the nested
+suites to them:
+test report will have no test cases for the nesting class;
+instead, test cases will be reported for the nested classes they belong to.
+
+==== JUnit4
+
+JUnit4 uses an annotation on the nesting suite to indicate that it
+contains nested suites:
+
+[source,scala]
+----
+@org.junit.runner.RunWith(classOf[org.junit.runners.Suite])
+----
+
+and another annotation that lists the nested suites:
+
+[source,scala]
+----
+@org.junit.runners.Suite.SuiteClasses(Array(
+  classOf[JUnit4Nested]
+))
+----
+
+For example, `JUnit4Nesting` contains `JUnit4Nested`:
+
+[source,scala]
+----
+@org.junit.runner.RunWith(classOf[org.junit.runners.Suite])
+@org.junit.runners.Suite.SuiteClasses(Array(
+  classOf[JUnit4Nested]
+))
+class JUnit4Nesting {
+}
+
+import org.junit.Test
+import org.junit.Assert.assertTrue
+
+final class JUnit4Nested {
+  @Test def success(): Unit = assertTrue("should be true", true)
+  @Test def failure(): Unit = assertTrue("should be true", false)
+}
+----
+
+By default, `JUnit4` 's `sbt` framework
+https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitRunner.java#L39[ignores] the
+`org.junit.runners.Suite` runner; plugin supplies an appropriate
+arguments to `JUnit4` to enable it.
+
+==== JUnit4 for Scala.js
+Since annotations are not available at runtime on Scala.js,
+`JUnit4 for Scala.js` does not support nested test suites.
+
+==== ScalaTest
+In `ScalaTest`, nesting of the test suites is indicated by
+ceriving the nesting class from `org.scalatest.Suites`
+and listing the nested suites in its constructor:
+
+[source,scala]
+----
+class ScalaTestNesting extends org.scalatest.Suites(
+  new ScalaTestNested
+)
+----
+
+==== Other Test Frameworks
+
+As far as I can tell, there is no support for nesting test classes in:
+
+- MUnit
+- ScalaCheck
+- Specs2
+- UTest
+- ZIO Test
+
+TODO Some of them do provide means of structuring the tests hierarchically within one class,
+and this should be tested with the plugin and documented.
+
+
 [#intellij-idea-integration]
 == IntelliJ Idea Integration
 
@@ -900,31 +993,22 @@ so that icon runs the whole class, not the test method it is for.
 
 For `specs2` and `uTest`, there are no gutter icons for individual test methods.
 
-== Notes and Credits
+== Implementation Notes
 
 === Scala.js Linking
 It is reasonably easy - if repetitive - to configure the Scala compiler and add needed Scala.js dependencies by hand;
 what really pushed me to build this plugin is the difficulty and ugliness involved in
 manually setting up Scala.js linking in a Gradle build script.
 
-A Stack Overflow https://stackoverflow.com/a/65777102/670095[answer]
-by https://stackoverflow.com/users/1149944/gzm0[gzm0] was _extremely_ helpful
-for understanding how the Scala.js linker should be called. Thanks!
-
-I also looked at
+I perused the code of:
 
 - https://www.scala-js.org/doc/tutorial/basic[Scala.js Tutorial]
 - https://github.com/scala-js/scala-js/tree/main/linker-interface[Scala.js Linker]
 - https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin[Scala.js sbt plugin]
 - https://github.com/gtache/scalajs-gradle[Old Scala.js Gradle plugin] by https://github.com/gtache[gtache]
 - https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
-- https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
 
 === Testing
-
-Basic testing functionality was
-https://github.com/dubinsky/scalajs-gradle/issues/7[requested]
-by https://github.com/zstone1[zstone1] - thanks for the encouragement!
 
 To figure out how `sbt` itself integrates with testing frameworks, I had to untangle some `sbt` code, including:
 
@@ -989,8 +1073,7 @@ so just wrap what remains in `TestExecutionException`.
 
 `Node.js` support that the plugin provides
 is heavily inspired by (read: copied and reworked from :))
-https://github.com/srs/gradle-node-plugin[gradle-node-plugin]
-by https://github.com/srs[srs].
+https://github.com/srs/gradle-node-plugin[gradle-node-plugin].
 
 That plugin is not used directly because its tasks are not reusable
 unless the plugin is applied to the project,
@@ -1048,16 +1131,19 @@ This is _probably_ the reason why Gradle:
 - makes all test ids `CompositeIdGenerator.CompositeId`
 - registers a `Serializer[CompositeIdGenerator.CompositeId]` in `TestEventSerializer`.
 
-Gradle just wants to attract attention to its `TestEventSerializer`, so it registers
-serializers for the types of the first parameters of all methods - including the test ids ;)
+Gradle just wants to attract attention to its `TestEventSerializer`,
+so it registers serializers for the types
+of the first parameters of all methods - including the test ids ;)
 
-And since the minimum of composed is two, Gradle uses test ids that are composite of two Longs.
+And since the minimum of composed is two,
+Gradle uses test ids that are composite of two Longs.
 
 AbstractTestTask installs `StateTrackingTestResultProcessor`
 which keeps track of all tests that are executing in any `TestWorker`.
 That means that test ids must be scoped per `TestWorker`.
 Each `TestWorker` has an `idGenerator` which it uses to generate `WorkerTestClassProcessor.workerSuiteId`;
-that same `idGenerator` can be used to generate sequential ids for the tests in the worker,
+that same `idGenerator` can be used to generate sequential ids
+for the tests in the worker,
 satisfying the uniqueness requirements - and resulting in the test ids always being
 a composite of exactly two Longs!
 
@@ -1117,8 +1203,6 @@ This allows the plugin to add dependencies
 with correct versions and built for correct version of Scala
 which may be different from the one
 plugin uses, so that Scala 2.12 can be supported.
-Support for Scala 2.12 was https://github.com/dubinsky/scalajs-gradle/issues/9[requested]
-by https://github.com/machaval[machaval] - thanks for the encouragement!
 
 Classpath expansion allows the plugin to use classes from dependencies
 that are added dynamically, but since they become available only after
@@ -1181,36 +1265,6 @@ that support tagging accept
 arguments that allow them to do the filtering internally;
 - destructive, since none of the test frameworks plugin supports
 populate `task.tags`, so with explicit tag inclusions, none of the tests run!
-
-=== Nested Tasks
-`ScalaCheck` processes test _methods_ as nested tasks (with `TestSelector`);
-other frameworks just run them and report the results via event handler.
-
-`uTest` uses `NestedTestSelector` for this, while others use `TestSelector`.
-
-`ScalaTest` does not return nested tasks for nested suites
-(or anything, according to the documentation of its Runner);
-events for the tests in the nested suites have `NestedTestSelector`.
-
-=== JUnit4 Test Names
-`JUnit4` - and thus `MUnit` which is based on it - set both the event's
-`fullyQualifiedName` and the `selector` to something like <class name>.<method name>;
-method names like this just look stupid,
-but class names look like new classes to Gradle (since the event fingerprint says so),
-which corrupts test reports.
-I had to work around this.
-
-=== JUnit4 for Scala.js Throwable
-It is possible, albeit not nice, for the test framework to not populate
-the `event.throwable` of the `Failure` event;
-`JUnit4 for Scala.js` used to do this (see https://github.com/scala-js/scala-js/pull/5132).
-
-Gradle treats a test as failed only when it receives a `throwable` for the test -
-otherwise, although XML report does record the failure, HTML report does not,
-nor does Gradle build fail.
-
-This is why I supply a synthesized event for _method_ failures
-if one did not come up from the framework.
 
 [#junit4-scalajs-scala-2]
 === JUnit4 for Scala.js and Scala 2
@@ -1291,6 +1345,40 @@ Presence of a bootstrapper `TestClass$scalajs$junit$bootstrapper$`
 is treated as a presence of the `@Test` annotation on `TestClass`,
 which marks it as a test belonging to the `JUnit4 for Scala.js` test framework.
 
+=== Nested Tasks and Test Cases
+
+``sbt` test interface allows test framework to return nested tasks
+when executing a task;
+of the test frameworks supported by the plugin,
+only `ScalaCheck` uses this mechanism:
+it returns test cases of the test class being executed
+as  nested tasks (with `TestSelector`).
+
+All other frameworks run the test cases directly
+and report the results via event handler;
+what selector is reported depends on the test framework:
+
+- most test frameworks use `TestSelector`;
+- `uTest` uses `NestedTestSelector`;
+- `ScalaTest` uses `NestedTestSelector` for test cases from the nested suites;
+- `JUnit4`, `JUnit4 for Scala.js` and `MUnit` use `TestSelector`
+even for test cases from the nested suites,
+but they prepend the name of the class to the test case name
+(both in the selector and in the event's `fullyQualifiedName`);
+plugin makes sure to attribute test cases to the correct test classes.
+
+=== JUnit4 for Scala.js Throwable
+It is possible, albeit not nice, for the test framework to not populate
+the `event.throwable` of the `Failure` event;
+`JUnit4 for Scala.js` used to do this (see https://github.com/scala-js/scala-js/pull/5132).
+
+Gradle treats a test as failed only when it receives a `throwable` for the test -
+otherwise, although XML report does record the failure, HTML report does not,
+nor does Gradle build fail.
+
+This is why I supply a synthesized event for _method_ failures
+if one did not come up from the framework.
+
 === Gradle Internals
 To stop tests from being forked - which is needed to run tests on Scala.js -
 I had to fork `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter`
@@ -1323,10 +1411,62 @@ which recognizes only the test frameworks explicitly supported by Gradle (`JUnit
 
 === AsciiDoc
 GitHub stupidly disables AsciDoc includes in README;
-see https://github.com/github/markup/issues/1095.
+see https://github.com/github/markup/issues/1095[the discussion].
 
 One include (of the `versions.adoc` in `README.adoc`.)
 is not enough to bother with https://github.com/asciidoctor/asciidoctor-reducer[AsciiDoctor Reducer],
 so I just patch the Readme.adoc...
 
 I also write versions to `gradle.properties` and use them in `gradle.build`.
+
+== Credits
+
+I want to thank the maintainers of:
+
+- https://www.scala-js.org/[Scala.js];
+- https://github.com/sbt/test-interface[sbt test interface];
+- https://github.com/junit-team/junit4[JUnit4];
+- sbt test framework https://github.com/sbt/junit-interface[implementation] for JUnit4;
+- https://scalameta.org/munit[MUnit];
+- https://scalacheck.org[ScalaCheck];
+- https://www.scalatest.org[ScalaTest];
+- https://etorreborre.github.io/specs2[specs2];
+- https://github.com/com-lihaoyi/utest[uTest];
+- https://github.com/zio/zio[ZIO Test];
+
+I want to thank:
+
+- https://github.com/maiflai[maiflai] for the
+https://github.com/maiflai/gradle-scalatest[ScalaTest Gradle plugin];
+- https://github.com/gtache[gtache] for the
+https://github.com/gtache/scalajs-gradle[existing Scala.js Gradle plugin];
+- https://github.com/srs[srs] for the
+https://github.com/srs/gradle-node-plugin[Node.js Gradle Plugin];
+- https://stackoverflow.com/users/1149944/gzm0[gzm0] for the
+Stack Overflow https://stackoverflow.com/a/65777102/670095[answer]
+that was _extremely_ helpful
+for understanding how the Scala.js linker should be called;
+- https://github.com/zstone1[zstone1] for the encouragement and for
+https://github.com/dubinsky/scalajs-gradle/issues/7[requesting]
+basic testing functionality;
+- https://github.com/machaval[machaval] for the encouragement, for
+https://github.com/dubinsky/scalajs-gradle/issues/9[requesting]
+support for Scala 2.12
+and for helping me understand the https://github.com/dubinsky/scalajs-gradle/issues/16[limits]
+of such support;
+- https://github.com/qwqawawow[qwqawawow] for a
+https://github.com/dubinsky/scalajs-gradle/issues/18[bug report];
+- https://github.com/a01fe[a01fe] for a
+https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
+- https://github.com/kyri-petrou[kyri-petrou] for accepting my fix
+to a ZIO Test https://github.com/zio/zio/pull/9680[issue]
+with the treatment of test wildcards;
+- https://github.com/sjrd[sjrd] for the helpful text
+https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
+and for working with me on fixing issues
+with JUnit4 for Scala.js reporting of
+https://github.com/scala-js/scala-js/pull/5132[test failure throwable]
+and https://github.com/scala-js/scala-js/pull/5134[test duration];
+- https://github.com/cheeseng[cheeseng] for helping me understand
+the https://github.com/scalatest/scalatest/issues/2357[problem]
+with running nested ScalaTest suites using my plugin;
