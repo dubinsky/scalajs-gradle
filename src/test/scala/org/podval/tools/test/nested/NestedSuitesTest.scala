@@ -27,13 +27,12 @@ object NestedSuitesTest:
   )
 
   val fixtures: List[Fixture] = List(
-//    JUnit4Fixture,
-//    JUnit4ScalaJSFixture,
-//    JUnit5Fixture,
+    JUnit4Fixture,
+//    JUnit4ScalaJSFixture, // does not support nested suites
 //    MUnitFixture,
 //    ScalaCheckFixture,
     ScalaTestFixture,
-//    Spec2Fixture,
+//    Specs2Fixture,
 //    UTestFixture,
 //    ZioTestFixture
   )

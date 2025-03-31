@@ -15,7 +15,7 @@ class TracingTestResultProcessor(delegate: TestResultProcessor) extends TestResu
     delegate.output(testId, event)
 
   override def started(test: TestDescriptorInternal, event: TestStartEvent): Unit =
-    trace(s"started: id=${test.getId} $test parentId=${event.getParentId} class=${test.getClass.getName} isComposite=${test.isComposite}")
+    trace(s"started: id=${test.getId} $test parentId=${event.getParentId} isComposite=${test.isComposite}")
     delegate.started(test, event)
 
   override def completed(testId: AnyRef, event: TestCompleteEvent): Unit =

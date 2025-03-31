@@ -3,7 +3,7 @@ package org.podval.tools.test.framework
 import org.podval.tools.test.testproject.ForClass.*
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile}
 
-object Spec2Fixture extends Fixture(
+object Specs2Fixture extends Fixture(
   framework = org.podval.tools.test.framework.Specs2,
   testSources = Seq(SourceFile("Specs2Test",
     s"""import org.specs2._
