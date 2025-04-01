@@ -1,7 +1,7 @@
 package org.podval.tools.test.run
 
 import org.gradle.api.internal.tasks.testing.{TestClassProcessor, TestClassRunInfo, TestResultProcessor}
-import org.podval.tools.test.taskdef.TestClassRunForking
+import org.podval.tools.test.taskdef.TestClassRun
 
 class ReadTestClassProcessor(delegate: RunTestClassProcessor) extends TestClassProcessor:
   override def startProcessing(testResultProcessor: TestResultProcessor): Unit = delegate.startProcessing(testResultProcessor)
@@ -10,5 +10,5 @@ class ReadTestClassProcessor(delegate: RunTestClassProcessor) extends TestClassP
 
   override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit =
     delegate.processTestClass(
-      TestClassRunForking.read(testClassRunInfo.getTestClassName)
+      TestClassRun.read(testClassRunInfo.getTestClassName)
     )

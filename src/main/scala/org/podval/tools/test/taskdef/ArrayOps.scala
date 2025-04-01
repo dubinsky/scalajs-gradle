@@ -11,4 +11,8 @@ class ArrayOps[T: ClassTag](ops: Ops[T], separator: String) extends Ops[Array[T]
     arrayMap(value, ops.write)
 
   final override protected def fromStrings(strings: Array[String]): Array[T] =
-    arrayMap(strings, ops.read)
+    // Now that we split in Ops.read() with "-1",
+    // empty string array turns into an array with one empty string in it...
+    if strings.length == 1 && strings(0).length == 0
+    then new Array[T](0) // Array() does not work in Scala 2.12...
+    else arrayMap(strings, ops.read)

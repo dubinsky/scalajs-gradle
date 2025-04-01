@@ -1,22 +1,19 @@
 package org.podval.tools.test.taskdef
 
-import sbt.testing.{Framework, TaskDef}
+import sbt.testing.{Fingerprint, Framework}
 
 final class TestClassRunForking(
   override val frameworkName: String,
-  taskDef: TaskDef
+  getTestClassName: String,
+  fingerprint: Fingerprint,
+  explicitlySpecified: Boolean,
+  testNames: Array[String],
+  testWildCards: Array[String]
 ) extends TestClassRun(
-  taskDef
+  getTestClassName,
+  fingerprint,
+  explicitlySpecified,
+  testNames, 
+  testWildCards
 ):
   override lazy val framework: Framework = frameworkDescriptor.newInstance.asInstanceOf[Framework]
-
-object TestClassRunForking extends Ops[TestClassRunForking]("@"):
-  override protected def toStrings(value: TestClassRunForking): Array[String] = Array(
-    value.frameworkName,
-    TaskDefs.write(value.taskDef)
-  )
-
-  override protected def fromStrings(strings: Array[String]): TestClassRunForking = TestClassRunForking(
-    frameworkName = strings(0),
-    taskDef = TaskDefs.read(strings(1))
-  )

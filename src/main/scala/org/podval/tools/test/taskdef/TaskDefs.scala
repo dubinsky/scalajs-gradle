@@ -2,6 +2,7 @@ package org.podval.tools.test.taskdef
 
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, Selector, SubclassFingerprint, TaskDef}
 
+// TODO remove Ops and implement equal/toString
 object TaskDefs extends Ops[TaskDef]("#"):
   def toString(taskDef: TaskDef): String =
     def className(isModule: Boolean): String = taskDef.fullyQualifiedName + (if isModule then "$" else "")

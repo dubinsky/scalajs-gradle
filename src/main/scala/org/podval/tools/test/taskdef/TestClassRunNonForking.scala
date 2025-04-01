@@ -1,13 +1,19 @@
 package org.podval.tools.test.taskdef
 
-import sbt.testing.{Framework, TaskDef}
+import sbt.testing.{Fingerprint, Framework}
 
 final class TestClassRunNonForking(
   override val framework: Framework,
-  taskDef: TaskDef
+  getTestClassName: String,
+  fingerprint: Fingerprint,
+  explicitlySpecified: Boolean,
+  testNames: Array[String],
+  testWildCards: Array[String]
 ) extends TestClassRun(
-  taskDef
+  getTestClassName,
+  fingerprint,
+  explicitlySpecified,
+  testNames,
+  testWildCards
 ):
   override def frameworkName: String = framework.name
-
-  override def toString: String = TaskDefs.toString(taskDef)
