@@ -10,8 +10,8 @@ import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.exception.ExceptionConverter
 import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForAll, arrayForEach}
-import sbt.testing.{Event, Logger, Runner, Selector, Task, TaskDef, TestSelector}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForAll, arrayForEach, arrayMap}
+import sbt.testing.{Event, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector, TestWildcardSelector}
 import scala.util.control.NonFatal
 
 object RunTestClassProcessor:
@@ -111,7 +111,21 @@ final class RunTestClassProcessor(
 
   def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
     val testClassRun: TestClassRun = testClassRunInfo.asInstanceOf[TestClassRun]
-    val taskDef: TaskDef = testClassRun.taskDef
+
+    val selectors: Array[Selector] =
+      if testClassRun.testNames.length == 0 && testClassRun.testWildCards.length == 0
+      then Array(SuiteSelector())
+      else arrayConcat[Selector](
+        arrayMap(testClassRun.testNames    , TestSelector        (_)),
+        arrayMap(testClassRun.testWildCards, TestWildcardSelector(_))
+      )
+
+    val taskDef: TaskDef = TaskDef(
+      testClassRun.getTestClassName,
+      testClassRun.fingerprint,
+      testClassRun.explicitlySpecified,
+      selectors
+    )
 
     val tasks: Array[Task] =
       if dryRun
@@ -127,7 +141,7 @@ final class RunTestClassProcessor(
       frameworkIncludesClassNameInTestName = testClassRun.frameworkDescriptor.includesClassNameInTestName
     ).run(
       parentId = null,
-      selector = Selectors.fromTestFilterMatch(taskDef.selectors),
+      selector = SuiteSelector(),
       task = task
     )
 

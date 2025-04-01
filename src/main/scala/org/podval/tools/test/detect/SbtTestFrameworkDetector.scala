@@ -4,7 +4,7 @@ import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.{ClassFileExtractionManager, TestFrameworkDetector}
 import org.gradle.internal.Factory
-import org.podval.tools.test.filter.{TestFilter, TestFilterMatch}
+import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.podval.tools.test.taskdef.TestClassRunNonForking
 import org.slf4j.{Logger, LoggerFactory}
@@ -58,14 +58,20 @@ final class SbtTestFrameworkDetector(
       else
         val detector: FingerprintDetector = detectors.head
         testFilter.matchClass(className).map: (testFilterMatch: TestFilterMatch) =>
+          val (testNames: Array[String], testWildCards: Array[String]) = testFilterMatch match
+            case _: SuiteTestFilterMatch => (Array.empty[String], Array.empty[String])
+            case testsTestFilterMatch: TestsTestFilterMatch => (
+              testsTestFilterMatch.testNames.toArray,
+              testsTestFilterMatch.testWildCards.toArray
+            )
+
           TestClassRunNonForking(
             framework = detector.framework,
-            taskDef = TaskDef(
-              className,
-              detector.fingerprint,
-              testFilterMatch.explicitlySpecified,
-              testFilterMatch.selectors
-            )
+            className,
+            detector.fingerprint,
+            testFilterMatch.explicitlySpecified,
+            testNames,
+            testWildCards
           )
   
   // Called by org.gradle.api.internal.tasks.testing.detection.DefaultTestClassScanner.

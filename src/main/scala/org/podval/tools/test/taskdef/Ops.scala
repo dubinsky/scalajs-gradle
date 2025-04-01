@@ -9,7 +9,9 @@ abstract class Ops[T](separator: String):
 
   protected def toStrings(value: T): Array[String]
 
-  final def read(string: String): T = fromStrings(string.split(separator))
+  // Thank you, sjrd, for the split trivia!
+  // (https://github.com/scala-js/scala-js/pull/5132#discussion_r1967584316)
+  final def read(string: String): T = fromStrings(string.split(separator, -1))
 
   protected def fromStrings(strings: Array[String]): T
 

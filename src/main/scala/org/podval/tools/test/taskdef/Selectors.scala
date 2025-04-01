@@ -3,6 +3,7 @@ package org.podval.tools.test.taskdef
 import org.podval.tools.util.Scala212Collections.arrayForAll
 import sbt.testing.{NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, TestSelector, TestWildcardSelector}
 
+// TODO remove Ops and implement equal/toString
 // I can not rely on the test framework implementing `equals()` on `Selector`s correctly.
 object Selectors extends Ops[Selector](":"):
   object Many extends ArrayOps[Selector](Selectors, "--")
@@ -20,25 +21,7 @@ object Selectors extends Ops[Selector](":"):
     case "NestedSuite"  => NestedSuiteSelector (strings(1))
     case "NestedTest"   => NestedTestSelector  (strings(1), strings(2))
     case "TestWildcard" => TestWildcardSelector(strings(1))
-
-  // see TestFilterMatch
-  def fromTestFilterMatch(selectors: Array[Selector]): Selector =
-    val isAllTests: Boolean = arrayForAll(selectors, isTestFromTestFilterMatch)
-
-    if !isAllTests then
-      require(selectors.length == 1, "If not all selectors are tests, there can only be one!")
-      val selector: Selector = selectors(0)
-      require(equal(selector, SuiteSelector()), s"If not all selectors are tests, there can only be SuiteSelector, not $selector!")
-
-    if isAllTests then SuiteSelector() else selectors(0)
-
-  private def isTestFromTestFilterMatch(selector: Selector): Boolean = selector match
-    case _: TestSelector         => true
-    case _: TestWildcardSelector => true
-    case _: NestedSuiteSelector  => throw IllegalArgumentException(s"$selector can not be a part of TestFilterMatch.")
-    case _: NestedTestSelector   => throw IllegalArgumentException(s"$selector can not be a part of TestFilterMatch.")
-    case _: SuiteSelector        => false
-
+  
   def suiteId(selector: Selector): Option[String] = selector match
     case nestedSuiteSelector: NestedSuiteSelector => Option(nestedSuiteSelector.suiteId)
     case nestedTestSelector : NestedTestSelector  => Option(nestedTestSelector .suiteId)

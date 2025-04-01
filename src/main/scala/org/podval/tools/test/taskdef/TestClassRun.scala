@@ -2,13 +2,16 @@ package org.podval.tools.test.taskdef
 
 import org.gradle.api.internal.tasks.testing.TestClassRunInfo
 import org.podval.tools.test.framework.FrameworkDescriptor
-import sbt.testing.{Framework, Runner, TaskDef}
+import sbt.testing.{Fingerprint, Framework, Runner}
 
+// TODO maybe turn this upside-out and embed framework identifiers as a separate class?
 abstract class TestClassRun(
-  val taskDef: TaskDef
+  final override val getTestClassName: String,
+  val fingerprint: Fingerprint,
+  val explicitlySpecified: Boolean,
+  val testNames: Array[String],
+  val testWildCards: Array[String]
 ) extends TestClassRunInfo:
-
-  final override def getTestClassName: String = taskDef.fullyQualifiedName
 
   final def frameworkDescriptor: FrameworkDescriptor = FrameworkDescriptor.forName(frameworkName)
 
@@ -35,3 +38,22 @@ abstract class TestClassRun(
       remoteArgs,
       frameworkClassLoader
     )
+
+object TestClassRun extends Ops[TestClassRun]("@"):
+  override protected def toStrings(value: TestClassRun): Array[String] = Array(
+    value.frameworkName,
+    value.getTestClassName,
+    Fingerprints.write(value.fingerprint),
+    Ops.toString(value.explicitlySpecified),
+    Strings.Many.write(value.testNames),
+    Strings.Many.write(value.testWildCards)
+  )
+
+  override protected def fromStrings(strings: Array[String]): TestClassRunForking = TestClassRunForking(
+    frameworkName = strings(0),
+    getTestClassName = strings(1),
+    fingerprint = Fingerprints.read(strings(2)),
+    explicitlySpecified = Ops.toBoolean(strings(3)),
+    testNames = Strings.Many.read(strings(4)),
+    testWildCards = Strings.Many.read(strings(5))
+  )
