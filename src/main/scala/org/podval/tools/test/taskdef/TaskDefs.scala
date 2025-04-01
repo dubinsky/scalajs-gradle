@@ -1,9 +1,15 @@
 package org.podval.tools.test.taskdef
 
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Selector, SubclassFingerprint, TaskDef}
+import org.podval.tools.util.Scala212Collections.{arrayMap, arrayMkString, arrayZipForAll}
+import sbt.testing.{AnnotatedFingerprint, SubclassFingerprint, TaskDef}
 
-// TODO remove Ops and implement equal/toString
-object TaskDefs extends Ops[TaskDef]("#"):
+object TaskDefs:
+  def equal(left: TaskDef, right: TaskDef): Boolean =
+    (left.fullyQualifiedName == right.fullyQualifiedName) &&
+    (left.explicitlySpecified == right.explicitlySpecified) &&
+    Fingerprints.equal(left.fingerprint, right.fingerprint) &&
+    arrayZipForAll(left.selectors, right.selectors, Selectors.equal)
+
   def toString(taskDef: TaskDef): String =
     def className(isModule: Boolean): String = taskDef.fullyQualifiedName + (if isModule then "$" else "")
 
@@ -11,28 +17,5 @@ object TaskDefs extends Ops[TaskDef]("#"):
       case annotated: AnnotatedFingerprint => s"@${annotated.annotationName} ${className(annotated.isModule)}"
       case subclass : SubclassFingerprint  => s"${className(subclass.isModule)} extends ${subclass.superclassName}"
 
-    s"$name selectors=${Selectors.Many.toString(taskDef.selectors)} explicitlySpecified=${taskDef.explicitlySpecified}"
-
-  override protected def toStrings(value: TaskDef): Array[String] =
-    val fingerprint: String = Fingerprints.write(value.fingerprint)
-    val selectors: String = Selectors.Many.write(value.selectors)
-    
-    Array(
-      value.fullyQualifiedName,
-      Ops.toString(value.explicitlySpecified),
-      fingerprint,
-      selectors
-    )
-
-  override protected def fromStrings(strings: Array[String]): TaskDef =
-    val fullyQualifiedName: String = strings(0)
-    val explicitlySpecified: Boolean = Ops.toBoolean(strings(1))
-    val fingerprint: Fingerprint = Fingerprints.read(strings(2))
-    val selectors: Array[Selector] = Selectors.Many.read(strings(3))
-      
-    TaskDef(
-      fullyQualifiedName,
-      fingerprint,
-      explicitlySpecified,
-      selectors
-    )
+    val selectors: String = arrayMkString(arrayMap(taskDef.selectors, _.toString), "[", ", ", "]")
+    s"$name selectors=$selectors explicitlySpecified=${taskDef.explicitlySpecified}"
