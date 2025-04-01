@@ -9,7 +9,7 @@ import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.exception.ExceptionConverter
-import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
+import org.podval.tools.test.taskdef.{FrameworkProvider, Selectors, TaskDefs, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForAll, arrayForEach, arrayMap}
 import sbt.testing.{Event, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector, TestWildcardSelector}
 import scala.util.control.NonFatal
@@ -90,10 +90,10 @@ final class RunTestClassProcessor(
     override def trace(throwable: Throwable): Unit = failure(testId, throwable)
 
   private var runners: Array[(String, Runner)] = Array.empty
-  private def getRunner(testClassRun: TestClassRun): Runner = synchronized:
-    val frameworkName: String = testClassRun.frameworkName
+  private def getRunner(frameworkProvider: FrameworkProvider): Runner = synchronized:
+    val frameworkName: String = frameworkProvider.frameworkName
     arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
-      val runner: Runner = testClassRun.makeRunner(
+      val runner: Runner = frameworkProvider.makeRunner(
         includeTags,
         excludeTags
       )
@@ -114,7 +114,7 @@ final class RunTestClassProcessor(
 
     val selectors: Array[Selector] =
       if testClassRun.testNames.length == 0 && testClassRun.testWildCards.length == 0
-      then Array(SuiteSelector())
+      then Array(SuiteSelector()) // TODO why does this one works on Scala 2.12, but not the one in Scala212Collections?!
       else arrayConcat[Selector](
         arrayMap(testClassRun.testNames    , TestSelector        (_)),
         arrayMap(testClassRun.testWildCards, TestWildcardSelector(_))
@@ -130,7 +130,7 @@ final class RunTestClassProcessor(
     val tasks: Array[Task] =
       if dryRun
       then Array(DryRunSbtTask(taskDef))
-      else getRunner(testClassRun).tasks(Array(taskDef))
+      else getRunner(testClassRun.frameworkProvider).tasks(Array(taskDef))
 
     require(tasks.length == 1)
     val task: Task = tasks(0)
@@ -138,7 +138,7 @@ final class RunTestClassProcessor(
 
     Run(
       className = taskDef.fullyQualifiedName,
-      frameworkIncludesClassNameInTestName = testClassRun.frameworkDescriptor.includesClassNameInTestName
+      frameworkIncludesClassNameInTestName = testClassRun.frameworkProvider.frameworkDescriptor.includesClassNameInTestName
     ).run(
       parentId = null,
       selector = SuiteSelector(),
