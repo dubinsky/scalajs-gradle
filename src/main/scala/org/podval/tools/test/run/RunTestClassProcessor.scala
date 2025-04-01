@@ -36,23 +36,15 @@ final class RunTestClassProcessor(
   private def started(
     parentId: AnyRef,
     testId: AnyRef,
-    className: String,
-    selector: Selector,
-    frameworkIncludesClassNameInTestName: Boolean,
+    testClassName: String,
+    testName: Option[String],
     startTime: Long
-  ): Unit =
-    val (testClassName: String, testName: Option[String]) = Selectors.testClassAndTestName(
-      className,
-      selector,
-      frameworkIncludesClassNameInTestName
-    )
-    
-    testResultProcessor.started(
-      testName match
-        case None           => DefaultTestClassDescriptor (testId, testClassName)
-        case Some(testName) => DefaultTestMethodDescriptor(testId, testClassName, testName),
-      TestStartEvent(startTime, parentId)
-    )
+  ): Unit = testResultProcessor.started(
+    testName match
+      case None           => DefaultTestClassDescriptor (testId, testClassName)
+      case Some(testName) => DefaultTestMethodDescriptor(testId, testClassName, testName),
+    TestStartEvent(startTime, parentId)
+  )
 
   private def completed(
     testId: AnyRef,
@@ -129,142 +121,165 @@ final class RunTestClassProcessor(
     require(tasks.length == 1)
     val task: Task = tasks(0)
     require(TaskDefs.equal(task.taskDef, taskDef))
-    
-    run(
+
+    Run(
+      className = taskDef.fullyQualifiedName,
+      frameworkIncludesClassNameInTestName = testClassRun.frameworkDescriptor.includesClassNameInTestName
+    ).run(
       parentId = null,
       selector = Selectors.fromTestFilterMatch(taskDef.selectors),
-      task = task,
-      frameworkIncludesClassNameInTestName = testClassRun.frameworkDescriptor.includesClassNameInTestName
+      task = task
     )
 
-  private def run(
-    parentId: AnyRef,
-    selector: Selector,
-    task: Task,
-    frameworkIncludesClassNameInTestName: Boolean
-  ): Unit =
-    output(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})", LogLevel.INFO)
-
-    val startTime: Long = clock.getCurrentTime
-    val testId: AnyRef = idGenerator.generateId()
-    val className: String = task.taskDef.fullyQualifiedName
-    
-    started(
-      parentId = parentId,
-      testId = testId,
-      className = className,
-      selector = selector,
-      frameworkIncludesClassNameInTestName = frameworkIncludesClassNameInTestName,
-      startTime = startTime
-    )
-    
-    try
-      val eventHandler: EventHandler = EventHandler(
-        testId,
-        className,
-        selector,
-        frameworkIncludesClassNameInTestName,
-        isAllTests = arrayForAll(task.taskDef.selectors, Selectors.isTest)
-      )
-      
-      val nestedTasks: Array[Task] = task.execute(
-        eventHandler.handleEvent(_),
-        Array(testLogger(testId))
-      )
-      
-      arrayForEach(nestedTasks, (nestedTask: Task) =>
-        output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(task.taskDef)}", LogLevel.INFO)
-
-        run(
-          parentId = testId,
-          selector = Selectors.nestedSelector(selector, nestedTask.taskDef.selectors),
-          task = nestedTask,
-          frameworkIncludesClassNameInTestName = frameworkIncludesClassNameInTestName
-        )
-      )
-      
-    catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
-      failure(testId, throwable)
-      
-    finally
-      completed(
-        testId = testId,
-        endTime = clock.getCurrentTime,
-        result = null
-      )
-  
-  final private class EventHandler(
-    testId: AnyRef,
-    // TODO      val className: String = event.fullyQualifiedName
+  final private class Run(
     className: String,
-    selector: Selector,
-    frameworkIncludesClassNameInTestName: Boolean,
-    isAllTests: Boolean
+    frameworkIncludesClassNameInTestName: Boolean
   ):
-    // Are we running a suite or an individual test case?
-    private val isRunningSuite: Boolean = Selectors.isRunningSuite(selector)
-    
-    // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
-    // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
-    private var skipped: Array[Selector] = Array.empty
+    private def started(
+      parentId: AnyRef,
+      testId: AnyRef,
+      selector: Selector,
+      startTime: Long
+    ): Unit =
+      // attribute nested test cases to the nested, not the nesting, suite:
+      val (testClassName: String, testName: Option[String]) =
+        val suiteId: String = Selectors.suiteId(selector).getOrElse(className)
 
-    def handleEvent(event: Event): Unit =
-      val endTime: Long = clock.getCurrentTime
-      val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
-      val isEventForTest: Boolean = Selectors.isEventForTest(event.selector)
+        Selectors.testName(selector) match
+          case None => (suiteId, None)
+          case Some(testName) =>
+            // JUnit4 and its friends stick the class name in front of the method name;
+            // we use the class name to attribute the test to:
+            val lastDot: Int = testName.lastIndexOf('.')
+            if !frameworkIncludesClassNameInTestName || lastDot == -1
+            then (suiteId, Some(testName))
+            else (testName.substring(0, lastDot), Some(testName.substring(lastDot + 1)))
 
-      output(
-        s"""RunTestClassProcessor.EventHandler.handleEvent:
-           |className=$className
-           |selector=$selector
-           |isRunningSuite=$isRunningSuite
-           |isEventForTest=$isEventForTest
-           |event.fullyQualifiedName=${event.fullyQualifiedName}
-           |event.selector=${event.selector}
-           |event.status=${event.status}
-           |event.throwable=$throwable""", // a problem on Scala 2.12: .stripMargin
-        LogLevel.INFO
+      RunTestClassProcessor.this.started(
+        parentId,
+        testId,
+        testClassName,
+        testName,
+        startTime
       )
 
-      if !isRunningSuite then
-        // running individual test case: ScalaCheck packages test methods into nested NestedTest tasks.
-        require(Selectors.equal(selector, event.selector))
-        event.status.name match
-          case "Error" | "Failure" => failure(testId, throwable.get)
-          case _ =>
-      else
-        // running suite
-        // Events with overall results of suits are ignored; only events for individual test cases are processed:
-        // - started/completed Gradle events are emitted in run();
-        // - Gradle calculates overall result from the outcomes of the individual tests.
-        // JUnit4 emits overall class failure events with a `TestSelector`.
-        if
-          isEventForTest &&
-          !Selectors.equal(event.selector, TestSelector(className)) &&
-          arrayFind(skipped, Selectors.equal(_, event.selector)).isEmpty
-        then
-          def reconstructStarted(): AnyRef =
-            val eventTestId: AnyRef = idGenerator.generateId()
-            
-            started(
-              parentId = testId,
-              testId = eventTestId,
-              className = className,
-              selector = event.selector,
-              frameworkIncludesClassNameInTestName = frameworkIncludesClassNameInTestName,
-              startTime = endTime - event.duration // TODO deal with negative durations?
-            )
-            
-            eventTestId
+    def run(
+      parentId: AnyRef,
+      selector: Selector,
+      task: Task
+    ): Unit =
+      output(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})", LogLevel.INFO)
 
+      val startTime: Long = clock.getCurrentTime
+      val testId: AnyRef = idGenerator.generateId()
+      require(task.taskDef.fullyQualifiedName == className, s"${task.taskDef.fullyQualifiedName} should be $className")
+
+      started(
+        parentId = parentId,
+        testId = testId,
+        selector = selector,
+        startTime = startTime
+      )
+
+      try
+        val eventHandler: EventHandler = EventHandler(
+          testId,
+          selector,
+          isAllTests = arrayForAll(task.taskDef.selectors, Selectors.isTest)
+        )
+
+        val nestedTasks: Array[Task] = task.execute(
+          eventHandler.handleEvent(_),
+          Array(testLogger(testId))
+        )
+
+        arrayForEach(nestedTasks, (nestedTask: Task) =>
+          output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(task.taskDef)}", LogLevel.INFO)
+
+          run(
+            parentId = testId,
+            selector = Selectors.nestedSelector(selector, nestedTask.taskDef.selectors),
+            task = nestedTask
+          )
+        )
+
+      catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
+        failure(testId, throwable)
+
+      finally
+        completed(
+          testId = testId,
+          endTime = clock.getCurrentTime,
+          result = null
+        )
+
+    final private class EventHandler(
+      testId: AnyRef,
+      selector: Selector,
+      isAllTests: Boolean
+    ):
+      // Are we running a suite or an individual test case?
+      private val isRunningSuite: Boolean = Selectors.isRunningSuite(selector)
+
+      // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
+      // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
+      private var skipped: Array[Selector] = Array.empty
+
+      def handleEvent(event: Event): Unit =
+        val endTime: Long = clock.getCurrentTime
+        val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
+        val isEventForTest: Boolean = Selectors.isEventForTest(event.selector)
+
+        output(
+          s"""RunTestClassProcessor.EventHandler.handleEvent:
+             |className=$className
+             |selector=$selector
+             |isRunningSuite=$isRunningSuite
+             |isEventForTest=$isEventForTest
+             |event.fullyQualifiedName=${event.fullyQualifiedName}
+             |event.selector=${event.selector}
+             |event.status=${event.status}
+             |event.throwable=$throwable""", // a problem on Scala 2.12: .stripMargin
+          LogLevel.INFO
+        )
+
+        if !isRunningSuite then
+          // running individual test case: ScalaCheck packages test methods into nested NestedTest tasks.
+          require(Selectors.equal(selector, event.selector))
           event.status.name match
-            case "Success" =>
-              completed(reconstructStarted(), endTime, ResultType.SUCCESS)
-
-            case "Error" | "Failure" =>
-              failure(reconstructStarted(), throwable.getOrElse(Exception("A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE")))
-
+            case "Error" | "Failure" => failure(testId, throwable.get)
             case _ =>
-              skipped = arrayAppend(skipped, event.selector)
-              if !isAllTests || throwable.nonEmpty || dryRun then
-                completed(reconstructStarted(), endTime, ResultType.SKIPPED)
+        else
+          // running suite
+          // Events with overall results of suits are ignored; only events for individual test cases are processed:
+          // - started/completed Gradle events are emitted in run();
+          // - Gradle calculates overall result from the outcomes of the individual tests.
+          // JUnit4 emits overall class failure events with a `TestSelector`.
+          if
+            isEventForTest &&
+            !Selectors.equal(event.selector, TestSelector(className)) &&
+            arrayFind(skipped, Selectors.equal(_, event.selector)).isEmpty
+          then
+            def reconstructStarted(): AnyRef =
+              val eventTestId: AnyRef = idGenerator.generateId()
+
+              started(
+                parentId = testId,
+                testId = eventTestId,
+                selector = event.selector,
+                startTime = endTime - event.duration // TODO deal with negative durations?
+              )
+
+              eventTestId
+
+            event.status.name match
+              case "Success" =>
+                completed(reconstructStarted(), endTime, ResultType.SUCCESS)
+
+              case "Error" | "Failure" =>
+                failure(reconstructStarted(), throwable.getOrElse(Exception("A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE")))
+
+              case _ =>
+                skipped = arrayAppend(skipped, event.selector)
+                if !isAllTests || throwable.nonEmpty || dryRun then
+                  completed(reconstructStarted(), endTime, ResultType.SKIPPED)
