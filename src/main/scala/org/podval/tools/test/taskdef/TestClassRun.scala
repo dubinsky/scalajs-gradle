@@ -18,11 +18,12 @@ object TestClassRun:
   // nor do I want to make the result unreadable by using string length,
   // so I just assume that the separators do not occur in test names
   // and won't be supplied maliciously :)
+  // Also, separator is a regex, so if the character I use is weird enough,
+  // it probably means something to the regex processor :(
   private val separator: String = "---"
   private val stringsSeparator: String = "-,-"
 
-  def write(value: TestClassRun): String = arrayMkString(toStrings(value), "", separator, "")
-
+  def write(value: TestClassRun): String = arrayMkString(toStrings(value), separator)
   private def toStrings(value: TestClassRun): Array[String] =
     // array of length 4
     val fingerprintStrings = value.fingerprint match
@@ -54,7 +55,6 @@ object TestClassRun:
   // Thank you, sjrd, for the split trivia!
   // (https://github.com/scala-js/scala-js/pull/5132#discussion_r1967584316)
   final def read(string: String): TestClassRun = fromStrings(string.split(separator, -1))
-
   private def fromStrings(strings: Array[String]): TestClassRun = TestClassRun(
     frameworkProvider = FrameworkProviderForking(frameworkName = strings(0)),
     getTestClassName = strings(1),
@@ -77,10 +77,10 @@ object TestClassRun:
     testWildCards = readStrings(strings(8))
   )
 
-  private def writeStrings(strings: Array[String]): String = arrayMkString(strings, "", stringsSeparator, "")
+  private def writeStrings(strings: Array[String]): String = arrayMkString(strings, stringsSeparator)
   private def readStrings(string: String): Array[String] =
     // Now that we split with "-1",
-    // empty string array turns into an array with one empty string in it...
+    // empty string turns into an array with one empty string in it...
     val strings: Array[String] = string.split(stringsSeparator)
     if strings.length == 1 && strings(0).isEmpty
     then Array.empty

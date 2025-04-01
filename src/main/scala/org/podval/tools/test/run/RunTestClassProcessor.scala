@@ -114,7 +114,7 @@ final class RunTestClassProcessor(
 
     val selectors: Array[Selector] =
       if testClassRun.testNames.length == 0 && testClassRun.testWildCards.length == 0
-      then Array(SuiteSelector()) // TODO why does this one works on Scala 2.12, but not the one in Scala212Collections?!
+      then Array(SuiteSelector())
       else arrayConcat[Selector](
         arrayMap(testClassRun.testNames    , TestSelector        (_)),
         arrayMap(testClassRun.testWildCards, TestWildcardSelector(_))
@@ -155,24 +155,20 @@ final class RunTestClassProcessor(
       selector: Selector,
       startTime: Long
     ): Unit =
-      // attribute nested test cases to the nested, not the nesting, suite:
-      val (testClassName: String, testName: Option[String]) =
-        val suiteId: String = Selectors.suiteId(selector).getOrElse(className)
-
-        Selectors.testName(selector) match
-          case None => (suiteId, None)
-          case Some(testName) =>
-            // JUnit4 and its friends stick the class name in front of the method name;
-            // we use the class name to attribute the test to:
-            val lastDot: Int = testName.lastIndexOf('.')
-            if !frameworkIncludesClassNameInTestName || lastDot == -1
-            then (suiteId, Some(testName))
-            else (testName.substring(0, lastDot), Some(testName.substring(lastDot + 1)))
-
+      // attribute nested test cases to the nested, not the nesting, suite;
+      // JUnit4 and its friends stick the class name in front of the method name.
+      val (classNameFromTestName: Option[String], testName: Option[String]) = Selectors.testName(selector) match
+        case None => (None, None)
+        case Some(testName) =>
+          val lastDot: Int = testName.lastIndexOf('.')
+          if !frameworkIncludesClassNameInTestName || lastDot == -1
+          then (None, Some(testName))
+          else (Some(testName.substring(0, lastDot)), Some(testName.substring(lastDot + 1)))
+      
       RunTestClassProcessor.this.started(
         parentId,
         testId,
-        testClassName,
+        classNameFromTestName.orElse(Selectors.suiteId(selector)).getOrElse(className),
         testName,
         startTime
       )
@@ -230,7 +226,7 @@ final class RunTestClassProcessor(
     final private class EventHandler(
       testId: AnyRef,
       selector: Selector,
-      isAllTests: Boolean
+      isAllTests: Boolean // TODO merge with isRunningSuite
     ):
       // Are we running a suite or an individual test case?
       private val isRunningSuite: Boolean = Selectors.isRunningSuite(selector)
