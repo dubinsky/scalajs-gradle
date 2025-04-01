@@ -33,46 +33,40 @@ object Selectors extends Ops[Selector](":"):
     if isAllTests then SuiteSelector() else selectors(0)
 
   private def isTestFromTestFilterMatch(selector: Selector): Boolean = selector match
-    case _: SuiteSelector => false
-    case _: NestedSuiteSelector => throw IllegalArgumentException(s"NestedSuiteSelector can not be a part of TestFilterMatch.")
-    case _: TestSelector => true
-    case _: NestedTestSelector => throw IllegalArgumentException(s"NestedTestSelector can not be a part of TestFilterMatch.")
+    case _: TestSelector         => true
     case _: TestWildcardSelector => true
+    case _: NestedSuiteSelector  => throw IllegalArgumentException(s"$selector can not be a part of TestFilterMatch.")
+    case _: NestedTestSelector   => throw IllegalArgumentException(s"$selector can not be a part of TestFilterMatch.")
+    case _: SuiteSelector        => false
 
-  // attribute nested test cases to the nested, not the nesting, suite
-  def testClassAndTestName(
-    className: String,
-    selector: Selector,
-    frameworkIncludesClassNameInTestName: Boolean
-  ): (String, Option[String]) =
-    val suiteId: String = selector match
-      case nestedSuiteSelector: NestedSuiteSelector => nestedSuiteSelector.suiteId
-      case nestedTestSelector : NestedTestSelector  => nestedTestSelector .suiteId
-      case _ => className
-
-    selector match
-      case testSelector      : TestSelector       => Some(testSelector      .testName)
-      case nestedTestSelector: NestedTestSelector => Some(nestedTestSelector.testName)
-      case _ => None
-    match
-      case None => (suiteId, None)
-      case Some(testName) =>
-        // JUnit4 and its friends stick the class name in front of the method name;
-        // we use the class name to attribute the test to:
-        val lastDot: Int =
-          if !frameworkIncludesClassNameInTestName
-          then -1
-          else testName.lastIndexOf('.')
-        val testClassName: String =
-          if lastDot == -1
-          then suiteId
-          else testName.substring(0, lastDot)  
-        val testMethod: String =
-          if lastDot == -1
-          then testName
-          else testName.substring(lastDot + 1)
-        (testClassName, Some(testMethod))
+  def suiteId(selector: Selector): Option[String] = selector match
+    case nestedSuiteSelector: NestedSuiteSelector => Option(nestedSuiteSelector.suiteId)
+    case nestedTestSelector : NestedTestSelector  => Option(nestedTestSelector .suiteId)
+    case _                                        => None
+    
+  def testName(selector: Selector): Option[String] = selector match
+    case testSelector      : TestSelector       => Option(testSelector      .testName)
+    case nestedTestSelector: NestedTestSelector => Option(nestedTestSelector.testName)
+    case _                                      => None
   
+  def isRunningSuite(selector: Selector): Boolean = selector match
+    case _: SuiteSelector        => true
+    case _: NestedSuiteSelector  => true
+    case _: TestWildcardSelector => throw IllegalArgumentException(s"Can't be running $selector!")
+    case _                       => false
+    
+  def isTest(selector: Selector): Boolean = selector match
+    case _: TestSelector         => true
+    case _: NestedTestSelector   => true
+    case _: TestWildcardSelector => true
+    case _                       => false
+  
+  def isEventForTest(selector: Selector): Boolean = selector match
+    case _: TestSelector         => true
+    case _: NestedTestSelector   => true
+    case _: TestWildcardSelector => throw IllegalArgumentException(s"Illegal event selector $selector!")
+    case _                       => false
+
   def nestedSelector(
     nestingSelector: Selector,
     nestedSelectors: Array[Selector]
@@ -89,31 +83,10 @@ object Selectors extends Ops[Selector](":"):
 
     val canBeNested: Boolean = selector match
       case _: NestedSuiteSelector => true
-      case _: NestedTestSelector => true
-      case _: TestSelector => true // ScalaCheck does this ;)
-      case _ => false
+      case _: NestedTestSelector  => true
+      case _: TestSelector        => true // ScalaCheck does this ;)
+      case _                      => false
       
     require(canBeNested, s"$selector can not be nested")
     
     selector
-  
-  def isTest(selector: Selector): Boolean = selector match
-    case _: SuiteSelector => false
-    case _: NestedSuiteSelector => false
-    case _: TestSelector => true
-    case _: NestedTestSelector => true
-    case _: TestWildcardSelector => true
-    
-  def isRunningSuite(selector: Selector): Boolean = selector match
-    case _: SuiteSelector => true
-    case _: NestedSuiteSelector => true
-    case _: TestSelector => false
-    case _: NestedTestSelector => false
-    case wildcard: TestWildcardSelector => throw IllegalArgumentException(s"Can't be running $wildcard!")
-
-  def isEventForTest(selector: Selector): Boolean = selector match
-    case _: SuiteSelector => false
-    case _: NestedSuiteSelector => false
-    case _: TestSelector => true
-    case _: NestedTestSelector => true
-    case wildcard: TestWildcardSelector => throw IllegalArgumentException(s"Illegal event selector $wildcard!")

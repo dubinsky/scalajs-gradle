@@ -25,8 +25,8 @@ final class DryRunSbtTask(
     override def fingerprint: Fingerprint = taskDef.fingerprint
 
   private def testName(selector: Selector): String = selector match
-    case _: SuiteSelector        => "dry run"
-    case _: NestedSuiteSelector  => "dry run"
-    case s: TestSelector         => s.testName
-    case s: NestedTestSelector   => s.testName
-    case s: TestWildcardSelector => s"*${s.testWildcard}*"
+    case _                   : SuiteSelector        => "dry run"
+    case _                   : NestedSuiteSelector  => "dry run"
+    case testSelector        : TestSelector         => testSelector      .testName
+    case nestedTestSelector  : NestedTestSelector   => nestedTestSelector.testName
+    case testWildcardSelector: TestWildcardSelector => s"*${testWildcardSelector.testWildcard}*"
