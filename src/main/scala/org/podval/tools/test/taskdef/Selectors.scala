@@ -1,6 +1,5 @@
 package org.podval.tools.test.taskdef
 
-import org.podval.tools.util.Scala212Collections.arrayForAll
 import sbt.testing.{NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, TestSelector, TestWildcardSelector}
 
 object Selectors:

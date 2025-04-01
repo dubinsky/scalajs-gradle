@@ -18,7 +18,7 @@ object OptionStyle:
     final override def toStrings(name: String, values: Array[String]): Array[String] =
       if values.length == 0
       then Array.empty
-      else toStrings(name, arrayMkString(values, "", ",", ""))
+      else toStrings(name, arrayMkString(values, ","))
 
   case object ListWithEq extends ListOptionStyle:
     override protected def toStrings(name: String, valuesString: String): Array[String] = Array(s"$name=$valuesString")

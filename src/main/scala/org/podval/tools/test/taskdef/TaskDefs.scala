@@ -17,5 +17,5 @@ object TaskDefs:
       case annotated: AnnotatedFingerprint => s"@${annotated.annotationName} ${className(annotated.isModule)}"
       case subclass : SubclassFingerprint  => s"${className(subclass.isModule)} extends ${subclass.superclassName}"
 
-    val selectors: String = arrayMkString(arrayMap(taskDef.selectors, _.toString), "[", ", ", "]")
-    s"$name selectors=$selectors explicitlySpecified=${taskDef.explicitlySpecified}"
+    val selectors: String = arrayMkString(arrayMap(taskDef.selectors, _.toString), ", ")
+    s"$name selectors=[$selectors] explicitlySpecified=${taskDef.explicitlySpecified}"
