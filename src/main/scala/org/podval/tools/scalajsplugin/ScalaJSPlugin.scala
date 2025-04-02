@@ -1,7 +1,7 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.{Plugin, Project, Task}
 import org.gradle.api.plugins.scala.ScalaPlugin
 import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
@@ -13,7 +13,7 @@ import java.io.File
 import javax.inject.Inject
 
 final class ScalaJSPlugin @Inject(
-  objectFactory: ObjectFactory
+  jvmPluginServices: JvmPluginServices,
 ) extends Plugin[Project]:
   import ScalaJSPlugin.logger
 
@@ -38,16 +38,16 @@ final class ScalaJSPlugin @Inject(
       if isJSDisabled
       then
         logger.info("ScalaJSPlugin: running in JVM mode; Scala.js is disabled.")
-        Seq(JvmDelegate(project, objectFactory, isMixed = false))
+        Seq(JvmDelegate(project, jvmPluginServices, isMixed = false))
       else
         if !isMixed
         then
           logger.info("ScalaJSPlugin: running in Scala.js mode.")
-          Seq(ScalaJSDelegate(project, objectFactory, isMixed = false))
+          Seq(ScalaJSDelegate(project, jvmPluginServices, isMixed = false))
         else
           logger.info("ScalaJSPlugin: running in mixed mode.")
           Seq(
-            JvmDelegate(project, objectFactory, isMixed = true),
+            JvmDelegate(project, jvmPluginServices, isMixed = true),
 //            ScalaJSDelegate(project, objectFactory, isMixed = true)
           )
 

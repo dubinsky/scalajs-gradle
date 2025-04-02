@@ -1,21 +1,21 @@
 package org.podval.tools.scalajsplugin.jvm
 
 import org.gradle.api.{Project, Task}
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.SourceSet
 import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaPlatform}
 import org.podval.tools.scalajsplugin.BackendDelegate
+import org.podval.tools.scalajsplugin.gradle.ScalaBasePlugin
 import org.podval.tools.test.SbtTestInterface
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class JvmDelegate(
   project: Project,
-  objectFactory: ObjectFactory,
+  jvmPluginServices: JvmPluginServices,
   isMixed: Boolean,
 ) extends BackendDelegate(
-  project,
-  objectFactory
+  project
 ):
   override def sourceRoot: String = JvmDelegate.sourceRoot
 
@@ -30,7 +30,17 @@ final class JvmDelegate(
   override def setUpProject(): Unit =
     project.getTasks.replace("test", classOf[JvmTestTask])
 
-    if isMixed then configureSourceSetDefaults(isCreate = false)
+    if isMixed then
+      ScalaBasePlugin(
+        project = project,
+        jvmPluginServices = jvmPluginServices,
+        isCreate = false,
+        sourceRoot = sourceRoot,
+        sharedSourceRoot = BackendDelegate.sharedSourceRoot,
+        mainSourceSetName = mainSourceSetName, 
+        testSourceSetName = testSourceSetName
+      )
+        .apply()
 
   override def configureTask(task: Task): Unit = task match
     case testTask: JvmTestTask =>

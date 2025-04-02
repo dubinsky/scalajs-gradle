@@ -2,8 +2,8 @@ package org.podval.tools.scalajsplugin.scalajs
 
 import org.gradle.api.{Project, Task}
 import org.gradle.api.file.FileCollection
-import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaModules, ScalaPlatform, ScalaVersion, Version}
@@ -16,11 +16,10 @@ import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHa
 
 final class ScalaJSDelegate(
   project: Project,
-  objectFactory: ObjectFactory,
+  jvmPluginServices: JvmPluginServices,
   isMixed: Boolean
 ) extends BackendDelegate(
-  project,
-  objectFactory
+  project
 ):
   override def sourceRoot: String = ScalaJSDelegate.sourceRoot
 
