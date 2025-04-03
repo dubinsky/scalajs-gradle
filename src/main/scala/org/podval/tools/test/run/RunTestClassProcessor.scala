@@ -11,7 +11,7 @@ import org.gradle.internal.time.Clock
 import org.podval.tools.test.exception.ExceptionConverter
 import org.podval.tools.test.taskdef.{FrameworkProvider, Selectors, TaskDefs, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
-import sbt.testing.{Event, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector, TestWildcardSelector}
+import sbt.testing.{Event, Logger, Runner, Selector, Task, TaskDef}
 import scala.util.control.NonFatal
 
 object RunTestClassProcessor:
@@ -149,14 +149,15 @@ final class RunTestClassProcessor(
       running: Running,
       startTime: Long
     ): Unit =
-      // attribute nested test cases to the nested, not the nesting, suite;
-      // JUnit4 and its friends stick the class name in front of the method name.
-      val (suiteId: Option[String], testName: Option[String]) = running.suiteIdAndTestName(frameworkIncludesClassNameInTestName)
+      val (testClassName: String, testName: Option[String]) = running.testClassAndTestName(
+        frameworkIncludesClassNameInTestName,
+        className
+      )
       
       RunTestClassProcessor.this.started(
         parentId,
         testId,
-        suiteId.getOrElse(className),
+        testClassName,
         testName,
         startTime
       )
@@ -233,9 +234,9 @@ final class RunTestClassProcessor(
           LogLevel.INFO
         )
 
-        if !running.isSuite then
-          // running individual test case: ScalaCheck packages test methods into nested NestedTest tasks.
-          require(Selectors.equal(running.selector, eventFor.selector))
+        if running.isTest then
+          // running individual test case (ScalaCheck packages test methods into nested NestedTest tasks).
+          require(running.sameAs(eventFor))
           event.status.name match
             case "Error" | "Failure" => failure(testId, throwable.get)
             case _ =>
@@ -244,10 +245,8 @@ final class RunTestClassProcessor(
           // Events with overall results of suits are ignored; only events for individual test cases are processed:
           // - started/completed Gradle events are emitted in run();
           // - Gradle calculates overall result from the outcomes of the individual tests.
-          // JUnit4 emits overall class failure events with a `TestSelector`.
           if
-            eventFor.isTest &&
-            !Selectors.equal(eventFor.selector, TestSelector(className)) &&
+            eventFor.isTestAndNotForClass(className) &&
             arrayFind(skipped, Selectors.equal(_, eventFor.selector)).isEmpty
           then
             def reconstructStarted(): AnyRef =
