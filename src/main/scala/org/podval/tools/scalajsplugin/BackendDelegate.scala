@@ -1,35 +1,45 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{Project, Task}
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaPlatform}
+import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaBackend, ScalaLibrary, ScalaPlatform}
 import scala.jdk.CollectionConverters.*
 
-abstract class BackendDelegate(project: Project):
-  def configurationToAddToClassPath: Option[String]
-
+abstract class BackendDelegate(
+  project: Project,
+  gradleNames: GradleNames
+):
   def setUpProject(): TestTaskMaker[?]
-  
-  def configureProject(isScala3: Boolean): Unit
 
-  def dependencyRequirements(
+  protected def backend: ScalaBackend
+
+  protected def configurationToAddToClassPath: Option[String]
+  
+  def afterEvaluate(
+    pluginScalaPlatform: ScalaPlatform
+  ): AddToClassPath =
+    val projectScalaLibrary: ScalaLibrary = 
+      ScalaLibrary.getFromConfiguration(project, gradleNames.implementationConfigurationName)
+      
+    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(backend)
+    
+    dependencyRequirements(pluginScalaPlatform, projectScalaPlatform).foreach(_.applyToConfiguration(project))
+    
+    configureProject(projectScalaPlatform.version.isScala3)
+    
+    AddToClassPath(
+      configurationToAddToClassPath,
+      projectScalaLibrary,
+      gradleNames.runtimeClasspathConfigurationName
+    )
+  
+  protected def dependencyRequirements(
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
   ): Seq[DependencyRequirement]
 
-  // -------------------------------------------------------------------------------------------
-  // following code for setting up source sets, configurations and other Gradle things for Scala
-  // was copied, translates and adjusted for jvm/js/shared split from the Gradle sources...
-  // -------------------------------------------------------------------------------------------
-
-  protected final def createConfiguration(name: String, description: String): Configuration =
-    val result: Configuration = project.getConfigurations.create(name)
-    result.setVisible(false)
-    result.setCanBeConsumed(false)
-    result.setDescription(description)
-    result
+  protected def configureProject(isScala3: Boolean): Unit
 
   protected final def getClassesTask(sourceSet: SourceSet): Task = project
     .getTasks

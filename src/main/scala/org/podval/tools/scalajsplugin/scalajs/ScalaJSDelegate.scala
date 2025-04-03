@@ -1,48 +1,49 @@
 package org.podval.tools.scalajsplugin.scalajs
 
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{Action, Project}
 import org.gradle.api.file.FileCollection
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaModules, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.scalajsplugin.{BackendDelegate, TestTaskMaker}
+import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames, TestTaskMaker}
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 final class ScalaJSDelegate(
   project: Project,
-  mainSourceSetName: String,
-  testSourceSetName: String
+  gradleNames: GradleNames
 ) extends BackendDelegate(
-  project
+  project,
+  gradleNames
 ):
-  override def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
+  override protected def backend: ScalaBackend = ScalaBackend.JS()
+
+  override protected def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
 
   override def setUpProject(): TestTaskMaker[ScalaJSTestTask] =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
 
-    createConfiguration(ScalaJSDelegate.scalaJSConfigurationName, "ScalaJS dependencies used by the ScalaJS plugin.")
-    createConfiguration(ScalaJSDelegate.scalaJSCompilerPluginsConfigurationName, "ScalaJS Scala compiler plugins.")
-
-    def configureLinkTask(linkTask: ScalaJSLinkTask): Unit =
-        val sourceSetName: String = linkTask match
-          case _: ScalaJSLinkMainTask => mainSourceSetName
-          case _: ScalaJSLinkTestTask => testSourceSetName
-
-        val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
-        linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-        linkTask.dependsOn(getClassesTask(sourceSet))
+    val scalajs: Configuration = project.getConfigurations.create(ScalaJSDelegate.scalaJSConfigurationName)
+    scalajs.setVisible(false)
+    scalajs.setCanBeConsumed(false)
+    scalajs.setDescription("ScalaJS dependencies used by the ScalaJS plugin.")
+    
+    def configureLinkTask(linkTask: ScalaJSLinkTask, sourceSetName: String): Unit =
+      val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
+      linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
+      linkTask.dependsOn(getClassesTask(sourceSet))
 
     val linkMain: TaskProvider[ScalaJSLinkMainTask] = project.getTasks.register(
       "link",
       classOf[ScalaJSLinkMainTask],
       new Action[ScalaJSLinkMainTask]:
-        override def execute(linkTask: ScalaJSLinkMainTask): Unit = configureLinkTask(linkTask)
+        override def execute(linkTask: ScalaJSLinkMainTask): Unit =
+          configureLinkTask(linkTask, gradleNames.mainSourceSetName)
     )
 
     project.getTasks.register(
@@ -56,31 +57,32 @@ final class ScalaJSDelegate(
       "testLink",
       classOf[ScalaJSLinkTestTask],
       new Action[ScalaJSLinkTestTask]:
-        override def execute(linkTask: ScalaJSLinkTestTask): Unit = configureLinkTask(linkTask)
+        override def execute(linkTask: ScalaJSLinkTestTask): Unit =
+          configureLinkTask(linkTask, gradleNames.testSourceSetName)
     )
 
     TestTaskMaker[ScalaJSTestTask](
-      testSourceSetName,
+      gradleNames.testSourceSetName,
       classOf[ScalaJSTestTask],
       (testTask: ScalaJSTestTask) => testTask.dependsOn(linkTest.get)
     )
 
-  override def configureProject(isScala3: Boolean): Unit =
+  override protected def configureProject(isScala3: Boolean): Unit =
     // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
-    configureScalaCompile(SourceSet.MAIN_SOURCE_SET_NAME, isScala3)
-    configureScalaCompile(SourceSet.TEST_SOURCE_SET_NAME, isScala3)
+    configureScalaCompile(gradleNames.mainSourceSetName, isScala3)
+    configureScalaCompile(gradleNames.testSourceSetName, isScala3)
 
-  override def dependencyRequirements(
+  override protected def dependencyRequirements(
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
   ): Seq[DependencyRequirement] =
     val scalaJSVersion: Version = ScalaJS.Library
-      .findInConfiguration(projectScalaPlatform, project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+      .findInConfiguration(projectScalaPlatform, project, gradleNames.implementationConfigurationName)
       .map(_.version)
       .getOrElse(ScalaJS.versionDefault)
 
     val isJUnit4Present: Boolean = JUnit4ScalaJS
-      .findInConfiguration(projectScalaPlatform, project, JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
+      .findInConfiguration(projectScalaPlatform, project, gradleNames.testImplementationConfigurationName)
       .isDefined
     
     ScalaJSDelegate.forPlugin(
@@ -90,7 +92,8 @@ final class ScalaJSDelegate(
     ScalaJSDelegate.forProject(
       projectScalaPlatform,
       scalaJSVersion,
-      isJUnit4Present = isJUnit4Present
+      isJUnit4Present,
+      gradleNames
     )
 
   private def configureScalaCompile(
@@ -112,7 +115,7 @@ final class ScalaJSDelegate(
     else
       // There seems to be no need to add `"-Xplugin:" + plugin.getPath` parameters:
       // just adding plugins to the list is sufficient.
-      val scalaJSCompilerPlugins: FileCollection = Gradle.getConfiguration(project, ScalaJSDelegate.scalaJSCompilerPluginsConfigurationName)
+      val scalaJSCompilerPlugins: FileCollection = Gradle.getConfiguration(project, gradleNames.compilerPluginsConfigurationName)
       if scalaJSCompilerPlugins.asScala.nonEmpty then
         ScalaJSDelegate.logger.info(s"scalaCompilerPlugins of the $sourceSetName ScalaCompile task: adding ${scalaJSCompilerPlugins.asScala}.")
         val plugins: FileCollection = Option(scalaCompile.getScalaCompilerPlugins)
@@ -124,7 +127,6 @@ object ScalaJSDelegate:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSDelegate.getClass)
 
   private val scalaJSConfigurationName: String = "scalajs"
-  private val scalaJSCompilerPluginsConfigurationName: String = "scalajsCompilerPlugins"
 
   private def forPlugin(
     pluginScalaPlatform: ScalaPlatform,
@@ -154,11 +156,11 @@ object ScalaJSDelegate:
     )
   )
 
-  // TODO configuration names are DIFFERENT in mixed mode!!!
   private def forProject(
     projectScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version,
-    isJUnit4Present: Boolean
+    isJUnit4Present: Boolean,
+    gradleNames: GradleNames
   ): Seq[DependencyRequirement] =
     // only for Scala 2
     (if projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
@@ -166,7 +168,7 @@ object ScalaJSDelegate:
         platform = projectScalaPlatform,
         version = scalaJSVersion,
         reason = "because it is needed for compiling of the ScalaJS code on Scala 2",
-        configurationName = scalaJSCompilerPluginsConfigurationName
+        configurationName = gradleNames.compilerPluginsConfigurationName
       )
     )) ++
     // only for Scala 2 and only when JUnit4 is in use
@@ -176,7 +178,7 @@ object ScalaJSDelegate:
         platform = projectScalaPlatform,
         version = scalaJSVersion,
         reason = "because it is needed to generate bootstrappers for JUnit tests on Scala 2",
-        configurationName = scalaJSCompilerPluginsConfigurationName
+        configurationName = gradleNames.compilerPluginsConfigurationName
       )
     )) ++
     // only for Scala 3
@@ -191,19 +193,19 @@ object ScalaJSDelegate:
         platform = projectScalaPlatform,
         version = projectScalaPlatform.scalaVersion,
         reason = "because it is needed for linking of the ScalaJS code",
-        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
+        configurationName = gradleNames.implementationConfigurationName
       )
     )) ++ Seq(
       ScalaJS.Library.required(
         platform = projectScalaPlatform,
         version = scalaJSVersion,
         reason = "because it is needed for compiling of the ScalaJS code",
-        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
+        configurationName = gradleNames.implementationConfigurationName
       ),
       ScalaJS.DomSJS.required(
         platform = projectScalaPlatform,
         reason = "because it is needed for DOM manipulations",
-        configurationName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME
+        configurationName = gradleNames.implementationConfigurationName
       ),
       // Dependencies:
       // org.scala-js:scalajs-test-bridge_2.13
@@ -213,6 +215,6 @@ object ScalaJSDelegate:
         version = scalaJSVersion,
         reason = "because it is needed for testing of the ScalaJS code",
         isVersionExact = true,
-        configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
+        configurationName = gradleNames.testImplementationConfigurationName
       )
   )
