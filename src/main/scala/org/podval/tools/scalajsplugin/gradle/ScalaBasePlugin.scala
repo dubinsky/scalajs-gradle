@@ -34,6 +34,7 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.jvm.toolchain.{JavaLauncher, JavaToolchainService}
 import org.gradle.language.scala.tasks.{AbstractScalaCompile, KeepAliveMode}
 import org.podval.tools.build.Gradle
+import org.podval.tools.scalajsplugin.GradleNames
 import scala.jdk.CollectionConverters.*
 import javax.inject.Inject
 import java.io.File
@@ -58,16 +59,14 @@ import java.util.concurrent.Callable
 // - added `isCreate` parameter;
 // - added `sourceRoot` parameter;
 // - added `sharedSourceRoot` parameter;
-// - added `mainSourceSetName` parameter;
-// - added `testSourceSetName` parameter;
+// - added `gradleNames` parameter;
 import org.gradle.api.plugins.scala.ScalaBasePlugin as Original
 
 final class ScalaBasePlugin(
   isCreate: Boolean,
   sourceRoot: String,
   sharedSourceRoot: String,
-  mainSourceSetName: String,
-  testSourceSetName: String,
+  gradleNames: GradleNames,
   project: Project,
   jvmPluginServices: JvmPluginServices // TODO get from the project?
 ):
@@ -234,8 +233,8 @@ final class ScalaBasePlugin(
     //   javaPluginExtension(project).getSourceSets.all()
     // we do:
     Seq(
-      mainSourceSetName,
-      testSourceSetName
+      gradleNames.mainSourceSetName,
+      gradleNames.testSourceSetName
     )
       .map(Gradle.getSourceSet(project, _))
       .foreach((sourceSet: SourceSet) =>
@@ -476,8 +475,7 @@ final class ScalaBasePlugin(
 object ScalaBasePlugin:
   private val DEFAULT_SCALA_ZINC_VERSION: String = "2.13"
 
-//  @Inject
-  class UsageDisambiguationRules(
+  class UsageDisambiguationRules @Inject(
     incrementalAnalysis: Usage,
     javaApi: Usage,
     javaRuntime: Usage

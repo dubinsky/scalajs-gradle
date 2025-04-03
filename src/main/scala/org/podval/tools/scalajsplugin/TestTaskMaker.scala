@@ -6,7 +6,7 @@ import org.podval.tools.build.Gradle
 import org.podval.tools.test.task.TestTask
 
 final class TestTaskMaker[T <: TestTask](
-  testSourceSetName: String, // TODO remove and use the one from the delegate
+  testSourceSetName: String,
   clazz: Class[T],
   configure: T => Unit
 ):
