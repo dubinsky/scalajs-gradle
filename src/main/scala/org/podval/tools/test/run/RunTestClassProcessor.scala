@@ -10,7 +10,7 @@ import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.exception.ExceptionConverter
 import org.podval.tools.test.taskdef.{FrameworkProvider, Selectors, TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForAll, arrayForEach, arrayMap}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
 import sbt.testing.{Event, Logger, Runner, Selector, SuiteSelector, Task, TaskDef, TestSelector, TestWildcardSelector}
 import scala.util.control.NonFatal
 
@@ -112,19 +112,13 @@ final class RunTestClassProcessor(
   def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
     val testClassRun: TestClassRun = testClassRunInfo.asInstanceOf[TestClassRun]
 
-    val selectors: Array[Selector] =
-      if testClassRun.testNames.length == 0 && testClassRun.testWildCards.length == 0
-      then Array(SuiteSelector())
-      else arrayConcat[Selector](
-        arrayMap(testClassRun.testNames    , TestSelector        (_)),
-        arrayMap(testClassRun.testWildCards, TestWildcardSelector(_))
-      )
+    val running: Running = Running.forTestClassRun(testClassRun)
 
     val taskDef: TaskDef = TaskDef(
       testClassRun.getTestClassName,
       testClassRun.fingerprint,
       testClassRun.explicitlySpecified,
-      selectors
+      running.selectors
     )
 
     val tasks: Array[Task] =
@@ -141,7 +135,7 @@ final class RunTestClassProcessor(
       frameworkIncludesClassNameInTestName = testClassRun.frameworkProvider.frameworkDescriptor.includesClassNameInTestName
     ).run(
       parentId = null,
-      selector = SuiteSelector(),
+      running = running,
       task = task
     )
 
@@ -152,30 +146,24 @@ final class RunTestClassProcessor(
     private def started(
       parentId: AnyRef,
       testId: AnyRef,
-      selector: Selector,
+      running: Running,
       startTime: Long
     ): Unit =
       // attribute nested test cases to the nested, not the nesting, suite;
       // JUnit4 and its friends stick the class name in front of the method name.
-      val (classNameFromTestName: Option[String], testName: Option[String]) = Selectors.testName(selector) match
-        case None => (None, None)
-        case Some(testName) =>
-          val lastDot: Int = testName.lastIndexOf('.')
-          if !frameworkIncludesClassNameInTestName || lastDot == -1
-          then (None, Some(testName))
-          else (Some(testName.substring(0, lastDot)), Some(testName.substring(lastDot + 1)))
+      val (suiteId: Option[String], testName: Option[String]) = running.suiteIdAndTestName(frameworkIncludesClassNameInTestName)
       
       RunTestClassProcessor.this.started(
         parentId,
         testId,
-        classNameFromTestName.orElse(Selectors.suiteId(selector)).getOrElse(className),
+        suiteId.getOrElse(className),
         testName,
         startTime
       )
 
     def run(
       parentId: AnyRef,
-      selector: Selector,
+      running: Running,
       task: Task
     ): Unit =
       output(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})", LogLevel.INFO)
@@ -187,15 +175,14 @@ final class RunTestClassProcessor(
       started(
         parentId = parentId,
         testId = testId,
-        selector = selector,
+        running = running,
         startTime = startTime
       )
 
       try
         val eventHandler: EventHandler = EventHandler(
           testId,
-          selector,
-          isAllTests = arrayForAll(task.taskDef.selectors, Selectors.isTest)
+          running
         )
 
         val nestedTasks: Array[Task] = task.execute(
@@ -205,10 +192,9 @@ final class RunTestClassProcessor(
 
         arrayForEach(nestedTasks, (nestedTask: Task) =>
           output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(task.taskDef)}", LogLevel.INFO)
-
           run(
             parentId = testId,
-            selector = Selectors.nestedSelector(selector, nestedTask.taskDef.selectors),
+            running = running.forNestedTask(nestedTask),
             task = nestedTask
           )
         )
@@ -225,12 +211,8 @@ final class RunTestClassProcessor(
 
     final private class EventHandler(
       testId: AnyRef,
-      selector: Selector,
-      isAllTests: Boolean // TODO merge with isRunningSuite
+      running: Running
     ):
-      // Are we running a suite or an individual test case?
-      private val isRunningSuite: Boolean = Selectors.isRunningSuite(selector)
-
       // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
       // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
       private var skipped: Array[Selector] = Array.empty
@@ -238,14 +220,12 @@ final class RunTestClassProcessor(
       def handleEvent(event: Event): Unit =
         val endTime: Long = clock.getCurrentTime
         val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
-        val isEventForTest: Boolean = Selectors.isEventForTest(event.selector)
+        val eventFor: Running = Running.forEvent(event)
 
         output(
           s"""RunTestClassProcessor.EventHandler.handleEvent:
              |className=$className
-             |selector=$selector
-             |isRunningSuite=$isRunningSuite
-             |isEventForTest=$isEventForTest
+             |running=$running
              |event.fullyQualifiedName=${event.fullyQualifiedName}
              |event.selector=${event.selector}
              |event.status=${event.status}
@@ -253,9 +233,9 @@ final class RunTestClassProcessor(
           LogLevel.INFO
         )
 
-        if !isRunningSuite then
+        if !running.isSuite then
           // running individual test case: ScalaCheck packages test methods into nested NestedTest tasks.
-          require(Selectors.equal(selector, event.selector))
+          require(Selectors.equal(running.selector, eventFor.selector))
           event.status.name match
             case "Error" | "Failure" => failure(testId, throwable.get)
             case _ =>
@@ -266,9 +246,9 @@ final class RunTestClassProcessor(
           // - Gradle calculates overall result from the outcomes of the individual tests.
           // JUnit4 emits overall class failure events with a `TestSelector`.
           if
-            isEventForTest &&
-            !Selectors.equal(event.selector, TestSelector(className)) &&
-            arrayFind(skipped, Selectors.equal(_, event.selector)).isEmpty
+            eventFor.isTest &&
+            !Selectors.equal(eventFor.selector, TestSelector(className)) &&
+            arrayFind(skipped, Selectors.equal(_, eventFor.selector)).isEmpty
           then
             def reconstructStarted(): AnyRef =
               val eventTestId: AnyRef = idGenerator.generateId()
@@ -276,7 +256,7 @@ final class RunTestClassProcessor(
               started(
                 parentId = testId,
                 testId = eventTestId,
-                selector = event.selector,
+                running = eventFor,
                 startTime = endTime - event.duration // TODO deal with negative durations?
               )
 
@@ -290,6 +270,6 @@ final class RunTestClassProcessor(
                 failure(reconstructStarted(), throwable.getOrElse(Exception("A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE")))
 
               case _ =>
-                skipped = arrayAppend(skipped, event.selector)
-                if !isAllTests || throwable.nonEmpty || dryRun then
+                skipped = arrayAppend(skipped, eventFor.selector)
+                if !running.isTests || throwable.nonEmpty || dryRun then
                   completed(reconstructStarted(), endTime, ResultType.SKIPPED)
