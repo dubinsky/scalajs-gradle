@@ -1,68 +1,69 @@
 package org.podval.tools.scalajsplugin.scalajs
 
-import org.gradle.api.{Project, Task}
+import org.gradle.api.{Action, Project}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.plugins.jvm.internal.JvmPluginServices
-import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaModules, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.scalajsplugin.BackendDelegate
+import org.podval.tools.scalajsplugin.{BackendDelegate, TestTaskMaker}
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 final class ScalaJSDelegate(
   project: Project,
-  jvmPluginServices: JvmPluginServices,
-  isMixed: Boolean
+  mainSourceSetName: String,
+  testSourceSetName: String
 ) extends BackendDelegate(
   project
 ):
-  override def sourceRoot: String = ScalaJSDelegate.sourceRoot
-
-  override def mainSourceSetName: String =
-    if !isMixed
-    then SourceSet.MAIN_SOURCE_SET_NAME
-    else ScalaJSDelegate.mainJSSourceSetName
-
-  override def testSourceSetName: String =
-    if !isMixed
-    then SourceSet.TEST_SOURCE_SET_NAME
-    else ScalaJSDelegate.testJSSourceSetName
-
   override def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
 
-  override def setUpProject(): Unit =
+  override def setUpProject(): TestTaskMaker[ScalaJSTestTask] =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
 
     createConfiguration(ScalaJSDelegate.scalaJSConfigurationName, "ScalaJS dependencies used by the ScalaJS plugin.")
     createConfiguration(ScalaJSDelegate.scalaJSCompilerPluginsConfigurationName, "ScalaJS Scala compiler plugins.")
 
-    val linkMain: ScalaJSLinkMainTask = project.getTasks.register("link"    , classOf[ScalaJSLinkMainTask]).get()
-    val run     : ScalaJSRunMainTask  = project.getTasks.register("run"     , classOf[ScalaJSRunMainTask ]).get()
-    run.dependsOn (linkMain)
-    val linkTest: ScalaJSLinkTestTask = project.getTasks.register("testLink", classOf[ScalaJSLinkTestTask]).get()
-    val test    : ScalaJSTestTask     = project.getTasks.replace ("test"    , classOf[ScalaJSTestTask    ])
-    test.dependsOn(linkTest)
+    def configureLinkTask(linkTask: ScalaJSLinkTask): Unit =
+        val sourceSetName: String = linkTask match
+          case _: ScalaJSLinkMainTask => mainSourceSetName
+          case _: ScalaJSLinkTestTask => testSourceSetName
 
-  override def configureTask(task: Task): Unit = task match
-    case linkTask: ScalaJSLinkTask =>
-      val sourceSetName: String = linkTask match
-        case _: ScalaJSLinkMainTask => mainSourceSetName
-        case _: ScalaJSLinkTestTask => testSourceSetName
+        val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
+        linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
+        linkTask.dependsOn(getClassesTask(sourceSet))
 
-      val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
-      linkTask.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-      linkTask.getDependsOn.add(getClassesTask(sourceSet))
+    val linkMain: TaskProvider[ScalaJSLinkMainTask] = project.getTasks.register(
+      "link",
+      classOf[ScalaJSLinkMainTask],
+      new Action[ScalaJSLinkMainTask]:
+        override def execute(linkTask: ScalaJSLinkMainTask): Unit = configureLinkTask(linkTask)
+    )
 
-    case testTask: ScalaJSTestTask =>
-      testTask.getDependsOn.add(getClassesTask(testSourceSetName))
+    project.getTasks.register(
+      "run",
+      classOf[ScalaJSRunMainTask],
+      new Action[ScalaJSRunMainTask]:
+        override def execute(run: ScalaJSRunMainTask): Unit = run.dependsOn(linkMain.get)
+    )
+    
+    val linkTest: TaskProvider[ScalaJSLinkTestTask] = project.getTasks.register(
+      "testLink",
+      classOf[ScalaJSLinkTestTask],
+      new Action[ScalaJSLinkTestTask]:
+        override def execute(linkTask: ScalaJSLinkTestTask): Unit = configureLinkTask(linkTask)
+    )
 
-    case _ =>
+    TestTaskMaker[ScalaJSTestTask](
+      testSourceSetName,
+      classOf[ScalaJSTestTask],
+      (testTask: ScalaJSTestTask) => testTask.dependsOn(linkTest.get)
+    )
 
   override def configureProject(isScala3: Boolean): Unit =
     // TODO disable compileJava task for the Scala.js sourceSet - unless Scala.js compiler deals with Java classes?
@@ -122,10 +123,6 @@ final class ScalaJSDelegate(
 object ScalaJSDelegate:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSDelegate.getClass)
 
-  final val sourceRoot: String = "js"
-  private val mainJSSourceSetName: String = "mainJS"
-  private val testJSSourceSetName: String = "testJS"
-
   private val scalaJSConfigurationName: String = "scalajs"
   private val scalaJSCompilerPluginsConfigurationName: String = "scalajsCompilerPlugins"
 
@@ -157,6 +154,7 @@ object ScalaJSDelegate:
     )
   )
 
+  // TODO configuration names are DIFFERENT in mixed mode!!!
   private def forProject(
     projectScalaPlatform: ScalaPlatform,
     scalaJSVersion: Version,

@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-import org.gradle.api.Project
+import org.gradle.api.{Project, Task}
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
@@ -16,6 +16,10 @@ object Gradle:
     .getByType(classOf[JavaPluginExtension])
     .getSourceSets
     .getByName(name)
+
+  def getClassesTask(project: Project, sourceSetName: String): Task = project
+    .getTasks
+    .getByName(getSourceSet(project, sourceSetName).getClassesTaskName)
   
   def toOption[T](property: Property[T]): Option[T] =
     if !property.isPresent then None else Some(property.get)
