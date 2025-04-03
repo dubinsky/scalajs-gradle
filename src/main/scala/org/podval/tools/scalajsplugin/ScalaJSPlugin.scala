@@ -20,6 +20,7 @@ final class ScalaJSPlugin @Inject(
 
     val mode: Mode = ScalaJSPlugin.getMode(project)
     
+    // Source sets, configurations and tasks!
     mode match
       case Mode.JVM =>
       case Mode.JS =>
@@ -33,6 +34,8 @@ final class ScalaJSPlugin @Inject(
           gradleNames = GradleNames.jvm
         )
           .apply()
+        
+        // TODO Scala.js side!
 
     val delegates: Seq[BackendDelegate] = mode match
       case Mode.JVM => Seq(
@@ -45,24 +48,24 @@ final class ScalaJSPlugin @Inject(
         JvmDelegate(project, GradleNames.jvm),
         // TODO ScalaJSDelegate(project, GradleNames.js)
       )
-    
+
     for delegate: BackendDelegate <- delegates do
+      // Set up everything.
       val testTaskMaker: TestTaskMaker[?] = delegate.setUpProject()
-      mode match
-        case Mode.JVM   => testTaskMaker.replace(project, "test")
-        case Mode.JS    => testTaskMaker.replace(project, "test")
-        case Mode.Mixed => delegate match
-          case _: JvmDelegate     => testTaskMaker.replace (project, "test"  )
-          case _: ScalaJSDelegate => testTaskMaker.register(project, "testJS")
+      
+      // Add test tasks.
+      if mode == Mode.Mixed && delegate.isInstanceOf[ScalaJSDelegate]
+      then testTaskMaker.register(project, "testJS")
+      else testTaskMaker.replace (project, "test"  )
     
     project.afterEvaluate: (project: Project) =>
       val pluginScalaPlatform: ScalaPlatform =
         ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm)
 
-      val addToClassPath: Seq[AddToClassPath] = 
-        delegates.map(_.afterEvaluate(pluginScalaPlatform))
+      // Configure everything and add dependencies to configurations.
+      val addToClassPath: Seq[AddToClassPath] = delegates.map(_.afterEvaluate(pluginScalaPlatform))
 
-      // Expanding plugin's classpath.
+      // Expand classpath.
       addToClassPath.foreach(_.add(project))
       addToClassPath.foreach(_.verify(project))
 
@@ -80,28 +83,25 @@ private object ScalaJSPlugin:
   private val jsSourceRoot: String = "js"
 
   private def getMode(project: Project) =
-    val isMixed: Boolean =
-      val sourceRootPresent: Boolean =
-        project.file(jvmSourceRoot).exists ||
-        project.file(jsSourceRoot ).exists
-
-      if sourceRootPresent && project.file("src").exists then
-        logger.warn("ScalaJSPlugin: Both 'src' and platform-specific source roots are present! Ignoring 'src'.")
-
-      sourceRootPresent
-
     val isJSDisabled: Boolean =
       Option(project.findProperty(maiflaiProperty )).isDefined ||
       Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
+
+    val sourceRootPresent: Boolean =
+      project.file(jvmSourceRoot).exists ||
+      project.file(jsSourceRoot).exists
 
     if isJSDisabled
     then
       logger.info("ScalaJSPlugin: running in JVM mode; Scala.js is disabled.")
       Mode.JVM
-    else if !isMixed
+    else if !sourceRootPresent
     then
       logger.info("ScalaJSPlugin: running in Scala.js mode.")
       Mode.JS
     else
+      if project.file("src").exists then
+        logger.warn("ScalaJSPlugin: Both 'src' and platform-specific source roots are present! Ignoring 'src'.")
+        
       logger.info("ScalaJSPlugin: running in mixed JVM/Scala.js mode.")
       Mode.Mixed

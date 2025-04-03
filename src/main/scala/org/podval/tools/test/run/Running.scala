@@ -1,8 +1,8 @@
 package org.podval.tools.test.run
 
-import org.podval.tools.test.taskdef.TestClassRun
+import org.podval.tools.test.taskdef.{Selectors, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
-import sbt.testing.{Event, NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, Task, TestSelector, 
+import sbt.testing.{Event, NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, Task, TestSelector,
   TestWildcardSelector}
 
 // Wrapper around Selector.
@@ -15,7 +15,18 @@ sealed trait Running:
   def suiteId : Option[String]
   def testName: Option[String]
 
-  def suiteIdAndTestName(frameworkIncludesClassNameInTestName: Boolean): (Option[String], Option[String]) =
+  final def sameAs(that: Running): Boolean = Selectors.equal(this.selector, that.selector)
+
+  // JUnit4 emits overall class failure events with a `TestSelector`.
+  final def isTestAndNotForClass(className: String): Boolean =
+    isTest && !Selectors.equal(selector, TestSelector(className))
+
+  // attribute nested test cases to the nested, not the nesting, suite;
+  // JUnit4 and its friends stick the class name in front of the method name.  
+  final def testClassAndTestName(
+    frameworkIncludesClassNameInTestName: Boolean,
+    className: String
+  ): (String, Option[String]) =
     val (classNamePart: Option[String], testNamePart: Option[String]) = testName match
       case None => (None, None)
       case Some(testName) =>
@@ -24,9 +35,9 @@ sealed trait Running:
         then (None, Some(testName))
         else (Some(testName.substring(0, lastDot)), Some(testName.substring(lastDot + 1)))
 
-    (classNamePart.orElse(suiteId), testNamePart)
+    (classNamePart.orElse(suiteId).getOrElse(className), testNamePart)
 
-  def forNestedTask(nestedTask: Task): Running =
+  final def forNestedTask(nestedTask: Task): Running =
     require(isSuite, s"$selector can not have nested tests!")
 
     val nestedSelectors: Array[Selector] = nestedTask.taskDef.selectors
