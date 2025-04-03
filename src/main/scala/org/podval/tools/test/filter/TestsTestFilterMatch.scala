@@ -1,7 +1,5 @@
 package org.podval.tools.test.filter
 
-import sbt.testing.{Selector, TestSelector, TestWildcardSelector}
-
 final case class TestsTestFilterMatch(
   testNames: Set[String],
   testWildCards: Set[String]
@@ -9,10 +7,6 @@ final case class TestsTestFilterMatch(
   override def explicitlySpecified: Boolean = true
 
   override def isEmpty: Boolean = testNames.isEmpty && testWildCards.isEmpty
-
-  override def selectors: Array[Selector] =
-    testNames.toArray.map(TestSelector(_)) ++
-    testWildCards.toArray.map(TestWildcardSelector(_))
 
   override def intersect(other: TestFilterMatch): TestFilterMatch = other match
     case _   : SuiteTestFilterMatch => this

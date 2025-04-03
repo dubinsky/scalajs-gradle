@@ -1,44 +1,31 @@
 package org.podval.tools.scalajsplugin.jvm
 
-import org.gradle.api.{Project, Task}
-import org.gradle.api.model.ObjectFactory
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.tasks.SourceSet
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaPlatform}
-import org.podval.tools.scalajsplugin.BackendDelegate
+import org.gradle.api.Project
+import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaPlatform}
+import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames, TestTaskMaker}
 import org.podval.tools.test.SbtTestInterface
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class JvmDelegate(
   project: Project,
-  objectFactory: ObjectFactory,
-  isMixed: Boolean,
+  gradleNames: GradleNames
 ) extends BackendDelegate(
   project,
-  objectFactory
+  gradleNames
 ):
-  override def sourceRoot: String = JvmDelegate.sourceRoot
+  override protected def backend: ScalaBackend = ScalaBackend.Jvm
 
-  override def mainSourceSetName: String = SourceSet.MAIN_SOURCE_SET_NAME
+  override protected def configurationToAddToClassPath: Option[String] = None
 
-  override def testSourceSetName: String = SourceSet.TEST_SOURCE_SET_NAME
+  override protected def configureProject(isScala3: Boolean): Unit = ()
 
-  override def configurationToAddToClassPath: Option[String] = None
+  override def setUpProject(): TestTaskMaker[JvmTestTask] = TestTaskMaker[JvmTestTask](
+    gradleNames.testSourceSetName,
+    classOf[JvmTestTask],
+    (_: JvmTestTask) => ()
+  )
 
-  override def configureProject(isScala3: Boolean): Unit = ()
-
-  override def setUpProject(): Unit =
-    project.getTasks.replace("test", classOf[JvmTestTask])
-
-    if isMixed then configureSourceSetDefaults(isCreate = false)
-
-  override def configureTask(task: Task): Unit = task match
-    case testTask: JvmTestTask =>
-      testTask.getDependsOn.add(getClassesTask(testSourceSetName))
-
-    case _ =>
-
-  override def dependencyRequirements(
+  override protected def dependencyRequirements(
     pluginScalaPlatform: ScalaPlatform,
     projectScalaPlatform: ScalaPlatform
   ): Seq[DependencyRequirement] = Seq(
@@ -48,10 +35,6 @@ final class JvmDelegate(
         """because some test frameworks (ScalaTest :)) do not bring it in in,
           |and it needs to be on the testImplementation classpath
           |""".stripMargin,
-      configurationName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
+      configurationName = gradleNames.testImplementationConfigurationName
     )
   )
-
-
-object JvmDelegate:
-  final val sourceRoot: String = "jvm"

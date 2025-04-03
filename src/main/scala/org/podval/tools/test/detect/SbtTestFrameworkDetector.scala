@@ -4,9 +4,9 @@ import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.{ClassFileExtractionManager, TestFrameworkDetector}
 import org.gradle.internal.Factory
-import org.podval.tools.test.filter.{TestFilter, TestFilterMatch}
+import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
 import org.podval.tools.test.framework.JUnit4ScalaJS
-import org.podval.tools.test.taskdef.TestClassRunNonForking
+import org.podval.tools.test.taskdef.{FrameworkProviderNonForking, TestClassRun}
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, TaskDef}
 import scala.jdk.CollectionConverters.*
@@ -50,7 +50,7 @@ final class SbtTestFrameworkDetector(
   private def filter(
     className: String,
     detectors: FingerprintDetectors
-  ): Option[TestClassRunNonForking] =
+  ): Option[TestClassRun] =
     if detectors.isEmpty then None else
       if detectors.size > 1 then
         logger.warn(s"SbtTestFrameworkDetector: Ignoring class $className with multiple detectors: $detectors.")
@@ -58,19 +58,25 @@ final class SbtTestFrameworkDetector(
       else
         val detector: FingerprintDetector = detectors.head
         testFilter.matchClass(className).map: (testFilterMatch: TestFilterMatch) =>
-          TestClassRunNonForking(
-            framework = detector.framework,
-            taskDef = TaskDef(
-              className,
-              detector.fingerprint,
-              testFilterMatch.explicitlySpecified,
-              testFilterMatch.selectors
+          val (testNames: Array[String], testWildCards: Array[String]) = testFilterMatch match
+            case _: SuiteTestFilterMatch => (Array.empty[String], Array.empty[String])
+            case testsTestFilterMatch: TestsTestFilterMatch => (
+              testsTestFilterMatch.testNames.toArray,
+              testsTestFilterMatch.testWildCards.toArray
             )
+
+          TestClassRun(
+            frameworkProvider = FrameworkProviderNonForking(detector.framework),
+            getTestClassName = className,
+            fingerprint = detector.fingerprint,
+            explicitlySpecified = testFilterMatch.explicitlySpecified,
+            testNames = testNames,
+            testWildCards = testWildCards
           )
   
   // Called by org.gradle.api.internal.tasks.testing.detection.DefaultTestClassScanner.
   override def processTestClass(relativeFile: RelativeFile): Boolean =
-    val testClassRun: Option[TestClassRunNonForking] =
+    val testClassRun: Option[TestClassRun] =
       val testClassVisitor: TestClassVisitor = processClassFile(relativeFile.getFile)
       testClassVisitor.className.flatMap((className: String) => filter(
         className = className,

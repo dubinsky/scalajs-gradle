@@ -63,14 +63,12 @@ object Scala212Collections:
 
   def arrayMkString(
     array: Array[String],
-    start: String,
-    separator: String,
-    end: String
+    separator: String
   ): String =
-    var result: String = start
+    var result: String = ""
     var i: Int = 0
     while i < array.length do
       if i > 0 then result = result.concat(separator)
       result = result.concat(array(i))
       i = i + 1
-    result.concat(end)
+    result
