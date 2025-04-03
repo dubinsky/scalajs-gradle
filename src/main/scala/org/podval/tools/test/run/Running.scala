@@ -50,7 +50,8 @@ sealed trait Running:
       case selector => throw IllegalArgumentException(s"$selector can not be nested")
 
 object Running:
-  final case class Tests(override val selectors: Array[Selector]) extends Running:
+  // Contains only TestSelectors and TestWildcardSelectors by construction.
+  private final case class Tests(override val selectors: Array[Selector]) extends Running:
     override def selector = SuiteSelector()
     override def isSuite: Boolean = true
     override def isTest : Boolean = false
@@ -58,32 +59,32 @@ object Running:
     override def suiteId : Option[String] = None
     override def testName: Option[String] = None
 
-  sealed abstract class One(override val selector: Selector) extends Running:
+  private sealed abstract class One(override val selector: Selector) extends Running:
     final override def selectors: Array[Selector] = Array(selector)
 
-  sealed trait SuiteLike extends Running:
+  private sealed trait SuiteLike extends Running:
     final override def isSuite: Boolean = true
     final override def isTest : Boolean = false
     final override def isTests: Boolean = false
 
-  sealed trait TestLike extends Running:
+  private sealed trait TestLike extends Running:
     final override def isSuite: Boolean = false
     final override def isTest : Boolean = true
     final override def isTests: Boolean = true
 
-  case object Suite extends One(SuiteSelector()) with SuiteLike:
+  private case object Suite extends One(SuiteSelector()) with SuiteLike:
     override def suiteId : Option[String] = None
     override def testName: Option[String] = None
 
-  final case class NestedSuite(override val selector: NestedSuiteSelector) extends One(selector) with SuiteLike:
+  private final case class NestedSuite(override val selector: NestedSuiteSelector) extends One(selector) with SuiteLike:
     override def suiteId : Option[String] = Option(selector.suiteId)
     override def testName: Option[String] = None
 
-  final case class Test(override val selector: TestSelector) extends One(selector) with TestLike:
+  private final case class Test(override val selector: TestSelector) extends One(selector) with TestLike:
     override def suiteId : Option[String] = None
     override def testName: Option[String] = Option(selector.testName)
 
-  final case class NestedTest(override val selector: NestedTestSelector) extends One(selector) with TestLike:
+  private final case class NestedTest(override val selector: NestedTestSelector) extends One(selector) with TestLike:
     override def suiteId : Option[String] = Option(selector.suiteId)
     override def testName: Option[String] = Option(selector.testName)
 

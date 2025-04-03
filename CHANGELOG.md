@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-04-
+- cleanup: `ScalaJSPlugin` and `BackendDelegate`s;
+- cleanup: introduced `Running`;
+- cleanup: introduced `FrameworkProvider`;
+- cleanup: `RunTestClassProcessor`;
+- dependency updates;
+
 ## [0.6.1] - 2025-03-31
 - fix: running test cases of the nested test suites on ScalaTest;
 - fix: attribute test cases to the correct test classes;
