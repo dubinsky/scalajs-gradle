@@ -17,6 +17,7 @@ import org.gradle.api.internal.artifacts.configurations.{ConfigurationRolesForMi
 import org.gradle.api.internal.lambdas.SerializableLambdas
 import org.gradle.api.internal.plugins.DslObject
 import org.gradle.api.internal.project.ProjectInternal
+import org.gradle.api.internal.provider.Providers
 import org.gradle.api.internal.tasks.DefaultSourceSet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.{ExtensionAware, JavaBasePlugin, JavaPluginExtension}
@@ -70,46 +71,39 @@ final class ScalaBasePlugin(
   project: Project,
   jvmPluginServices: JvmPluginServices // TODO get from the project?
 ):
-  import ScalaBasePlugin.{configureCompileDefaults, configureScaladoc, javaPluginExtension, getJavaLauncher}
+  import ScalaBasePlugin.{javaPluginExtension, getJavaLauncher}
 
   private def objectFactory: ObjectFactory = project.getObjects
   private def dependencyFactory: DependencyFactory = project.getDependencyFactory
 
   def apply(): Unit =
-    // TODO
-    // if isCreate then project.getPluginManager.apply(classOf[JavaBasePlugin])
+    // TODO if isCreate then new JavaBasePlugin(...).apply()
 
-    val scalaRuntime: ScalaRuntime =
-      if !isCreate
-      then project.getExtensions.getByType(classOf[ScalaRuntime])
-      else project.getExtensions.create(
-        Original.SCALA_RUNTIME_EXTENSION_NAME,
-        classOf[ScalaRuntime],
-        project
-      )
+    // Scala Runtime Extension, Scala Plugin Extension and Scala Toolchain already exist;
+    // they are shared, so we do NOT create a new ones :)
+    
+    // project.getExtensions.create(Original.SCALA_RUNTIME_EXTENSION_NAME, classOf[ScalaRuntime], project)
+    val scalaRuntime: ScalaRuntime = project.getExtensions.getByType(classOf[ScalaRuntime])
+    // project.getExtensions.create("scala", classOf[ScalaPluginExtension])
+    val scalaPluginExtension: ScalaPluginExtension = project.getExtensions.getByType(classOf[ScalaPluginExtension])
+    // scalaPluginExtension.getZincVersion.convention(Original.DEFAULT_ZINC_VERSION)
 
-    val scalaPluginExtension: ScalaPluginExtension =
-      if !isCreate
-      then project.getExtensions.getByType(classOf[ScalaPluginExtension])
-      else project.getExtensions.create(
-        "scala",
-        classOf[ScalaPluginExtension]
-      )
+    //createToolchainRuntimeClasspath(scalaPluginExtension)
+    val toolchainClasspath: Provider[ResolvableConfiguration] = Providers.of(
+      project.getConfigurations.getByName("scalaToolchainRuntimeClasspath").asInstanceOf[ResolvableConfiguration]
+    )
 
-    if isCreate then
-      scalaPluginExtension.getZincVersion.convention(Original.DEFAULT_ZINC_VERSION)
-
-    val toolchainClasspath: Provider[ResolvableConfiguration] = createToolchainRuntimeClasspath(scalaPluginExtension)
+    // TODO retrieve those or make new ones?
     val incrementalAnalysisUsage: Usage = objectFactory.named(classOf[Usage], "incremental-analysis")
     val incrementalAnalysisCategory: Category = objectFactory.named(classOf[Category], "scala-analysis")
 
-    if isCreate then
-      configureConfigurations(
-        project.asInstanceOf[ProjectInternal],
-        incrementalAnalysisCategory,
-        incrementalAnalysisUsage,
-        scalaPluginExtension
-      )
+    if isCreate then configureCompilerPlugins(project.asInstanceOf[ProjectInternal])
+//      configureConfigurations(
+//        project.asInstanceOf[ProjectInternal],
+//      //  incrementalAnalysisCategory,
+//      //  incrementalAnalysisUsage,
+//      //  scalaPluginExtension
+//      )
 
       configureCompileDefaults(
         project,
@@ -126,102 +120,24 @@ final class ScalaBasePlugin(
       scalaPluginExtension
     )
 
-    if isCreate then
-      configureScaladoc(
+    if isCreate then // TODO do we need to reconfigure anything for the sourceRoot even when !isCreate?
+      ScalaBasePlugin.configureScaladoc(
         project,
         scalaRuntime,
         scalaPluginExtension,
         toolchainClasspath
       )
-
-  private def configureConfigurations(
-    project: ProjectInternal,
-    incrementalAnalysisCategory: Category,
-    incrementalAnalysisUsage: Usage,
-    scalaPluginExtension: ScalaPluginExtension
+  
+  // extracted from configureConfigurations()
+  private def configureCompilerPlugins(
+    project: ProjectInternal
   ): Unit =
-    val dependencyHandler: DependencyHandler = project.getDependencies
-
-    val plugins: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(Original.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME)
+    val plugins: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(
+      gradleNames.compilerPluginsConfigurationName
+    )
     plugins.setTransitive(false)
     jvmPluginServices.configureAsRuntimeClasspath(plugins)
-
-    val zinc: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(Original.ZINC_CONFIGURATION_NAME)
-    zinc.setVisible(false)
-    zinc.setDescription("The Zinc incremental compiler to be used for this Scala project.")
-
-    zinc.getResolutionStrategy.eachDependency(rule =>
-      if rule.getRequested.getGroup.equals("com.typesafe.zinc") && rule.getRequested.getName.equals("zinc") then
-        rule.useTarget(s"org.scala-sbt:zinc_${ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION}:${Original.DEFAULT_ZINC_VERSION}")
-        rule.because("Typesafe Zinc is no longer maintained.")
-    )
-
-    zinc.defaultDependencies(dependencies =>
-      dependencies.add(dependencyHandler.create(s"org.scala-sbt:zinc_${ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION}:${scalaPluginExtension.getZincVersion.get}"))
-      // Add safeguard and clear error if the user changed the scala version when using default zinc
-      zinc.getIncoming.afterResolve(
-        new Action[ResolvableDependencies]:
-          override def execute(resolvableDependencies: ResolvableDependencies): Unit =
-            resolvableDependencies.getResolutionResult.allComponents(
-              new Action[ResolvedComponentResult]:
-                override def execute(component: ResolvedComponentResult): Unit =
-                  if component.getModuleVersion != null && component.getModuleVersion.getName.equals("scala-library") then
-                    if !component.getModuleVersion.getVersion.startsWith(ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION) then
-                      throw new InvalidUserCodeException("The version of 'scala-library' was changed while using the default Zinc version. " +
-                          s"Version ${component.getModuleVersion.getVersion} is not compatible with org.scala-sbt:zinc_${ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION}:${Original.DEFAULT_ZINC_VERSION}")
-            )
-      )
-    )
-
-    zinc.getDependencyConstraints.add(dependencyHandler.getConstraints.create(
-      Log4jBannedVersion.LOG4J2_CORE_COORDINATES,
-      new Action[DependencyConstraint]:
-        override def execute(constraint: DependencyConstraint): Unit = constraint.version(version =>
-          version.require(Log4jBannedVersion.LOG4J2_CORE_REQUIRED_VERSION)
-          version.reject(Log4jBannedVersion.LOG4J2_CORE_VULNERABLE_VERSION_RANGE)
-        )
-    ))
-
-    val incrementalAnalysisElements: Configuration = project.getConfigurations.migratingUnlocked(
-      "incrementalScalaAnalysisElements",
-      ConfigurationRolesForMigration.CONSUMABLE_DEPENDENCY_SCOPE_TO_CONSUMABLE
-    )
-    incrementalAnalysisElements.setVisible(false)
-    incrementalAnalysisElements.setDescription("Incremental compilation analysis files")
-    incrementalAnalysisElements.getAttributes.attribute(Usage.USAGE_ATTRIBUTE, incrementalAnalysisUsage)
-    incrementalAnalysisElements.getAttributes.attribute(Category.CATEGORY_ATTRIBUTE, incrementalAnalysisCategory)
-
-    val matchingStrategy: AttributeMatchingStrategy[Usage] = dependencyHandler.getAttributesSchema.attribute(Usage.USAGE_ATTRIBUTE)
-    matchingStrategy.getDisambiguationRules.add(
-      classOf[ScalaBasePlugin.UsageDisambiguationRules],
-      new Action[ActionConfiguration]:
-        override def execute(actionConfiguration: ActionConfiguration): Unit =
-          actionConfiguration.params(incrementalAnalysisUsage)
-          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_API))
-          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_RUNTIME))
-    )
-
-  private def createToolchainRuntimeClasspath(
-    scalaPluginExtension: ScalaPluginExtension
-  ): Provider[ResolvableConfiguration] =
-    val scalaToolchain: Provider[DependencyScopeConfiguration] = project.getConfigurations.dependencyScope(
-      "scalaToolchain",
-      (conf: DependencyScopeConfiguration) =>
-        conf.setDescription("Dependencies for the Scala toolchain")
-        conf.getDependencies.addLater(createScalaCompilerDependency(scalaPluginExtension))
-        conf.getDependencies.addLater(createScalaBridgeDependency(scalaPluginExtension))
-        conf.getDependencies.addLater(createScalaCompilerInterfaceDependency(scalaPluginExtension))
-        conf.getDependencies.addLater(createScaladocDependency(scalaPluginExtension))
-    )
-
-    project.getConfigurations.resolvable(
-      "scalaToolchainRuntimeClasspath",
-      (conf: ResolvableConfiguration) =>
-        conf.setDescription("Runtime classpath for the Scala toolchain")
-        conf.extendsFrom(scalaToolchain.get())
-        jvmPluginServices.configureAsRuntimeClasspath(conf)
-    )
-
+    
   private def configureSourceSetDefaults(
     project: ProjectInternal,
     incrementalAnalysisCategory: Category,
@@ -256,10 +172,16 @@ final class ScalaBasePlugin(
   ): Unit =
     val scalaSource: ScalaSourceDirectorySet =
       if !isCreate
-      then sourceSet.getExtensions.getByType(classOf[ScalaSourceDirectorySet])
+      then sourceSet.getExtensions.getByType(
+        classOf[ScalaSourceDirectorySet]
+      )
       else
         val scalaSource: ScalaSourceDirectorySet = createScalaSourceDirectorySet(sourceSet)
-        sourceSet.getExtensions.add(classOf[ScalaSourceDirectorySet], "scala", scalaSource)
+        sourceSet.getExtensions.add(
+          classOf[ScalaSourceDirectorySet],
+          "scala", 
+          scalaSource
+        )
         scalaSource
 
     scalaSource.setSrcDirs(
@@ -308,49 +230,7 @@ final class ScalaBasePlugin(
       then dependencyFactory.create("org.scala-lang", "scala3-library_3", scalaVersion)
       else dependencyFactory.create("org.scala-lang", "scala-library", scalaVersion)
     )
-
-  private def createScalaCompilerDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
-    scalaPluginExtension.getScalaVersion.map(scalaVersion =>
-      if ScalaRuntimeHelper.isScala3(scalaVersion)
-      then dependencyFactory.create("org.scala-lang", "scala3-compiler_3", scalaVersion)
-      else dependencyFactory.create("org.scala-lang", "scala-compiler", scalaVersion)
-    )
-
-  private def createScalaBridgeDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
-    scalaPluginExtension.getScalaVersion.zip(scalaPluginExtension.getZincVersion, (scalaVersion, zincVersion) =>
-      if ScalaRuntimeHelper.isScala3(scalaVersion)
-      then dependencyFactory.create("org.scala-lang", "scala3-sbt-bridge", scalaVersion)
-      else
-        val scalaMajorMinorVersion: String = Joiner.on('.').join(Splitter.on('.').splitToList(scalaVersion).subList(0, 2))
-        val name: String = s"compiler-bridge_$scalaMajorMinorVersion"
-        val dependency: ModuleDependency = dependencyFactory.create("org.scala-sbt", name, zincVersion)
-
-        // Use an artifact to remain compatible with Ivy repositories, which
-        // don't support variant derivation.
-        dependency.artifact((artifact: DependencyArtifact) =>
-          artifact.setClassifier("sources")
-          artifact.setType("jar")
-          artifact.setExtension("jar")
-          artifact.setName(name)
-        )
-
-        dependency
-    )
-
-  private def createScalaCompilerInterfaceDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
-    scalaPluginExtension.getScalaVersion.zip(scalaPluginExtension.getZincVersion, (scalaVersion, zincVersion) =>
-      if ScalaRuntimeHelper.isScala3(scalaVersion)
-      then dependencyFactory.create("org.scala-lang", "scala3-interfaces", scalaVersion)
-      else dependencyFactory.create("org.scala-sbt", "compiler-interface", zincVersion)
-    )
-
-  private def createScaladocDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
-    scalaPluginExtension.getScalaVersion.map(scalaVersion =>
-      if ScalaRuntimeHelper.isScala3(scalaVersion)
-      then dependencyFactory.create("org.scala-lang", "scaladoc_3", scalaVersion)
-      else null
-    )
-
+  
   /**
    * In 9.0, once org.gradle.api.internal.tasks.DefaultScalaSourceSet is removed, we can update this to only construct the source directory
    * set instead of the entire source set.
@@ -371,7 +251,7 @@ final class ScalaBasePlugin(
     scalaSource: ScalaSourceDirectorySet,
     incrementalAnalysis: Configuration
   ): Unit =
-    val name: String = sourceSet.getCompileTaskName("scala") // TODO or scalaJS!
+    val name: String = sourceSet.getCompileTaskName(gradleNames.scalaCompileTaskName)
 
     val configurationAction: Action[Task] = (task: Task) =>
       val scalaCompile: ScalaCompile = task.asInstanceOf[ScalaCompile]
@@ -455,7 +335,7 @@ final class ScalaBasePlugin(
     incrementalAnalysisUsage: Usage,
     sourceSet: SourceSet
   ): Configuration =
-    val name = s"incrementalScalaAnalysisFor${sourceSet.getName}"
+    val name: String = s"incrementalScalaAnalysisFor${sourceSet.getName}"
     if !isCreate
     then configurations.getByName(name)
     else
@@ -471,26 +351,6 @@ final class ScalaBasePlugin(
       incrementalAnalysis.getAttributes.attribute(Category.CATEGORY_ATTRIBUTE, incrementalAnalysisCategory)
       incrementalAnalysis
 
-
-object ScalaBasePlugin:
-  private val DEFAULT_SCALA_ZINC_VERSION: String = "2.13"
-
-  class UsageDisambiguationRules @Inject(
-    incrementalAnalysis: Usage,
-    javaApi: Usage,
-    javaRuntime: Usage
-  ) extends AttributeDisambiguationRule[Usage]:
-    private val expectedUsages: ImmutableSet[Usage] = ImmutableSet.of(
-      incrementalAnalysis,
-      javaApi,
-      javaRuntime
-    )
-
-    override def execute(details: MultipleCandidatesDetails[Usage]): Unit =
-      if details.getConsumerValue == null then
-        if details.getCandidateValues.equals(expectedUsages) then
-          details.closestMatch(javaRuntime)
-
   private def configureCompileDefaults(
     project: Project,
     scalaRuntime: ScalaRuntime,
@@ -498,21 +358,23 @@ object ScalaBasePlugin:
     scalaPluginExtension: ScalaPluginExtension,
     scalaToolchainRuntimeClasspath: Provider[ResolvableConfiguration]
   ): Unit =
+    // TODO do NOT configure all ScalaCompile tasks - get only the ones that belong to the source sets we are operating on!
     project.getTasks.withType(classOf[ScalaCompile]).configureEach(compile =>
       val conventionMapping: ConventionMapping = compile.getConventionMapping
-      conventionMapping.map("scalaClasspath", () => getScalaToolchainClasspath(
+      conventionMapping.map("scalaClasspath", () => ScalaBasePlugin.getScalaToolchainClasspath(
         scalaPluginExtension,
         scalaToolchainRuntimeClasspath,
         scalaRuntime,
         compile.getClasspath
       ))
       conventionMapping.map("zincClasspath", () => project.getConfigurations.getAt(Original.ZINC_CONFIGURATION_NAME))
-      conventionMapping.map("scalaCompilerPlugins", () => project.getConfigurations.getAt(Original.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME))
-      conventionMapping.map("sourceCompatibility", () => computeJavaSourceCompatibilityConvention(javaExtension, compile).toString)
-      conventionMapping.map("targetCompatibility", () => computeJavaTargetCompatibilityConvention(javaExtension, compile).toString)
+      conventionMapping.map("scalaCompilerPlugins", () => project.getConfigurations.getAt(gradleNames.compilerPluginsConfigurationName))
+      conventionMapping.map("sourceCompatibility", () => ScalaBasePlugin.computeJavaSourceCompatibilityConvention(javaExtension, compile).toString)
+      conventionMapping.map("targetCompatibility", () => ScalaBasePlugin.computeJavaTargetCompatibilityConvention(javaExtension, compile).toString)
       compile.getScalaCompileOptions.getKeepAliveMode.convention(KeepAliveMode.SESSION)
     )
 
+object ScalaBasePlugin:
   private def computeJavaSourceCompatibilityConvention(javaExtension: DefaultJavaPluginExtension, compileTask: ScalaCompile): JavaVersion =
     val rawSourceCompatibility: JavaVersion = javaExtension.getRawSourceCompatibility
     if rawSourceCompatibility != null
@@ -564,3 +426,165 @@ object ScalaBasePlugin:
 
   private def extensionOf[T](extensionAware: ExtensionAware, typ: Class[T]): T =
     extensionAware.getExtensions.getByType(typ)
+
+// private val DEFAULT_SCALA_ZINC_VERSION: String = "2.13"
+
+//  class UsageDisambiguationRules @Inject(
+//      incrementalAnalysis: Usage,
+//      javaApi: Usage,
+//      javaRuntime: Usage
+//    ) extends AttributeDisambiguationRule[Usage]:
+//      private val expectedUsages: ImmutableSet[Usage] = ImmutableSet.of(
+//        incrementalAnalysis,
+//        javaApi,
+//        javaRuntime
+//      )
+//
+//      override def execute(details: MultipleCandidatesDetails[Usage]): Unit =
+//        if details.getConsumerValue == null then
+//          if details.getCandidateValues.equals(expectedUsages) then
+//            details.closestMatch(javaRuntime)
+
+//  private def configureConfigurations(
+//    project: ProjectInternal,
+//    // incrementalAnalysisCategory: Category,
+//    // incrementalAnalysisUsage: Usage,
+//    // scalaPluginExtension: ScalaPluginExtension
+//  ): Unit =
+////    val dependencyHandler: DependencyHandler = project.getDependencies
+//    configureCompilerPlugins(project)
+//
+//    // Zinc and incrementalAnalysisElements setups already exist and are shared, so we do NOT create new ones :)
+//    // configureZinc(project, dependencyHandler, scalaPluginExtension)
+//    // configureIncrementalAnalysisElements(project, incrementalAnalysisCategory, incrementalAnalysisUsage)
+
+  // extracted from configureConfigurations()
+//  private def configureIncrementalAnalysisElements(
+//    project: ProjectInternal,
+//    incrementalAnalysisCategory: Category,
+//    incrementalAnalysisUsage: Usage,
+//  ) =
+//    val incrementalAnalysisElements: Configuration = project.getConfigurations.migratingUnlocked(
+//      "incrementalScalaAnalysisElements",
+//      ConfigurationRolesForMigration.CONSUMABLE_DEPENDENCY_SCOPE_TO_CONSUMABLE
+//    )
+//    incrementalAnalysisElements.setVisible(false)
+//    incrementalAnalysisElements.setDescription("Incremental compilation analysis files")
+//    incrementalAnalysisElements.getAttributes.attribute(Usage.USAGE_ATTRIBUTE, incrementalAnalysisUsage)
+//    incrementalAnalysisElements.getAttributes.attribute(Category.CATEGORY_ATTRIBUTE, incrementalAnalysisCategory)
+//    
+//    val matchingStrategy: AttributeMatchingStrategy[Usage] = dependencyHandler.getAttributesSchema.attribute(Usage.USAGE_ATTRIBUTE)
+//    matchingStrategy.getDisambiguationRules.add(
+//      classOf[ScalaBasePlugin.UsageDisambiguationRules],
+//      new Action[ActionConfiguration]:
+//        override def execute(actionConfiguration: ActionConfiguration): Unit =
+//          actionConfiguration.params(incrementalAnalysisUsage)
+//          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_API))
+//          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_RUNTIME))
+//    )
+    
+// extracted from configureConfigurations()
+//  private def configureZinc(
+//    project: ProjectInternal,
+//    dependencyHandler: DependencyHandler,
+//    scalaPluginExtension: ScalaPluginExtension
+//  ) =
+//    val zinc: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(Original.ZINC_CONFIGURATION_NAME)
+//    zinc.setVisible(false)
+//    zinc.setDescription("The Zinc incremental compiler to be used for this Scala project.")
+//
+//    zinc.getResolutionStrategy.eachDependency(rule =>
+//      if rule.getRequested.getGroup.equals("com.typesafe.zinc") && rule.getRequested.getName.equals("zinc") then
+//        rule.useTarget(s"org.scala-sbt:zinc_${ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION}:${Original.DEFAULT_ZINC_VERSION}")
+//        rule.because("Typesafe Zinc is no longer maintained.")
+//    )
+//
+//    zinc.defaultDependencies(dependencies =>
+//      dependencies.add(dependencyHandler.create(s"org.scala-sbt:zinc_${ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION}:${scalaPluginExtension.getZincVersion.get}"))
+//      // Add safeguard and clear error if the user changed the scala version when using default zinc
+//      zinc.getIncoming.afterResolve(
+//        new Action[ResolvableDependencies]:
+//          override def execute(resolvableDependencies: ResolvableDependencies): Unit =
+//            resolvableDependencies.getResolutionResult.allComponents(
+//              new Action[ResolvedComponentResult]:
+//                override def execute(component: ResolvedComponentResult): Unit =
+//                  if component.getModuleVersion != null && component.getModuleVersion.getName.equals("scala-library") then
+//                    if !component.getModuleVersion.getVersion.startsWith(ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION) then
+//                      throw new InvalidUserCodeException("The version of 'scala-library' was changed while using the default Zinc version. " +
+//                        s"Version ${component.getModuleVersion.getVersion} is not compatible with org.scala-sbt:zinc_${ScalaBasePlugin.DEFAULT_SCALA_ZINC_VERSION}:${Original.DEFAULT_ZINC_VERSION}")
+//            )
+//      )
+//    )
+//
+//    zinc.getDependencyConstraints.add(dependencyHandler.getConstraints.create(
+//      Log4jBannedVersion.LOG4J2_CORE_COORDINATES,
+//      new Action[DependencyConstraint]:
+//        override def execute(constraint: DependencyConstraint): Unit = constraint.version(version =>
+//          version.require(Log4jBannedVersion.LOG4J2_CORE_REQUIRED_VERSION)
+//          version.reject(Log4jBannedVersion.LOG4J2_CORE_VULNERABLE_VERSION_RANGE)
+//        )
+//    ))
+
+  // Scala Toolchain setup is shared, so we do NOT create a second one :)
+//  private def createToolchainRuntimeClasspath(
+//    scalaPluginExtension: ScalaPluginExtension
+//  ): Provider[ResolvableConfiguration] =
+//    val scalaToolchain: Provider[DependencyScopeConfiguration] = project.getConfigurations.dependencyScope(
+//      "scalaToolchain",
+//      (conf: DependencyScopeConfiguration) =>
+//        conf.setDescription("Dependencies for the Scala toolchain")
+//        conf.getDependencies.addLater(createScalaCompilerDependency(scalaPluginExtension))
+//        conf.getDependencies.addLater(createScalaBridgeDependency(scalaPluginExtension))
+//        conf.getDependencies.addLater(createScalaCompilerInterfaceDependency(scalaPluginExtension))
+//        conf.getDependencies.addLater(createScaladocDependency(scalaPluginExtension))
+//    )
+//
+//    project.getConfigurations.resolvable(
+//      "scalaToolchainRuntimeClasspath",
+//      (conf: ResolvableConfiguration) =>
+//        conf.setDescription("Runtime classpath for the Scala toolchain")
+//        conf.extendsFrom(scalaToolchain.get())
+//        jvmPluginServices.configureAsRuntimeClasspath(conf)
+//    )
+
+//  private def createScalaCompilerDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
+//    scalaPluginExtension.getScalaVersion.map(scalaVersion =>
+//      if ScalaRuntimeHelper.isScala3(scalaVersion)
+//      then dependencyFactory.create("org.scala-lang", "scala3-compiler_3", scalaVersion)
+//      else dependencyFactory.create("org.scala-lang", "scala-compiler", scalaVersion)
+//    )
+//
+//  private def createScalaBridgeDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
+//    scalaPluginExtension.getScalaVersion.zip(scalaPluginExtension.getZincVersion, (scalaVersion, zincVersion) =>
+//      if ScalaRuntimeHelper.isScala3(scalaVersion)
+//      then dependencyFactory.create("org.scala-lang", "scala3-sbt-bridge", scalaVersion)
+//      else
+//        val scalaMajorMinorVersion: String = Joiner.on('.').join(Splitter.on('.').splitToList(scalaVersion).subList(0, 2))
+//        val name: String = s"compiler-bridge_$scalaMajorMinorVersion"
+//        val dependency: ModuleDependency = dependencyFactory.create("org.scala-sbt", name, zincVersion)
+//
+//        // Use an artifact to remain compatible with Ivy repositories, which
+//        // don't support variant derivation.
+//        dependency.artifact((artifact: DependencyArtifact) =>
+//          artifact.setClassifier("sources")
+//          artifact.setType("jar")
+//          artifact.setExtension("jar")
+//          artifact.setName(name)
+//        )
+//
+//        dependency
+//    )
+//
+//  private def createScalaCompilerInterfaceDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
+//    scalaPluginExtension.getScalaVersion.zip(scalaPluginExtension.getZincVersion, (scalaVersion, zincVersion) =>
+//      if ScalaRuntimeHelper.isScala3(scalaVersion)
+//      then dependencyFactory.create("org.scala-lang", "scala3-interfaces", scalaVersion)
+//      else dependencyFactory.create("org.scala-sbt", "compiler-interface", zincVersion)
+//    )
+//
+//  private def createScaladocDependency(scalaPluginExtension: ScalaPluginExtension): Provider[Dependency] =
+//    scalaPluginExtension.getScalaVersion.map(scalaVersion =>
+//      if ScalaRuntimeHelper.isScala3(scalaVersion)
+//      then dependencyFactory.create("org.scala-lang", "scaladoc_3", scalaVersion)
+//      else null
+//    )
