@@ -149,16 +149,16 @@ final class RunTestClassProcessor(
       running: Running,
       startTime: Long
     ): Unit =
-      val (testClassName: String, testName: Option[String]) = running.testClassAndTestName(
-        frameworkIncludesClassNameInTestName,
-        className
-      )
+      val runningEffective: Running =
+        if !frameworkIncludesClassNameInTestName
+        then running
+        else running.reconstructNestedTestSelector
       
       RunTestClassProcessor.this.started(
         parentId,
         testId,
-        testClassName,
-        testName,
+        runningEffective.suiteId.getOrElse(className),
+        runningEffective.testName,
         startTime
       )
 
