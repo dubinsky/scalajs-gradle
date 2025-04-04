@@ -30,7 +30,7 @@ object NestedSuitesTest:
     JUnit4Fixture,
 //    JUnit4ScalaJSFixture, // does not support nested suites
 //    MUnitFixture,
-//    ScalaCheckFixture,
+    ScalaCheckFixture,
     ScalaTestFixture,
 //    Specs2Fixture,
 //    UTestFixture,
