@@ -21,21 +21,20 @@ sealed trait Running:
   final def isTestAndNotForClass(className: String): Boolean =
     isTest && !Selectors.equal(selector, TestSelector(className))
 
-  // attribute nested test cases to the nested, not the nesting, suite;
-  // JUnit4 and its friends stick the class name in front of the method name.  
-  final def testClassAndTestName(
-    frameworkIncludesClassNameInTestName: Boolean,
-    className: String
-  ): (String, Option[String]) =
-    val (classNamePart: Option[String], testNamePart: Option[String]) = testName match
-      case None => (None, None)
-      case Some(testName) =>
-        val lastDot: Int = testName.lastIndexOf('.')
-        if !frameworkIncludesClassNameInTestName || lastDot == -1
-        then (None, Some(testName))
-        else (Some(testName.substring(0, lastDot)), Some(testName.substring(lastDot + 1)))
-
-    (classNamePart.orElse(suiteId).getOrElse(className), testNamePart)
+  // JUnit4 and its friends use TestSelector in place of NestedTestSelector
+  // and stick the class name in front of the method name;
+  // there is no chance to convince them to correct this ;)  
+  final def reconstructNestedTestSelector: Running = selector match
+    case testSelector: TestSelector =>
+      val testName: String = testSelector.testName
+      val lastDot: Int = testName.lastIndexOf('.')
+      if lastDot == -1
+      then this
+      else Running.NestedTest(NestedTestSelector(
+        testName.substring(0, lastDot),
+        testName.substring(lastDot + 1)
+      ))
+    case _ => this
 
   final def forNestedTask(nestedTask: Task): Running =
     require(isSuite, s"$selector can not have nested tests!")
