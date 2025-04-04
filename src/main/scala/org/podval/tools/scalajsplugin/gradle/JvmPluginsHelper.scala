@@ -13,8 +13,16 @@ import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.internal.Cast
 
 object JvmPluginsHelper:
-  def compileAgainstJavaOutputs (compileTask: AbstractCompile, sourceSet: SourceSet, objectFactory: ObjectFactory): Unit =
-    Original.compileAgainstJavaOutputs(compileTask, sourceSet, objectFactory)
+  def compileAgainstJavaOutputs(
+    compileTask: AbstractCompile, 
+    sourceSet: SourceSet, 
+    objectFactory: ObjectFactory
+  ): Unit =
+    Original.compileAgainstJavaOutputs(
+      compileTask, 
+      sourceSet,
+      objectFactory
+    )
     
   def configureAnnotationProcessorPath(
       project: Project,
@@ -23,13 +31,16 @@ object JvmPluginsHelper:
       sourceDirectorySet: SourceDirectorySet,
       options: CompileOptions,
     ): Unit =
-      DslObject(options).getConventionMapping.map("annotationProcessorPath", () => sourceSet.getAnnotationProcessorPath)
+      DslObject(options).getConventionMapping.map(
+        "annotationProcessorPath",
+        () => sourceSet.getAnnotationProcessorPath
+      )
   
       convention(
         project,
         sourceRoot,
-        options.getGeneratedSourceOutputDirectory,
-        "generated/sources/annotationProcessor",
+        directoryProperty = options.getGeneratedSourceOutputDirectory,
+        path = "generated/sources/annotationProcessor",
         sourceSet,
         sourceDirectorySet
       )
@@ -50,10 +61,19 @@ object JvmPluginsHelper:
       sourceDirectorySet
     )
 
-    val sourceSetOutput = Cast.cast(classOf[DefaultSourceSetOutput], sourceSet.getOutput)
-    sourceSetOutput.getClassesDirs.from(sourceDirectorySet.getDestinationDirectory).builtBy(compileTask)
-    sourceSetOutput.getGeneratedSourcesDirs.from(compileTask.map(_.asInstanceOf[ScalaCompile].getOptions).flatMap(_.getGeneratedSourceOutputDirectory))
-    sourceDirectorySet.compiledBy(compileTask, _.asInstanceOf[AbstractCompile].getDestinationDirectory)
+    val sourceSetOutput: DefaultSourceSetOutput = Cast.cast(classOf[DefaultSourceSetOutput], sourceSet.getOutput)
+    
+    sourceSetOutput
+      .getClassesDirs
+      .from(sourceDirectorySet.getDestinationDirectory)
+      .builtBy(compileTask)
+    
+    sourceSetOutput
+      .getGeneratedSourcesDirs
+      .from(compileTask.map(_.asInstanceOf[ScalaCompile].getOptions).flatMap(_.getGeneratedSourceOutputDirectory))
+    
+    sourceDirectorySet
+      .compiledBy(compileTask, _.asInstanceOf[AbstractCompile].getDestinationDirectory)
 
   // to clean up code duplication
   private def convention(
