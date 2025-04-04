@@ -832,8 +832,9 @@ for such, a test case named `dry run` is reported as skipped.
 Some test frameworks have a notion of _nested test suites_,
 where nesting test class aggregates nested test classes.
 
-Plugin supports such scenario and attributes test cases from the nested
-suites to them:
+Plugin supports such scenario and,
+when test framework involved provides sufficient information about the tests run,
+attributes test cases from the nested suites to them:
 test report will have no test cases for the nesting class;
 instead, test cases will be reported for the nested classes they belong to.
 
@@ -887,7 +888,7 @@ Since annotations are not available at runtime on Scala.js,
 
 ==== ScalaTest
 In `ScalaTest`, nesting of the test suites is indicated by
-ceriving the nesting class from `org.scalatest.Suites`
+deriving the nesting class from `org.scalatest.Suites`
 and listing the nested suites in its constructor:
 
 [source,scala]
@@ -897,12 +898,32 @@ class ScalaTestNesting extends org.scalatest.Suites(
 )
 ----
 
+==== ScalaCheck
+In ScalaCheck, nesting is accomplished by using
+`org.scalacheck.Properties.include()`:
+
+[source,scala]
+----
+object ScalaCheckNesting extends org.scalacheck.Properties("ScalaCheckNesting") {
+  include(ScalaCheckNested)
+}
+
+object ScalaCheckNested extends org.scalacheck.Properties("ScalaCheckNested") {
+  property("success") = org.scalacheck.Prop.passed
+  property("failure") = org.scalacheck.Prop.falsified
+}
+----
+
+With ScalaCheck, nested test cases are incorrectly attributed to the _nesting_ suite -
+and there is nothing that can be done about it,
+since ScalaCheck itself does not keep information about which class a property belongs to;
+see https://github.com/typelevel/scalacheck/pull/1107.
+
 ==== Other Test Frameworks
 
 As far as I can tell, there is no support for nesting test classes in:
 
 - MUnit
-- ScalaCheck
 - Specs2
 - UTest
 - ZIO Test
