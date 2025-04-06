@@ -14,6 +14,7 @@ object MUnitFixture extends Fixture(
        |  test("success".tag(include)) { assertEquals(2, 2) }
        |  test("failure".tag(include)) { assertEquals(42, 43) }
        |  test("excluded".tag(include).tag(exclude)) {}
+       |  test("ignored".tag(include).ignore) {}
        |}
        |""".stripMargin
   ))
@@ -26,10 +27,11 @@ object MUnitFixture extends Fixture(
           passed("success"),
           failed("failure"),
           absent("excluded"),
+          skipped("ignored"),
 
-          testCount(3),
+          testCount(4),
           failedCount(1),
-          skippedCount(0),
+          skippedCount(1),
         )
       )
     case FrameworksTest.withTagInclusions =>
@@ -39,10 +41,11 @@ object MUnitFixture extends Fixture(
           passed("success"),
           failed("failure"),
           absent("excluded"),
+          skipped("ignored"),
 
-          testCount(2),
+          testCount(3),
           failedCount(1),
-          skippedCount(0)
+          skippedCount(1)
         )
       )
 

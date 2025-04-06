@@ -34,7 +34,7 @@ object NestedSuitesTest:
     ScalaTestFixture,
 //    Specs2Fixture,
 //    UTestFixture,
-//    ZioTestFixture
+    ZioTestFixture
   )
 
   val platforms: Seq[ScalaPlatform] = Seq(

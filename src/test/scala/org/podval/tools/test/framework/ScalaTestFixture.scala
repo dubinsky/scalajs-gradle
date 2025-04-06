@@ -18,34 +18,7 @@ object ScalaTestFixture extends Fixture(
          |  "success" should "pass" taggedAs(Include) in { 2 * 2 shouldBe 4 }
          |  "failure" should "fail" taggedAs(Include) in { 2 * 2 shouldBe 5 }
          |  "excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe true }
-         |  ignore should "be ignored" in { 2 * 2 shouldBe 5 }
-         |
-         |  "The Scala language" must "add correctly" in {
-         |    val sum = 1 + 1
-         |    assert(sum === 2)
-         |  }
-         |}
-         |""".stripMargin
-    ),
-    SourceFile("StackSpec",
-      s"""import org.scalatest.flatspec.AnyFlatSpec
-         |import scala.collection.mutable
-         |
-         |class StackSpec extends AnyFlatSpec {
-         |  "A Stack" should "pop values in last-in-first-out order" in {
-         |    val stack = new mutable.Stack[Int]
-         |    stack.push(1)
-         |    stack.push(2)
-         |    assert(stack.pop() === 2)
-         |    assert(stack.pop() === 1)
-         |  }
-         |
-         |  ignore should "throw NoSuchElementException if an empty stack is popped" in {
-         |    val emptyStack = new mutable.Stack[String]
-         |    intercept[NoSuchElementException] {
-         |      emptyStack.pop()
-         |    }
-         |  }
+         |  ignore should "be ignored" taggedAs(Include) in { 2 * 2 shouldBe 5 }
          |}
          |""".stripMargin
     )
@@ -59,19 +32,11 @@ object ScalaTestFixture extends Fixture(
           passed("success should pass"),
           failed("failure should fail"),
           absent("excluded should not run"),
-    
           skipped("excluded should be ignored"),
-          passed("The Scala language must add correctly"),
-    
-          testCount(5),
+
+          testCount(4),
           failedCount(1),
           skippedCount(1)
-        ),
-        forClass("StackSpec",
-          failedCount(0),
-          skippedCount(1),
-          passed("A Stack should pop values in last-in-first-out order"),
-          skipped("A Stack should throw NoSuchElementException if an empty stack is popped")
         )
       )
     case FrameworksTest.withTagInclusions =>
@@ -81,13 +46,11 @@ object ScalaTestFixture extends Fixture(
           passed("success should pass"),
           failed("failure should fail"),
           absent("excluded should not run"),
+          skipped("excluded should be ignored"),
 
-          absent("excluded should be ignored"),
-          absent("The Scala language must add correctly"),
-
-          testCount(2),
+          testCount(3),
           failedCount(1),
-          skippedCount(0)
+          skippedCount(1)
         )
       )
       

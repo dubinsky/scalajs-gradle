@@ -26,9 +26,7 @@ object ScalaCheckFixture extends Fixture(
     case NestedSuitesTest.nestedSuites =>
       Seq(
         forClass("ScalaCheckNesting",
-          // nested test cases are incorrectly attributed to the nesting suite -
-          // and there is nothing that can be done about it...
-          // see https://github.com/typelevel/scalacheck/pull/1107
+          // nested test cases are attributed to the nesting suite
           passed("ScalaCheckNesting.ScalaCheckNested.success"),
           failed("ScalaCheckNesting.ScalaCheckNested.failure"),
           testCount(2),

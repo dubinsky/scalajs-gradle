@@ -132,7 +132,10 @@ final class RunTestClassProcessor(
 
     Run(
       className = taskDef.fullyQualifiedName,
-      frameworkIncludesClassNameInTestName = testClassRun.frameworkProvider.frameworkDescriptor.includesClassNameInTestName
+      frameworkUsesTestSelectorAsNestedTestSelector = testClassRun
+        .frameworkProvider
+        .frameworkDescriptor
+        .usesTestSelectorAsNestedTestSelector
     ).run(
       parentId = null,
       running = running,
@@ -141,7 +144,7 @@ final class RunTestClassProcessor(
 
   final private class Run(
     className: String,
-    frameworkIncludesClassNameInTestName: Boolean
+    frameworkUsesTestSelectorAsNestedTestSelector: Boolean
   ):
     private def started(
       parentId: AnyRef,
@@ -150,7 +153,7 @@ final class RunTestClassProcessor(
       startTime: Long
     ): Unit =
       val runningEffective: Running =
-        if !frameworkIncludesClassNameInTestName
+        if !frameworkUsesTestSelectorAsNestedTestSelector
         then running
         else running.reconstructNestedTestSelector
       
@@ -171,7 +174,7 @@ final class RunTestClassProcessor(
 
       val startTime: Long = clock.getCurrentTime
       val testId: AnyRef = idGenerator.generateId()
-      require(task.taskDef.fullyQualifiedName == className, s"${task.taskDef.fullyQualifiedName} should be $className")
+      require(task.taskDef.fullyQualifiedName == className)
 
       started(
         parentId = parentId,
@@ -192,7 +195,9 @@ final class RunTestClassProcessor(
         )
 
         arrayForEach(nestedTasks, (nestedTask: Task) =>
-          output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(task.taskDef)}", LogLevel.INFO)
+          output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(nestedTask.taskDef)}", LogLevel.INFO)
+        )
+        arrayForEach(nestedTasks, (nestedTask: Task) =>
           run(
             parentId = testId,
             running = running.forNestedTask(nestedTask),
