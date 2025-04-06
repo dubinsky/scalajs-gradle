@@ -59,14 +59,12 @@ import java.util.concurrent.Callable
 // - added `project` parameter;
 // - added `isCreate` parameter;
 // - added `sourceRoot` parameter;
-// - added `sharedSourceRoot` parameter;
 // - added `gradleNames` parameter;
 import org.gradle.api.plugins.scala.ScalaBasePlugin as Original
 
 final class ScalaBasePlugin(
   isCreate: Boolean,
   sourceRoot: String,
-  sharedSourceRoot: String,
   gradleNames: GradleNames,
   project: Project,
   jvmPluginServices: JvmPluginServices // TODO get from the project?
@@ -187,7 +185,7 @@ final class ScalaBasePlugin(
     scalaSource.setSrcDirs(
       Seq(
         s"$sourceRoot/src/${sourceSet.getName}/scala",
-        s"$sharedSourceRoot/src/${sourceSet.getName}/scala"
+        s"${GradleNames.sharedSourceRoot}/src/${sourceSet.getName}/scala"
       )
         .map(project.file)
         .asJava

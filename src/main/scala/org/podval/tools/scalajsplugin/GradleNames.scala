@@ -16,6 +16,10 @@ final class GradleNames(
 )
 
 object GradleNames:
+  val sharedSourceRoot: String = "shared"
+  val jvmSourceRoot: String = "jvm"
+  val jsSourceRoot: String = "js"
+  
   // Names to use when running either JVM or Scala.js using one set of source sets: main and test.
   val jvm: GradleNames = GradleNames(
     mainSourceSetName = SourceSet.MAIN_SOURCE_SET_NAME,

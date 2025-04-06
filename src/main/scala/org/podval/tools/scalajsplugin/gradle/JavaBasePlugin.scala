@@ -2,8 +2,6 @@ package org.podval.tools.scalajsplugin.gradle
 
 //import com.google.common.collect.ImmutableList;
 //import org.gradle.api.JavaVersion;
-//import org.gradle.api.Plugin;
-//import org.gradle.api.Project;
 //import org.gradle.api.artifacts.Configuration;
 //import org.gradle.api.artifacts.ConfigurationContainer;
 //import org.gradle.api.attributes.LibraryElements;
@@ -19,7 +17,6 @@ package org.podval.tools.scalajsplugin.gradle
 //import org.gradle.api.internal.artifacts.configurations.UsageDescriber;
 //import org.gradle.api.internal.file.FileTreeInternal;
 //import org.gradle.api.internal.plugins.DslObject;
-//import org.gradle.api.internal.provider.PropertyFactory;
 //import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
 //import org.gradle.api.internal.tasks.JvmConstants;
 //import org.gradle.api.internal.tasks.compile.CompilationSourceDirs;
@@ -27,12 +24,9 @@ package org.podval.tools.scalajsplugin.gradle
 //import org.gradle.api.internal.tasks.testing.TestExecutableUtils;
 //import org.gradle.api.model.ObjectFactory;
 //import org.gradle.api.plugins.internal.DefaultJavaPluginConvention;
-//import org.gradle.api.plugins.internal.DefaultJavaPluginExtension;
 //import org.gradle.api.plugins.internal.JavaConfigurationVariantMapping;
 //import org.gradle.api.plugins.internal.JvmPluginsHelper;
 //import org.gradle.api.plugins.internal.NaggingJavaPluginConvention;
-//import org.gradle.api.plugins.jvm.internal.JvmLanguageUtilities;
-//import org.gradle.api.plugins.jvm.internal.JvmPluginServices;
 //import org.gradle.api.provider.Provider;
 //import org.gradle.api.reporting.DirectoryReport;
 //import org.gradle.api.reporting.ReportingExtension;
@@ -68,9 +62,10 @@ package org.podval.tools.scalajsplugin.gradle
 //import java.util.function.BiFunction;
 //import java.util.function.Supplier;
 
-
+import org.gradle.api.Project
 import org.gradle.api.internal.provider.PropertyFactory
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.plugins.internal.DefaultJavaPluginExtension
 import org.gradle.api.plugins.jvm.internal.{JvmLanguageUtilities, JvmPluginServices}
 
 // see org.gradle.api.plugins.JavaBasePlugin
@@ -96,32 +91,33 @@ object JavaBasePlugin:
   def DOCUMENTATION_GROUP: String = Original.DOCUMENTATION_GROUP
   
 final class JavaBasePlugin(
-  objectFactory: ObjectFactory,
+  project: Project,
   jvmPluginServices: JvmPluginServices,
   propertyFactory: PropertyFactory,
   getJvmLanguageUtils: JvmLanguageUtilities
 ):
   private val javaClasspathPackaging: Boolean = java.lang.Boolean.getBoolean(Original.COMPILE_CLASSPATH_PACKAGING_SYSTEM_PROPERTY)
+  private def objectFactory: ObjectFactory = project.getObjects
 
-//    @Override
-//    public void apply(final Project project) {
-//        project.getPluginManager().apply(BasePlugin.class);
-//        project.getPluginManager().apply(JvmEcosystemPlugin.class);
-//        project.getPluginManager().apply(ReportingBasePlugin.class);
-//        project.getPluginManager().apply(JvmToolchainsPlugin.class);
+  // TODO uncomment
+
+//  def apply(): Unit =
+    // TODO project.getPluginManager().apply(BasePlugin.class);
+    // TODO project.getPluginManager().apply(JvmEcosystemPlugin.class);
+    // TODO project.getPluginManager().apply(ReportingBasePlugin.class);
+    // TODO project.getPluginManager().apply(JvmToolchainsPlugin.class);
+
+//    val javaPluginExtension: DefaultJavaPluginExtension = addExtensions(project)
 //
-//        DefaultJavaPluginExtension javaPluginExtension = addExtensions(project);
+//    configureCompileDefaults(project, javaPluginExtension)
+//    configureSourceSetDefaults(project, javaPluginExtension)
+//    configureJavaDoc(project, javaPluginExtension)
 //
-//        configureCompileDefaults(project, javaPluginExtension);
-//        configureSourceSetDefaults(project, javaPluginExtension);
-//        configureJavaDoc(project, javaPluginExtension);
-//
-//        configureTest(project, javaPluginExtension);
-//        configureBuildNeeded(project);
-//        configureBuildDependents(project);
-//        configureArchiveDefaults(project);
-//    }
-//
+//    configureTest(project, javaPluginExtension)
+//    configureBuildNeeded(project)
+//    configureBuildDependents(project)
+//    configureArchiveDefaults(project)
+
 //    @SuppressWarnings("deprecation")
 //    private DefaultJavaPluginExtension addExtensions(final Project project) {
 //        DefaultToolchainSpec toolchainSpec = objectFactory.newInstance(DefaultToolchainSpec.class);
