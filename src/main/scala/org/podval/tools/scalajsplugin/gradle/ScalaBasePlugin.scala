@@ -20,7 +20,7 @@ import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.internal.provider.Providers
 import org.gradle.api.internal.tasks.DefaultSourceSet
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.plugins.{ExtensionAware, JavaBasePlugin, JavaPluginExtension}
+import org.gradle.api.plugins.{ExtensionAware, JavaPluginExtension}
 import org.gradle.api.plugins.internal.DefaultJavaPluginExtension
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.plugins.scala.ScalaPluginExtension
