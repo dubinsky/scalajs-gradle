@@ -9,9 +9,9 @@ import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.time.Clock
 import org.podval.tools.test.exception.ExceptionConverter
-import org.podval.tools.test.taskdef.{FrameworkProvider, Selectors, TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
-import sbt.testing.{Event, Logger, Runner, Selector, Task, TaskDef}
+import org.podval.tools.test.taskdef.{TaskDefs, TestClassRun}
+import org.podval.tools.util.Scala212Collections.arrayForEach
+import sbt.testing.{Event, Logger, Selector, Task, TaskDef}
 import scala.util.control.NonFatal
 
 object RunTestClassProcessor:
@@ -89,19 +89,10 @@ final class RunTestClassProcessor(
     override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
     override def trace(throwable: Throwable): Unit = failure(testId, throwable)
 
-  private var runners: Array[(String, Runner)] = Array.empty
-  private def getRunner(frameworkProvider: FrameworkProvider): Runner = synchronized:
-    val frameworkName: String = frameworkProvider.frameworkName
-    arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
-      val runner: Runner = frameworkProvider.makeRunner(
-        includeTags,
-        excludeTags
-      )
-      runners = arrayAppend(runners, (frameworkName, runner))
-      runner
+  private val runners: Runners = Runners()
 
-  override def stop(): Unit = arrayForEach(runners, (frameworkName: String, runner: Runner) =>
-    output(message = s"RunTestClassProcessor $frameworkName summary:\n${runner.done}", LogLevel.INFO)
+  override def stop(): Unit = runners.stop((frameworkName: String, summary: String) =>
+    output(message = s"RunTestClassProcessor $frameworkName summary:\n$summary", LogLevel.INFO)
   )
 
   private var stoppedNow: Boolean = false
@@ -124,7 +115,11 @@ final class RunTestClassProcessor(
     val tasks: Array[Task] =
       if dryRun
       then Array(DryRunSbtTask(taskDef))
-      else getRunner(testClassRun.frameworkProvider).tasks(Array(taskDef))
+      else runners.get(
+        testClassRun.frameworkProvider,
+        includeTags,
+        excludeTags
+      ).tasks(Array(taskDef))
 
     require(tasks.length == 1)
     val task: Task = tasks(0)
@@ -221,7 +216,7 @@ final class RunTestClassProcessor(
     ):
       // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
       // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
-      private var skipped: Array[Selector] = Array.empty
+      private val skippedTests: SkippedTests = SkippedTests()
 
       def handleEvent(event: Event): Unit =
         val endTime: Long = clock.getCurrentTime
@@ -250,10 +245,7 @@ final class RunTestClassProcessor(
           // Events with overall results of suits are ignored; only events for individual test cases are processed:
           // - started/completed Gradle events are emitted in run();
           // - Gradle calculates overall result from the outcomes of the individual tests.
-          if
-            eventFor.isTestAndNotForClass(className) &&
-            arrayFind(skipped, Selectors.equal(_, eventFor.selector)).isEmpty
-          then
+          if eventFor.isTestAndNotForClass(className) && !skippedTests.contains(eventFor) then
             def reconstructStarted(): AnyRef =
               val eventTestId: AnyRef = idGenerator.generateId()
 
@@ -274,6 +266,6 @@ final class RunTestClassProcessor(
                 failure(reconstructStarted(), throwable.getOrElse(Exception("A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE")))
 
               case _ =>
-                skipped = arrayAppend(skipped, eventFor.selector)
+                skippedTests.add(eventFor)
                 if !running.isTests || throwable.nonEmpty || dryRun then
                   completed(reconstructStarted(), endTime, ResultType.SKIPPED)

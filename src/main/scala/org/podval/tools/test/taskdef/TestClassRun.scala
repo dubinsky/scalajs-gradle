@@ -10,7 +10,7 @@ final class TestClassRun(
   val fingerprint: Fingerprint,
   val explicitlySpecified: Boolean,
   val testNames: Array[String],
-  val testWildCards: Array[String]
+  val testWildcards: Array[String]
 ) extends TestClassRunInfo
 
 object TestClassRun:
@@ -49,7 +49,7 @@ object TestClassRun:
       fingerprintStrings(3),
       toString(value.explicitlySpecified),
       writeStrings(value.testNames),
-      writeStrings(value.testWildCards)
+      writeStrings(value.testWildcards)
     )
 
   // Thank you, sjrd, for the split trivia!
@@ -74,7 +74,7 @@ object TestClassRun:
       ),
     explicitlySpecified = toBoolean(strings(6)),
     testNames = readStrings(strings(7)),
-    testWildCards = readStrings(strings(8))
+    testWildcards = readStrings(strings(8))
   )
 
   private def writeStrings(strings: Array[String]): String = arrayMkString(strings, stringsSeparator)

@@ -23,7 +23,7 @@
 :version-framework-specs2: 5.6.0
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
-:version-framework-zio-test: 2.1.16
+:version-framework-zio-test: 2.1.17
 // INCLUDED ATTRIBUTES
 
 image::https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -42,26 +42,21 @@ this is https://github.com/dubinsky/scalajs-gradle/issues/4[in the works].
 
 If needed, plugin automatically:
 
-- applies Gradle Scala plugin to the project it is applied to;
-- adds Scala.js dependencies that were not added explicitly;
-- configures Scala compiler for Scala.js;
+- adds needed `Scala.js` dependencies that were not added explicitly;
+- configures `Scala` compiler for `Scala.js`;
 - retrieves and installs `Node.js`;
 - installs configured Node modules using `npm`.
 
 Plugin integrates with:
 
-- Gradle test task configuration;
-- Gradle test filtering and tagging;
-- Gradle test logging;
-- Gradle test reporting;
-- IntelliJ Idea test running;
-- IntelliJ Idea test reporting.
+- `Gradle` test task configuration, test filtering, tagging, logging and reporting;
+- `IntelliJ` Idea test running and reporting.
 
 Plugin works with:
 
-- Gradle {version-gradle};
-- Scala.js 1.x;
-- Node.js 16.x.
+- `Gradle` {version-gradle};
+- `Scala.js` 1.x;
+- `Node.js` 16.x.
 
 Plugin itself is written in Scala 3.
 Project that the plugin is _applied_ to can use Scala 3, 2.13 or 2.12.
@@ -71,8 +66,8 @@ Gradle build file snippets below use the `Groovy` syntax, not the `Kotlin` one.
 
 == Motivation
 
-I dislike untyped languages, so if I have to write Javascript,
-I want to be able to do it in Scala;
+I dislike untyped languages, so if I _have_ to write `Javascript`,
+I want to be able to do it in `Scala`;
 thanks to https://www.scala-js.org[Scala.js], this is possible.
 
 I http://dub.podval.org/2011/11/08/sbt-why.html[dislike]
@@ -124,10 +119,11 @@ Plugin will automatically apply the `Scala` plugin to the project,
 so there is no need to manually list `id 'scala'` in the `plugins` block -
 but there is no harm in it either;
 either way, it is the responsibility of the project using the plugin
-to add a standard Scala library dependency that the Scala plugin requires.
+to add a standard `Scala` library dependency that the Scala plugin requires.
 
 Unless `Scala.js` support is disabled, plugin will run in Scala.js mode;
-to disable Scala.js and use the plugin for testing plain Scala code with `sbt`-compatible testing frameworks,
+to disable Scala.js and use the plugin for testing
+plain Scala code with `sbt`-compatible testing frameworks,
 put the following into the `gradle.properties` file of the project:
 
 [source,properties]
@@ -384,7 +380,8 @@ dependencies {
 
 Plugin does this automatically unless a dependency on `scalajs-compiler` is declared explicitly.
 
-If the project uses Scala 2 _and_ JUnit 4 for Scala.js, a JUnit Scala compiler plugin is needed:
+If the project uses Scala 2 _and_ JUnit 4 for Scala.js,
+a JUnit Scala compiler plugin is also needed:
 
 [source,groovy,subs="+attributes"]
 ----
@@ -457,7 +454,8 @@ Name of the module initializer ('main' in the example above) becomes the module 
 
 === Running
 
-Plugin adds `run` task for running the main code (if it is an application and not a library);
+Plugin adds `run` task for running the main code
+(if it is an application and not a library);
 this task automatically depends on the `link` task.
 
 Additional tasks of type
@@ -486,7 +484,7 @@ the one installed on the machine where it is running.
 TODO install default version if there is no ambient one.
 
 If Node.js version is specified, plugin will install it
-(under `~/.gradle/nodejs`) and use it.
+(under `~/.gradle/nodejs`) and use the installation.
 
 Scala.js does not support versions of Node.js newer than "{version-node}",
 so none of the "17.9.1", "18.15.0", "19.8.1".
@@ -517,16 +515,18 @@ those tasks can be used from the command line like this:
 
 === Test Task
 Test task added by the plugin is derived from the normal Gradle `test` task,
-and can be configured  in the traditional way - with some caveats:
+and can be configured  in the traditional way - with some limitations:
 
-- ScalaJS tests must be run in the same JVM where they are discovered,
-so they are not forked;
 - plugin applies its own Gradle test framework (`useSbt`) to each test task;
 re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported;
-- `isScanForTestClasses` must be at its default value `true`;
-- test filtering support is detailed in <<test-filtering>>;
-- test tagging support is detailed in <<test-tagging>>;
-- dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
+- `isScanForTestClasses` must be at its default value `true`.
+- ScalaJS tests _must_ run in the same JVM where they are discovered,
+so they are not forked, and forking configuration is ignored.
+
+Dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
+
+Test filtering and tagging are supported to the extent that the individual
+test frameworks support them; see <<test-frameworks>>.
 
 If there is a need to have test runs with different configurations,
 more testing tasks can be added manually.
