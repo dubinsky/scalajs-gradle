@@ -16,7 +16,7 @@ abstract class FrameworkDescriptor(
   includeTagsOption: String = "",
   excludeTagsOption: String = "",
   additionalOptions: Array[String] = Array.empty,
-  final val includesClassNameInTestName: Boolean = false,
+  final val usesTestSelectorAsNestedTestSelector: Boolean = false,
   final val versionDefaultScala2: Option[Version] = None,
   final val isJvmSupported: Boolean = true,
   final val isScalaJSSupported: Boolean = true,

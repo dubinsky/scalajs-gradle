@@ -7,18 +7,17 @@ object ZioTestFixture extends Fixture(
   framework = org.podval.tools.test.framework.ZioTest,
   testSources = Seq(SourceFile("ZIOTestTest",
     s"""import zio.test._
-       |import zio.Scope
        |
        |object ZIOTestTest extends ZIOSpecDefault {
-       |  override def spec: Spec[TestEnvironment with Scope, Any] = suite("some suite")(
+       |  override def spec: Spec[TestEnvironment, Any] = suite("ZIOTestTest")(
        |    test("successNotIncluded") { assertTrue(1 == 1) },
        |    test("success") { assert(1)(Assertion.equalTo(1)) } @@ TestAspect.tag("org.podval.tools.test.IncludedTest"),
        |    test("failure") { assert(1)(Assertion.equalTo(2)) } @@ TestAspect.tag("org.podval.tools.test.IncludedTest"),
-       |    test("excluded test") { assertTrue(1 == 0) } @@ TestAspect.tag(
+       |    test("excluded") { assertTrue(1 == 0) } @@ TestAspect.tag(
        |      "org.podval.tools.test.IncludedTest",
        |      "org.podval.tools.test.ExcludedTest"
        |    ),
-       |    test("failing test assertTrue") { val one = 1; assertTrue(one == 2) },
+       |    test("ignored") { val one = 1; assertTrue(one == 2) } @@ TestAspect.ignore @@ TestAspect.tag("org.podval.tools.test.IncludedTest")
        |  )
        |}
        |""".stripMargin
@@ -28,32 +27,28 @@ object ZioTestFixture extends Fixture(
     case FrameworksTest.basicFunctionality =>
       Seq(
         forClass(className = "ZIOTestTest",
-          passed("some suite - successNotIncluded"),
-          passed("some suite - success"),
-          failed("some suite - failure"),
-          absent("some suite - excluded"),
-    
-          failed("some suite - failing test assertTrue"),
+          passed("ZIOTestTest - successNotIncluded"),
+          passed("ZIOTestTest - success"),
+          failed("ZIOTestTest - failure"),
+          absent("ZIOTestTest - excluded"),
+          skipped("ZIOTestTest - ignored"),
     
           testCount(4),
-          failedCount(2),
-          skippedCount(0),
+          failedCount(1),
+          skippedCount(1),
         )
       )
     case FrameworksTest.withTagInclusions =>
       Seq(
         forClass(className = "ZIOTestTest",
-          absent("some suite - successNotIncluded"),
-          passed("some suite - success"),
-          failed("some suite - failure"),
-          absent("some suite - excluded"),
+          absent("ZIOTestTest - successNotIncluded"),
+          passed("ZIOTestTest - success"),
+          failed("ZIOTestTest - failure"),
+          absent("ZIOTestTest - excluded"),
+          skipped("ZIOTestTest - ignored"),
 
-          absent("some suite - failing test assertTrue"),
-
-          testCount(2),
+          testCount(3),
           failedCount(1),
-          skippedCount(0),
+          skippedCount(1),
         )
       )
-
-

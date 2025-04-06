@@ -49,9 +49,12 @@ sealed trait Running:
       case selector => throw IllegalArgumentException(s"$selector can not be nested")
 
 object Running:
-  // Contains only TestSelectors and TestWildcardSelectors by construction.
-  private final case class Tests(override val selectors: Array[Selector]) extends Running:
+  private final case class Tests(
+    testSelectors: Array[TestSelector],
+    testWildcardSelectors: Array[TestWildcardSelector]
+  ) extends Running:
     override def selector = SuiteSelector()
+    override def selectors: Array[Selector] = arrayConcat(testSelectors, testWildcardSelectors)
     override def isSuite: Boolean = true
     override def isTest : Boolean = false
     override def isTests: Boolean = true
@@ -90,10 +93,10 @@ object Running:
   def forTestClassRun(testClassRun: TestClassRun): Running =
     if testClassRun.testNames.length == 0 && testClassRun.testWildCards.length == 0
     then Suite
-    else Tests(arrayConcat[Selector](
+    else Tests(
       arrayMap(testClassRun.testNames    , TestSelector        (_)),
       arrayMap(testClassRun.testWildCards, TestWildcardSelector(_))
-    ))
+    )
     
   def forEvent(event: Event): Running = event.selector match
     case testWildcardSelector: TestWildcardSelector => throw IllegalArgumentException(s"Illegal event selector $testWildcardSelector!")

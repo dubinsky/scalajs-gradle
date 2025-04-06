@@ -27,7 +27,7 @@ object JUnit4 extends FrameworkDescriptor(
   excludeTagsOption = "--exclude-categories",
   // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
   additionalOptions = Array("--ignore-runners=none"),
-  includesClassNameInTestName = true,
+  usesTestSelectorAsNestedTestSelector = true,
   // This is a JVM-only test framework
   isScalaJSSupported = false,
   jvmUnderlying = Some(JUnit4Underlying)

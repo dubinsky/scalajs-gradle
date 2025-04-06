@@ -26,7 +26,7 @@ object Scala212Collections:
       i = i + 1
     result
   
-  def arrayConcat[A: ClassTag](left: Array[A], right: Array[A]): Array[A] =
+  def arrayConcat[A: ClassTag](left: Array[? <: A], right: Array[? <: A]): Array[A] =
     val result: Array[A] = new Array[A](left.length + right.length)
     var l: Int = 0; while l < left .length do { result(l) = left(l)               ; l = l + 1 }
     var r: Int = 0; while r < right.length do { result(left.length + r) = right(r); r = r + 1 }
