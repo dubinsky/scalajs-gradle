@@ -91,11 +91,11 @@ object Running:
     override def testName: Option[String] = Option(selector.testName)
 
   def forTestClassRun(testClassRun: TestClassRun): Running =
-    if testClassRun.testNames.length == 0 && testClassRun.testWildCards.length == 0
+    if testClassRun.testNames.length == 0 && testClassRun.testWildcards.length == 0
     then Suite
     else Tests(
       arrayMap(testClassRun.testNames    , TestSelector        (_)),
-      arrayMap(testClassRun.testWildCards, TestWildcardSelector(_))
+      arrayMap(testClassRun.testWildcards, TestWildcardSelector(_))
     )
     
   def forEvent(event: Event): Running = event.selector match

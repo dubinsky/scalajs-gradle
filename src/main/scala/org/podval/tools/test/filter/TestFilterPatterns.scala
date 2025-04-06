@@ -14,5 +14,5 @@ final class TestFilterPatterns(patterns: Set[TestFilterPattern]):
         then Some(SuiteTestFilterMatch(explicitlySpecified = false))
         else Some(TestsTestFilterMatch(
           testNames     = for case TestFilterPatternMatch.TestName    (testName    ) <- result yield testName,
-          testWildCards = for case TestFilterPatternMatch.TestWildCard(testWildCard) <- result yield testWildCard
+          testWildcards = for case TestFilterPatternMatch.TestWildcard(testWildcard) <- result yield testWildcard
         ))

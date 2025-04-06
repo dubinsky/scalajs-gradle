@@ -34,6 +34,7 @@ object FrameworksTest:
   val features: List[Feature] = List(
     basicFunctionality,
     // TODO supply included tags on the build command line and reuse the projects?
+    // TODO add tests for test case filtering?
     withTagInclusions
   )
 

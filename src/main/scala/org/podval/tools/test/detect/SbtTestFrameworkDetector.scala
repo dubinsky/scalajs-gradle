@@ -58,11 +58,11 @@ final class SbtTestFrameworkDetector(
       else
         val detector: FingerprintDetector = detectors.head
         testFilter.matchClass(className).map: (testFilterMatch: TestFilterMatch) =>
-          val (testNames: Array[String], testWildCards: Array[String]) = testFilterMatch match
+          val (testNames: Array[String], testWildcards: Array[String]) = testFilterMatch match
             case _: SuiteTestFilterMatch => (Array.empty[String], Array.empty[String])
             case testsTestFilterMatch: TestsTestFilterMatch => (
               testsTestFilterMatch.testNames.toArray,
-              testsTestFilterMatch.testWildCards.toArray
+              testsTestFilterMatch.testWildcards.toArray
             )
 
           TestClassRun(
@@ -71,7 +71,7 @@ final class SbtTestFrameworkDetector(
             fingerprint = detector.fingerprint,
             explicitlySpecified = testFilterMatch.explicitlySpecified,
             testNames = testNames,
-            testWildCards = testWildCards
+            testWildcards = testWildcards
           )
   
   // Called by org.gradle.api.internal.tasks.testing.detection.DefaultTestClassScanner.

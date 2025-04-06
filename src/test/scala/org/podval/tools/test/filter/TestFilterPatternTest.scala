@@ -23,7 +23,7 @@ class TestFilterPatternTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matc
 
       // method in a package
       ("some.package*.someMethod", "some.package.Foo", Some(TestName("someMethod"))),
-      ("some.package*.some*", "some.package.Foo", Some(TestWildCard("some"))),
+      ("some.package*.some*", "some.package.Foo", Some(TestWildcard("some"))),
 
       // all tests in some class
       ("SomeClass", "SomeClass", Some(Suite)),
@@ -43,7 +43,7 @@ class TestFilterPatternTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matc
 // TODO     ("*.SomeClass.someMethod", "any.package.SomeClass", Some(TestName("someMethod"))),
 
       // specified tests in some class
-      ("SomeClass.*someMethod*", "SomeClass", Some(TestWildCard("someMethod"))),
+      ("SomeClass.*someMethod*", "SomeClass", Some(TestWildcard("someMethod"))),
 
       // method name containing spaces
       ("org.gradle.SomeClass.some method containing spaces", "org.gradle.SomeClass", Some(TestName("some method containing spaces"))),
