@@ -12,8 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: introduced `FrameworkProvider`;
 - cleanup: `RunTestClassProcessor`;
 - dependency updates;
-- test: nested suited for `ScalaCheck`;
-- doc: nested suited for `ScalaCheck`;
+- doc: `README` improvements;
 
 ## [0.6.1] - 2025-03-31
 - fix: running test cases of the nested test suites on ScalaTest;
