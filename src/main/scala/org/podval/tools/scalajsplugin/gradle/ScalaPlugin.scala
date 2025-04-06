@@ -17,21 +17,19 @@ import org.gradle.api.plugins.scala.ScalaPlugin as Original
 final class ScalaPlugin(
   isCreate: Boolean,
   sourceRoot: String,
-  sharedSourceRoot: String,
   gradleNames: GradleNames,
   project: Project,
   jvmPluginServices: JvmPluginServices // TODO get from the project?
 ):
   def apply(): Unit =
     ScalaBasePlugin(
-      isCreate, 
+      isCreate,
       sourceRoot,
-      sharedSourceRoot,
       gradleNames,
       project,
       jvmPluginServices
     ).apply()
-    
+
     // TODO JavaPlugin().apply()
 
     val mainFeature: JvmFeatureInternal = JavaPluginHelper.getJavaComponent(project).getMainFeature
@@ -63,7 +61,7 @@ final class ScalaPlugin(
     )
     if isCreate then
       project.getTasks.register(
-        Original.SCALA_DOC_TASK_NAME, 
+        Original.SCALA_DOC_TASK_NAME,
         classOf[ScalaDoc],
         new Action[ScalaDoc]:
           override def execute(scalaDoc: ScalaDoc): Unit =

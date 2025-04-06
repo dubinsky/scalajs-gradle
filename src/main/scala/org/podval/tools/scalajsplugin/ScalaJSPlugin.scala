@@ -29,8 +29,7 @@ final class ScalaJSPlugin @Inject(
           project = project,
           jvmPluginServices = jvmPluginServices,
           isCreate = false,
-          sourceRoot = ScalaJSPlugin.jvmSourceRoot,
-          sharedSourceRoot = ScalaJSPlugin.sharedSourceRoot,
+          sourceRoot = GradleNames.jvmSourceRoot,
           gradleNames = GradleNames.jvm
         )
           .apply()
@@ -78,18 +77,14 @@ private object ScalaJSPlugin:
   private val disabledProperty: String = "org.podval.tools.scalajs.disabled"
   private val maiflaiProperty : String = "com.github.maiflai.gradle-scalatest.mode"
 
-  private val sharedSourceRoot: String = "shared"
-  private val jvmSourceRoot: String = "jvm"
-  private val jsSourceRoot: String = "js"
-
   private def getMode(project: Project) =
     val isJSDisabled: Boolean =
       Option(project.findProperty(maiflaiProperty )).isDefined ||
       Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
 
     val sourceRootPresent: Boolean =
-      project.file(jvmSourceRoot).exists ||
-      project.file(jsSourceRoot).exists
+      project.file(GradleNames.jvmSourceRoot).exists ||
+      project.file(GradleNames.jsSourceRoot).exists
 
     if isJSDisabled
     then
