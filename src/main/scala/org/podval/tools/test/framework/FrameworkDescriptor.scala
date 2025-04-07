@@ -2,6 +2,8 @@ package org.podval.tools.test.framework
 
 import org.podval.tools.build.{Dependency, ScalaDependency, ScalaPlatform, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
+import org.slf4j.{Logger, LoggerFactory}
+import sbt.testing.Framework
 
 // Based on sbt.TestFramework.
 abstract class FrameworkDescriptor(
@@ -47,12 +49,22 @@ abstract class FrameworkDescriptor(
     tagOptionStyle.toStrings(includeTagsOption, includeTags),
     tagOptionStyle.toStrings(excludeTagsOption, excludeTags),
   ))
-  
-  final def newInstance: AnyRef = Class.forName(className)
-    .getDeclaredConstructor()
-    .newInstance()
+
+  final def newInstance: Option[Framework] =
+    try Class
+      .forName(className)
+      .getDeclaredConstructor()
+      .newInstance() match
+        case framework: Framework => Some(framework)
+        case other =>
+          FrameworkDescriptor.logger.error(s"${other.getClass.getName} is not an SBT framework!")
+          None
+    catch
+      case _: ClassNotFoundException => None
 
 object FrameworkDescriptor:
+  private val logger: Logger = LoggerFactory.getLogger(FrameworkDescriptor.getClass)
+
   private def all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,

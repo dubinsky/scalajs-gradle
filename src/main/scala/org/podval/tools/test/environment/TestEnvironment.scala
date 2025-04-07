@@ -15,7 +15,7 @@ abstract class TestEnvironment:
     //  (and thus can not be cast)
     if expandClassPath then GradleClassPath.addTo(this, testClassPath)
 
-    val result: List[Framework] = loadFrameworks(frameworksToLoad)
+    val result: List[Framework] = loadFrameworks
     
     val report: String = result.map(framework => FrameworkDescriptor.forName(framework.name).displayName).mkString(", ")
     TestEnvironment.logger.info(s"Loaded test frameworks: $report")
@@ -28,9 +28,7 @@ abstract class TestEnvironment:
 
   protected def expandClassPath: Boolean
   
-  protected def frameworksToLoad: List[FrameworkDescriptor]
-
-  protected def loadFrameworks(frameworksToLoad: List[FrameworkDescriptor]): List[Framework]
+  protected def loadFrameworks: List[Framework]
   
   def sourceMapper: Option[SourceMapper]
   

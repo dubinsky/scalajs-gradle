@@ -23,7 +23,7 @@ object ZioTestFixture extends Fixture(
          |object ZIOTestNested extends ZIOSpecDefault {
          |  override def spec: Spec[TestEnvironment, Any] = suite("ZIOTestNested")(
          |    test("success") { assertTrue(1 == 1) },
-         |    test("failure") { assertTrue(1 == 0) },
+         |    test("failure") { assertTrue(1 == 0) }
          |  )
          |}
          |""".stripMargin

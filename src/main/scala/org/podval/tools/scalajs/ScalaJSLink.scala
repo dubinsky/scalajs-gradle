@@ -38,6 +38,8 @@ final class ScalaJSLink(common: ScalaJSCommon):
         case ModuleSplitStyle.FewestModules => ModuleSplitStyleSJS.FewestModules
         case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
       )
+      // TODO .withESFeatures(org.scalajs.linker.interface.ESFeatures)
+      // TODO .withExperimentalUseWebAssembly(Boolean)
       .withPrettyPrint(prettyPrint)
 
     ScalaJSLink.logger.info(

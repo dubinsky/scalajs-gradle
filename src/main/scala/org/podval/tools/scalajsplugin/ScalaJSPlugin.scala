@@ -13,7 +13,7 @@ import javax.inject.Inject
 final class ScalaJSPlugin @Inject(
   jvmPluginServices: JvmPluginServices,
 ) extends Plugin[Project]:
-  import ScalaJSPlugin.{logger, Mode}
+  import ScalaJSPlugin.Mode
 
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])

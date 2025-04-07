@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.6.1'
+  id 'org.podval.tools.scalajs' version '0.6.2'
   id 'com.gradle.plugin-publish' version '1.3.1'
 }
 
@@ -33,13 +33,13 @@ dependencies {
   compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:$version_scalajs_env_jsdom_nodejs"
 
   // for framework-specific exceptions
-  compileOnly "junit:junit:$version_junit" // runner: "com.github.sbt:junit-interface:0.13.3"
+  compileOnly "junit:junit:$version_junit" // runner: "com.github.sbt:junit-interface:$version_framework_junit4"
   compileOnly "org.scalatest:scalatest_3:$version_framework_scalatest"
   compileOnly "org.scalacheck:scalacheck_3:$version_framework_scalacheck"
   compileOnly "com.lihaoyi:utest_3:$version_framework_utest"
   compileOnly "org.specs2:specs2-core_3:$version_framework_specs2"
   compileOnly "org.scalameta:munit_3:$version_framework_munit"
-  compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:2.1.15"
+  compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:$version_framework_zio_test""
 
   // test framework used to test this project
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"

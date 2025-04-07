@@ -1,6 +1,6 @@
 package org.podval.tools.test.environment
 
-import org.gradle.api.internal.tasks.testing.{DefaultTestFailure, DefaultTestFailureDetails}
+import org.gradle.api.internal.tasks.testing.{AssertionFailureDetails, DefaultTestFailure}
 import org.gradle.api.tasks.testing.{TestExecutionException, TestFailure, TestFailureDetails}
 import org.gradle.internal.serialize.PlaceholderExceptionSupport
 import org.podval.tools.util.Strings
@@ -44,18 +44,14 @@ abstract class SourceMapper:
     // Based on `DefaultTestFailure`.
     DefaultTestFailure(
       throwableMapped,
-      DefaultTestFailureDetails(
+      AssertionFailureDetails(
         message,
         throwable match
           case e: PlaceholderExceptionSupport => e.getExceptionClassName
           case _ => throwable.getClass.getName,
         SourceMapper.stacktraceOf(throwableMapped),
-        details.isAssertionFailure,
-        details.isFileComparisonFailure,
         details.getExpected,
-        details.getActual,
-        details.getExpectedContent,
-        details.getActualContent
+        details.getActual
       ),
       testFailure.getCauses
     )

@@ -1,18 +1,14 @@
 package org.podval.tools.test.run
 
-import org.gradle.api.internal.tasks.testing.{DefaultTestClassDescriptor, DefaultTestMethodDescriptor,
-  DefaultTestOutputEvent, TestClassProcessor, TestClassRunInfo, TestCompleteEvent, TestResultProcessor, TestStartEvent}
+import org.gradle.api.internal.tasks.testing.{TestClassProcessor, TestClassRunInfo, TestResultProcessor}
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.tasks.testing.TestOutputEvent
-import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
+import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
-import org.podval.tools.test.exception.ExceptionConverter
-import org.podval.tools.test.taskdef.{TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.arrayForEach
-import sbt.testing.{Event, Logger, Selector, Task, TaskDef}
-import scala.util.control.NonFatal
+import org.podval.tools.test.framework.FrameworkProvider
+import org.podval.tools.test.taskdef.{Running, TaskDefs, TestClassRun}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
+import sbt.testing.{Runner, Task, TaskDef}
 
 object RunTestClassProcessor:
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
@@ -20,7 +16,6 @@ object RunTestClassProcessor:
 final class RunTestClassProcessor(
   includeTags: Array[String],
   excludeTags: Array[String],
-  runningInIntelliJIdea: Boolean, // TODO do I even need this?
   logLevelEnabled: LogLevel,
   dryRun: Boolean,
   idGenerator: IdGenerator[?],
@@ -28,81 +23,42 @@ final class RunTestClassProcessor(
 ) extends TestClassProcessor:
 
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
-  private def testResultProcessor: TestResultProcessor = testResultProcessorOpt.get
 
   override def startProcessing(testResultProcessor: TestResultProcessor): Unit =
     testResultProcessorOpt = Some(testResultProcessor)
 
-  private def started(
-    parentId: AnyRef,
-    testId: AnyRef,
-    testClassName: String,
-    testName: Option[String],
-    startTime: Long
-  ): Unit = testResultProcessor.started(
-    testName match
-      case None           => DefaultTestClassDescriptor (testId, testClassName)
-      case Some(testName) => DefaultTestMethodDescriptor(testId, testClassName, testName),
-    TestStartEvent(startTime, parentId)
+  private lazy val testResultProcessor: TestResultProcessorEx = TestResultProcessorEx(
+    testResultProcessorOpt.get,
+    logLevelEnabled,
+    clock,
+    idGenerator
   )
 
-  private def completed(
-    testId: AnyRef,
-    endTime: Long,
-    result: ResultType
-  ): Unit = testResultProcessor.completed(
-    testId,
-    TestCompleteEvent(endTime, result)
-  )
+  private var runners: Array[(String, Runner)] = Array.empty
 
-  private def failure(
-    testId: AnyRef,
-    throwable: Throwable
-  ): Unit = testResultProcessor.failure(
-    testId,
-    ExceptionConverter.exceptionConverter(throwable.getClass.getName).toTestFailure(throwable)
-  )
+  private def getRunner(frameworkProvider: FrameworkProvider): Runner = synchronized:
+    val frameworkName: String = frameworkProvider.frameworkName
+    arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
+      val runner: Runner = frameworkProvider.makeRunner(includeTags, excludeTags)
+      runners = arrayAppend(runners, (frameworkName, runner))
+      runner
 
-  private def output(
-    message: String,
-    logLevel: LogLevel,
-    testId: AnyRef = RunTestClassProcessor.rootTestSuiteIdPlaceholder
-  ): Unit =
-    given CanEqual[LogLevel, LogLevel] = CanEqual.derived
-    if logLevel.ordinal >= logLevelEnabled.ordinal then testResultProcessor.output(
-      testId,
-      DefaultTestOutputEvent(
-        clock.getCurrentTime,
-        if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
-        then TestOutputEvent.Destination.StdErr
-        else TestOutputEvent.Destination.StdOut,
-        s"$message\n"
-      )
+  override def stop(): Unit = arrayForEach(runners, (frameworkName, runner) =>
+    testResultProcessor.output(
+      LogLevel.INFO,
+      RunTestClassProcessor.rootTestSuiteIdPlaceholder,
+      s"RunTestClassProcessor $frameworkName summary:\n${runner.done}"
     )
-
-  private def testLogger(testId: AnyRef): Logger = new Logger:
-    private def log(logLevel: LogLevel, message: String): Unit = output(message, logLevel, testId)
-    override def ansiCodesSupported: Boolean = true // TODO !runningInIntelliJIdea?
-    override def error(message: String): Unit = log(LogLevel.ERROR, message)
-    override def warn (message: String): Unit = log(LogLevel.WARN , message)
-    override def info (message: String): Unit = log(LogLevel.INFO , message)
-    override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
-    override def trace(throwable: Throwable): Unit = failure(testId, throwable)
-
-  private val runners: Runners = Runners()
-
-  override def stop(): Unit = runners.stop((frameworkName: String, summary: String) =>
-    output(message = s"RunTestClassProcessor $frameworkName summary:\n$summary", LogLevel.INFO)
   )
 
   private var stoppedNow: Boolean = false
+
   override def stopNow(): Unit =
     stoppedNow = true
     stop()
 
-  def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
+  override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
     val testClassRun: TestClassRun = testClassRunInfo.asInstanceOf[TestClassRun]
-
     val running: Running = Running.forTestClassRun(testClassRun)
 
     val taskDef: TaskDef = TaskDef(
@@ -115,157 +71,17 @@ final class RunTestClassProcessor(
     val tasks: Array[Task] =
       if dryRun
       then Array(DryRunSbtTask(taskDef))
-      else runners.get(
-        testClassRun.frameworkProvider,
-        includeTags,
-        excludeTags
-      ).tasks(Array(taskDef))
+      else getRunner(testClassRun.frameworkProvider).tasks(Array(taskDef))
 
     require(tasks.length == 1)
     val task: Task = tasks(0)
     require(TaskDefs.equal(task.taskDef, taskDef))
 
-    Run(
-      className = taskDef.fullyQualifiedName,
-      frameworkUsesTestSelectorAsNestedTestSelector = testClassRun
-        .frameworkProvider
-        .frameworkDescriptor
-        .usesTestSelectorAsNestedTestSelector
-    ).run(
+    RunTestClass(
+      testResultProcessor = testResultProcessor,
+      frameworkUsesTestSelectorAsNestedTestSelector =
+        testClassRun.frameworkProvider.frameworkDescriptor.usesTestSelectorAsNestedTestSelector,
       parentId = null,
       running = running,
       task = task
-    )
-
-  final private class Run(
-    className: String,
-    frameworkUsesTestSelectorAsNestedTestSelector: Boolean
-  ):
-    private def started(
-      parentId: AnyRef,
-      testId: AnyRef,
-      running: Running,
-      startTime: Long
-    ): Unit =
-      val runningEffective: Running =
-        if !frameworkUsesTestSelectorAsNestedTestSelector
-        then running
-        else running.reconstructNestedTestSelector
-      
-      RunTestClassProcessor.this.started(
-        parentId,
-        testId,
-        runningEffective.suiteId.getOrElse(className),
-        runningEffective.testName,
-        startTime
-      )
-
-    def run(
-      parentId: AnyRef,
-      running: Running,
-      task: Task
-    ): Unit =
-      output(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})", LogLevel.INFO)
-
-      val startTime: Long = clock.getCurrentTime
-      val testId: AnyRef = idGenerator.generateId()
-      require(task.taskDef.fullyQualifiedName == className)
-
-      started(
-        parentId = parentId,
-        testId = testId,
-        running = running,
-        startTime = startTime
-      )
-
-      try
-        val eventHandler: EventHandler = EventHandler(
-          testId,
-          running
-        )
-
-        val nestedTasks: Array[Task] = task.execute(
-          eventHandler.handleEvent(_),
-          Array(testLogger(testId))
-        )
-
-        arrayForEach(nestedTasks, (nestedTask: Task) =>
-          output(s"RunTestClassProcessor: nested task ${TaskDefs.toString(nestedTask.taskDef)}", LogLevel.INFO)
-        )
-        arrayForEach(nestedTasks, (nestedTask: Task) =>
-          run(
-            parentId = testId,
-            running = running.forNestedTask(nestedTask),
-            task = nestedTask
-          )
-        )
-
-      catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>
-        failure(testId, throwable)
-
-      finally
-        completed(
-          testId = testId,
-          endTime = clock.getCurrentTime,
-          result = null
-        )
-
-    final private class EventHandler(
-      testId: AnyRef,
-      running: Running
-    ):
-      // JUnit4 emits SUCCESS event for tests that were skipped because of a falsified assumption;
-      // we suppress such events lest Gradle report two copies of a test - one skipped, one passed.
-      private val skippedTests: SkippedTests = SkippedTests()
-
-      def handleEvent(event: Event): Unit =
-        val endTime: Long = clock.getCurrentTime
-        val throwable: Option[Throwable] = if event.throwable.isEmpty then None else Some(event.throwable.get)
-        val eventFor: Running = Running.forEvent(event)
-
-        output(
-          s"""RunTestClassProcessor.EventHandler.handleEvent:
-             |className=$className
-             |running=$running
-             |event.fullyQualifiedName=${event.fullyQualifiedName}
-             |event.selector=${event.selector}
-             |event.status=${event.status}
-             |event.throwable=$throwable""", // a problem on Scala 2.12: .stripMargin
-          LogLevel.INFO
-        )
-
-        if running.isTest then
-          // running individual test case (ScalaCheck packages test methods into nested NestedTest tasks).
-          require(running.sameAs(eventFor))
-          event.status.name match
-            case "Error" | "Failure" => failure(testId, throwable.get)
-            case _ =>
-        else
-          // running suite
-          // Events with overall results of suits are ignored; only events for individual test cases are processed:
-          // - started/completed Gradle events are emitted in run();
-          // - Gradle calculates overall result from the outcomes of the individual tests.
-          if eventFor.isTestAndNotForClass(className) && !skippedTests.contains(eventFor) then
-            def reconstructStarted(): AnyRef =
-              val eventTestId: AnyRef = idGenerator.generateId()
-
-              started(
-                parentId = testId,
-                testId = eventTestId,
-                running = eventFor,
-                startTime = endTime - event.duration // TODO deal with negative durations?
-              )
-
-              eventTestId
-
-            event.status.name match
-              case "Success" =>
-                completed(reconstructStarted(), endTime, ResultType.SUCCESS)
-
-              case "Error" | "Failure" =>
-                failure(reconstructStarted(), throwable.getOrElse(Exception("A FAKE EXCEPTION TO MAKE Gradle FEEL THE TEST FAILURE")))
-
-              case _ =>
-                skippedTests.add(eventFor)
-                if !running.isTests || throwable.nonEmpty || dryRun then
-                  completed(reconstructStarted(), endTime, ResultType.SKIPPED)
+    ).run()

@@ -36,7 +36,7 @@ object Specs2 extends FrameworkDescriptor(
   displayName = "Specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.6.0"),
+  versionDefault = Version("5.6.2"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptionStyle = OptionStyle.ListWithoutEq,

@@ -31,12 +31,14 @@ object MUnit extends FrameworkDescriptor(
   displayName = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
-  versionDefault = Version("1.1.0"),
+  versionDefault = Version("1.1.1"),
   className = "munit.Framework",
   sharedPackages = List("munit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
   includeTagsOption = "--include-tags", 
   excludeTagsOption = "--exclude-tags",
+  // use SBT loggers
+  additionalOptions = Array("--logger=sbt"),
   usesTestSelectorAsNestedTestSelector = true,
   // on JVM, uses underlying JUni4 - via its own internal interface
   jvmUnderlying = Some(JUnit4Underlying),
