@@ -3,7 +3,7 @@ package org.podval.tools.scalajs
 import org.podval.tools.build.{ScalaDependency, Version}
 
 object ScalaJS:
-  val versionDefault: Version = Version("1.18.2")
+  val versionDefault: Version = Version("1.19.0")
 
   private val group: String = "org.scala-js"
   

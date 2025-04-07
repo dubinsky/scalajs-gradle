@@ -1,8 +1,9 @@
 package org.podval.tools.test.taskdef
 
 import org.gradle.api.internal.tasks.testing.TestClassRunInfo
+import org.podval.tools.test.framework.FrameworkProvider
 import org.podval.tools.util.Scala212Collections.arrayMkString
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint, TaskDef}
 
 final class TestClassRun(
   val frameworkProvider: FrameworkProvider,
@@ -56,7 +57,7 @@ object TestClassRun:
   // (https://github.com/scala-js/scala-js/pull/5132#discussion_r1967584316)
   final def read(string: String): TestClassRun = fromStrings(string.split(separator, -1))
   private def fromStrings(strings: Array[String]): TestClassRun = TestClassRun(
-    frameworkProvider = FrameworkProviderForking(frameworkName = strings(0)),
+    frameworkProvider = FrameworkProvider.Forking(frameworkName = strings(0)),
     getTestClassName = strings(1),
     fingerprint =
       val isAnnotated: Boolean = toBoolean(strings(2))

@@ -30,8 +30,7 @@ class SbtTestFramework(
   moduleRegistry: ModuleRegistry,
   testTaskTemporaryDir: Factory[File],
   dryRun: Provider[java.lang.Boolean],
-  loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
-  runningInIntelliJIdea: () => Boolean
+  loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework]
 ) extends TestFramework:
 
   override def getOptions: SbtTestFrameworkOptions = options
@@ -47,8 +46,7 @@ class SbtTestFramework(
       this.moduleRegistry,
       this.testTaskTemporaryDir,
       this.dryRun,
-      this.loadedFrameworks,
-      this.runningInIntelliJIdea
+      this.loadedFrameworks
     )
   
   private var detector: Option[SbtTestFrameworkDetector] = None
@@ -78,7 +76,6 @@ class SbtTestFramework(
   override def getProcessorFactory: RunTestClassProcessorFactory = RunTestClassProcessorFactory(
     includeTags = options.getIncludeCategories.asScala.toArray,
     excludeTags = options.getExcludeCategories.asScala.toArray,
-    runningInIntelliJIdea = runningInIntelliJIdea(),
     logLevelEnabled = logLevelEnabled,
     dryRun = dryRun.get
   )

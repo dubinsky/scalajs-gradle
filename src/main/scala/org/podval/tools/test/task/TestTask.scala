@@ -43,8 +43,7 @@ abstract class TestTask extends Test:
     testTaskTemporaryDir = getTemporaryDirFactory,
     dryRun = getDryRun,
     // delayed: not available at the time of the TestFramework construction (task creation)
-    loadedFrameworks = (testClassPath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClassPath),
-    runningInIntelliJIdea = () => IntelliJIdea.runningIn(TestTask.this)
+    loadedFrameworks = (testClassPath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClassPath)
   )
 
   private var testEnvironment: Option[TestEnvironment] = None

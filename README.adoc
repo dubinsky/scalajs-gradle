@@ -3,24 +3,24 @@
 :toclevels: 4
 :toc: preamble
 // INCLUDED ATTRIBUTES
-:version-gradle: 8.13
+:version-gradle: 8.14
 :version-plugin: 0.6.2
 :version-scala: 3.6.4
 :version-scala2-minor: 2.13
 :version-scala2: 2.13.16
 :version-scala-parallel-collections: 1.2.0
 :version-sbt-test-interface: 1.0
-:version-scalajs: 1.18.2
+:version-scalajs: 1.19.0
 :version-scalajs-dom: 2.8.0
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-node: 16.19.1
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
-:version-framework-junit4-scalajs: 1.18.2
-:version-framework-munit: 1.1.0
+:version-framework-junit4-scalajs: 1.19.0
+:version-framework-munit: 1.1.1
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalatest: 3.2.19
-:version-framework-specs2: 5.6.0
+:version-framework-specs2: 5.6.2
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.17
@@ -479,12 +479,11 @@ node {
 ----
 
 If Node.js version is not specified, plugin uses "ambient" Node.js -
-the one installed on the machine where it is running.
+the one installed on the machine where it is running,
+or, if none is available, installs the default version ({version-node}).
+If Node.js version is specified, plugin install that version.
 
-TODO install default version if there is no ambient one.
-
-If Node.js version is specified, plugin will install it
-(under `~/.gradle/nodejs`) and use the installation.
+Node is installed under `~/.gradle/nodejs`.
 
 Scala.js does not support versions of Node.js newer than "{version-node}",
 so none of the "17.9.1", "18.15.0", "19.8.1".
@@ -526,7 +525,8 @@ so they are not forked, and forking configuration is ignored.
 Dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
 
 Test filtering and tagging are supported to the extent that the individual
-test frameworks support them; see <<test-frameworks>>.
+test frameworks support them; see <<test-filtering>>, <<test-tagging>>
+and <<test-frameworks>>.
 
 If there is a need to have test runs with different configurations,
 more testing tasks can be added manually.
@@ -542,88 +542,6 @@ Such test tasks have to depend on a
 The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 
-[#test-frameworks]
-=== Test Frameworks
-Plugin replaces the `test` task with one that supports running
-sbt-compatible test frameworks; multiple test frameworks can be used at the same time.
-
-Currently, the following test frameworks are supported:
-
-[%autowidth]
-|===
-| Name | group:artifact | Version | Notes
-
-| JUnit4
-| `com.github.sbt:junit-interface`
-| {version-framework-junit4}
-a|
-- JVM only, no Scala.js
-- Java dependency, no Scala version in the artifact
-
-| JUnit4 for Scala.js
-| `org.scala-js:scalajs-junit-test-runtime`
-| {version-scalajs}
-a|
-- Scala.js only, no JVM
-- Scala dependency, no `sjs1` suffix in the artifact
-
-| MUnit
-| `org.scalameta:munit`
-| {version-framework-munit}
-|
-
-| ScalaCheck
-| `org.scalacheck:scalacheck`
-| {version-framework-scalacheck}
-|
-
-| ScalaTest
-| `org.scalatest:scalatest`
-| {version-framework-scalatest}
-|
-
-| Specs2
-| `org.specs2:specs2-core`
-| {version-framework-specs2}
-a|
-- latest version for Scala 2 is 4.20.9
-
-| uTest
-| `com.lihaoyi:utest`
-| {version-framework-utest}
-|
-
-| ZIO Test
-| `dev.zio:zio-test-sbt`
-| {version-framework-zio-test}
-|
-|===
-
-JUnit4 SBT interface (com.github.sbt:junit-interface)
-is a separate project from JUnit4 itself;
-SBT interface dependency brings in the underlying framework dependency
-`junit:junit` transitively;
-its version can be overridden in the Gradle build script.
-
-JUnit4 for Scala.js is a framework distinct from JUnit4:
-it is a partial translation/re-implementation of JUnit4 circa 2015
-and has different capabilities.
-
-MUnit uses JUnit internally, and brings in the underlying framework dependency transitively:
-on JVM - `junit:junit`; on Scala.js - `org.scala-js:scalajs-junit-test-runtime`;
-its version can be overridden in the Gradle build script.
-
-ZIO Test is currently not supported on Scala.js because of a bug in ZIO Test
-(https://github.com/dubinsky/scalajs-gradle/issues/37[issues/37]).
-
-TestNG is not supported: its
-https://github.com/sbt/sbt-testng[SBT interface] is long since abandoned.
-
-JUnit5 is not supported, since it insists on using its own test discovery mechanism.
-Both Gradle and IntelliJ Idea support JUnit5 out of the box,
-and since there is no JUnit5 for Scala.js,
-there is not much the plugin can add anyway.
-
 [#test-filtering]
 === Test Filtering
 
@@ -635,9 +553,9 @@ are set in the Gradle build file:
 ----
 test {
   filter {
-    includeTestsMatching "org.podval.tools.test.JUnit4Test.success"
-    includeTestsMatching "org.podval.tools.test.JUnit4Test.failure"
-    excludeTestsMatching "ZioTestTest"
+    includeTestsMatching "org.podval.tools.test.SomeTestClass.success"
+    includeTestsMatching "org.podval.tools.test.SomeTestClass.failure"
+    excludeTestsMatching "OtherTestClass"
   }
 }
 ----
@@ -647,7 +565,7 @@ The third one is set via a command-line option `--tests`.
 Inclusion rules are:
 
 - if both build file and the command line inclusions are specified,
-  to be included, a test must match both.
+to be included, a test must match both.
 - if no inclusions nor exclusions are specified, all tests are included.
 - if only inclusions are specified, only tests matching one of them are included.
 - if only exclusions are specified, only tests not matching any of them are included.
@@ -689,26 +607,12 @@ All these patterns work as intended.
 
 The following patterns specify test cases to run:
 
-- `"org.podval.tools.test.JUnit4Test.success"`: specified test case in specified class (used by IntelliJ Idea, see <<intellij-idea-integration>>);
-- `"org.podval.tools.test.JUnit4Test.succ*"`: test cases whose names start with "succ" in specified class.
+- `"org.podval.tools.test.SomeTestClass.success"`: specified test case in specified class (used by IntelliJ Idea, see <<intellij-idea-integration>>);
+- `"org.podval.tools.test.SomeTestClass.succ*"`: test cases whose names start with "succ" in specified class.
 
 With these patterns, what actually happens depends on the
 fidelity with which test framework used implements
-even the restricted test case selection means of the SBT test interface:
-
-- `JUnit4`, `ScalaTest` and `MUnit` on JVM do the right thing;
-- `JUnit4 for Scala.js`, `MUnit` on Scala.js and `uTest` do not support test case selectors and
-  run all test cases in the class;
-- `specs2` does the right thing when individual test case names are used
-  but if test case wildcards are used it runs all test cases in the class;
-- `ScalaCheck` 's test filtering functionality is not available:
-  https://github.com/dubinsky/scalajs-gradle/issues/43[issue];
-- `ZIO test` treats specific test case inclusions as wildcards
-  and instead of running just the named test cases runs all whose names contain
-  the specified string, because the only test case name-based filtering that ZIO Test supports is "search terms", which
-  https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/FilteredSpec.scala#L32[work as wildcards];
-- `ZIO Test` in the presence of wildcard test case inclusions
-  runs all tests in the class because of a https://github.com/dubinsky/scalajs-gradle/issues/45[bug].
+even the restricted test case selection means of the SBT test interface.
 
 [#test-tagging]
 === Test Tagging
@@ -731,89 +635,6 @@ Inclusion rules are:
 - if only inclusions are specified, only tests tagged with one of them are included.
 - if only exclusions are specified, only tests not tagged with any of them are included.
 - if both inclusions and exclusions are specified, only tests tagged with one of the inclusions and not tagged with any of the exclusions are included.
-
-==== JUnit4
-Tag tests with classes or traits
-that do not have to be derived from anything JUnit-specific;
-In the Gradle build file, `excludeCategories` and `includeCategories`
-list fully-qualified names of tagging classes or traits.
-
-[source, scala]
-----
-trait IncludedTest
-trait ExcludedTest
-@org.junit.experimental.categories.Category(Array(
-  classOf[org.podval.tools.test.IncludedTest],
-  classOf[org.podval.tools.test.ExcludedTest]
-))
-@Test def excluded(): Unit = ()
-----
-
-==== JUnit4 for Scala.js
-Does not support test tagging.
-
-==== MUnit
-MUnit is based on JUnit4, so it supports the `Category`-based exclusion and inclusion;
-since on Scala.js MUnit uses `JUnit4 for Scala.js`,
-which does not support this mechanism,
-MUnit does not support it either.
-
-Plugin does not use `Category`-based mechanism;
-MUnit provides a different, `Tag`-based mechanism,
-and that is what plugin uses.
-
-Tag tests with values that are instances of `munit.Tag`:
-
-[source, scala]
-----
-val include = new munit.Tag("org.podval.tools.test.ExcludedTest")
-val exclude = new munit.Tag("org.podval.tools.test.ExcludedTest")
-test("excluded".tag(include).tag(exclude)) {}
-----
-
-When tagging classes used for inclusion/exclusion are not available,
-MUnit crashes with a `ClassNotFound`.
-
-==== ScalaCheck
-ScalaCheck itself does not support test tagging,
-but if it is used via another test framework -
-like `ScalaTest` or `specs2` -
-test tagging mechanisms provided by that framework can be used.
-
-==== ScalaTest
-Tag tests with objects that extend `org.scalatest.Tag`:
-
-[source, scala]
-----
-object Include extends org.scalatest.Tag("org.podval.tools.test.IncludedTest")
-object Exclude extends org.scalatest.Tag("org.podval.tools.test.ExcludedTest")
-"excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe false }
-----
-
-==== specs2
-Tag tests with tag names:
-
-[source,scala]
-----
-exclude tests tagged for exclusion $excludedTest ${tag(
-  "org.podval.tools.test.IncludedTest",
-  "org.podval.tools.test.ExcludedTest"
-)}
-----
-
-==== uTest
-Does not support test tagging.
-
-==== ZIO Test
-Tag tests with tag names using `TestAspect.tag`:
-
-[source, scala]
-----
-test("excluded") { assertTrue(1 == 0) } @@ TestAspect.tag(
-  "org.podval.tools.test.IncludedTest",
-  "org.podval.tools.test.ExcludedTest"
-)
-----
 
 === Skipped Tests
 When running some test methods explicitly included by a filter,
@@ -838,8 +659,53 @@ attributes test cases from the nested suites to them:
 test report will have no test cases for the nesting class;
 instead, test cases will be reported for the nested classes they belong to.
 
-==== JUnit4
+[#test-frameworks]
+== Test Frameworks
+Plugin replaces the `test` task with one that supports running
+sbt-compatible test frameworks; multiple test frameworks can be used at the same time.
 
+TestNG is not supported: its
+https://github.com/sbt/sbt-testng[SBT interface] is long since abandoned.
+
+JUnit5 is not supported, since it insists on using its own test discovery mechanism.
+Both Gradle and IntelliJ Idea support JUnit5 out of the box,
+and since there is no JUnit5 for Scala.js,
+there is not much the plugin can add anyway.
+
+Framework-specific information for the frameworks that _are_ supported follows.
+
+=== Junit4
+JUnit4 SBT interface (com.github.sbt:junit-interface)
+is a separate project from JUnit4 itself;
+SBT interface dependency brings in the underlying framework dependency
+`junit:junit` transitively;
+its version can be overridden in the Gradle build script.
+
+- coordinates: `com.github.sbt:junit-interface`;
+- current version: {version-framework-junit4};
+- JVM only, no Scala.js
+- Java dependency, no Scala version in the artifact
+- test filtering: works fine;
+- ignoring a test: not supported;
+- assumptions: if falsified, result in a test being skipped: `org.junit.Assume.assumeTrue(false)`;
+
+==== Test Tagging
+Tag tests with classes or traits
+that do not have to be derived from anything `JUnit4`-specific;
+in the Gradle build file, `excludeCategories` and `includeCategories`
+list fully-qualified names of tagging classes or traits:
+[source, scala]
+----
+trait IncludedTest
+trait ExcludedTest
+@org.junit.experimental.categories.Category(Array(
+  classOf[org.podval.tools.test.IncludedTest],
+  classOf[org.podval.tools.test.ExcludedTest]
+))
+@Test def excluded(): Unit = ()
+----
+
+==== Nested Suites
 JUnit4 uses an annotation on the nesting suite to indicate that it
 contains nested suites:
 
@@ -882,23 +748,68 @@ https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/j
 `org.junit.runners.Suite` runner; plugin supplies an appropriate
 arguments to `JUnit4` to enable it.
 
-==== JUnit4 for Scala.js
-Since annotations are not available at runtime on Scala.js,
-`JUnit4 for Scala.js` does not support nested test suites.
+=== JUnit4 for Scala.js
+JUnit4 for Scala.js is a framework distinct from JUnit4:
+it is a partial translation/re-implementation of JUnit4 circa 2015
+and has different capabilities.
 
-==== ScalaTest
-In `ScalaTest`, nesting of the test suites is indicated by
-deriving the nesting class from `org.scalatest.Suites`
-and listing the nested suites in its constructor:
+- coordinates: `org.scala-js:scalajs-junit-test-runtime`;
+- current version: {version-scalajs};
+- Scala.js only, no JVM;
+- Scala dependency, no `sjs1` suffix in the artifact;
+- Scala 2 only;
+- test filtering: does not support test case selectors and runs all test cases in the class;
+- test tagging: not supported;
+- nested suites: not supported;
+- ignoring tests: not supported;
+- assumptions: not supported;
 
-[source,scala]
+=== MUnit
+MUnit uses JUnit internally, and brings in the underlying framework dependency transitively:
+on JVM - `junit:junit`; on Scala.js - `org.scala-js:scalajs-junit-test-runtime`;
+its version can be overridden in the Gradle build script.
+
+- coordinates: `org.scalameta:munit`;
+- current version: {version-framework-munit};
+- test filtering: works fine on `JVM`; on `Scala.js`, does not support test case selectors and runs all test cases in the class.
+- nested suites: not supported;
+- assumptions: not supported;
+- ignoring a test `test("test".ignore) {}`;
+
+==== Test Tagging
+MUnit is based on JUnit4, so it supports the `Category`-based exclusion and inclusion;
+since on Scala.js MUnit uses `JUnit4 for Scala.js`,
+which does not support this mechanism,
+MUnit does not support it either.
+
+Plugin does not use `Category`-based mechanism;
+MUnit provides a different, `Tag`-based mechanism,
+and that is what plugin uses.
+
+Tag tests with values that are instances of `munit.Tag`:
+
+[source, scala]
 ----
-class ScalaTestNesting extends org.scalatest.Suites(
-  new ScalaTestNested
-)
+val include = new munit.Tag("org.podval.tools.test.ExcludedTest")
+val exclude = new munit.Tag("org.podval.tools.test.ExcludedTest")
+test("excluded".tag(include).tag(exclude)) {}
 ----
 
-==== ScalaCheck
+When tagging classes used for inclusion/exclusion are not available,
+MUnit crashes with a `ClassNotFound`.
+
+=== ScalaCheck
+- coordinates: `org.scalacheck:scalacheck`;
+- current version: {version-framework-scalacheck};
+- test filtering functionality is not available:
+https://github.com/dubinsky/scalajs-gradle/issues/43[issue];
+- test tagging: not supported, but if it is used via another test framework -
+like `ScalaTest` or `specs2` - test tagging mechanisms provided by that
+framework can be used;
+- assumptions: not supported;
+- ignoring a test: not supported;
+
+==== Nested Suites
 In ScalaCheck, nesting is accomplished by using
 `org.scalacheck.Properties.include()`:
 
@@ -914,22 +825,151 @@ object ScalaCheckNested extends org.scalacheck.Properties("ScalaCheckNested") {
 }
 ----
 
-With ScalaCheck, nested test cases are incorrectly attributed to the _nesting_ suite -
+With ScalaCheck, nested test cases are attributed to the _nesting_ suite -
 and there is nothing that can be done about it,
 since ScalaCheck itself does not keep information about which class a property belongs to;
 see https://github.com/typelevel/scalacheck/pull/1107.
 
-==== Other Test Frameworks
+=== ScalaTest
+- coordinates: `org.scalatest:scalatest`;
+- current version:  {version-framework-scalatest};
+- test filtering: works fine;
+- assumptions: not supported;
+- ignoring a test: `ignore should "be ignored"`;
 
-As far as I can tell, there is no support for nesting test classes in:
+==== Test Tagging
+Tag tests with objects that extend `org.scalatest.Tag`:
+[source, scala]
+----
+object Include extends org.scalatest.Tag("org.podval.tools.test.IncludedTest")
+object Exclude extends org.scalatest.Tag("org.podval.tools.test.ExcludedTest")
+"excluded" should "not run" taggedAs(Include, Exclude) in {  true shouldBe false }
+----
 
-- MUnit
-- Specs2
-- UTest
-- ZIO Test
+==== Nested Suites
+In `ScalaTest`, nesting of the test suites is indicated by
+deriving the nesting class from `org.scalatest.Suites`
+and listing the nested suites in its constructor:
 
-TODO Some of them do provide means of structuring the tests hierarchically within one class,
-and this should be tested with the plugin and documented.
+[source,scala]
+----
+class ScalaTestNesting extends org.scalatest.Suites(
+  new ScalaTestNested
+)
+----
+
+=== Specs2
+- coordinates: `org.specs2:specs2-core`;
+- current version: {version-framework-specs2};
+- latest version for Scala 2: 4.20.9;
+- test filtering: works when individual test case names are used,
+but if test case wildcards are used it runs all test cases in the class;
+- nested suites: not supported;
+- assumptions: not supported;
+- ignoring a test: not supported;
+
+==== Test Tagging
+Tag tests with tag names:
+[source,scala]
+----
+exclude tests tagged for exclusion $excludedTest ${tag(
+  "org.podval.tools.test.IncludedTest",
+  "org.podval.tools.test.ExcludedTest"
+)}
+----
+
+=== uTest
+- coordinates: `com.lihaoyi:utest`;
+- current version: {version-framework-utest};
+- test filtering: does not support test case selectors and runs all test cases in the class.
+- test tagging: not supported;
+
+==== Nested Suites
+Only test suites defined in the same test class can be nested:
+
+[source,scala]
+----
+import utest._
+
+object UTestNesting extends TestSuite {
+  val tests: Tests = Tests {
+    test("UTestNesting") {
+      test("UTestNested") {
+        test("success") { assert(1 == 1) }
+        test("failure") { assert(1 == 0) }
+      }
+    }
+  }
+}
+----
+
+=== ZIO Test
+
+Issues identified and fixed: https://github.com/dubinsky/scalajs-gradle/issues/45[bug].
+
+Currently, not supported on Scala.js because of a bug
+https://github.com/dubinsky/scalajs-gradle/issues/37[issues/37].
+
+- coordinates: `dev.zio:zio-test-sbt`;
+- current version: {version-framework-zio-test};
+- test filtering: treats specific test case inclusions as wildcards,
+and instead of running just the named test cases runs all whose names contain
+the specified string, because the only test case name-based filtering that ZIO Test supports is "search terms", which
+https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/FilteredSpec.scala#L32[work as wildcards];
+- ignoring a test: `test("ignored") { ... } @@ zio.test.TestAspect.ignore`;
+- assumption: `test("assumption") { ... } @@ zio.test.TestAspect.ifProp("property")(string => false)`
+
+==== Test Tagging
+Tag tests with tag names using `TestAspect.tag`:
+[source, scala]
+----
+test("tagged") { ... } @@ TestAspect.tag(
+  "org.podval.tools.test.IncludedTest",
+  "org.podval.tools.test.ExcludedTest"
+)
+----
+
+==== Nested Suites
+
+[source,scala]
+----
+import zio.test._
+
+object ZIOTestNesting extends ZIOSpecDefault {
+  override def spec: Spec[TestEnvironment, Any] = suite("ZIOTestNesting")(
+    ZIOTestNested.spec
+  )
+}
+object ZIOTestNested extends ZIOSpecDefault {
+  override def spec: Spec[TestEnvironment, Any] = suite("ZIOTestNested")(
+    test("success") { assertTrue(1 == 1) },
+    test("failure") { assertTrue(1 == 0) },
+  )
+}
+----
+
+== Test Framework Issues
+While working on the plugin, I identified (and sometimes fixed)
+issues in the various test frameworks:
+
+- JUnit4 for Scala.js:
+_https://github.com/scala-js/scala-js/pull/5132[5132]_,
+_https://github.com/scala-js/scala-js/pull/5134[5134]_;
+
+- ZIO:
+https://github.com/zio/zio/issues/9629[9629],
+_https://github.com/zio/zio/pull/9680[9680]_,
+_https://github.com/zio/zio/pull/9756[9756]_;
+
+- ScalaCheck:
+https://github.com/typelevel/scalacheck/issues/1105[1105],
+_https://github.com/typelevel/scalacheck/pull/1107[1107]_;
+
+- ScalaTest:
+https://github.com/scalatest/scalatest/issues/2357[2357];
+
+- MUnit:
+_https://github.com/scalameta/munit/pull/918[918]_;
 
 
 [#intellij-idea-integration]
@@ -1194,11 +1234,6 @@ its own test and output listener
 https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
 that does no batching, indenting or adding.
 
-MUnit (but not JUnit4!) and uTest write to standard output/error
-instead of logging via supplied sbt logger,
-so their output does not go through my `TestClassProcessor.output()`;
-do I need to modify capturing to get their output?
-
 === Testing the Tests
 I coded a neat way to test the plugin itself and
 various features of the various frameworks and their support by the plugin:
@@ -1368,7 +1403,7 @@ which marks it as a test belonging to the `JUnit4 for Scala.js` test framework.
 
 === Nested Tasks and Test Cases
 
-``sbt` test interface allows test framework to return nested tasks
+`sbt` test interface allows test framework to return nested tasks
 when executing a task;
 of the test frameworks supported by the plugin,
 only `ScalaCheck` uses this mechanism:
@@ -1387,18 +1422,6 @@ even for test cases from the nested suites,
 but they prepend the name of the class to the test case name
 (both in the selector and in the event's `fullyQualifiedName`);
 plugin makes sure to attribute test cases to the correct test classes.
-
-=== JUnit4 for Scala.js Throwable
-It is possible, albeit not nice, for the test framework to not populate
-the `event.throwable` of the `Failure` event;
-`JUnit4 for Scala.js` used to do this (see https://github.com/scala-js/scala-js/pull/5132).
-
-Gradle treats a test as failed only when it receives a `throwable` for the test -
-otherwise, although XML report does record the failure, HTML report does not,
-nor does Gradle build fail.
-
-This is why I supply a synthesized event for _method_ failures
-if one did not come up from the framework.
 
 === Gradle Internals
 To stop tests from being forked - which is needed to run tests on Scala.js -
@@ -1434,7 +1457,7 @@ which recognizes only the test frameworks explicitly supported by Gradle (`JUnit
 GitHub stupidly disables AsciDoc includes in README;
 see https://github.com/github/markup/issues/1095[the discussion].
 
-One include (of the `versions.adoc` in `README.adoc`.)
+One include (of the `versions.adoc` in `README.adoc`)
 is not enough to bother with https://github.com/asciidoctor/asciidoctor-reducer[AsciiDoctor Reducer],
 so I just patch the Readme.adoc...
 
@@ -1479,9 +1502,9 @@ of such support;
 https://github.com/dubinsky/scalajs-gradle/issues/18[bug report];
 - https://github.com/a01fe[a01fe] for a
 https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
-- https://github.com/kyri-petrou[kyri-petrou] for accepting my fix
-to a ZIO Test https://github.com/zio/zio/pull/9680[issue]
-with the treatment of test wildcards;
+- https://github.com/kyri-petrou[kyri-petrou] for helping me fix
+ZIO Test's treatment of https://github.com/zio/zio/pull/9680[test wildcards]
+and https://github.com/zio/zio/pull/9756[test name matching];
 - https://github.com/sjrd[sjrd] for the helpful text
 https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
 and for working with me on fixing issues
@@ -1491,3 +1514,5 @@ and https://github.com/scala-js/scala-js/pull/5134[test duration];
 - https://github.com/cheeseng[cheeseng] for helping me understand
 the https://github.com/scalatest/scalatest/issues/2357[problem]
 with running nested ScalaTest suites using my plugin;
+- https://github.com/tgodzik[tgodzik] for accepting my fix to MUnit's
+reporting of https://github.com/scalameta/munit/pull/918[test duration];

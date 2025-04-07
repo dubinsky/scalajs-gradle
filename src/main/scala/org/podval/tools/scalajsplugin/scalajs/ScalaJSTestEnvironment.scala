@@ -19,11 +19,9 @@ final class ScalaJSTestEnvironment(runCommon: ScalaJSRunCommon) extends TestEnvi
   override def close(): Unit = testAdapter.close()
 
   protected def expandClassPath: Boolean = false
-
-  override protected def frameworksToLoad: List[FrameworkDescriptor] = FrameworkDescriptor.scalaJSSupported
-
-  override protected def loadFrameworks(frameworksToLoad: List[FrameworkDescriptor]): List[Framework] = testAdapter
-    .loadFrameworks(frameworksToLoad.map((descriptor: FrameworkDescriptor) => List(descriptor.className)))
+  
+  override protected def loadFrameworks: List[Framework] = testAdapter
+    .loadFrameworks(FrameworkDescriptor.scalaJSSupported.map((descriptor: FrameworkDescriptor) => List(descriptor.className)))
     .flatten
 
   override def sourceMapper: Option[ClosureCompilerSourceMapper] = runCommon

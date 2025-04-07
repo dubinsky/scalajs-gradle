@@ -17,7 +17,8 @@ object ZioTestFixture extends Fixture(
        |      "org.podval.tools.test.IncludedTest",
        |      "org.podval.tools.test.ExcludedTest"
        |    ),
-       |    test("ignored") { val one = 1; assertTrue(one == 2) } @@ TestAspect.ignore @@ TestAspect.tag("org.podval.tools.test.IncludedTest")
+       |    test("ignored") { val one = 1; assertTrue(one == 2) } @@ TestAspect.ignore @@ TestAspect.tag("org.podval.tools.test.IncludedTest"),
+       |    test("assumption") { assertTrue(1 == 0) } @@ TestAspect.ifProp("property")(string => false)
        |  )
        |}
        |""".stripMargin
@@ -32,10 +33,11 @@ object ZioTestFixture extends Fixture(
           failed("ZIOTestTest - failure"),
           absent("ZIOTestTest - excluded"),
           skipped("ZIOTestTest - ignored"),
-    
-          testCount(4),
+          skipped("ZIOTestTest - assumption"),
+
+          testCount(5),
           failedCount(1),
-          skippedCount(1),
+          skippedCount(2),
         )
       )
     case FrameworksTest.withTagInclusions =>
@@ -46,6 +48,7 @@ object ZioTestFixture extends Fixture(
           failed("ZIOTestTest - failure"),
           absent("ZIOTestTest - excluded"),
           skipped("ZIOTestTest - ignored"),
+          absent("ZIOTestTest - assumption"),
 
           testCount(3),
           failedCount(1),

@@ -1,4 +1,4 @@
-package org.podval.tools.test.run
+package org.podval.tools.test.taskdef
 
 import org.podval.tools.test.taskdef.{Selectors, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
@@ -98,7 +98,7 @@ object Running:
       arrayMap(testClassRun.testWildcards, TestWildcardSelector(_))
     )
     
-  def forEvent(event: Event): Running = event.selector match
+  def forEvent(selector: Selector): Running = selector match
     case testWildcardSelector: TestWildcardSelector => throw IllegalArgumentException(s"Illegal event selector $testWildcardSelector!")
     case testSelector        : TestSelector         => Test(testSelector)
     case nestedTestSelector  : NestedTestSelector   => NestedTest(nestedTestSelector)

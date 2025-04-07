@@ -1,9 +1,8 @@
-package org.podval.tools.test.taskdef
+package org.podval.tools.test.framework
 
-import org.podval.tools.test.framework.FrameworkDescriptor
 import sbt.testing.{Framework, Runner}
 
-abstract class FrameworkProvider:
+sealed abstract class FrameworkProvider:
   def frameworkName: String
 
   def framework: Framework
@@ -30,3 +29,14 @@ abstract class FrameworkProvider:
       frameworkClassLoader
     )
     
+object FrameworkProvider:
+  final class Forking(
+    override val frameworkName: String
+  ) extends FrameworkProvider:
+    override lazy val framework: Framework = frameworkDescriptor.newInstance.get
+
+  final class NonForking(
+    override val framework: Framework
+  ) extends FrameworkProvider:
+    override def frameworkName: String = framework.name
+  

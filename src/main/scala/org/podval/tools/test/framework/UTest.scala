@@ -24,7 +24,7 @@ object UTest extends FrameworkDescriptor(
   group = "com.lihaoyi",
   artifact = "utest",
   versionDefault = Version("0.8.5"),
-  className = "utest.runner.Framework",
+  // `utest.runner.Framework` logs using `println`; to force the use of the SBT logs:
+  className = "utest.runner.MillFramework",
   sharedPackages = List("utest.runner")
 ) with ScalaDependency.Maker
-

@@ -14,7 +14,6 @@ import org.gradle.internal.time.Clock
 final class RunTestClassProcessorFactory(
   includeTags: Array[String],
   excludeTags: Array[String],
-  runningInIntelliJIdea: Boolean,
   logLevelEnabled: LogLevel,
   dryRun: Boolean
 ) extends WorkerTestClassProcessorFactory with Serializable:
@@ -25,7 +24,6 @@ final class RunTestClassProcessorFactory(
   ): RunTestClassProcessor = RunTestClassProcessor(
     includeTags = includeTags,
     excludeTags = excludeTags,
-    runningInIntelliJIdea = runningInIntelliJIdea,
     logLevelEnabled = logLevelEnabled,
     dryRun = dryRun,
     idGenerator = idGenerator,

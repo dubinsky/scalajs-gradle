@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2025-04-
+- cleanup: install the default version of Node.js if none is installed locally nor a version to install specified;
+- cleanup: `RunTestClassProcessor`;
+- doc: `README` improvements;
+- dependency updates;
+
 ## [0.6.2] - 2025-04-06
 - cleanup: `ScalaJSPlugin` and `BackendDelegate`s;
 - cleanup: introduced `Running`;

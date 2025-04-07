@@ -28,13 +28,14 @@ object NestedSuitesTest:
 
   val fixtures: List[Fixture] = List(
     JUnit4Fixture,
-//    JUnit4ScalaJSFixture, // does not support nested suites
-//    MUnitFixture,
     ScalaCheckFixture,
     ScalaTestFixture,
-//    Specs2Fixture,
-//    UTestFixture,
+    UTestFixture,
     ZioTestFixture
+    // does not support nested suites
+    //    JUnit4ScalaJSFixture,
+    //    MUnitFixture,
+    //    Specs2Fixture,
   )
 
   val platforms: Seq[ScalaPlatform] = Seq(

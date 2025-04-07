@@ -5,8 +5,8 @@ import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.{ClassFileExtractionManager, TestFrameworkDetector}
 import org.gradle.internal.Factory
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
-import org.podval.tools.test.framework.JUnit4ScalaJS
-import org.podval.tools.test.taskdef.{FrameworkProviderNonForking, TestClassRun}
+import org.podval.tools.test.framework.{FrameworkProvider, JUnit4ScalaJS}
+import org.podval.tools.test.taskdef.TestClassRun
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, TaskDef}
 import scala.jdk.CollectionConverters.*
@@ -66,7 +66,7 @@ final class SbtTestFrameworkDetector(
             )
 
           TestClassRun(
-            frameworkProvider = FrameworkProviderNonForking(detector.framework),
+            frameworkProvider = FrameworkProvider.NonForking(detector.framework),
             getTestClassName = className,
             fingerprint = detector.fingerprint,
             explicitlySpecified = testFilterMatch.explicitlySpecified,

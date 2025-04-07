@@ -28,6 +28,8 @@ trait InstallableDependency[T] extends Dependency:
 
   def fromOs: Option[T] = None
 
+  def versionDefault: Version
+  
   final def getInstalled(version: Option[String], context: BuildContextCore): T = get(
     version = version,
     context = context,
@@ -44,23 +46,27 @@ trait InstallableDependency[T] extends Dependency:
     version: Option[String],
     context: BuildContextCore,
     ifDoesNotExist: (Dependency.WithVersion, T) => Unit
-  ): T = version match
-    case None =>
-      fromOs.getOrElse(context.fatalError(s"Needed dependency is not installed locally and no version to install is specified: $this"))
-    case Some(version) =>
-      val dependencyWithVersion: Dependency.WithVersion = withVersion(Version(version))
+  ): T =
+    def getInternal(version: Version) =      
+      val dependencyWithVersion: Dependency.WithVersion = withVersion(version)
       val result: T = installation(
         root = Files.fileSeq(
           installsInto(context, dependencyWithVersion),
           archiveSubdirectoryPath(dependencyWithVersion.version)
         )
       )
-
+  
       if exists(result)
       then logger.info(s"Existing $dependencyWithVersion detected: $result")
       else ifDoesNotExist(dependencyWithVersion, result)
       result
-
+    
+    version match
+      case Some(version) => getInternal(Version(version))
+      case None => fromOs.getOrElse:
+        logger.info(s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $versionDefault")
+        getInternal(versionDefault)
+  
   private def installsInto(context: BuildContextCore, dependencyWithVersion: Dependency.WithVersion): File =
     Files.file(context.frameworks, cacheDirectory, dependencyWithVersion.fileName)
 

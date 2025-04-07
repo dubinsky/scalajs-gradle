@@ -3,7 +3,8 @@ package org.podval.tools.test.taskdef
 import sbt.testing.{NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, TestSelector, TestWildcardSelector}
 
 object Selectors:
-  // I can not rely on the test framework implementing `equals()` on `Selector`s correctly.
+  // Although `Selector` subclasses do implement `equals()`, it does not seem to work for some reason:
+  // TestSelector(org.podval.tools.test.JUnit4Test.assumeFalse) != TestSelector(org.podval.tools.test.JUnit4Test.assumeFalse)
   def equal(left: Selector, right: Selector): Boolean = (left, right) match
     case (_: SuiteSelector, _: SuiteSelector) =>
       true

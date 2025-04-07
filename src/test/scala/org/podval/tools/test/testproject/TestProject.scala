@@ -106,9 +106,6 @@ object TestProject:
     
     Files.write(Files.file(projectDir, "build.gradle"),
       buildGradle(
-        nodeVersion = platform.backend match
-          case ScalaBackend.JS(nodeVersion) => Some(nodeVersion)
-          case _ => None,
         scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
         frameworks = frameworks.map((framework: FrameworkDescriptor) =>
           require(framework.isSupported(platform))
@@ -161,7 +158,6 @@ object TestProject:
        |""".stripMargin
 
   private def buildGradle(
-    nodeVersion: Option[Version],
     scalaLibraryDependency: Dependency.WithVersion,
     frameworks: Seq[Dependency.WithVersion],
     includeTestNames: Seq[String],
@@ -171,7 +167,6 @@ object TestProject:
     maxParallelForks: Int,
     link: String
   ): String =
-    val nodeVersionString: String = nodeVersion.fold("")((nodeVersion: Version) => s"node.version = '$nodeVersion'\n")
     val includeTestNamesString: String = includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")
     val excludeTestNamesString: String = excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")
     val includeTagsString: String = includeTags.map(string => s"'$string'").mkString("[", ", ", "]")
@@ -194,7 +189,6 @@ object TestProject:
        |$frameworksString
        |}
        |
-       |$nodeVersionString
        |$link
        |
        |test {
