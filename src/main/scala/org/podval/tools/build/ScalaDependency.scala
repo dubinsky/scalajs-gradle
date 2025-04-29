@@ -28,7 +28,7 @@ final class ScalaDependency private(
       then scalaVersion.toString
       else scalaPlatform.version.versionSuffix(scalaVersion)
 
-    s"${scalaPlatform.backend.suffixString}_$versionSuffix"
+    s"${scalaPlatform.backendKind.suffixString}_$versionSuffix"
 
   override protected def dependencyForArtifactName(
     artifactName: String
@@ -44,7 +44,7 @@ final class ScalaDependency private(
     val (artifactAndBackend: String, scalaVersionOpt: Option[String]) = Strings.split(artifactName, '_')
     val (artifact: String, backendSuffixOpt: Option[String]) = Strings.split(artifactAndBackend, '_')
     val matches: Boolean =
-      (scalaPlatform.backend.suffix == backendSuffixOpt) &&
+      (scalaPlatform.backendKind.suffix == backendSuffixOpt) &&
       scalaVersionOpt.isDefined
     if !matches then None else Some((artifact, Version(scalaVersionOpt.get)))
 

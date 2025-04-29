@@ -83,14 +83,11 @@ class GroupingFunSpec extends AnyFunSpec:
     platforms: Seq[ScalaPlatform]
   ): Unit = for platform: ScalaPlatform <- platforms do
     val fixturesSupported: Seq[Fixture] = fixtures
-      .filter(_.framework.isSupported(platform))
+      .filter(_.framework.forBackend(platform.backendKind).isSupported)
 
     if fixturesSupported.nonEmpty then
-      val platformDisplayName: String =
-        val platformVersion: Version = platform.scalaVersion
-        val platformSuffix: String = if platform.backend.isJS then " with ScalaJS" else ""
-        s"in Scala v$platformVersion$platformSuffix"
-
+      // TODO when we start running on different Node versions, use ScalaBackend to display Node version
+      val platformDisplayName: String = s"in Scala v${platform.scalaVersion} on ${platform.backendKind}"
       describe(platformDisplayName):
         forProject(
           projectName :+ platformDisplayName,

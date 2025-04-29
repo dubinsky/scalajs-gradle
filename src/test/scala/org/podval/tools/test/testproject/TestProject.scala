@@ -3,12 +3,15 @@ package org.podval.tools.test.testproject
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, JavaDependency, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{Dependency, JavaDependency, ScalaBackendKind, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.scalajsplugin.ScalaJSPlugin
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 
+// TODO delegate some parts to writers that BackendDelegates provide.
+// TODO move up to `org.podval.tools.testproject`
 final class TestProject(projectDir: File):
   private def gradleRunner: GradleRunner = GradleRunner.create.withProjectDir(projectDir)
 
@@ -92,11 +95,9 @@ object TestProject:
       root,
       Seq("build", "test-projects") ++ projectName ++ Seq(projectNameString)*
     )
-
-    val isScalaJS: Boolean = platform.backend.isJS
     
     Files.write(Files.file(projectDir, "gradle.properties"),
-      gradleProperties(!isScalaJS))
+      gradleProperties(platform.backendKind))
 
     Files.write(Files.file(projectDir, "settings.gradle"),
       settingsGradle(projectNameString, pluginProjectDir = root))
@@ -108,15 +109,22 @@ object TestProject:
       buildGradle(
         scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
         frameworks = frameworks.map((framework: FrameworkDescriptor) =>
-          require(framework.isSupported(platform))
-          framework.dependencyWithVersion(platform, framework.versionDefault(platform))
+          require(framework.forBackend(platform.backendKind).isSupported)
+          framework.dependencyWithVersion(
+            platform,
+            if platform.version.isScala3
+            then framework.versionDefault
+            else framework.versionDefaultScala2.getOrElse(framework.versionDefault)
+          )
         ),
         includeTestNames = includeTestNames,
         excludeTestNames = excludeTestNames,
         includeTags = includeTags,
         excludeTags = excludeTags,
         maxParallelForks = maxParallelForks,
-        link = if !isScalaJS then "" else link(mainClassName)
+        link = platform.backendKind match
+          case ScalaBackendKind.JS => link(mainClassName)
+          case _ => ""
       )
     )
 
@@ -132,8 +140,8 @@ object TestProject:
 
       Files.write(scalaFile(projectDir, isTest, sourceFile.name), contentEffective)
 
-  private def gradleProperties(isScalaJSDisabled: Boolean): String =
-    s"""org.podval.tools.scalajs.disabled=$isScalaJSDisabled
+  private def gradleProperties(backendKind: ScalaBackendKind): String =
+    s"""${ScalaJSPlugin.modeProperty}=$backendKind
        |""".stripMargin
 
   private def settingsGradle(projectName: String, pluginProjectDir: File): String =

@@ -10,9 +10,9 @@ final class ScalaLibrary(
 ):
   require(scala3.nonEmpty || scala2.nonEmpty, "No Scala library!")
   
-  def toPlatform(backend: ScalaBackend): ScalaPlatform = ScalaPlatform(
+  def toPlatform(backendKind: ScalaBackendKind): ScalaPlatform = ScalaPlatform(
     scalaVersion = scala3.getOrElse(scala2.get).version,
-    backend
+    backendKind
   )
 
   override def toString: String = s"ScalaLibrary(scala3=${scala3.map(_.version)}, scala2=${scala2.map(_.version)})"

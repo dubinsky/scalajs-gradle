@@ -17,6 +17,7 @@ import org.gradle.api.plugins.scala.ScalaPlugin as Original
 final class ScalaPlugin(
   isCreate: Boolean,
   sourceRoot: String,
+  sharedSourceRoot: String,
   gradleNames: GradleNames,
   project: Project,
   jvmPluginServices: JvmPluginServices // TODO get from the project?
@@ -25,6 +26,7 @@ final class ScalaPlugin(
     ScalaBasePlugin(
       isCreate,
       sourceRoot,
+      sharedSourceRoot,
       gradleNames,
       project,
       jvmPluginServices

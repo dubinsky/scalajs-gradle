@@ -1,28 +1,45 @@
 package org.podval.tools.scalajsplugin
 
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.{Project, Task}
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaBackend, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.scalajsplugin.gradle.ScalaBasePlugin
 import scala.jdk.CollectionConverters.*
 
 abstract class BackendDelegate(
   project: Project,
-  gradleNames: GradleNames
+  isModeMixed: Boolean
 ):
-  def setUpProject(): TestTaskMaker[?]
+  protected def kind: BackendDelegateKind
 
-  protected def backend: ScalaBackend
+  protected final val gradleNames: GradleNames = GradleNames(if isModeMixed then kind.gradleNamesSuffix else "")
+
+  final def setUpProjectAndTestTask(jvmPluginServices: JvmPluginServices): Unit =
+    if isModeMixed then ScalaBasePlugin(
+      project = project,
+      jvmPluginServices = jvmPluginServices,
+      isCreate = kind.isCreateForMixedMode,
+      sourceRoot = kind.sourceRoot,
+      sharedSourceRoot = BackendDelegateKind.sharedSourceRoot,
+      gradleNames = gradleNames
+    ).apply()
+
+    val addTestTask: AddTestTask[?] = setUpProject()
+    addTestTask.addTestTask(isModeMixed, project)
+  
+  protected def setUpProject(): AddTestTask[?]
 
   protected def configurationToAddToClassPath: Option[String]
   
-  def afterEvaluate(
+  final def afterEvaluate(
     pluginScalaPlatform: ScalaPlatform
   ): AddToClassPath =
     val projectScalaLibrary: ScalaLibrary = 
       ScalaLibrary.getFromConfiguration(project, gradleNames.implementationConfigurationName)
       
-    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(backend)
+    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(kind.backendKind)
     
     dependencyRequirements(pluginScalaPlatform, projectScalaPlatform).foreach(_.applyToConfiguration(project))
     

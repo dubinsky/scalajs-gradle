@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{Dependency, ScalaDependency, ScalaPlatform, Version}
+import org.podval.tools.build.{Dependency, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.
@@ -18,28 +18,17 @@ abstract class FrameworkDescriptor(
   additionalOptions: Array[String] = Array.empty,
   final val usesTestSelectorAsNestedTestSelector: Boolean = false,
   final val versionDefaultScala2: Option[Version] = None,
-  final val isJvmSupported: Boolean = true,
-  final val isScalaJSSupported: Boolean = true,
-  final val jvmUnderlying: Option[Dependency.Maker[?]] = None,
-  final val scalaJSUnderlying: Option[ScalaDependency.Maker] = None
+  final val forJVM: ForBackend = ForBackend(),
+  final val forJS: ForBackend = ForBackend(),
+  final val forNative: ForBackend = ForBackend()
 ) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
-  if isScalaJSSupported then require(this.isInstanceOf[ScalaDependency.Maker])
+  if forJS.isSupported then require(this.isInstanceOf[ScalaDependency.Maker])
 
-  final def versionDefault(platform: ScalaPlatform): Version =
-    if platform.version.isScala3
-    then versionDefault
-    else versionDefaultScala2.getOrElse(versionDefault)
-  
-  final def isSupported(platform: ScalaPlatform): Boolean = 
-      if platform.backend.isJS
-      then isScalaJSSupported
-      else isJvmSupported
-  
-  final def underlying(platform: ScalaPlatform): Option[Dependency.Maker[?]] =
-    if platform.backend.isJS
-    then scalaJSUnderlying
-    else jvmUnderlying
-    
+  final def forBackend(kind: ScalaBackendKind): ForBackend = kind match
+    case ScalaBackendKind.JVM    => forJVM
+    case ScalaBackendKind.JS     => forJS
+    case ScalaBackendKind.Native => forNative
+
   final def args(
     includeTags: Array[String],
     excludeTags: Array[String]
@@ -49,7 +38,7 @@ abstract class FrameworkDescriptor(
   ))
 
 object FrameworkDescriptor:
-  private def all: Array[FrameworkDescriptor] = Array(
+  private val all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,
     JUnit5,
@@ -61,8 +50,7 @@ object FrameworkDescriptor:
     ZioTest
   )
 
-  def jvmSupported    : List[FrameworkDescriptor] = all.toList.filter(_.isJvmSupported    )
-  def scalaJSSupported: List[FrameworkDescriptor] = all.toList.filter(_.isScalaJSSupported)
+  def forBackend(kind: ScalaBackendKind): List[FrameworkDescriptor] = all.toList.filter(_.forBackend(kind).isSupported)
 
   def forName(name: String): FrameworkDescriptor = arrayFind(all, _.name == name)
     .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))

@@ -28,7 +28,8 @@ object JUnit4 extends FrameworkDescriptor(
   // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
   additionalOptions = Array("--ignore-runners=none"),
   usesTestSelectorAsNestedTestSelector = true,
+  forJVM = ForBackend(underlying = Some(JUnit4Underlying)),
   // This is a JVM-only test framework
-  isScalaJSSupported = false,
-  jvmUnderlying = Some(JUnit4Underlying)
+  forJS = ForBackend.notSupported,
+  forNative = ForBackend.notSupported,
 ) with JavaDependency.Maker

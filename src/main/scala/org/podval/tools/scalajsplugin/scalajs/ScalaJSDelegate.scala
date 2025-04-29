@@ -5,26 +5,26 @@ import org.gradle.api.{Action, Project}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames, TestTaskMaker}
+import org.podval.tools.scalajsplugin.{AddTestTask, BackendDelegate, BackendDelegateKind, GradleNames}
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 final class ScalaJSDelegate(
   project: Project,
-  gradleNames: GradleNames
+  isModeNixed: Boolean
 ) extends BackendDelegate(
   project,
-  gradleNames
+  isModeNixed
 ):
-  override protected def backend: ScalaBackend = ScalaBackend.JS()
+  override protected def kind: BackendDelegateKind = BackendDelegateKind.JS
 
   override protected def configurationToAddToClassPath: Option[String] = Some(ScalaJSDelegate.scalaJSConfigurationName)
 
-  override def setUpProject(): TestTaskMaker[ScalaJSTestTask] =
+  override protected def setUpProject(): AddTestTask[ScalaJSTestTask] =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)
     nodeExtension.getModules.convention(List("jsdom").asJava)
 
@@ -61,8 +61,9 @@ final class ScalaJSDelegate(
           configureLinkTask(linkTask, gradleNames.testSourceSetName)
     )
 
-    TestTaskMaker[ScalaJSTestTask](
+    AddTestTask[ScalaJSTestTask](
       gradleNames.testSourceSetName,
+      gradleNames.testTaskName,
       classOf[ScalaJSTestTask],
       (testTask: ScalaJSTestTask) => testTask.dependsOn(linkTest.get)
     )

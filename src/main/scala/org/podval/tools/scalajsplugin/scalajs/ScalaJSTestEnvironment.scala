@@ -1,5 +1,6 @@
 package org.podval.tools.scalajsplugin.scalajs
 
+import org.podval.tools.build.ScalaBackendKind
 import org.podval.tools.scalajs.ScalaJSRunCommon
 import org.podval.tools.test.environment.TestEnvironment
 import org.podval.tools.test.framework.FrameworkDescriptor
@@ -21,7 +22,7 @@ final class ScalaJSTestEnvironment(runCommon: ScalaJSRunCommon) extends TestEnvi
   protected def expandClassPath: Boolean = false
   
   override protected def loadFrameworks: List[Framework] = testAdapter
-    .loadFrameworks(FrameworkDescriptor.scalaJSSupported.map((descriptor: FrameworkDescriptor) => List(descriptor.className)))
+    .loadFrameworks(FrameworkDescriptor.forBackend(ScalaBackendKind.JS).map((descriptor: FrameworkDescriptor) => List(descriptor.className)))
     .flatten
 
   override def sourceMapper: Option[ClosureCompilerSourceMapper] = runCommon

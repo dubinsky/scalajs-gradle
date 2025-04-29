@@ -1,6 +1,6 @@
 package org.podval.tools.scalajsplugin
 
-import org.podval.tools.build.{ScalaModules, ScalaVersion}
+import org.podval.tools.build.{ScalaModules, ScalaVersion, Version}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.ScalaJS
 import org.podval.tools.test.{SbtTestInterface, framework}
@@ -11,9 +11,9 @@ import java.io.File
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
 object VersionsWriter:
-  private val versions: Seq[(String, Any)] = Seq(
-    "gradle" -> "8.14",
-    "plugin" -> "0.6.2",
+  private val versions: Seq[(String, Version)] = Seq(
+    "gradle" -> Version("8.14"),
+    "plugin" -> Version("0.6.3"),
     
     "scala" -> ScalaVersion.Scala3.versionDefault,
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
@@ -41,13 +41,17 @@ object VersionsWriter:
     "framework-zio-test" -> framework.ZioTest.versionDefault
   )
 
-  private val includeBoundary: String = "// INCLUDED ATTRIBUTES"
-
+  val attributes: Seq[(String, String)] = Seq(
+    "scalajsModeProperty" -> ScalaJSPlugin.modeProperty,
+    "maiflaiProperty" -> ScalaJSPlugin.maiflaiProperty,
+    "mixedModeName" -> ScalaJSPlugin.mixedModeName
+  )
+  
   def main(args: Array[String]): Unit =
     def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
 
     Files.write(File("gradle.properties").getAbsoluteFile, toString(
-      Seq("org.podval.tools.scalajs.disabled = true") ++
+      Seq(s"${ScalaJSPlugin.modeProperty} = ${BackendDelegateKind.JVM.name}") ++
         versions.map((name, value) =>
           s"version_${name.replace('-', '_')} = ${value.toString}"
         )
@@ -57,6 +61,8 @@ object VersionsWriter:
 
     Files.write(readmeFile, toString(Strings.splice(
       in = Files.read(readmeFile),
-      boundary = includeBoundary,
-      patch = versions.map((name, value) => s":version-$name: ${value.toString}")
+      boundary = "// INCLUDED ATTRIBUTES",
+      patch = 
+        versions.map((name, version) => s":version-$name: ${version.toString}") ++
+        attributes.map((name, value) => s":attribute-$name: $value")
     )))

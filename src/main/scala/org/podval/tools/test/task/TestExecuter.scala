@@ -12,12 +12,13 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
+import org.podval.tools.build.ScalaBackendKind
 import org.podval.tools.test.environment.SourceMapper
 import org.podval.tools.test.run.{FixRootTestSuiteOutputTestResultProcessor, RunTestClassProcessorFactory,
   SourceMappingTestResultProcessor, TracingTestResultProcessor, WriteTestClassProcessor}
 
 class TestExecuter(
-  isScalaJS: Boolean,
+  backendKind: ScalaBackendKind,
   sourceMapper: Option[SourceMapper],
   testFilter: DefaultTestFilter,
   maxWorkerCount: Int,
@@ -62,10 +63,10 @@ class TestExecuter(
     classpath: ForkedTestClasspath,
     workerConfigurationAction: Action[WorkerProcessBuilder],
     documentationRegistry: DocumentationRegistry
-  ): TestClassProcessor =
-    if isScalaJS then
+  ): TestClassProcessor = backendKind match
+    case ScalaBackendKind.JS =>
       workerTestClassProcessorFactory.asInstanceOf[RunTestClassProcessorFactory].createNonForking(clock)
-    else
+    case _ => 
       // WriteTestClassProcessor is at the end of the TestClassProcessor chain created in DefaultTestExecuter,
       // right before the ForkingTestClassProcessor,
       // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor can do their jobs.
