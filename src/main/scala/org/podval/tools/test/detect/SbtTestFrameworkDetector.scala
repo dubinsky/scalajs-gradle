@@ -66,7 +66,7 @@ final class SbtTestFrameworkDetector(
             )
 
           TestClassRun(
-            frameworkProvider = FrameworkProvider.NonForking(detector.framework),
+            frameworkProvider = FrameworkProvider(detector.framework),
             getTestClassName = className,
             fingerprint = detector.fingerprint,
             explicitlySpecified = testFilterMatch.explicitlySpecified,
