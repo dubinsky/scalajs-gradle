@@ -57,7 +57,7 @@ object TestClassRun:
   // (https://github.com/scala-js/scala-js/pull/5132#discussion_r1967584316)
   final def read(string: String): TestClassRun = fromStrings(string.split(separator, -1))
   private def fromStrings(strings: Array[String]): TestClassRun = TestClassRun(
-    frameworkProvider = FrameworkProvider.Forking(frameworkName = strings(0)),
+    frameworkProvider = FrameworkProvider(name = strings(0)),
     getTestClassName = strings(1),
     fingerprint =
       val isAnnotated: Boolean = toBoolean(strings(2))

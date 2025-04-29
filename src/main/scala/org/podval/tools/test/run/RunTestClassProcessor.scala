@@ -8,7 +8,7 @@ import org.gradle.internal.time.Clock
 import org.podval.tools.test.framework.FrameworkProvider
 import org.podval.tools.test.taskdef.{Running, TaskDefs, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
-import sbt.testing.{Runner, Task, TaskDef}
+import sbt.testing.{Framework, Runner, Task, TaskDef}
 
 object RunTestClassProcessor:
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
@@ -39,10 +39,10 @@ final class RunTestClassProcessor(
   private def getRunner(frameworkProvider: FrameworkProvider): Runner = synchronized:
     val frameworkName: String = frameworkProvider.frameworkName
     arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
-      val runner: Runner = frameworkProvider.makeRunner(includeTags, excludeTags)
+      val runner: Runner = frameworkProvider.runner(includeTags = includeTags, excludeTags = excludeTags)
       runners = arrayAppend(runners, (frameworkName, runner))
       runner
-
+  
   override def stop(): Unit = arrayForEach(runners, (frameworkName, runner) =>
     testResultProcessor.output(
       LogLevel.INFO,

@@ -20,7 +20,7 @@
 :version-framework-munit: 1.1.1
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalatest: 3.2.19
-:version-framework-specs2: 5.6.2
+:version-framework-specs2: 5.6.3
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.17
@@ -862,8 +862,7 @@ class ScalaTestNesting extends org.scalatest.Suites(
 - coordinates: `org.specs2:specs2-core`;
 - current version: {version-framework-specs2};
 - latest version for Scala 2: 4.20.9;
-- test filtering: works when individual test case names are used,
-but if test case wildcards are used it runs all test cases in the class;
+- test filtering: works fine;
 - nested suites: not supported;
 - assumptions: not supported;
 - ignoring a test: not supported;
@@ -970,6 +969,10 @@ https://github.com/scalatest/scalatest/issues/2357[2357];
 
 - MUnit:
 _https://github.com/scalameta/munit/pull/918[918]_;
+
+- specs2:
+_https://github.com/etorreborre/specs2/pull/1327[1327]_;
+
 
 
 [#intellij-idea-integration]
@@ -1514,5 +1517,7 @@ and https://github.com/scala-js/scala-js/pull/5134[test duration];
 - https://github.com/cheeseng[cheeseng] for helping me understand
 the https://github.com/scalatest/scalatest/issues/2357[problem]
 with running nested ScalaTest suites using my plugin;
-- https://github.com/tgodzik[tgodzik] for accepting my fix to MUnit's
+- https://github.com/tgodzik[tgodzik] for accepting my fix for MUnit's
 reporting of https://github.com/scalameta/munit/pull/918[test duration];
+- https://github.com/etorreborre[etorreborre] for accepting my fix for specs2's
+treatment of https://github.com/etorreborre/specs2/pull/1327[test wildcards];
