@@ -4,6 +4,7 @@ import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.{ClassFileExtractionManager, TestFrameworkDetector}
 import org.gradle.internal.Factory
+import org.podval.tools.build.ScalaBackendKind
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
 import org.podval.tools.test.framework.{FrameworkProvider, JUnit4ScalaJS}
 import org.podval.tools.test.taskdef.TestClassRun
@@ -14,7 +15,7 @@ import java.io.File
 
 // Inspired by org.gradle.api.internal.tasks.testing.detection.AbstractTestFrameworkDetector.
 final class SbtTestFrameworkDetector(
-  isScalaJS: Boolean,
+  backendKind: ScalaBackendKind,
   loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
   testFilter: TestFilter,
   testTaskTemporaryDir: Factory[File]
@@ -106,8 +107,9 @@ final class SbtTestFrameworkDetector(
     result
 
   // JUni4 for Scala.js annotated detector if running on Scala.js with JUnit for Scala.js on classpath.
-  private lazy val jUnit4ScalaJSAnnotatedDetector: Option[AnnotatedFingerprintDetector] =
-    if !isScalaJS then None else annotatedDetectors.find(_.framework.name == JUnit4ScalaJS.name)
+  private lazy val jUnit4ScalaJSAnnotatedDetector: Option[AnnotatedFingerprintDetector] = backendKind match
+    case ScalaBackendKind.JS => annotatedDetectors.find(_.framework.name == JUnit4ScalaJS.name)
+    case _ => None
 
   private def processClassFile(classFile: File): TestClassVisitor =
     val testClassVisitor: TestClassVisitor = TestClassVisitor(this, classFile)

@@ -61,5 +61,5 @@ object ZioTest extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-tags",
   excludeTagsOption = "-ignore-tags",
-  isScalaJSSupported = false
+  forJS = ForBackend.notSupported
 ) with ScalaDependency.Maker

@@ -1,6 +1,6 @@
 package org.podval.tools.test.nested
 
-import org.podval.tools.build.{ScalaBackend, ScalaPlatform, ScalaVersion}
+import org.podval.tools.build.{ScalaBackendKind, ScalaPlatform, ScalaVersion}
 import org.podval.tools.test.testproject.{Feature, Fixture, GroupingFunSpec}
 
 class NestedSuitesTest extends GroupingFunSpec:
@@ -39,12 +39,12 @@ object NestedSuitesTest:
   )
 
   val platforms: Seq[ScalaPlatform] = Seq(
-    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackend.Jvm),
-    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackend.JS ()),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.JVM),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.JS ),
 
-    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackend.Jvm),
-    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackend.JS ()),
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.JVM),
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.JS ),
 
-    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackend.Jvm),
-    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackend.JS ()),
+    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.JVM),
+    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.JS ),
   )

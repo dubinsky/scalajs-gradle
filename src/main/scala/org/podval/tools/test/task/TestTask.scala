@@ -8,12 +8,12 @@ import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.{Internal, TaskAction}
+import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.Gradle
+import org.podval.tools.build.{Gradle, ScalaBackendKind}
 import org.podval.tools.test.environment.TestEnvironment
 import java.io.File
 import java.lang.reflect.Method
@@ -35,7 +35,7 @@ abstract class TestTask extends Test:
   final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
 
   private lazy val sbtTestFramework: SbtTestFramework = SbtTestFramework(
-    isScalaJS = isScalaJS,
+    backendKind = backendKind,
     logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
     defaultTestFilter = getFilter.asInstanceOf[DefaultTestFilter],
     options = SbtTestFrameworkOptions(),
@@ -74,7 +74,7 @@ abstract class TestTask extends Test:
       closeTestEnvironment()
 
   final override def createTestExecuter: TestExecuter = TestExecuter(
-    isScalaJS = isScalaJS,
+    backendKind = backendKind,
     sourceMapper = getTestEnvironment.sourceMapper,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
@@ -86,12 +86,11 @@ abstract class TestTask extends Test:
     documentationRegistry = getServices.get(classOf[DocumentationRegistry])
   )
 
-  @Internal protected def isScalaJS: Boolean
+  protected def backendKind: ScalaBackendKind
 
-  final override def getMaxParallelForks: Int =
-    if isScalaJS
-    then 1 
-    else super.getMaxParallelForks
+  final override def getMaxParallelForks: Int = backendKind match
+    case ScalaBackendKind.JS => 1
+    case _ => super.getMaxParallelForks
 
 object TestTask:
   private def useTestFramework(task: Test, value: TestFramework): Unit =

@@ -15,7 +15,7 @@ object JUnit5 extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.ListWithEq,
   includeTagsOption = "--include-tags",
   excludeTagsOption = "--exclude-tags",
-  // This is a JVM-only test framework
-  isScalaJSSupported = false,
-  isJvmSupported = false
+  forJVM = ForBackend.notSupported,
+  forJS = ForBackend.notSupported,
+  forNative = ForBackend.notSupported
 ) with JavaDependency.Maker

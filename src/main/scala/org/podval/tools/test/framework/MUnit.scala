@@ -41,7 +41,7 @@ object MUnit extends FrameworkDescriptor(
   additionalOptions = Array("--logger=sbt"),
   usesTestSelectorAsNestedTestSelector = true,
   // on JVM, uses underlying JUni4 - via its own internal interface
-  jvmUnderlying = Some(JUnit4Underlying),
-  // on Scala.js, uses JUnit4 for Scala.js
-  scalaJSUnderlying = Some(JUnit4ScalaJS)
+  forJVM = ForBackend(underlying = Some(JUnit4Underlying)),
+  // on Scala.js, uses JUnit4 for Scala.js - with its own sbt.testing.Framework implementation
+  forJS = ForBackend(underlying = Some(JUnit4ScalaJS))
 ) with ScalaDependency.Maker

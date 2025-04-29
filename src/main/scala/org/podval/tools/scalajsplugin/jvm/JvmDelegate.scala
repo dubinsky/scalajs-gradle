@@ -1,26 +1,28 @@
 package org.podval.tools.scalajsplugin.jvm
 
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaPlatform}
-import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames, TestTaskMaker}
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
+import org.podval.tools.build.{DependencyRequirement, ScalaPlatform}
+import org.podval.tools.scalajsplugin.{AddTestTask, BackendDelegate, BackendDelegateKind}
 import org.podval.tools.test.SbtTestInterface
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 final class JvmDelegate(
   project: Project,
-  gradleNames: GradleNames
+  isModeMixed: Boolean
 ) extends BackendDelegate(
   project,
-  gradleNames
+  isModeMixed
 ):
-  override protected def backend: ScalaBackend = ScalaBackend.Jvm
-
+  override protected def kind: BackendDelegateKind = BackendDelegateKind.JVM
+  
   override protected def configurationToAddToClassPath: Option[String] = None
 
   override protected def configureProject(isScala3: Boolean): Unit = ()
 
-  override def setUpProject(): TestTaskMaker[JvmTestTask] = TestTaskMaker[JvmTestTask](
+  override protected def setUpProject(): AddTestTask[JvmTestTask] = AddTestTask[JvmTestTask](
     gradleNames.testSourceSetName,
+    gradleNames.testTaskName,
     classOf[JvmTestTask],
     (_: JvmTestTask) => ()
   )

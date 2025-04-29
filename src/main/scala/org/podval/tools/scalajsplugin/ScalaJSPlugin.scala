@@ -3,63 +3,25 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.{Plugin, Project}
 import org.gradle.api.plugins.scala.ScalaPlugin
-import org.podval.tools.build.{GradleClassPath, ScalaBackend, ScalaLibrary, ScalaPlatform}
-import org.podval.tools.scalajsplugin.gradle.ScalaBasePlugin
+import org.podval.tools.build.{GradleClassPath, ScalaBackendKind, ScalaLibrary, ScalaPlatform}
 import org.podval.tools.scalajsplugin.jvm.JvmDelegate
-import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
 import org.slf4j.{Logger, LoggerFactory}
 import javax.inject.Inject
 
 final class ScalaJSPlugin @Inject(
-  jvmPluginServices: JvmPluginServices,
+  jvmPluginServices: JvmPluginServices
 ) extends Plugin[Project]:
-  import ScalaJSPlugin.Mode
-
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
-    val mode: Mode = ScalaJSPlugin.getMode(project)
-    
-    // Source sets, configurations and tasks!
-    mode match
-      case Mode.JVM =>
-      case Mode.JS =>
-      case Mode.Mixed =>
-        ScalaBasePlugin(
-          project = project,
-          jvmPluginServices = jvmPluginServices,
-          isCreate = false,
-          sourceRoot = GradleNames.jvmSourceRoot,
-          gradleNames = GradleNames.jvm
-        )
-          .apply()
-        
-        // TODO Scala.js side!
+    val delegates: Seq[BackendDelegate] = ScalaJSPlugin.getDelegates(project)
 
-    val delegates: Seq[BackendDelegate] = mode match
-      case Mode.JVM => Seq(
-        JvmDelegate(project, GradleNames.jvm)
-      )
-      case Mode.JS => Seq(
-        ScalaJSDelegate(project, GradleNames.jvm)
-      )
-      case Mode.Mixed => Seq(
-        JvmDelegate(project, GradleNames.jvm),
-        // TODO ScalaJSDelegate(project, GradleNames.js)
-      )
-
-    for delegate: BackendDelegate <- delegates do
-      // Set up everything.
-      val testTaskMaker: TestTaskMaker[?] = delegate.setUpProject()
-      
-      // Add test tasks.
-      if mode == Mode.Mixed && delegate.isInstanceOf[ScalaJSDelegate]
-      then testTaskMaker.register(project, "testJS")
-      else testTaskMaker.replace (project, "test"  )
+    // Source sets, configurations, and tasks!
+    delegates.foreach(_.setUpProjectAndTestTask(jvmPluginServices))
     
     project.afterEvaluate: (project: Project) =>
       val pluginScalaPlatform: ScalaPlatform =
-        ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackend.Jvm)
+        ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackendKind.JVM)
 
       // Configure everything and add dependencies to configurations.
       val addToClassPath: Seq[AddToClassPath] = delegates.map(_.afterEvaluate(pluginScalaPlatform))
@@ -68,35 +30,37 @@ final class ScalaJSPlugin @Inject(
       addToClassPath.foreach(_.add(project))
       addToClassPath.foreach(_.verify(project))
 
-private object ScalaJSPlugin:
-  private enum Mode derives CanEqual:
-    case JVM, JS, Mixed
-
+object ScalaJSPlugin:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSPlugin.getClass)
 
-  private val disabledProperty: String = "org.podval.tools.scalajs.disabled"
-  private val maiflaiProperty : String = "com.github.maiflai.gradle-scalatest.mode"
+  val modeProperty: String = "org.podval.tools.scalajs.mode"
+  val mixedModeName: String = "Mixed"
+  val maiflaiProperty: String = "com.github.maiflai.gradle-scalatest.mode"
 
-  private def getMode(project: Project) =
-    val isJSDisabled: Boolean =
-      Option(project.findProperty(maiflaiProperty )).isDefined ||
-      Option(project.findProperty(disabledProperty)).exists(_.toString.toBoolean)
+  private def getDelegates(project: Project): Seq[BackendDelegate] =
+    Option(project.findProperty(modeProperty)).map(_.toString) match
+      case Some(name) =>
+        if name == mixedModeName then None else BackendDelegateKind
+          .all
+          .find(_.name == name)
+          .orElse(throw IllegalArgumentException(s"Unknown mode '$name'"))
 
-    val sourceRootPresent: Boolean =
-      project.file(GradleNames.jvmSourceRoot).exists ||
-      project.file(GradleNames.jsSourceRoot).exists
+      case None =>
+        val isSourceRootPresent: Boolean = BackendDelegateKind
+          .all
+          .map(_.sourceRoot)
+          .exists(sourceRoot => project.file(sourceRoot).exists)
 
-    if isJSDisabled
-    then
-      logger.info("ScalaJSPlugin: running in JVM mode; Scala.js is disabled.")
-      Mode.JVM
-    else if !sourceRootPresent
-    then
-      logger.info("ScalaJSPlugin: running in Scala.js mode.")
-      Mode.JS
-    else
-      if project.file("src").exists then
-        logger.warn("ScalaJSPlugin: Both 'src' and platform-specific source roots are present! Ignoring 'src'.")
-        
-      logger.info("ScalaJSPlugin: running in mixed JVM/Scala.js mode.")
-      Mode.Mixed
+        if isSourceRootPresent then None else Some(
+          if Option(project.findProperty(maiflaiProperty)).isDefined
+          then BackendDelegateKind.JVM
+          else BackendDelegateKind.JS
+        )
+    match
+      case None =>
+        logger.info(s"ScalaJSPlugin: running in mixed mode.")
+        // TODO BackendDelegateMaker.all.map(_.mk(project, isModeMixed = true))
+        Seq(JvmDelegate(project, isModeMixed = true))
+      case Some(kind) =>
+        logger.info(s"ScalaJSPlugin: running in ${kind.name} mode.")
+        Seq(kind.mk(project, isModeMixed = false))

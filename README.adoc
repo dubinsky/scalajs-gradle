@@ -4,7 +4,7 @@
 :toc: preamble
 // INCLUDED ATTRIBUTES
 :version-gradle: 8.14
-:version-plugin: 0.6.2
+:version-plugin: 0.6.3
 :version-scala: 3.6.4
 :version-scala2-minor: 2.13
 :version-scala2: 2.13.16
@@ -24,6 +24,9 @@
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.17
+:attribute-scalajsModeProperty: org.podval.tools.scalajs.mode
+:attribute-maiflaiProperty: com.github.maiflai.gradle-scalatest.mode
+:attribute-mixedModeName: Mixed
 // INCLUDED ATTRIBUTES
 
 image::https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -121,23 +124,25 @@ but there is no harm in it either;
 either way, it is the responsibility of the project using the plugin
 to add a standard `Scala` library dependency that the Scala plugin requires.
 
+TODO document modes
+
 Unless `Scala.js` support is disabled, plugin will run in Scala.js mode;
 to disable Scala.js and use the plugin for testing
 plain Scala code with `sbt`-compatible testing frameworks,
 put the following into the `gradle.properties` file of the project:
 
-[source,properties]
+[source,properties,subs="+attributes"]
 ----
-org.podval.tools.scalajs.disabled=true
+{attribute-scalajsModeProperty}=JVM
 ----
 
 In addition, the _presence_ of the
 https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]'s
 `mode` property also disables Scala.js:
 
-[source,properties]
+[source,properties,subs="+attributes"]
 ----
-com.github.maiflai.gradle-scalatest.mode = ...
+{attribute-maiflaiProperty} = ...
 ----
 (The _value_ of the `mode` property is ignored.)
 This way, this plugin can be used as a drop-in replacement for
