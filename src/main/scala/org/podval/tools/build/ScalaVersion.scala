@@ -5,7 +5,7 @@ sealed trait ScalaVersion:
     isSameMajor(scalaVersion) &&
     isScalaVersionOfCorrectLength(scalaVersion)
 
-  final def isSameMajor(version: Version): Boolean = version.major == versionMajor
+  final def isSameMajor(version: Version): Boolean = version.simple.segmentInt(0) == versionMajor
 
   protected def versionMajor: Int
 
@@ -31,26 +31,29 @@ object ScalaVersion:
   object Scala3 extends ScalaVersion:
     override protected def versionMajor: Int = 3
     override def isScala3: Boolean = true
-    override def versionSuffix(scalaVersion: Version): String = scalaVersion.major.toString
+    override def versionSuffix(scalaVersion: Version): String = scalaVersion.simple.segment(0)
     override protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
     
-    val versionDefault: Version = Version("3.6.4")
+    val versionDefault: Version = Version("3.7.0")
 
     override protected object ScalaLibrary extends JavaDependency.Maker:
       override def versionDefault: Version = Scala3.versionDefault
       override def group: String = ScalaVersion.group
       override def artifact: String = "scala3-library_3"
+      override def description: String = "Scala 3 Library."
 
     // There is no Scala 2 equivalent
     object ScalaLibraryJS extends ScalaDependency.Maker:
       override def versionDefault: Version = Scala3.versionDefault
       override def group: String = ScalaVersion.group
       override def artifact: String = "scala3-library"
+      override def description: String = "Scala 3 library in Scala.js."
 
   object Scala2 extends ScalaVersion:
     override protected def versionMajor: Int = 2
     override def isScala3: Boolean = false
-    override def versionSuffix(scalaVersion: Version): String = scalaVersion.majorAndMinorString
+    override def versionSuffix(scalaVersion: Version): String =
+      scalaVersion.simple.segment(0) + "." + scalaVersion.simple.segment(1)
     override protected def isScalaVersionOfCorrectLength(scalaVersion: Version): Boolean = true
     
     // Scala 2 version used by Scala 3 from 3.0.0 to the current is 2.13.
@@ -60,6 +63,7 @@ object ScalaVersion:
       override def versionDefault: Version = Scala2.Scala213.versionDefault
       override def group: String = ScalaVersion.group
       override def artifact: String = "scala-library"
+      override def description: String = "Scala 2 Library."
 
     object Scala213:
       val versionDefault: Version = Version("2.13.16")

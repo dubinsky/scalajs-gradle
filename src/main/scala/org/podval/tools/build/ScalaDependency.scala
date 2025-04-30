@@ -59,18 +59,9 @@ object ScalaDependency:
     override def classifier(version: Version): Option[String] = findable.classifier(version)
     override def extension(version: Version): Option[String] = findable.extension(version)
     override protected def artifactNameSuffix: String = findable.artifactNameSuffix(scalaVersion)
-
-    // TODO - implement? (using ScalaPlatform.artifactAndScalaVersion())
-    override protected def verifyRequiredMore(): Unit = ()
-//    if found.dependency.isInstanceOf[Scala2Dependency] then
-//      val scalaVersion: String = getScalaVersion(found.dependency.asInstanceOf[Scala2Dependency])
-//      val version: Scala2Dependency.Version = found.version.asInstanceOf[Scala2Dependency.Version]
-//      if version.scalaVersion != scalaVersion then project.getLogger.info(
-//        s"Found $found, but the project uses Scala 2 version $scalaVersion", null, null, null
-//      )
-
+  
   trait Maker extends Dependency.Maker[ScalaPlatform]:
-    def jvm: Boolean = false
+    def backendKind: Option[ScalaBackendKind] = None
     def scala2: Boolean = false
     def isScalaVersionFull: Boolean = false
     def scalaVersion(scalaPlatform: ScalaPlatform): Version = scalaPlatform.scalaVersion
@@ -81,12 +72,11 @@ object ScalaDependency:
         then scalaPlatform
         else scalaPlatform.toScala2
 
-      def adjustForJvm(scalaPlatform: ScalaPlatform) =
-        if !jvm
-        then scalaPlatform
-        else scalaPlatform.toJvm
+      def adjustForBackend(scalaPlatform: ScalaPlatform) = backendKind
+        .map(scalaPlatform.withBackend)
+        .getOrElse(scalaPlatform)
 
-      adjustForJvm(adjustForScala2(scalaPlatform))
+      adjustForBackend(adjustForScala2(scalaPlatform))
 
     final override def findable(scalaPlatform: ScalaPlatform): ScalaDependency = ScalaDependency(
       scalaPlatform = adjusted(scalaPlatform),
@@ -104,7 +94,11 @@ object ScalaDependency:
   
     final override def dependency(scalaPlatform: ScalaPlatform): WithScalaVersion =
       findable(scalaPlatform).withScalaVersion(scalaVersion(adjusted(scalaPlatform)))
-  
-  trait MakerScala2Jvm extends Maker:
-    final override def jvm: Boolean = true
+
+  trait MakerJvm extends Maker:
+    final override def backendKind: Option[ScalaBackendKind] = Some(ScalaBackendKind.JVM)
+
+  trait MakerScala2 extends Maker:
     final override def scala2: Boolean = true
+
+  trait MakerScala2Jvm extends MakerJvm with MakerScala2

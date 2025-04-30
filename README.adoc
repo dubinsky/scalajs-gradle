@@ -4,16 +4,17 @@
 :toc: preamble
 // INCLUDED ATTRIBUTES
 :version-gradle: 8.14
-:version-plugin: 0.6.3
-:version-scala: 3.6.4
+:version-plugin: 0.7.0
+:version-scala: 3.7.0
 :version-scala2-minor: 2.13
 :version-scala2: 2.13.16
-:version-scala-parallel-collections: 1.2.0
 :version-sbt-test-interface: 1.0
 :version-scalajs: 1.19.0
 :version-scalajs-dom: 2.8.0
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-node: 16.19.1
+:version-scala-parallel-collections: 1.2.0
+:version-scala-native: 0.5.7
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
 :version-framework-junit4-scalajs: 1.19.0
@@ -24,9 +25,7 @@
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.17
-:attribute-scalajsModeProperty: org.podval.tools.scalajs.mode
-:attribute-maiflaiProperty: com.github.maiflai.gradle-scalatest.mode
-:attribute-mixedModeName: Mixed
+:attribute-scalajsBackendProperty: org.podval.tools.scalajs.backend
 // INCLUDED ATTRIBUTES
 
 image::https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -133,20 +132,8 @@ put the following into the `gradle.properties` file of the project:
 
 [source,properties,subs="+attributes"]
 ----
-{attribute-scalajsModeProperty}=JVM
+{attribute-scalajsBackendProperty}=JVM
 ----
-
-In addition, the _presence_ of the
-https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]'s
-`mode` property also disables Scala.js:
-
-[source,properties,subs="+attributes"]
-----
-{attribute-maiflaiProperty} = ...
-----
-(The _value_ of the `mode` property is ignored.)
-This way, this plugin can be used as a drop-in replacement for
-the ScalaTest one ;)
 
 == Dependencies
 

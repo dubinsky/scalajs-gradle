@@ -2,20 +2,18 @@ package org.podval.tools.test.detect
 
 import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
-import org.gradle.api.internal.tasks.testing.detection.{ClassFileExtractionManager, TestFrameworkDetector}
+import org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector
 import org.gradle.internal.Factory
-import org.podval.tools.build.ScalaBackendKind
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
-import org.podval.tools.test.framework.{FrameworkProvider, JUnit4ScalaJS}
+import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider, JUnit4ScalaJS, JUnit4ScalaNative}
 import org.podval.tools.test.taskdef.TestClassRun
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, TaskDef}
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 // Inspired by org.gradle.api.internal.tasks.testing.detection.AbstractTestFrameworkDetector.
 final class SbtTestFrameworkDetector(
-  backendKind: ScalaBackendKind,
   loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
   testFilter: TestFilter,
   testTaskTemporaryDir: Factory[File]
@@ -48,6 +46,38 @@ final class SbtTestFrameworkDetector(
     .filter(_.isInstanceOf[SubclassFingerprintDetector])
     .map   (_.asInstanceOf[SubclassFingerprintDetector])
 
+  private lazy val classFileFinder: ClassFileFinder =
+    logger.debug(s"SbtTestFrameworkDetector.detectors: $detectors")
+    ClassFileFinder(
+      testClasspath = testClasspath.toList.flatten,
+      testClassesDirectories = testClassesDirectories.toList.flatten,
+      testTaskTemporaryDir = testTaskTemporaryDir
+    )
+
+  // Detector based on bootsrappers for JUnit4 on Scala.js and Scala Native.
+  // Treat the presence of the bootstrapper for a class as a presence of the JUnit4 annotation on the class.
+  private final class BootstrapperDetector(
+    annotatedFingerprintDetector: AnnotatedFingerprintDetector,
+    bootstrapperClassNameSuffix: String
+  ):
+    def detect(testClassVisitor: TestClassVisitor): Unit = for
+      classNameInternal: String <- testClassVisitor.classNameInternal
+      _: File <- classFileFinder.findClassFile(classNameInternal + bootstrapperClassNameSuffix)
+    yield
+      testClassVisitor.addDetector(annotatedFingerprintDetector)
+
+  private def bootstrapperDetector(
+    junit4: FrameworkDescriptor,
+    bootstrapperClassNameSuffix: String
+  ): Option[BootstrapperDetector] = annotatedDetectors
+    .find(_.framework.name == junit4.name)
+    .map(BootstrapperDetector(_, bootstrapperClassNameSuffix))
+
+  private lazy val bootstrapperDetectors: Seq[BootstrapperDetector] = Seq(
+    bootstrapperDetector(JUnit4ScalaJS    , "$scalajs$junit$bootstrapper$"    ),
+    bootstrapperDetector(JUnit4ScalaNative, "$scalanative$junit$bootstrapper$")
+  ).flatten
+  
   private def filter(
     className: String,
     detectors: FingerprintDetectors
@@ -86,41 +116,11 @@ final class SbtTestFrameworkDetector(
 
     testClassRun.foreach(testClassProcessor.get.processTestClass)
     testClassRun.isDefined
-
-  // --- class-file detection
-
-  private def testClasspathFiles: List[File] = testClasspath.toList.flatten
-
-  private lazy val testClassDirectories: List[File] =
-    testClassesDirectories.toList.flatten ++ testClasspathFiles.filter(_.isDirectory)
-
-  private lazy val classFileExtractionManager: ClassFileExtractionManager =
-    logger.debug(s"SbtTestFrameworkDetector.testClasspath: $testClasspathFiles")
-    logger.debug(s"SbtTestFrameworkDetector.detectors: $detectors")
-    val result: ClassFileExtractionManager = ClassFileExtractionManager(testTaskTemporaryDir)
-    testClasspathFiles
-      .filter((file: File) => file.isFile && file.getPath.endsWith(".jar"))
-      .foreach((libraryJar: File) =>
-        logger.debug(s"SbtTestFrameworkDetector: libraryJar $libraryJar")
-        result.addLibraryJar(libraryJar)
-      )
-    result
-
-  // JUni4 for Scala.js annotated detector if running on Scala.js with JUnit for Scala.js on classpath.
-  private lazy val jUnit4ScalaJSAnnotatedDetector: Option[AnnotatedFingerprintDetector] = backendKind match
-    case ScalaBackendKind.JS => annotatedDetectors.find(_.framework.name == JUnit4ScalaJS.name)
-    case _ => None
-
+  
   private def processClassFile(classFile: File): TestClassVisitor =
     val testClassVisitor: TestClassVisitor = TestClassVisitor(this, classFile)
 
-    // Treat the presence of the bootstrapper for a class as a presence of the JUnit4 annotation on the class.
-    for
-      jUnit4ScalaJSAnnotatedDetector: AnnotatedFingerprintDetector <- jUnit4ScalaJSAnnotatedDetector
-      classNameInternal: String <- testClassVisitor.classNameInternal
-      _: File <- findClassFile(classNameInternal + "$scalajs$junit$bootstrapper$")
-    yield
-      testClassVisitor.addDetector(jUnit4ScalaJSAnnotatedDetector)
+    bootstrapperDetectors.foreach(_.detect(testClassVisitor))
 
     testClassVisitor.appendDetectors(testClassVisitor
       .getSuperTypes
@@ -130,18 +130,11 @@ final class SbtTestFrameworkDetector(
     
     testClassVisitor
   
-  private def findClassFile(typeName: String): Option[File] = testClassDirectories
-    .map((testClassDirectory: File) => File(testClassDirectory, s"$typeName.class"))
-    .find(_.exists)
-    .orElse(Option(classFileExtractionManager.getLibraryClassFile(typeName)))
-    .orElse:
-      logger.info(s"SbtTestFrameworkDetector: could not find $typeName file to scan.")
-      None
-
   private var superTypes: Map[File, ClassFileDetectors] = Map.empty
 
   private def processSuperType(superType: String): Option[ClassFileDetectors] =
-    if SbtTestFrameworkDetector.hierarchyRoots.contains(superType) then None else findClassFile(superType)
+    if SbtTestFrameworkDetector.hierarchyRoots.contains(superType) then None else classFileFinder
+      .findClassFile(superType)
       .map((superTypeFile: File) => superTypes.getOrElse(superTypeFile, {
         val detectors: ClassFileDetectors = processClassFile(superTypeFile).getDetectors
         superTypes = superTypes.updated(superTypeFile, detectors)

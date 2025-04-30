@@ -4,6 +4,7 @@ import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.linker.interface.{Report, ModuleKind as ModuleKindSJS}
+import org.scalajs.testing.adapter.TestAdapter
 import java.nio.file.Path
 
 final class ScalaJSRunCommon(
@@ -29,11 +30,17 @@ final class ScalaJSRunCommon(
   ).toPath
 
   def input: Input = common.moduleKind match
-    case ModuleKind.NoModule       => Input.Script(mainModulePath)
-    case ModuleKind.ESModule       => Input.ESModule(mainModulePath)
+    case ModuleKind.NoModule       => Input.Script        (mainModulePath)
+    case ModuleKind.ESModule       => Input.ESModule      (mainModulePath)
     case ModuleKind.CommonJSModule => Input.CommonJSModule(mainModulePath)
 
   def mkJsEnv: JSEnv = JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
     .withExecutable(nodePath)
     .withEnv(nodeEnvironment)
+  )
+
+  def createTestAdapter: TestAdapter = TestAdapter(
+    jsEnv = mkJsEnv,
+    input = Seq(input),
+    config = TestAdapter.Config().withLogger(common.loggerJS)
   )

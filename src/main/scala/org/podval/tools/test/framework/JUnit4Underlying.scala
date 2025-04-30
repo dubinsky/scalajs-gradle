@@ -9,3 +9,4 @@ object JUnit4Underlying extends JavaDependency.Maker:
   override def group: String = "junit"
   override def artifact: String = "junit"
   override def versionDefault: Version = Version("4.13.2")
+  override def description: String = "Underlying JUnit4 Test Framework."

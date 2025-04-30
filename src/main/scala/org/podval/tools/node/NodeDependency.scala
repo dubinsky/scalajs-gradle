@@ -51,7 +51,9 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
 
   //https://github.com/nodejs/node/pull/5995
   private def hasWindowsZip(version: Version): Boolean =
-    val (majorVersion: Int, minorVersion: Int, microVersion: Int) = version.majorMinorMicro
+    val majorVersion: Int = version.simple.segmentInt(0)
+    val minorVersion: Int = version.simple.segmentInt(1)
+    val microVersion: Int = version.simple.segmentInt(2)
 
     ((majorVersion == 4) && (minorVersion >= 5)) || // >= 4.5.0..6
     ((majorVersion == 6) && ((minorVersion > 2) || ((minorVersion == 2) && (microVersion >= 1)))) || // >= 6.2.1..7

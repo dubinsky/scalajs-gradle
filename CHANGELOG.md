@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-05-05
+- feat: support for Scala Native;
+- cleanup: `BackendDelegate`;
+- cleanup: `Version` (Simple, Compound);
+- cleanup: `DependencyRequirement`;
+- cleanup: `Named`;
+- dependency updates;
+
 ## [0.6.3] - 2025-04-30
 - cleanup: install the default version of Node.js if none is installed locally nor a version to install specified;
 - cleanup: `RunTestClassProcessor`;

@@ -43,5 +43,6 @@ object MUnit extends FrameworkDescriptor(
   // on JVM, uses underlying JUni4 - via its own internal interface
   forJVM = ForBackend(underlying = Some(JUnit4Underlying)),
   // on Scala.js, uses JUnit4 for Scala.js - with its own sbt.testing.Framework implementation
-  forJS = ForBackend(underlying = Some(JUnit4ScalaJS))
+  forJS = ForBackend(underlying = Some(JUnit4ScalaJS)),
+  forNative = ForBackend(underlying = Some(JUnit4ScalaNative))
 ) with ScalaDependency.Maker

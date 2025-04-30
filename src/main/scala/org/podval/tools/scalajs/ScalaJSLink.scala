@@ -22,7 +22,7 @@ final class ScalaJSLink(common: ScalaJSCommon):
   ): Unit =
     // Tests use fixed entry point.
     val moduleInitializersSJS: Seq[ModuleInitializerSJS] = moduleInitializers
-      .map(_.map(ScalaJSLink.toModuleInitializerSJS))
+      .map(_.map(ScalaJSLink.toSJS))
       .getOrElse(Seq(ModuleInitializerSJS.mainMethod(
         TestAdapterInitializer.ModuleClassName,
         TestAdapterInitializer.MainMethodName
@@ -34,10 +34,7 @@ final class ScalaJSLink(common: ScalaJSCommon):
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
       .withModuleKind(common.moduleKindSJS)
       .withClosureCompiler(fullOptimization && (common.moduleKind == ModuleKind.ESModule))
-      .withModuleSplitStyle(moduleSplitStyle match
-        case ModuleSplitStyle.FewestModules => ModuleSplitStyleSJS.FewestModules
-        case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
-      )
+      .withModuleSplitStyle(ScalaJSLink.toSJS(moduleSplitStyle))
       // TODO .withESFeatures(org.scalajs.linker.interface.ESFeatures)
       // TODO .withExperimentalUseWebAssembly(Boolean)
       .withPrettyPrint(prettyPrint)
@@ -48,8 +45,8 @@ final class ScalaJSLink(common: ScalaJSCommon):
          |reportFile = $reportTextFile
          |moduleInitializers = ${moduleInitializersSJS.map(ModuleInitializerSJS.fingerprint).mkString(", ")}
          |linkerConfig = $linkerConfig
-         |""".stripMargin,
-      null, null, null)
+         |""".stripMargin
+    )
 
     common.jsDirectory.mkdirs()
 
@@ -74,7 +71,11 @@ final class ScalaJSLink(common: ScalaJSCommon):
 object ScalaJSLink:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSLink.getClass)
   
-  private def toModuleInitializerSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
+  private def toSJS(moduleSplitStyle: ModuleSplitStyle): ModuleSplitStyleSJS = moduleSplitStyle match
+    case ModuleSplitStyle.FewestModules => ModuleSplitStyleSJS.FewestModules
+    case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
+
+  private def toSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
     val clazz: String = moduleInitializer.className
     val method: String = moduleInitializer.mainMethodName.getOrElse("main")
     val result: ModuleInitializerSJS =

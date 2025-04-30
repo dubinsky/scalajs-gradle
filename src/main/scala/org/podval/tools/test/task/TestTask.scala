@@ -74,7 +74,7 @@ abstract class TestTask extends Test:
       closeTestEnvironment()
 
   final override def createTestExecuter: TestExecuter = TestExecuter(
-    backendKind = backendKind,
+    testsCanNotBeForked = backendKind.testsCanNotBeForked,
     sourceMapper = getTestEnvironment.sourceMapper,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
@@ -88,9 +88,10 @@ abstract class TestTask extends Test:
 
   protected def backendKind: ScalaBackendKind
 
-  final override def getMaxParallelForks: Int = backendKind match
-    case ScalaBackendKind.JS => 1
-    case _ => super.getMaxParallelForks
+  final override def getMaxParallelForks: Int = 
+    if backendKind.testsCanNotBeForked
+    then 1
+    else super.getMaxParallelForks
 
 object TestTask:
   private def useTestFramework(task: Test, value: TestFramework): Unit =

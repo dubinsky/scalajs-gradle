@@ -41,6 +41,7 @@ object FrameworksTest:
   val fixtures: List[Fixture] = List(
     JUnit4Fixture,
     JUnit4ScalaJSFixture,
+    JUnit4ScalaNativeFixture,
     JUnit5Fixture,
     MUnitFixture,
     ScalaCheckFixture,
@@ -51,12 +52,15 @@ object FrameworksTest:
   )
 
   val platforms: Seq[ScalaPlatform] = Seq(
-    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.JVM),
-    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.JS ),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.JVM   ),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.JS    ),
+    ScalaPlatform(ScalaVersion.Scala3         .versionDefault, ScalaBackendKind.Native),
 
-    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.JVM),
-    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.JS ),
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.JVM   ),
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.JS    ),
+    ScalaPlatform(ScalaVersion.Scala2.Scala213.versionDefault, ScalaBackendKind.Native),
 
-    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.JVM),
-    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.JS ),
+    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.JVM   ),
+    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.JS    ),
+    ScalaPlatform(ScalaVersion.Scala2.Scala212.versionDefault, ScalaBackendKind.Native),
   )

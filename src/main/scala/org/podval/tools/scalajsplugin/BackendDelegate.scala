@@ -1,71 +1,75 @@
 package org.podval.tools.scalajsplugin
 
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
-import org.gradle.api.{Project, Task}
-import org.gradle.api.tasks.scala.ScalaCompile
-import org.gradle.api.tasks.{SourceSet, TaskProvider}
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaLibrary, ScalaPlatform}
+import org.gradle.api.Project
+import org.podval.tools.build.{DependencyRequirement, ScalaLibrary, ScalaPlatform}
 import org.podval.tools.scalajsplugin.gradle.ScalaBasePlugin
-import scala.jdk.CollectionConverters.*
+import org.slf4j.{Logger, LoggerFactory}
 
 abstract class BackendDelegate(
   project: Project,
   isModeMixed: Boolean
 ):
+  type DependencyRequirements = Seq[DependencyRequirement[ScalaPlatform]]
+
   protected def kind: BackendDelegateKind
+  protected def gradleNamesSuffix: String
+  protected def isCreateForMixedMode: Boolean
+  protected def createConfigurations(): Unit
+  protected def setUpProject(): AddTestTask[?]
 
-  protected final val gradleNames: GradleNames = GradleNames(if isModeMixed then kind.gradleNamesSuffix else "")
+  protected def afterEvaluate(
+    pluginScalaPlatform: ScalaPlatform,
+    projectScalaLibrary: ScalaLibrary,
+    projectScalaPlatform: ScalaPlatform
+  ): Option[AddToClassPath]
 
-  final def setUpProjectAndTestTask(jvmPluginServices: JvmPluginServices): Unit =
+  final protected val gradleNames: GradleNames = GradleNames(if isModeMixed then gradleNamesSuffix else "")
+
+  // Source sets, configurations, extensions, and tasks!
+  final def apply(jvmPluginServices: JvmPluginServices): Unit =
     if isModeMixed then ScalaBasePlugin(
       project = project,
       jvmPluginServices = jvmPluginServices,
-      isCreate = kind.isCreateForMixedMode,
+      isCreate = isCreateForMixedMode,
       sourceRoot = kind.sourceRoot,
       sharedSourceRoot = BackendDelegateKind.sharedSourceRoot,
       gradleNames = gradleNames
     ).apply()
 
+    createConfigurations()
+
     val addTestTask: AddTestTask[?] = setUpProject()
-    addTestTask.addTestTask(isModeMixed, project)
-  
-  protected def setUpProject(): AddTestTask[?]
 
-  protected def configurationToAddToClassPath: Option[String]
-  
-  final def afterEvaluate(
-    pluginScalaPlatform: ScalaPlatform
-  ): AddToClassPath =
-    val projectScalaLibrary: ScalaLibrary = 
-      ScalaLibrary.getFromConfiguration(project, gradleNames.implementationConfigurationName)
-      
-    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(kind.backendKind)
-    
-    dependencyRequirements(pluginScalaPlatform, projectScalaPlatform).foreach(_.applyToConfiguration(project))
-    
-    configureProject(projectScalaPlatform.version.isScala3)
-    
-    AddToClassPath(
-      configurationToAddToClassPath,
-      projectScalaLibrary,
-      gradleNames.runtimeClasspathConfigurationName
+    addTestTask.addTestTask(
+      isModeMixed,
+      project,
+      gradleNames.testSourceSetName,
+      gradleNames.testTaskName
     )
-  
-  protected def dependencyRequirements(
-    pluginScalaPlatform: ScalaPlatform,
-    projectScalaPlatform: ScalaPlatform
-  ): Seq[DependencyRequirement]
 
-  protected def configureProject(isScala3: Boolean): Unit
+  final def afterEvaluate(pluginScalaPlatform: ScalaPlatform): Option[AddToClassPath] =
+    val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(
+      project,
+      gradleNames.implementationConfigurationName
+    )
+    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(kind.backendKind)
 
-  protected final def getClassesTask(sourceSet: SourceSet): Task = project
-    .getTasks
-    .getByName(sourceSet.getClassesTaskName)
+    afterEvaluate(
+      pluginScalaPlatform,
+      projectScalaLibrary,
+      projectScalaPlatform
+    )
 
-  protected final def getScalaCompile(sourceSetName: String): ScalaCompile = Gradle.getClassesTask(project, sourceSetName)
-    .getDependsOn
-    .asScala
-    .find(classOf[TaskProvider[ScalaCompile]].isInstance)
-    .get
-    .asInstanceOf[TaskProvider[ScalaCompile]]
-    .get
+  final protected def applyDependencyRequirements(
+    dependencyRequirements: DependencyRequirements,
+    scalaPlatform: ScalaPlatform,
+    configurationName: String
+  ): Unit = dependencyRequirements.map(_.applyToConfiguration(
+    project,
+    configurationName,
+    scalaPlatform
+  ))
+
+object BackendDelegate:
+  val logger: Logger = LoggerFactory.getLogger(BackendDelegate.getClass)

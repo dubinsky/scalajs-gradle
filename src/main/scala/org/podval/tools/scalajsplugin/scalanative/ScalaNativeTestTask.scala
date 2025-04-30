@@ -1,9 +1,13 @@
 package org.podval.tools.scalajsplugin.scalanative
 
 import org.podval.tools.build.ScalaBackendKind
-import org.podval.tools.test.task.TestTask
+import org.podval.tools.scalajsplugin.nonjvm.BackendTestTask
 
-abstract class ScalaNativeTestTask extends TestTask:
+abstract class ScalaNativeTestTask extends BackendTestTask[ScalaNativeLinkTask] with ScalaNativeRunTask:
+  final override protected def linkTaskClass: Class[ScalaNativeLinkTestTask] = classOf[ScalaNativeLinkTestTask]
+  
   final override protected def backendKind: ScalaBackendKind = ScalaBackendKind.Native
 
-  final override protected def createTestEnvironment: ScalaNativeTestEnvironment = ScalaNativeTestEnvironment()
+  final override protected def createTestEnvironment: ScalaNativeTestEnvironment = ScalaNativeTestEnvironment(
+    linkTask.getOutputFile
+  )

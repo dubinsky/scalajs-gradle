@@ -132,7 +132,7 @@ final class ScalaBasePlugin(
     project: ProjectInternal
   ): Unit =
     val plugins: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(
-      gradleNames.compilerPluginsConfigurationName
+      gradleNames.scalaCompilerPluginsConfigurationName
     )
     plugins.setTransitive(false)
     jvmPluginServices.configureAsRuntimeClasspath(plugins)
@@ -367,7 +367,7 @@ final class ScalaBasePlugin(
         compile.getClasspath
       ))
       conventionMapping.map("zincClasspath", () => project.getConfigurations.getAt(Original.ZINC_CONFIGURATION_NAME))
-      conventionMapping.map("scalaCompilerPlugins", () => project.getConfigurations.getAt(gradleNames.compilerPluginsConfigurationName))
+      conventionMapping.map("scalaCompilerPlugins", () => project.getConfigurations.getAt(gradleNames.scalaCompilerPluginsConfigurationName))
       conventionMapping.map("sourceCompatibility", () => ScalaBasePlugin.computeJavaSourceCompatibilityConvention(javaExtension, compile).toString)
       conventionMapping.map("targetCompatibility", () => ScalaBasePlugin.computeJavaTargetCompatibilityConvention(javaExtension, compile).toString)
       compile.getScalaCompileOptions.getKeepAliveMode.convention(KeepAliveMode.SESSION)

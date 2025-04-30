@@ -110,8 +110,7 @@ object TestProject:
         scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
         frameworks = frameworks.map((framework: FrameworkDescriptor) =>
           require(framework.forBackend(platform.backendKind).isSupported)
-          framework.dependencyWithVersion(
-            platform,
+          framework.dependency(platform).withVersion(
             if platform.version.isScala3
             then framework.versionDefault
             else framework.versionDefaultScala2.getOrElse(framework.versionDefault)
@@ -141,7 +140,7 @@ object TestProject:
       Files.write(scalaFile(projectDir, isTest, sourceFile.name), contentEffective)
 
   private def gradleProperties(backendKind: ScalaBackendKind): String =
-    s"""${ScalaJSPlugin.modeProperty}=$backendKind
+    s"""${ScalaJSPlugin.backendProperty}=$backendKind
        |""".stripMargin
 
   private def settingsGradle(projectName: String, pluginProjectDir: File): String =

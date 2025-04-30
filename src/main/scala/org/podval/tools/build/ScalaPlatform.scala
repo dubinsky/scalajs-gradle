@@ -6,9 +6,9 @@ final class ScalaPlatform(
 ):
   def version: ScalaVersion = ScalaVersion.forVersion(scalaVersion)
 
-  def toJvm: ScalaPlatform = ScalaPlatform(
+  def withBackend(backendKind: ScalaBackendKind): ScalaPlatform = ScalaPlatform(
     scalaVersion,
-    ScalaBackendKind.JVM
+    backendKind
   )
 
   def toScala2: ScalaPlatform =
