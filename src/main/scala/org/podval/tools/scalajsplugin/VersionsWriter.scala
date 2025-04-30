@@ -1,8 +1,9 @@
 package org.podval.tools.scalajsplugin
 
-import org.podval.tools.build.{ScalaModules, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackendKind, ScalaModules, ScalaVersion, Version}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.ScalaJS
+import org.podval.tools.scalanative.ScalaNative
 import org.podval.tools.test.{SbtTestInterface, framework}
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
@@ -13,14 +14,12 @@ import java.io.File
 object VersionsWriter:
   private val versions: Seq[(String, Version)] = Seq(
     "gradle" -> Version("8.14"),
-    "plugin" -> Version("0.6.3"),
+    "plugin" -> Version("0.7.0"),
     
     "scala" -> ScalaVersion.Scala3.versionDefault,
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
     "scala2" -> ScalaVersion.Scala2.Scala213.versionDefault,
-
-    "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
-
+    
     "sbt-test-interface" -> SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaJS.versionDefault,
@@ -29,6 +28,10 @@ object VersionsWriter:
     
     "node" -> NodeDependency.versionDefault,
 
+    "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
+
+    "scala-native" -> ScalaNative.versionDefault,
+    
     "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
@@ -42,19 +45,14 @@ object VersionsWriter:
   )
 
   val attributes: Seq[(String, String)] = Seq(
-    "scalajsModeProperty" -> ScalaJSPlugin.modeProperty,
-    "maiflaiProperty" -> ScalaJSPlugin.maiflaiProperty,
-    "mixedModeName" -> ScalaJSPlugin.mixedModeName
+    "scalajsBackendProperty" -> ScalaJSPlugin.backendProperty,
   )
   
   def main(args: Array[String]): Unit =
     def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
 
     Files.write(File("gradle.properties").getAbsoluteFile, toString(
-      Seq(s"${ScalaJSPlugin.modeProperty} = ${BackendDelegateKind.JVM.name}") ++
-        versions.map((name, value) =>
-          s"version_${name.replace('-', '_')} = ${value.toString}"
-        )
+      versions.map((name, value) => s"version_${name.replace('-', '_')} = ${value.toString}")
     ))
 
     val readmeFile: File = File("README.adoc").getAbsoluteFile

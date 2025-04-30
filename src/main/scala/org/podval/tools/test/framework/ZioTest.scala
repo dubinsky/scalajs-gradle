@@ -61,5 +61,7 @@ object ZioTest extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-tags",
   excludeTagsOption = "-ignore-tags",
-  forJS = ForBackend.notSupported
+  // TODO ZioTest does not report events on Scala.js and Scala NAtive
+  forJS = ForBackend.notSupported,
+  forNative = ForBackend.notSupported,
 ) with ScalaDependency.Maker

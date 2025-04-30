@@ -5,3 +5,4 @@ object ScalaModules:
     def group: String = "org.scala-lang.modules"
     def artifact: String = "scala-parallel-collections"
     def versionDefault: Version = Version("1.2.0")
+    override def description: String = "Scala Module: Parallel Collections."

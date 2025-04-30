@@ -24,6 +24,8 @@ abstract class FrameworkDescriptor(
 ) extends Dependency.Maker[ScalaPlatform] derives CanEqual:
   if forJS.isSupported then require(this.isInstanceOf[ScalaDependency.Maker])
 
+  final override def description: String = displayName
+
   final def forBackend(kind: ScalaBackendKind): ForBackend = kind match
     case ScalaBackendKind.JVM    => forJVM
     case ScalaBackendKind.JS     => forJS
@@ -41,6 +43,7 @@ object FrameworkDescriptor:
   private val all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,
+    JUnit4ScalaNative,
     JUnit5,
     MUnit,
     ScalaTest,

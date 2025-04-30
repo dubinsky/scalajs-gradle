@@ -15,6 +15,7 @@ object JUnit5 extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.ListWithEq,
   includeTagsOption = "--include-tags",
   excludeTagsOption = "--exclude-tags",
+  // JUnit5 is not supported since it uses its own test detection mechanism.
   forJVM = ForBackend.notSupported,
   forJS = ForBackend.notSupported,
   forNative = ForBackend.notSupported

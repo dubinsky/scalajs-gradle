@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.6.3'
+  id 'org.podval.tools.scalajs' version '0.7.0'
   id 'com.gradle.plugin-publish' version '1.3.1'
 }
 
@@ -20,7 +20,7 @@ dependencies {
   // for TestClassVisitor
   implementation "org.ow2.asm:asm:9.8"
 
-  // for Scala.js Linker
+  // Scala.js Linker uses it but somehow does not bring it onto the classpath
   // TODO adding this dynamically did not work!
   implementation "org.scala-lang.modules:scala-parallel-collections_$scala2versionMinor:$version_scala_parallel_collections"
 
@@ -31,6 +31,10 @@ dependencies {
   compileOnly "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
   compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:$version_scalajs_env_jsdom_nodejs"
+
+  // for Scala Native support
+  compileOnly "org.scala-native:tools_native0.5_3:$version_scala_native"
+  compileOnly "org.scala-native:test-runner_3:$version_scala_native"
 
   // for framework-specific exceptions
   compileOnly "junit:junit:$version_junit" // runner: "com.github.sbt:junit-interface:$version_framework_junit4"

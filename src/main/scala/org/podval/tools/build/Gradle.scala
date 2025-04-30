@@ -17,10 +17,14 @@ object Gradle:
     .getSourceSets
     .getByName(name)
 
-  def getClassesTask(project: Project, sourceSetName: String): Task = project
+  def getClassesTask(project: Project, sourceSet: SourceSet): Task = project
     .getTasks
-    .getByName(getSourceSet(project, sourceSetName).getClassesTaskName)
+    .getByName(sourceSet.getClassesTaskName)
+
+  def getClassesTask(project: Project, sourceSetName: String): Task = getClassesTask(
+    project,
+    getSourceSet(project, sourceSetName)
+  )
   
   def toOption[T](property: Property[T]): Option[T] =
     if !property.isPresent then None else Some(property.get)
-    

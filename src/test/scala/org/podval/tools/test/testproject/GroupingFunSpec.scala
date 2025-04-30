@@ -87,7 +87,7 @@ class GroupingFunSpec extends AnyFunSpec:
 
     if fixturesSupported.nonEmpty then
       // TODO when we start running on different Node versions, use ScalaBackend to display Node version
-      val platformDisplayName: String = s"in Scala v${platform.scalaVersion} on ${platform.backendKind}"
+      val platformDisplayName: String = s"in Scala v${platform.scalaVersion} on ${platform.backendKind.displayName}"
       describe(platformDisplayName):
         forProject(
           projectName :+ platformDisplayName,

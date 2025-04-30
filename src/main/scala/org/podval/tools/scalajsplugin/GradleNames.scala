@@ -11,7 +11,7 @@ final class GradleNames(suffix: String):
   val implementationConfigurationName: String = s(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
   val testSourceSetName: String= s(SourceSet.TEST_SOURCE_SET_NAME)
   val testImplementationConfigurationName: String = s(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
-  val compilerPluginsConfigurationName: String = s(ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME)
+  val scalaCompilerPluginsConfigurationName: String = s(ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME)
   val runtimeClasspathConfigurationName: String = s(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
   val scalaCompileTaskName: String = s("scala")
   val testTaskName: String = s("test")

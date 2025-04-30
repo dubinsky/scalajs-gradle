@@ -67,7 +67,6 @@ class SbtTestFramework(
     )
 
     SbtTestFrameworkDetector(
-      backendKind,
       loadedFrameworks,
       testFilter,
       testTaskTemporaryDir

@@ -1,22 +1,31 @@
 package org.podval.tools.build
 
-import scala.CanEqual
+sealed abstract class Version derives CanEqual:
+  def simple: Version.Simple
+  def compound: Version.Compound
 
-final class Version(override val toString: String) derives CanEqual:
-  private val segments: Array[String] = toString.split("\\.")
-  
-  override def equals(other: Any): Boolean = other match
+  final override def equals(other: Any): Boolean = other match
     case that: Version => this.toString == that.toString
     case _ => false
 
-  def major: Int = segments(0).toInt
-  
-  def majorMinorMicro: (Int, Int, Int) =
-    (
-      segments(0).toInt,
-      segments(1).toInt,
-      segments(2).toInt
-    )
+object Version:
+  final class Simple(override val toString: String) extends Version:
+    override def simple: Simple = this
+    override def compound: Version.Compound = throw ClassCastException(s"Version $this is not compound.")
+    private val segments: Array[String] = toString.split("\\.")
+    def segment(index: Int): String = segments(index)
+    def segmentInt(index: Int): Int = segments(index).toInt
+      
+  final class Compound(val left: Simple, val right: Simple) extends Version:
+    override def toString: String = s"$left+$right"
+    override def compound: Version.Compound = this
+    override def simple: Simple = throw ClassCastException(s"Version $this is not simple.")
     
-  def majorAndMinorString: String =
-    segments.take(2).mkString(".")
+  def apply(string: String): Version =
+    val plusIndex: Int = string.indexOf("+")
+    if plusIndex == -1
+    then Simple(string)
+    else Compound(
+      Simple(string.substring(0, plusIndex)),
+      Simple(string.substring(plusIndex+1))
+    )
