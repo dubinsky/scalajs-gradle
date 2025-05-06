@@ -49,15 +49,23 @@ object ScalaNativeBuild:
 
     logger.info(s"ScalaNativeBuild.nativeLinkImpl($config)")
 
-    interceptBuildException:
-      ScalaNativeSharedScope { implicit sharedScope: Scope =>
-        ScalaNativeAwait.await((throwable: Throwable) => logger.warn(s"Trace: $throwable")) { implicit ec: ExecutionContext =>
-          Build
-            .buildCached(config)
-            .map(_.toFile())
-        }
+    interceptBuildException(
+      buildCachedSync(
+        config,
+        (throwable: Throwable) => logger.warn(s"Trace: $throwable")
+      ).toFile
+    )
+      
+  def buildCachedSync(
+    config: Config,
+    trace: Throwable => Unit
+  ): Path =
+    ScalaNativeSharedScope { implicit sharedScope: Scope =>
+      ScalaNativeAwait.await(trace) { implicit ec: ExecutionContext =>
+        Build.buildCached(config)
       }
-  
+    }
+
   def createTestAdapter(
     binaryTestFile: File
   ): TestAdapter = TestAdapter(TestAdapter

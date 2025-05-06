@@ -2,7 +2,7 @@ package org.podval.tools.scalajsplugin.nonjvm
 
 import org.gradle.api.DefaultTask
 
-abstract class BackendLinkTestTask[L <: BackendLinkTask[L]] extends DefaultTask with BackendLinkTask[L]:
+abstract class NonJvmLinkTestTask[L <: NonJvmLinkTask[L]] extends DefaultTask with NonJvmLinkTask[L]:
   this: L =>
 
   final override protected def flavourBase: String = "LinkTest"

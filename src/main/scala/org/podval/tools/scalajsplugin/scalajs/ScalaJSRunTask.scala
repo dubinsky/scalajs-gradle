@@ -2,9 +2,9 @@ package org.podval.tools.scalajsplugin.scalajs
 
 import org.podval.tools.node.Node
 import org.podval.tools.scalajs.ScalaJSRunCommon
-import org.podval.tools.scalajsplugin.nonjvm.BackendRunTask
+import org.podval.tools.scalajsplugin.nonjvm.NonJvmRunTask
 
-trait ScalaJSRunTask extends BackendRunTask[ScalaJSLinkTask] with ScalaJSTask:
+trait ScalaJSRunTask extends NonJvmRunTask[ScalaJSLinkTask] with ScalaJSTask:
   final protected def scalaJSRunCommon: ScalaJSRunCommon =
     val node: Node = linkTask.node
     ScalaJSRunCommon(

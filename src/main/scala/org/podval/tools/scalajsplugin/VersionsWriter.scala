@@ -30,11 +30,12 @@ object VersionsWriter:
 
     "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
 
-    "scala-native" -> ScalaNative.versionDefault,
+    "scalanative" -> ScalaNative.versionDefault,
     
     "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
+    "framework-junit4-scalanative" -> framework.JUnit4ScalaNative.versionDefault,
     "framework-munit" -> framework.MUnit.versionDefault,
     "framework-scalacheck" -> framework.ScalaCheck.versionDefault,
     "framework-scalatest" -> framework.ScalaTest.versionDefault,

@@ -30,7 +30,7 @@ object ScalaNative:
     isScalaVersionFull = true
   ) with ScalaDependency.MakerJvm
 
-  object NativeLib     extends Maker("nativelib"     , "Library")
+  object NativeLib     extends Maker("nativelib"     , "Native Library")
   object CLib          extends Maker("clib"          , "C Library")
   object PosixLib      extends Maker("posixlib"      , "Posix Library")
   object WindowsLib    extends Maker("windowslib"    , "Windows Library")

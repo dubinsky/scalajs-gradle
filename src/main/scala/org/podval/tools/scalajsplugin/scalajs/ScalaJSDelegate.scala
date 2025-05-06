@@ -4,8 +4,8 @@ import org.gradle.api.Project
 import org.podval.tools.build.{ScalaBackendKind, ScalaDependency, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.scalajsplugin.nonjvm.{BackendLinkMainTask, BackendLinkTask, BackendLinkTestTask,
-  BackendRunMainTask, BackendTestTask, NonJvmBackendDelegate}
+import org.podval.tools.scalajsplugin.nonjvm.{NonJvmLinkMainTask, NonJvmLinkTask, NonJvmLinkTestTask,
+  NonJvmRunMainTask, NonJvmTestTask, NonJvmDelegate}
 import org.podval.tools.scalajsplugin.BackendDelegateKind
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -19,19 +19,19 @@ object ScalaJSDelegate  extends BackendDelegateKind(
 final class ScalaJSDelegate(
   project: Project,
   isModeNixed: Boolean
-) extends NonJvmBackendDelegate(
+) extends NonJvmDelegate(
   project,
   isModeNixed
 ):
   override protected def kind: BackendDelegateKind = ScalaJSDelegate
   override protected def gradleNamesSuffix: String = "JS"
-  override protected def pluginDependenciesConfiguration: String = "scalajs"
+  override protected def pluginDependenciesConfigurationName: String = "scalajs"
   override protected def areCompilerPluginsBuiltIntoScala3: Boolean = true
 
-  override protected def linkMainTaskClass: Class[? <: BackendLinkMainTask   [?]] = classOf[ScalaJSLinkMainTask]
-  override protected def linkTestTaskClass: Class[? <: BackendLinkTestTask   [?]] = classOf[ScalaJSLinkTestTask]
-  override protected def runMainTaskClass : Class[? <: BackendRunMainTask    [?]] = classOf[ScalaJSRunMainTask ]
-  override protected def testTaskClass    : Class[? <: BackendTestTask       [?]] = classOf[ScalaJSTestTask    ]
+  override protected def linkMainTaskClass: Class[? <: NonJvmLinkMainTask   [?]] = classOf[ScalaJSLinkMainTask]
+  override protected def linkTestTaskClass: Class[? <: NonJvmLinkTestTask   [?]] = classOf[ScalaJSLinkTestTask]
+  override protected def runMainTaskClass : Class[? <: NonJvmRunMainTask    [?]] = classOf[ScalaJSRunMainTask ]
+  override protected def testTaskClass    : Class[? <: NonJvmTestTask       [?]] = classOf[ScalaJSTestTask    ]
 
   override protected def createExtensions(): Unit =
     val nodeExtension: NodeExtension = NodeExtension.addTo(project)

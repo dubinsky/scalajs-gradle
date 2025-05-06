@@ -14,10 +14,11 @@
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-node: 16.19.1
 :version-scala-parallel-collections: 1.2.0
-:version-scala-native: 0.5.7
+:version-scalanative: 0.5.7
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
 :version-framework-junit4-scalajs: 1.19.0
+:version-framework-junit4-scalanative: 0.5.7
 :version-framework-munit: 1.1.1
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalatest: 3.2.19
@@ -32,22 +33,27 @@ image::https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badg
 
 == Summary
 
-This is a `Gradle` plugin that supports:
-
-- compiling, linking and running `Scala.js` code;
-- testing it using `sbt`-compatible testing frameworks;
-- testing plain Scala code (without Scala.js) using `sbt`-compatible testing frameworks.
+This is a `Gradle` plugin that supports compiling, running and testing
+`Scala` code on `JVM`, `Scala.js` and `Scala Native` backends.
 
 Currently, plugin does NOT support Gradle projects that
-contain both JVM and Scala.js code;
+mix code for multiple backends (JVM, Scala.js, Scala Native);
 this is https://github.com/dubinsky/scalajs-gradle/issues/4[in the works].
+
+Testing is supported for test frameworks that have a `sbt.testing.Framework`
+implementation. Multiple test frameworks can be used in the same project at the same time
+(supporting this probably is not a critical requirement,
+but sbt does it, so I must too ;)).
+
+
+For non-JVM backends, plugin does the linking.
 
 If needed, plugin automatically:
 
-- adds needed `Scala.js` dependencies that were not added explicitly;
-- configures `Scala` compiler for `Scala.js`;
-- retrieves and installs `Node.js`;
-- installs configured Node modules using `npm`.
+- adds necessary backend-specific dependencies not added explicitly;
+- adds necessary backend-specific `Scala` compiler parameters not added explicitly;
+- for `Scala.js`, retrieves and installs `Node.js`;
+- for `Scala.js`, installs configured Node modules using `npm`.
 
 Plugin integrates with:
 
@@ -58,7 +64,8 @@ Plugin works with:
 
 - `Gradle` {version-gradle};
 - `Scala.js` 1.x;
-- `Node.js` 16.x.
+- `Node.js` 16.x;
+- `Scala NAtive` 0.5.x.
 
 Plugin itself is written in Scala 3.
 Project that the plugin is _applied_ to can use Scala 3, 2.13 or 2.12.
@@ -84,14 +91,6 @@ seems to be no longer maintained.
 
 Hence, this plugin.
 
-Plugin supports running tests using `sbt`-compatible testing frameworks
-in a way integrated with `Gradle` and `IntelliJ Idea` _with or without_ Scala.js:
-for plain Scala projects, Scala.js support can be disabled.
-
-Multiple test frameworks can be used in the same project at the same time
-(supporting this probably is not a critical requirement,
-but sbt does it, so I must too ;)).
-
 For years, I used https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]
 to run my Scala Tests.
 Since my plugin integrates with Gradle - and through it, with IntelliJ Idea -
@@ -103,7 +102,7 @@ I never tried an alternative ScalaTest integration
 https://github.com/helmethair-co/scalatest-junit-runner[scalatest-junit-runner],
 and if you need `JUnit5` _that_ is probably the way to go,
 since my plugin does not support `JUnit5`
-(it does support `Scala.js` though :)).
+(it does support `Scala.js` and `Scala Native` though :)).
 
 == Applying to a Gradle Project
 
@@ -123,28 +122,37 @@ but there is no harm in it either;
 either way, it is the responsibility of the project using the plugin
 to add a standard `Scala` library dependency that the Scala plugin requires.
 
-TODO document modes
+Which backend will be used depends on the value a project property
+`{attribute-scalajsBackendProperty}` is set to:
 
-Unless `Scala.js` support is disabled, plugin will run in Scala.js mode;
-to disable Scala.js and use the plugin for testing
-plain Scala code with `sbt`-compatible testing frameworks,
+- not set - `JVM`;
+- set to `JVM` - `JVM`;
+- set to `JS` - `Scala.js`;
+- set to `Native` - `Scala Native`.
+
+So, one way to use `Scala.js` backend is to
 put the following into the `gradle.properties` file of the project:
 
 [source,properties,subs="+attributes"]
 ----
-{attribute-scalajsBackendProperty}=JVM
+{attribute-scalajsBackendProperty}=JS
 ----
 
 == Dependencies
 
-Plugin automatically adds certain dependencies to various Gradle configurations
+The Plugin automatically adds certain dependencies to various Gradle configurations
 if they are not added explicitly.
 
-In the examples below, latest versions of all dependencies are used.
+In the examples below, the latest versions of all dependencies are used.
 
 Unless you want to override a version of some dependency that the plugin adds,
 the only dependencies you need to add to the project are
 the Scala library and test framework(s) that you use.
+
+As usual, artifact names have suffixes corresponding to the Scala version:
+`_3`, `_2.13` or `_2.12`. For the artifacts compiled by the non-JVM backends,
+before the Scala version another suffix indicating the backend is inserted:
+for `Scala.js` - `_sjs1`, for `Scala Native` - `_native0.5`.
 
 === JVM
 
@@ -155,84 +163,121 @@ and is normally brought in by the test frameworks themselves,
 but since `ScalaTest` does not bring it in,
 plugin adds it.
 
-When running on Scala.js, its Scala.js analogue
-`org.scala-js:scalajs-test-interface` is brought in transitively
-by the Scala.js Test Adapter `org.scala-js:scalajs-sbt-test-adapter`
-(among others), which plugin adds.
+==== Scala 3 Example
+
+[source,groovy,subs="+attributes"]
+----
+final String scalaVersion       = '{version-scala}'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+
+  testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
+
+  // Test framework(s) you use:
+  testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
+  testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
+  testImplementation 'org.scalacheck:scalacheck_3:{version-framework-scalacheck}'
+  testImplementation 'org.scalatest:scalatest_3:{version-framework-scalatest}'
+  testImplementation 'org.specs2:specs2-core_3:{version-framework-specs2}'
+  testImplementation 'com.lihaoyi:utest_3:{version-framework-utest}'
+  testImplementation 'dev.zio:zio-test-sbt_3:{version-framework-zio-test}'
+}
+----
+
+==== Scala 2 Example
+
+[source,groovy,subs="+attributes"]
+----
+final String scalaVersion       = '{version-scala2}'
+final String scala2versionMinor = '{version-scala2-minor}'
+
+dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+
+  testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
+
+  // Test framework(s) you use:
+  testImplementation "org.scalameta:munit_$scala2versionMinor:{version-framework-munit}"
+  testImplementation "org.scalacheck:scalacheck_$scala2versionMinor:{version-framework-scalacheck}"
+  testImplementation "org.scalatest:scalatest_$scala2versionMinor:{version-framework-scalatest}"
+  testImplementation "org.specs2:specs2-core_$scala2versionMinor:{version-framework-specs2-scala2}"
+  testImplementation "com.lihaoyi:utest_$scala2versionMinor:{version-framework-utest}"
+  testImplementation "dev.zio:zio-test-sbt_$scala2versionMinor:{version-framework-zio-test}"
+}
+----
 
 === Scala.js
 
-Scala.js dependencies are added only if Scala.js is enabled;
-if `scalajs-library` dependency is specified explicitly,
-plugin uses the same version for all the Scala.js dependencies that it adds.
+If `org.scala-js:scalajs-library` dependency is specified explicitly,
+plugin uses its version for all the Scala.js dependencies that it adds.
 
-When Scala.js is enabled, artifact is suffixed with `_sjs1`;
-for instance, `org.scalatest:scalatest_sjs1_3` instead of `org.scalatest:scalatest_3`.
-For Scala 2.13, use `_2.13` artifacts instead of the `_3` ones; for Scala 2.12 - `_2.12`.
-Same rules apply to the test framework dependencies listed in the <<test-frameworks>> section.
+Plugin creates `scalajs` configuration
+for `Scala.js` dependencies used by the plugin itself.
 
-When running on Scala.js, plugin creates two configurations in the project:
-- `scalajs` - for Scala.js dependencies used by the plugin itself;
-- `scalajsCompilerPlugins` - for Scala compiler plugins needed for compiling
-Scala.js on Scala 2;
-pre-existing `scalaCompilerPlugins` configuration is not used,
-since it would add the plugins to all Scala compilation tasks,
-which is not correct for the projects that contain both JVM and Scala.js code.
-
-Table below lists what is added to what configuration when running on Scala.js.
+The table below lists what is added to what configurations.
 
 [%autowidth]
 |===
-|Name |goup:artifact |Configuration |Notes
+|Name |goup:artifact |Backend |Configuration |Notes
 
-|Scala.js Compiler
+|Compiler Plugin
 |org.scala-js:scalajs-compiler
-|scalajsCompilerPlugins
+|Scala 2 JVM
+|scalaCompilerPlugins
 |only for Scala 2
 
-|Scala.js JUnit Compiler Plugin
+|JUnit Compiler Plugin
 |org.scala-js:scalajs-junit-test-plugin
-|scalajsCompilerPlugins
+|Scala 2 JVM
+|scalaCompilerPlugins
 |only for Scala 2 and only if JUnit4 for Scala.js is used
 
-|Scala.js Linker
+|Linker
 |org.scala-js:scalajs-linker
+|Scala 2 JVM
 |scalajs
 |
 
-|Scala.js Node.js Environment
+|Node.js Environment
 |org.scala-js:scalajs-env-jsdom-nodejs
+|Scala 2 JVM
 |scalajs
 |
 
-|Scala.js Test Adapter
+|Test Adapter
 |org.scala-js:scalajs-sbt-test-adapter
+|Scala 2 JVM
 |scalajs
 |
 
-|Scala.js-compiled Scala Library
-|org.scala-lang:scala3-library_sjs1
+|Scala Library for Scala.js
+|org.scala-lang:scala3-library
+|Scala.js
 |implementation
 |only for Scala 3
 
-|Scala.js Library
+|Library
 |org.scala-js:scalajs-library
+|Scala 2 JVM
 |implementation
 |
 
-|Scala.js-compiled DOM Library
-|org.scala-js:scalajs-dom_sjs1
+|DOM Library
+|org.scala-js:scalajs-dom
+|Scala.js
 |implementation
 |
 
-|Scala.js Test Bridge
+|Test Bridge
 |org.scala-js:scalajs-test-bridge
+|Scala 2 JVM
 |testImplementation
 |
 
 |===
 
-=== Scala 3 with Scala.js
+==== Scala 3 Example
 
 [source,groovy,subs="+attributes"]
 ----
@@ -241,11 +286,12 @@ final String scala2versionMinor = '{version-scala2-minor}'
 final String scalaJsVersion     = '{version-scalajs}'
 
 dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
 
-  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
   implementation "org.scala-lang:scala3-library_sjs1_3:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
   implementation "org.scala-js:scalajs-dom_sjs1_3:{version-scalajs-dom}"
@@ -253,38 +299,17 @@ dependencies {
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // Test framework(s) you use:
-  /* JUnit4.js */  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
-  /* MUnit */      testImplementation 'org.scalameta:munit_sjs1_3:{version-framework-munit}'
-  /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_sjs1_3:{version-framework-scalacheck}'
-  /* ScalaTest */  testImplementation 'org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}'
-  /* specs2 */     testImplementation 'org.specs2:specs2-core_sjs1_3:{version-framework-specs2}'
-  /* uTest */      testImplementation 'com.lihaoyi:utest_sjs1_3:{version-framework-utest}'
+  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
+  testImplementation 'org.scalameta:munit_sjs1_3:{version-framework-munit}'
+  testImplementation 'org.scalacheck:scalacheck_sjs1_3:{version-framework-scalacheck}'
+  testImplementation 'org.scalatest:scalatest_sjs1_3:{version-framework-scalatest}'
+  testImplementation 'org.specs2:specs2-core_sjs1_3:{version-framework-specs2}'
+  testImplementation 'com.lihaoyi:utest_sjs1_3:{version-framework-utest}'
 }
 ----
 
-=== Scala 3 without Scala.js
 
-[source,groovy,subs="+attributes"]
-----
-final String scalaVersion       = '{version-scala}'
-
-dependencies {
-  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
-
-  testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
-
-  // Test framework(s) you use:
-  /* JUnit4 */     testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
-  /* MUnit */      testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
-  /* ScalaCheck */ testImplementation 'org.scalacheck:scalacheck_3:{version-framework-scalacheck}'
-  /* ScalaTest */  testImplementation 'org.scalatest:scalatest_3:{version-framework-scalatest}'
-  /* specs2 */     testImplementation 'org.specs2:specs2-core_3:{version-framework-specs2}'
-  /* uTest */      testImplementation 'com.lihaoyi:utest_3:{version-framework-utest}'
-  /* ZIO Test */   testImplementation 'dev.zio:zio-test-sbt_3:{version-framework-zio-test}'
-}
-----
-
-=== Scala 2 with Scala.js
+==== Scala 2 Example
 
 [source,groovy,subs="+attributes"]
 ----
@@ -293,6 +318,8 @@ final String scala2versionMinor = '{version-scala2-minor}'
 final String scalaJsVersion     = '{version-scalajs}'
 
 dependencies {
+  implementation "org.scala-lang:scala-library:$scalaVersion"
+
   scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
   scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
@@ -300,54 +327,195 @@ dependencies {
   scalajsCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion"
   scalajsCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:$scalaJsVersion"
 
-  implementation "org.scala-lang:scala-library:$scalaVersion"
   implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
   implementation "org.scala-js:scalajs-dom_sjs1_$scala2versionMinor:{version-scalajs-dom}"
 
   testImplementation "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
 
   // Test framework(s) you use:
-  /* JUnit4.js */  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
-  /* MUnit */      testImplementation "org.scalameta:munit_sjs1_$scala2versionMinor:{version-framework-munit}"
-  /* ScalaCheck */ testImplementation "org.scalacheck:scalacheck_sjs1_$scala2versionMinor:{version-framework-scalacheck}"
-  /* ScalaTest */  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:{version-framework-scalatest}"
-  /* specs2 */     testImplementation "org.specs2:specs2-core_sjs1_$scala2versionMinor:{version-framework-specs2-scala2}"
-  /* uTest */      testImplementation "com.lihaoyi:utest_sjs1_$scala2versionMinor:{version-framework-utest}"
+  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
+  testImplementation "org.scalameta:munit_sjs1_$scala2versionMinor:{version-framework-munit}"
+  testImplementation "org.scalacheck:scalacheck_sjs1_$scala2versionMinor:{version-framework-scalacheck}"
+  testImplementation "org.scalatest:scalatest_sjs1_$scala2versionMinor:{version-framework-scalatest}"
+  testImplementation "org.specs2:specs2-core_sjs1_$scala2versionMinor:{version-framework-specs2-scala2}"
+  testImplementation "com.lihaoyi:utest_sjs1_$scala2versionMinor:{version-framework-utest}"
 }
 ----
 
-=== Scala 2 without Scala.js
+=== Scala Native
+
+If `org.scala-native:scala3lib` (for Scala 3) or
+`org.scala-native:scalalib` (for Scala 2) dependency is specified explicitly,
+plugin uses its version for all the Scala Native dependencies that it adds.
+
+Plugin creates `scalanative` configuration
+for `Scala Native` dependencies used by the plugin itself.
+
+The table below lists what is added to what configurations.
+
+[%autowidth]
+|===
+|Name |goup:artifact |Backend |Configuration |Notes
+
+|Compiler Plugin
+|org.scala-native:nscplugin
+|JVM
+|scalaCompilerPlugins
+|
+
+|JUnit Compiler Plugin
+|org.scala-native:junit-plugin
+|JVM
+|scalaCompilerPlugins
+|only if JUnit4 for Scala.js is used
+
+|Linker
+|org.scala-native:tools
+|JVM
+|scalanative
+|
+
+|Test Adapter
+|org.scala-native:test-runner
+|JVM
+|scalanative
+|
+
+|Library
+|org.scala-native:scala3lib
+|Scala Native
+|implementation
+|only for Scala 3
+
+|Library
+|org.scala-native:scalalib
+|Scala Native
+|implementation
+|only for Scala 2
+
+|Test Bridge
+|org.scala-native:test-interface
+|Scala Native
+|testImplementation
+|
+
+|Native Library
+|org.scala-native:nativelib
+|Scala Native
+|implementation
+|
+
+|C Library
+|org.scala-native:clib
+|Scala Native
+|implementation
+|
+
+|Posix Library
+|org.scala-native:posixlib
+|Scala Native
+|implementation
+|
+
+|Windows Library
+|org.scala-native:windowslib
+|Scala Native
+|implementation
+|
+
+|Java Library
+|org.scala-native:javalib
+|Scala Native
+|implementation
+|
+
+|Aux Library
+|org.scala-native:auxlib
+|Scala Native
+|implementation
+|
+
+|===
+
+
+=== Scala 3 Example
+
+[source,groovy,subs="+attributes"]
+----
+final String scalaVersion       = '{version-scala}'
+final String scalaNativeVersion = '{version-scalanative}'
+
+dependencies {
+  implementation "org.scala-lang:scala3-library_3:$scalaVersion"
+
+  scalanative "org.scala-native:tools_3:$scalaNativeVersion"
+  scalanative "org.scala-native:test-runner_3:$scalaNativeVersion"
+
+  scalaCompilerPlugins "org.scala-native:nscplugin_$scalaVersion:$scalaNativeVersion"
+  scalaCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:$scalaNativeVersion"
+
+  implementation "org.scala-native:scala3lib_native0.5_3:$scalaVersion+$scalaNativeVersion"
+  implementation "org.scala-native:nativelib_native0.5_3:$scalaNativeVersion"
+  implementation "org.scala-native:javaliblib_native0.5_3:$scalaNativeVersion"
+  implementation "org.scala-native:clib_native0.5_3:$scalaNativeVersion"
+  implementation "org.scala-native:posixlib_native0.5_3:$scalaNativeVersion"
+  implementation "org.scala-native:windowslib_native0.5_3:$scalaNativeVersion"
+  implementation "org.scala-native:auxlib_native0.5_3:$scalaNativeVersion"
+
+  testImplementation "org.scala-native:test-interface_native0.5_3:$scalaNativeVersion"
+
+  testImplementation 'org.scala-native:junit-runtime_native0.5_3:{version-framework-junit4-scalanative}'
+  testImplementation 'org.scalameta:munit_native0.5_3:{version-framework-munit}'
+  testImplementation 'org.scalacheck:scalacheck_native0.5_3:{version-framework-scalacheck}'
+  testImplementation 'org.scalatest:scalatest_native0.5_3:{version-framework-scalatest}'
+  testImplementation 'com.lihaoyi:utest_native0.5_3:{version-framework-utest}'
+}
+----
+
+=== Scala 2 Example
 
 [source,groovy,subs="+attributes"]
 ----
 final String scalaVersion       = '{version-scala2}'
 final String scala2versionMinor = '{version-scala2-minor}'
+final String scalaNativeVersion = '{version-scalanative}'
 
 dependencies {
   implementation "org.scala-lang:scala-library:$scalaVersion"
 
-  testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
+  scalanative "org.scala-native:tools_$scala2versionMinor:$scalaNativeVersion"
+  scalanative "org.scala-native:test-runner_$scala2versionMinor:$scalaNativeVersion"
 
-  // Test framework(s) you use:
-  /* MUnit */      testImplementation "org.scalameta:munit_$scala2versionMinor:{version-framework-munit}"
-  /* ScalaCheck */ testImplementation "org.scalacheck:scalacheck_$scala2versionMinor:{version-framework-scalacheck}"
-  /* ScalaTest */  testImplementation "org.scalatest:scalatest_$scala2versionMinor:{version-framework-scalatest}"
-  /* specs2 */     testImplementation "org.specs2:specs2-core_$scala2versionMinor:{version-framework-specs2-scala2}"
-  /* uTest */      testImplementation "com.lihaoyi:utest_$scala2versionMinor:{version-framework-utest}"
-  /* ZIO Test */   testImplementation "dev.zio:zio-test-sbt_$scala2versionMinor:{version-framework-zio-test}"
+  scalaCompilerPlugins "org.scala-native:nscplugin_$scalaVersion:$scalaNativeVersion"
+  scalaCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:$scalaNativeVersion"
+
+  implementation "org.scala-native:scalalib_native0.5_3:$scalaVersion+$scalaNativeVersion"
+  implementation "org.scala-native:nativelib_native0.5_$scala2versionMinor:$scalaNativeVersion"
+  implementation "org.scala-native:javaliblib_native0.5_$scala2versionMinor:$scalaNativeVersion"
+  implementation "org.scala-native:clib_native0.5_$scala2versionMinor:$scalaNativeVersion"
+  implementation "org.scala-native:posixlib_native0.5_$scala2versionMinor:$scalaNativeVersion"
+  implementation "org.scala-native:windowslib_native0.5_$scala2versionMinor:$scalaNativeVersion"
+  implementation "org.scala-native:auxlib_native0.5_$scala2versionMinor:$scalaNativeVersion"
+
+  testImplementation "org.scala-native:test-interface_native0.5_$scala2versionMinor:$scalaNativeVersion"
+
+  testImplementation 'org.scala-native:junit-runtime_native0.5_$scala2versionMinor:{version-framework-junit4-scalanative}'
+  testImplementation 'org.scalameta:munit_native0.5_$scala2versionMinor:{version-framework-munit}'
+  testImplementation 'org.scalacheck:scalacheck_native0.5_$scala2versionMinor:{version-framework-scalacheck}'
+  testImplementation 'org.scalatest:scalatest_native0.5_$scala2versionMinor:{version-framework-scalatest}'
+  testImplementation 'com.lihaoyi:utest_native0.5_$scala2versionMinor:{version-framework-utest}'
 }
 ----
 
 == Scala.js
-Ths section applies only when Scala.js support is enabled.
 
 === Compiling
 To support Scala.js, Scala compiler needs to be configured to produce both the `class` _and_ `sjsir` files.
 
 ==== Scala 3
 
-If the project uses Scala 3, all it takes is to pass `-scalajs` option to the Scala compiler, since
-Scala 3 compiler has Scala.js support built in:
+If the project uses Scala 3, all it takes is to pass `-scalajs` option
+to the Scala compiler, since Scala 3 compiler has Scala.js support built in:
 
 [source,groovy]
 ----
@@ -358,7 +526,8 @@ tasks.withType(ScalaCompile) {
 }
 ----
 
-Plugin automatically adds this option to the main and test Scala compilation tasks if it is not present.
+Plugin automatically adds this option to the main and test
+Scala compilation tasks if it is not present.
 
 ==== Scala 2
 If the project uses Scala 2, Scala.js compiler plugin dependency needs to be declared:
@@ -366,14 +535,15 @@ If the project uses Scala 2, Scala.js compiler plugin dependency needs to be dec
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  scalajsCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:{version-scalajs}"
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:{version-scalajs}"
 }
 ----
 
-Plugin does this automatically unless a dependency on `scalajs-compiler` is declared explicitly.
+Plugin does this automatically unless a dependency on
+`org.scala-js:scalajs-compiler` is declared explicitly.
 
 If the project uses Scala 2 _and_ JUnit 4 for Scala.js,
-a JUnit Scala compiler plugin is also needed:
+a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scala-2>>):
 
 [source,groovy,subs="+attributes"]
 ----
@@ -502,6 +672,87 @@ those tasks can be used from the command line like this:
 ./gradlew node --node-arguments '...'
 ----
 
+== Scala Native
+
+=== Compiling
+To support Scala Native, Scala compiler needs to be configured to produce both the `class` _and_ `nir` files.
+
+
+Scala.js compiler plugin dependency needs to be declared:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  scalaCompilerPlugins "org.scala-native:nscplugin_$scalaVersion:{version-scalanative}"
+}
+----
+
+Plugin does this automatically unless a dependency on
+`org.scala-native:nscplugin` is declared explicitly.
+
+If the project uses JUnit 4 for Scala Native,
+a JUnit Scala compiler plugin is also needed (<<junit4-scalanative>>):
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  scalajsCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:{version-scalajs}"
+}
+----
+
+Plugin adds this automatically also.
+
+There is no need to add `-Xplugin:` Scala compiler parameters for the compiler plugins.
+
+=== Linking
+
+For linking of the main code, plugin adds `link` task of type
+link:src/main/scala/org/podval/tools/scalajsplugin/scalanative/ScalaNativeLinkMainTask.scala[org.podval.tools.scalajsplugin.scalanative.ScalaNativeLinkMainTask];
+all tasks of this type automatically depend on the `classes` task.
+
+For linking of the test code, plugin adds `testLink` task of type
+link:src/main/scala/org/podval/tools/scalajsplugin/scalanative/ScalaNativeLinkTestTask.scala[org.podval.tools.scalajsplugin.scalanative.ScalaNativeLinkTestTask];
+all tasks of this type automatically depend on the `testClasses` task.
+
+Link tasks exposes a property `NativeDirectory` that points to a directory
+with the Scala Native Linker output, so that it can be copied where needed.
+
+Link tasks have a number of properties that can be used to configure linking.
+Configurable properties with their defaults are:
+
+// TODO verify property names and Optimize value
+
+[source,groovy]
+----
+link {
+  mode     = 'debug' // one of: 'debug', 'release-fast', 'release-size', 'release-full'
+  LTO      = 'none'  // one of: 'none', 'thin', 'full'
+  GC       = 'immix' // one of: 'none', 'boehm', 'immix', 'commix'
+  Optimize = false
+}
+----
+
+If not set explicitly, properties are set from the environment variables:
+
+- mode - `SCALANATIVE_MODE`
+- LTO - `SCALANATIVE_LTO`
+- GC - `SCALANATIVE_GC`
+- Optimize - `SCALANATIVE_OPTIMIZE`
+
+For `ScalaNativeLinkMainTask` tasks, property `mainClass` may also be configured.
+This is the class that will be run.
+
+=== Running
+
+Plugin adds `run` task for running the main code
+(if it is an application and not a library);
+this task automatically depends on the `link` task.
+
+Additional tasks of type
+link:src/main/scala/org/podval/tools/scalajsplugin/scalanative/ScalaNativeRunMainTask.scala[org.podval.tools.scalajsplugin.scalanative.ScalaNativeRunMainTask]
+can be added manually;
+their dependency on a corresponding `ScalaNativeLinkMainTask` task must be set manually too.
+
 == Testing
 
 === Test Task
@@ -511,7 +762,7 @@ and can be configured  in the traditional way - with some limitations:
 - plugin applies its own Gradle test framework (`useSbt`) to each test task;
 re-configuring the Gradle test framework (via `useJUnit`, `useTestNG` or `useJUnitPlatform`) is not supported;
 - `isScanForTestClasses` must be at its default value `true`.
-- ScalaJS tests _must_ run in the same JVM where they are discovered,
+- Scala.js and Scala Native tests _must_ run in the same JVM where they are discovered,
 so they are not forked, and forking configuration is ignored.
 
 Dry run (`test.dryRun=true` or `--test-dry-run` command line option) is supported.
@@ -523,14 +774,21 @@ and <<test-frameworks>>.
 If there is a need to have test runs with different configurations,
 more testing tasks can be added manually.
 
-For plain Scala projects (no Scala.js), the type of the test task is
+For JVM, the type of the test task is
 link:src/main/scala/org/podval/tools/scalajsplugin/jvm/JvmTestTask.scala[org.podval.tools.scalajsplugin.jvm.JvmTestTask].
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
-For Scala.js projects the type of the test task is
+For Scala.js the type of the test task is
 link:src/main/scala/org/podval/tools/scalajsplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.scalajsplugin.scalajs.ScalaJSTestTask].
 Such test tasks have to depend on a
 `org.podval.tools.scalajsplugin.scalajs.ScalaJSLinkTestTask task`.
+The `test` task added by the plugin does it automatically;
+for manually added tasks this dependency has to be added manually.
+
+For Scala Native the type of the test task is
+link:src/main/scala/org/podval/tools/scalajsplugin/scalanative/ScalaNativeTestTask.scala[org.podval.tools.scalajsplugin.scalanative.ScalaNativeTestTask].
+Such test tasks have to depend on a
+`org.podval.tools.scalajsplugin.scalanative.ScalaNativeLinkTestTask task`.
 The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 
@@ -641,11 +899,10 @@ including test classes that were skipped entirely;
 for such, a test case named `dry run` is reported as skipped.
 
 === Nested Test Suites
-
 Some test frameworks have a notion of _nested test suites_,
 where nesting test class aggregates nested test classes.
 
-Plugin supports such scenario and,
+Plugin supports such a scenario and,
 when test framework involved provides sufficient information about the tests run,
 attributes test cases from the nested suites to them:
 test report will have no test cases for the nesting class;
@@ -746,8 +1003,25 @@ it is a partial translation/re-implementation of JUnit4 circa 2015
 and has different capabilities.
 
 - coordinates: `org.scala-js:scalajs-junit-test-runtime`;
-- current version: {version-scalajs};
+- current version: {version-framework-junit4-scalajs};
 - Scala.js only, no JVM;
+- Scala dependency, no `sjs1` suffix in the artifact;
+- Scala 2 only;
+- test filtering: does not support test case selectors and runs all test cases in the class;
+- test tagging: not supported;
+- nested suites: not supported;
+- ignoring tests: not supported;
+- assumptions: not supported;
+
+=== JUnit4 for Scala Native
+JUnit4 for Scala Native is a framework distinct from JUnit4:
+it is a port of the JUnit4 for Scala.js,
+which is a partial translation/re-implementation of JUnit4 circa 2015
+and has different capabilities.
+
+- backends supported: Scala Native only;
+- coordinates: `org.scala-native:junit-runtime`;
+- current version: {version-framework-junit4-scalanative};
 - Scala dependency, no `sjs1` suffix in the artifact;
 - Scala 2 only;
 - test filtering: does not support test case selectors and runs all test cases in the class;
@@ -965,14 +1239,19 @@ _https://github.com/scalameta/munit/pull/918[918]_;
 - specs2:
 _https://github.com/etorreborre/specs2/pull/1327[1327]_;
 
+- Scala Native:
+_https://github.com/scala-native/scala-native/pull/4320[4320]_;
+
 
 
 [#intellij-idea-integration]
 == IntelliJ Idea Integration
 
-Whatever you can run from Idea you can also debug -
-unless Scala.js is used:
-Scala.js code runs on Node.js, so there is no debugging it - breakpoints have no effect.
+It is assumed that the IDE is set up to use Grade to run tests etc.
+
+On JVM, whatever you can run from Idea you can also debug;
+Scala.js code runs on Node.js, so there is no debugging it - breakpoints have no effect;
+nor do they on Scala Native.
 
 As with any other Gradle project imported into Idea, you can run Gradle tasks.
 
@@ -981,8 +1260,8 @@ IntelliJ lets you run objects with main methods using either:
 - object node in the project tree or
 - gutter icon in the object's file
 
-When Scala.js is enabled, objects can not be run this way:
-the code needs to be compiled for Scala.js, linked and run on Node.js.
+On Scala.js or Scala Native, objects can not be run this way:
+the code needs to be compiled and linked for the appropriate backend.
 This is what the `run` task added by the plugin is for.
 
 As usual, when you run tests:
@@ -1013,8 +1292,9 @@ Idea supplies Gradle test filter "fully.qualified.TestClass".
 From the test frameworks this plugin supports,
 Idea recognizes:
 
-- JUnit4 (for some reason, tests can not be run from the project tree)
+- JUnit4 (for some reason, tests cannot be run from the project tree)
 - JUnit4 for Scala.js
+- JUnit4 for Native
 - MUnit
 
 Scala plugin for Idea recognizes
@@ -1034,7 +1314,7 @@ they can be run from Idea (when not using Scala.js),
 but there is no test result tree nor test counts displayed,
 and since Gradle is not involved, no test reports.
 
-For `JUnit4` and `JUnit4 for Scala.js`,
+For `JUnit4`, `JUnit4 for Scala.js`, and `JUnit4 for Scala Native`
 Idea also recognizes individual test methods within a test class;
 they can be run using their gutter icons.
 Idea supplies Gradle test filter "fully.qualified.TestClass.testMethod".
@@ -1337,7 +1617,8 @@ java.lang.ClassNotFoundException: Cannot find org.podval.tools.test.JUnit4ScalaJ
 ----
 
 To get the bootsrappers generated on Scala 2,
-a dedicated Scala compiler plugin has to be added: `scalajs-junit-test-plugin`.
+a dedicated Scala compiler plugin has to be added:
+`org.scala-js:scalajs-junit-test-plugin`.
 This compiler plugin can _only_ be added when `JUnit4 for Scala.js`
 is actually on the classpath - or Scala compiler breaks ;)
 
@@ -1346,6 +1627,19 @@ see:
 - https://github.com/scala-js/scala-js/issues/2937
 - https://github.com/scala-js/scala-js/commit/269d1aaf1fa20afbcc3940b9dba58e99ee010dc1
 - https://github.com/scala-js/scala-js/issues/4191
+
+[#junit4-scalanative]
+=== JUnit4 for Scala Native
+Turns out, `JUnit4 for Scala Native` assumes existence of a `bootstrapper`
+in every test class - apparently, because test discovery for `JUnit4`
+is based on annotations, and reflection on Scala Native is not powerful enough,
+so tests are pre-discovered _at compile time_,
+and JUnit4-specific bootstrappers generated for them.
+
+To get the bootsrappers generated on Scala 2,
+a dedicated Scala compiler plugin has to be added: `org.scala-native:junit-plugin`.
+This compiler plugin can _only_ be added when `JUnit4 for Scala Native`
+is actually on the classpath - or Scala compiler breaks ;)
 
 [#test-detection]
 === Test Detection
@@ -1448,6 +1742,16 @@ which is not accessible from the plugin and results in `java.lang.NoSuchMethodEr
 which recognizes only the test frameworks explicitly supported by Gradle (`JUnit` and `TestNG`); since I can not override it, I just use
 `org.gradle.api.tasks.testing.junit.JUnitOptions` as `SbtTestFrameworkOptions`.
 
+=== Scala Native Support
+
+Scala Native follows the trail blazed by Scala.js, and I follow :)
+
+I perused the code of:
+
+- https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[Scala Native sbt plugin]
+
+and that is all it took to add support for Scala Native.
+
 === AsciiDoc
 GitHub stupidly disables AsciDoc includes in README;
 see https://github.com/github/markup/issues/1095[the discussion].
@@ -1463,6 +1767,7 @@ I also write versions to `gradle.properties` and use them in `gradle.build`.
 I want to thank the maintainers of:
 
 - https://www.scala-js.org/[Scala.js];
+- https://scala-native.org/[Scala Native];
 - https://github.com/sbt/test-interface[sbt test interface];
 - https://github.com/junit-team/junit4[JUnit4];
 - sbt test framework https://github.com/sbt/junit-interface[implementation] for JUnit4;
@@ -1502,8 +1807,7 @@ ZIO Test's treatment of https://github.com/zio/zio/pull/9680[test wildcards]
 and https://github.com/zio/zio/pull/9756[test name matching];
 - https://github.com/sjrd[sjrd] for the helpful text
 https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
-and for working with me on fixing issues
-with JUnit4 for Scala.js reporting of
+and for working with me on fixing issues with JUnit4 for Scala.js reporting of
 https://github.com/scala-js/scala-js/pull/5132[test failure throwable]
 and https://github.com/scala-js/scala-js/pull/5134[test duration];
 - https://github.com/cheeseng[cheeseng] for helping me understand
@@ -1513,3 +1817,6 @@ with running nested ScalaTest suites using my plugin;
 reporting of https://github.com/scalameta/munit/pull/918[test duration];
 - https://github.com/etorreborre[etorreborre] for accepting my fix for specs2's
 treatment of https://github.com/etorreborre/specs2/pull/1327[test wildcards];
+- https://github.com/ekrich[ekrich] for encouraging my fix for
+JUnit4 for Scala Native reporting of
+https://github.com/scala-native/scala-native/pull/4320[test failure throwable and duration];

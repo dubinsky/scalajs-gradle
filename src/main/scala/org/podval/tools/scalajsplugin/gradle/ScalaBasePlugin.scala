@@ -136,7 +136,7 @@ final class ScalaBasePlugin(
     )
     plugins.setTransitive(false)
     jvmPluginServices.configureAsRuntimeClasspath(plugins)
-    
+
   private def configureSourceSetDefaults(
     project: ProjectInternal,
     incrementalAnalysisCategory: Category,

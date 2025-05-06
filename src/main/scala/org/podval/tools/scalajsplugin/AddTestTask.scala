@@ -16,7 +16,7 @@ final class AddTestTask[T <: TestTask](
     testTaskName: String
   ): Unit =
     def doConfigure(testTask: T): Unit =
-      testTask.dependsOn(Gradle.getClassesTask(project, testSourceSetName))
+      testTask.dependsOn(Gradle.getClassesTaskProvider(project, testSourceSetName))
       configure(testTask)
 
     if !isModeMixed
