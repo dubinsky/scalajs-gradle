@@ -2,8 +2,8 @@ package org.podval.tools.scalajsplugin.scalanative
 
 import org.gradle.api.Project
 import org.podval.tools.build.{ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
-import org.podval.tools.scalajsplugin.nonjvm.{BackendLinkMainTask, BackendLinkTask, BackendLinkTestTask,
-  BackendRunMainTask, BackendTestTask, NonJvmBackendDelegate}
+import org.podval.tools.scalajsplugin.nonjvm.{NonJvmLinkMainTask, NonJvmLinkTask, NonJvmLinkTestTask,
+  NonJvmRunMainTask, NonJvmTestTask, NonJvmDelegate}
 import org.podval.tools.scalajsplugin.BackendDelegateKind
 import org.podval.tools.scalanative.ScalaNative
 import org.podval.tools.test.framework.JUnit4ScalaNative
@@ -17,19 +17,19 @@ object ScalaNativeDelegate  extends BackendDelegateKind(
 final class ScalaNativeDelegate(
   project: Project,
   isModeMixed: Boolean
-) extends NonJvmBackendDelegate(
+) extends NonJvmDelegate(
   project,
   isModeMixed
 ):
   override protected def kind: BackendDelegateKind = ScalaNativeDelegate
   override protected def gradleNamesSuffix: String = "Native"
-  override protected def pluginDependenciesConfiguration: String = "scalanative"
+  override protected def pluginDependenciesConfigurationName: String = "scalanative"
   override protected def areCompilerPluginsBuiltIntoScala3: Boolean = false
 
-  override protected def linkMainTaskClass: Class[? <: BackendLinkMainTask[?]] = classOf[ScalaNativeLinkMainTask]
-  override protected def linkTestTaskClass: Class[? <: BackendLinkTestTask[?]] = classOf[ScalaNativeLinkTestTask]
-  override protected def runMainTaskClass : Class[? <: BackendRunMainTask [?]] = classOf[ScalaNativeRunMainTask ]
-  override protected def testTaskClass    : Class[? <: BackendTestTask    [?]] = classOf[ScalaNativeTestTask    ]
+  override protected def linkMainTaskClass: Class[? <: NonJvmLinkMainTask[?]] = classOf[ScalaNativeLinkMainTask]
+  override protected def linkTestTaskClass: Class[? <: NonJvmLinkTestTask[?]] = classOf[ScalaNativeLinkTestTask]
+  override protected def runMainTaskClass : Class[? <: NonJvmRunMainTask [?]] = classOf[ScalaNativeRunMainTask ]
+  override protected def testTaskClass    : Class[? <: NonJvmTestTask    [?]] = classOf[ScalaNativeTestTask    ]
 
   override protected def createExtensions(): Unit = ()
   override protected def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty

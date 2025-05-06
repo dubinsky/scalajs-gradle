@@ -4,6 +4,7 @@ import scala.scalanative.util.Scope
 import java.util.concurrent.locks.ReentrantLock
 
 // see scala.scalanative.sbtplugin.ScalaNativePluginInternal
+// TODO If this was exposed in Scala Native, I wouldn't need to copy it ;)
 /* Provider of Scope that can be shared between different threads.
  * Closed automatically when all concurrent users release their access  */
 object ScalaNativeSharedScope:

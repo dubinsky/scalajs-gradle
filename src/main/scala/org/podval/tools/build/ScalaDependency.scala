@@ -64,19 +64,6 @@ object ScalaDependency:
     def backendKind: Option[ScalaBackendKind] = None
     def scala2: Boolean = false
     def isScalaVersionFull: Boolean = false
-    def scalaVersion(scalaPlatform: ScalaPlatform): Version = scalaPlatform.scalaVersion
-
-    private def adjusted(scalaPlatform: ScalaPlatform): ScalaPlatform =
-      def adjustForScala2(scalaPlatform: ScalaPlatform): ScalaPlatform =
-        if !scala2
-        then scalaPlatform
-        else scalaPlatform.toScala2
-
-      def adjustForBackend(scalaPlatform: ScalaPlatform) = backendKind
-        .map(scalaPlatform.withBackend)
-        .getOrElse(scalaPlatform)
-
-      adjustForBackend(adjustForScala2(scalaPlatform))
 
     final override def findable(scalaPlatform: ScalaPlatform): ScalaDependency = ScalaDependency(
       scalaPlatform = adjusted(scalaPlatform),
@@ -93,7 +80,19 @@ object ScalaDependency:
       findable(scalaPlatform).findInConfiguration(project, configurationName)
   
     final override def dependency(scalaPlatform: ScalaPlatform): WithScalaVersion =
-      findable(scalaPlatform).withScalaVersion(scalaVersion(adjusted(scalaPlatform)))
+      findable(scalaPlatform).withScalaVersion(adjusted(scalaPlatform).scalaVersion)
+
+    private def adjusted(scalaPlatform: ScalaPlatform): ScalaPlatform =
+      def adjustForScala2(scalaPlatform: ScalaPlatform): ScalaPlatform =
+        if !scala2
+        then scalaPlatform
+        else scalaPlatform.toScala2
+  
+      def adjustForBackend(scalaPlatform: ScalaPlatform) = backendKind
+        .map(scalaPlatform.withBackend)
+        .getOrElse(scalaPlatform)
+  
+      adjustForBackend(adjustForScala2(scalaPlatform))
 
   trait MakerJvm extends Maker:
     final override def backendKind: Option[ScalaBackendKind] = Some(ScalaBackendKind.JVM)

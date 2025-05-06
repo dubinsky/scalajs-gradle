@@ -6,7 +6,7 @@ import org.podval.tools.util.Files
 import java.io.File
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-trait BackendLinkTask[L <: BackendLinkTask[L]] extends BackendTask[L]:
+trait NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends NonJvmTask[L]:
   this: L =>
 
   setGroup("build")

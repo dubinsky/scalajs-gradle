@@ -4,13 +4,13 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Internal, Optional, OutputDirectory, OutputFile, TaskAction}
 import org.podval.tools.build.Gradle
-import org.podval.tools.scalajsplugin.nonjvm.BackendLinkTask
+import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkTask
 import org.podval.tools.scalanative.{GC, LTO, Mode, ScalaNativeBuild}
 import org.podval.tools.util.Named
 import java.io.File
 import java.nio.file.Path
 
-trait ScalaNativeLinkTask extends BackendLinkTask[ScalaNativeLinkTask] with ScalaNativeTask:
+trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with ScalaNativeTask:
   final override def flavourSuffix: String = Mode(getMode).name
 
   final override protected def buildSubDirectory: String = "scalanative"

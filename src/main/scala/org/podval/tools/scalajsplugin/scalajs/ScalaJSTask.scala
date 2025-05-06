@@ -3,9 +3,9 @@ package org.podval.tools.scalajsplugin.scalajs
 import org.gradle.api.GradleException
 import org.podval.tools.node.TaskWithNode
 import org.podval.tools.scalajs.{ModuleKind, ScalaJSCommon}
-import org.podval.tools.scalajsplugin.nonjvm.BackendTask
+import org.podval.tools.scalajsplugin.nonjvm.NonJvmTask
 
-trait ScalaJSTask extends BackendTask[ScalaJSLinkTask] with TaskWithNode:
+trait ScalaJSTask extends NonJvmTask[ScalaJSLinkTask] with TaskWithNode:
   final override protected def backend: String = "Scala.js"
 
   protected final def scalaJSCommon: ScalaJSCommon = ScalaJSCommon(

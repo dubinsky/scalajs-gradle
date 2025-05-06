@@ -5,6 +5,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 // see scala.scalanative.sbtplugin.ScalaNativePluginInternal
+// TODO If this was exposed in Scala Native, I wouldn't need to copy it ;)
 object ScalaNativeAwait:
   def await[T](
     trace: Throwable => Unit

@@ -3,10 +3,10 @@ package org.podval.tools.scalajsplugin.scalajs
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Optional, OutputDirectory, OutputFile, TaskAction}
 import org.podval.tools.scalajs.{ModuleInitializer, ModuleKind, ModuleSplitStyle, Optimization, ScalaJSLink}
-import org.podval.tools.scalajsplugin.nonjvm.BackendLinkTask
+import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkTask
 import java.io.File
 
-trait ScalaJSLinkTask extends BackendLinkTask[ScalaJSLinkTask] with ScalaJSTask:
+trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
   final override def flavourSuffix: String = Optimization(getOptimization).name
 
   final override protected def buildSubDirectory: String = "scalajs"
