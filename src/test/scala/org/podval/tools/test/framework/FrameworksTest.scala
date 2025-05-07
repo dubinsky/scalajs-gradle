@@ -4,11 +4,13 @@ import org.podval.tools.build.{ScalaBackendKind, ScalaPlatform, ScalaVersion}
 import org.podval.tools.test.testproject.{Feature, Fixture, GroupingFunSpec}
 
 class FrameworksTest extends GroupingFunSpec:
-  groupTest(
-    features = FrameworksTest.features,
-    fixtures = FrameworksTest.fixtures,
-    platforms = FrameworksTest.platforms
-  )
+  // In the past, running the tests for individual test frameworks helped uncover dome bugs;
+  // at this point, there is no much point in it, so we do not:
+//  groupTest(
+//    features = FrameworksTest.features,
+//    fixtures = FrameworksTest.fixtures,
+//    platforms = FrameworksTest.platforms
+//  )
 
   groupTest(
     features = FrameworksTest.features,

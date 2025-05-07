@@ -1,21 +1,20 @@
 package org.podval.tools.scalajsplugin.nonjvm
 
+import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.tasks.{InputFiles, Internal}
 import org.podval.tools.util.Files
-import java.io.File
 import scala.jdk.CollectionConverters.SetHasAsScala
+import java.io.File
 
-trait NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends NonJvmTask[L]:
+abstract class NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends DefaultTask with NonJvmTask[L]:
   this: L =>
-
-  setGroup("build")
-
-  @Internal protected def isTest: Boolean
-
+  
   @InputFiles def getRuntimeClassPath: ConfigurableFileCollection
   final protected def runtimeClassPath: Seq[File] = getRuntimeClassPath.getFiles.asScala.toSeq
 
+  @Internal protected def isTest: Boolean
+  
   final override protected def linkTask: L = this
 
   // TODO depends on GradleNames etc.

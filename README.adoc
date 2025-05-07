@@ -507,6 +507,10 @@ dependencies {
 }
 ----
 
+== JVM
+
+TODO document that the run task can be added by applying `id 'application'` Gradle plugin.
+
 == Scala.js
 
 === Compiling
@@ -720,24 +724,24 @@ with the Scala Native Linker output, so that it can be copied where needed.
 Link tasks have a number of properties that can be used to configure linking.
 Configurable properties with their defaults are:
 
-// TODO verify property names and Optimize value
+// TODO verify optimize default value
 
 [source,groovy]
 ----
 link {
   mode     = 'debug' // one of: 'debug', 'release-fast', 'release-size', 'release-full'
-  LTO      = 'none'  // one of: 'none', 'thin', 'full'
-  GC       = 'immix' // one of: 'none', 'boehm', 'immix', 'commix'
-  Optimize = false
+  lto      = 'none'  // one of: 'none', 'thin', 'full'
+  gx       = 'immix' // one of: 'none', 'boehm', 'immix', 'commix'
+  optimize = false
 }
 ----
 
 If not set explicitly, properties are set from the environment variables:
 
 - mode - `SCALANATIVE_MODE`
-- LTO - `SCALANATIVE_LTO`
-- GC - `SCALANATIVE_GC`
-- Optimize - `SCALANATIVE_OPTIMIZE`
+- lto - `SCALANATIVE_LTO`
+- gc - `SCALANATIVE_GC`
+- optimize - `SCALANATIVE_OPTIMIZE`
 
 For `ScalaNativeLinkMainTask` tasks, property `mainClass` may also be configured.
 This is the class that will be run.
@@ -1752,6 +1756,9 @@ I perused the code of:
 
 and that is all it took to add support for Scala Native.
 
+Some additional insights were found in
+https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill].
+
 === AsciiDoc
 GitHub stupidly disables AsciDoc includes in README;
 see https://github.com/github/markup/issues/1095[the discussion].
@@ -1819,4 +1826,12 @@ reporting of https://github.com/scalameta/munit/pull/918[test duration];
 treatment of https://github.com/etorreborre/specs2/pull/1327[test wildcards];
 - https://github.com/ekrich[ekrich] for encouraging my fix for
 JUnit4 for Scala Native reporting of
-https://github.com/scala-native/scala-native/pull/4320[test failure throwable and duration];
+https://github.com/scala-native/scala-native/pull/4320[test failure throwable and duration] for Scala Native;
+- https://github.com/WojciechMazur[WojciechMazur] for pointing me towards
+https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill code]
+for Scala Native, for accepting my fix to the
+https://github.com/scala-native/scala-native/pull/4320[test failure throwable and duration] for Scala Native,
+and for adding `scala.scalanative.build.Build.buildCachedAwait()`
+method upon my https://github.com/scala-native/scala-native/issues/4323[request];
+- https://github.com/LeeTibbert[LeeTibbert] for encouraging my
+https://github.com/scala-native/scala-native/pull/4320[typo fixes] to Scala Native;

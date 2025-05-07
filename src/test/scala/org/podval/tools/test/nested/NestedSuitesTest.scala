@@ -4,11 +4,12 @@ import org.podval.tools.build.{ScalaBackendKind, ScalaPlatform, ScalaVersion}
 import org.podval.tools.test.testproject.{Feature, Fixture, GroupingFunSpec}
 
 class NestedSuitesTest extends GroupingFunSpec:
-  groupTest(
-    features = NestedSuitesTest.features,
-    fixtures = NestedSuitesTest.fixtures,
-    platforms = NestedSuitesTest.platforms
-  )
+  // see FrameworksTest
+//  groupTest(
+//    features = NestedSuitesTest.features,
+//    fixtures = NestedSuitesTest.fixtures,
+//    platforms = NestedSuitesTest.platforms
+//  )
 
   groupTest(
     features = NestedSuitesTest.features,

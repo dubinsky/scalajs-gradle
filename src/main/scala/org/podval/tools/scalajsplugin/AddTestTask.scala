@@ -10,7 +10,7 @@ final class AddTestTask[T <: TestTask](
   configure: T => Unit
 ):
   def addTestTask(
-    isModeMixed: Boolean, 
+    isCreate: Boolean, 
     project: Project,
     testSourceSetName: String,
     testTaskName: String
@@ -19,7 +19,7 @@ final class AddTestTask[T <: TestTask](
       testTask.dependsOn(Gradle.getClassesTaskProvider(project, testSourceSetName))
       configure(testTask)
 
-    if !isModeMixed
+    if !isCreate
     then
       doConfigure(project.getTasks.replace("test", clazz))
     else

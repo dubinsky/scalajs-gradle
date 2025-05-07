@@ -2,9 +2,9 @@ package org.podval.tools.scalajsplugin
 
 import org.podval.tools.build.{ScalaBackendKind, ScalaModules, ScalaVersion, Version}
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.scalajs.ScalaJS
-import org.podval.tools.scalanative.ScalaNative
-import org.podval.tools.test.{SbtTestInterface, framework}
+import org.podval.tools.scalajsplugin.jvm.Jvm
+import org.podval.tools.scalajsplugin.scalajs.ScalaJS
+import org.podval.tools.test.framework
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
 
@@ -20,9 +20,9 @@ object VersionsWriter:
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
     "scala2" -> ScalaVersion.Scala2.Scala213.versionDefault,
     
-    "sbt-test-interface" -> SbtTestInterface.versionDefault,
+    "sbt-test-interface" -> Jvm.SbtTestInterface.versionDefault,
     
-    "scalajs" -> ScalaJS.versionDefault,
+    "scalajs" -> ScalaBackendKind.JS.versionDefault,
     "scalajs-dom" -> ScalaJS.DomSJS.versionDefault,
     "scalajs-env-jsdom-nodejs" -> ScalaJS.JSDomNodeJS.versionDefault,
     
@@ -30,7 +30,7 @@ object VersionsWriter:
 
     "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
 
-    "scalanative" -> ScalaNative.versionDefault,
+    "scalanative" -> ScalaBackendKind.Native.versionDefault,
     
     "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,

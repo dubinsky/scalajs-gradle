@@ -102,10 +102,10 @@ final class JavaBasePlugin(
   // TODO uncomment
 
 //  def apply(): Unit =
-    // TODO project.getPluginManager().apply(BasePlugin.class);
-    // TODO project.getPluginManager().apply(JvmEcosystemPlugin.class);
-    // TODO project.getPluginManager().apply(ReportingBasePlugin.class);
-    // TODO project.getPluginManager().apply(JvmToolchainsPlugin.class);
+    // BasePlugin          - nothing to do, everything was already done
+    // JvmEcosystemPlugin  - nothing to do, everything was already done
+    // ReportingBasePlugin - nothing to do, everything was already done
+    // JvmToolchainsPlugin - nothing to do, everything was already done
 
 //    val javaPluginExtension: DefaultJavaPluginExtension = addExtensions(project)
 //
