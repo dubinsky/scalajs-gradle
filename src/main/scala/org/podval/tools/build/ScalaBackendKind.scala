@@ -2,12 +2,12 @@ package org.podval.tools.build
 
 import org.podval.tools.node.NodeDependency
 
-sealed abstract class ScalaBackendKind(
-  val name: String,
-  val displayName: String,
-  val suffix: Option[String],
-  val testsCanNotBeForked: Boolean
-) derives CanEqual:
+sealed trait ScalaBackendKind derives CanEqual:
+  def name: String
+  def displayName: String
+  def suffix: Option[String]
+  def testsCanNotBeForked: Boolean
+
   final def suffixString: String = suffix match
     case None => ""
     case Some(suffix) => s"_$suffix"
@@ -15,23 +15,25 @@ sealed abstract class ScalaBackendKind(
 object ScalaBackendKind:
   def all: Set[ScalaBackendKind] = Set(JVM, JS, Native)
   
-  case object JVM extends ScalaBackendKind(
-    name = "JVM",
-    displayName = "JVM",
-    suffix = None,
-    testsCanNotBeForked = false
-  )
+  case object JVM extends ScalaBackendKind:
+    override val name: String = "JVM"
+    override val displayName: String = "JVM"
+    override val suffix: Option[String] = None
+    override val testsCanNotBeForked: Boolean = false
 
-  case object JS extends ScalaBackendKind(
-    name = "JS",
-    displayName = "Scala.js",
-    suffix = Some("sjs1"),
-    testsCanNotBeForked = true
-  )
+  sealed trait NonJvm extends ScalaBackendKind:
+    def versionDefault: Version
+    
+  case object JS extends NonJvm:
+    override val name: String = "JS"
+    override val displayName: String = "Scala.js"
+    override val suffix: Option[String] = Some("sjs1")
+    override val testsCanNotBeForked: Boolean = true
+    override val versionDefault: Version = Version("1.19.0")
 
-  case object Native extends ScalaBackendKind(
-    name = "Native",
-    displayName = "Scala Native",
-    suffix = Some("native0.5"),
-    testsCanNotBeForked = true
-  )
+  case object Native extends NonJvm:
+    override val name: String = "Native"
+    override val displayName: String = "Scala Native"
+    override val suffix: Option[String] = Some("native0.5")
+    override val testsCanNotBeForked: Boolean = true
+    override val versionDefault: Version = Version("0.5.7")

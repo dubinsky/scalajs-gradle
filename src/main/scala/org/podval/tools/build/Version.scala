@@ -4,6 +4,8 @@ sealed abstract class Version derives CanEqual:
   def simple: Version.Simple
   def compound: Version.Compound
 
+  final def compound(version: Version): Version.Compound = Version.Compound(simple, version.simple)
+
   final override def equals(other: Any): Boolean = other match
     case that: Version => this.toString == that.toString
     case _ => false

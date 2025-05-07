@@ -11,8 +11,6 @@ import java.io.File
 import java.nio.file.Path
 
 trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with ScalaNativeTask:
-  final override def flavourSuffix: String = Mode(getMode).name
-
   final override protected def buildSubDirectory: String = "scalanative"
 
   private val projectName: String = getProject.getName
@@ -23,11 +21,11 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
   Mode.convention(getMode)
   def mode: Mode = Mode(getMode)
   
-  @Input def getLTO: Property[String]
-  LTO.convention(getLTO)
+  @Input def getLto: Property[String]
+  LTO.convention(getLto)
 
-  @Input def getGC: Property[String]
-  GC.convention(getGC)
+  @Input def getGc: Property[String]
+  GC.convention(getGc)
 
   @Input def getOptimize: Property[Boolean]
   Named.conventionBoolean(getOptimize, "SCALANATIVE_OPTIMIZE")
@@ -37,12 +35,13 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
   private def moduleName: String = s"$projectName-${mode.name}"
   
   @OutputFile final def getOutputFile: File = File(getNativeDirectory, moduleName)
-  
+
+  // TODO if the main class is not set, link with a different build type to avoid errors?
   @TaskAction final def execute(): Unit =
     val sourcesClassPath: Seq[Path] = Seq.empty // TODO
     val outputFile: File = ScalaNativeBuild.link(
-      lto = LTO(getLTO),
-      gc = GC(getGC),
+      lto = LTO(getLto),
+      gc = GC(getGc),
       optimize = getOptimize.get,
       baseDir = getNativeDirectory.toPath,
       mode = mode,

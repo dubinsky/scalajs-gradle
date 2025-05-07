@@ -35,7 +35,7 @@ object ScalaNativeBuild:
       .withGC(toNative(gc))
       .withOptimize(optimize)
       .withMode(toNative(mode))
-      // TODO .withBuildTarget()
+      // TODO .withTargetTriple()
 
     val config: Config = Config.empty
       .withLogger(nativeLogger)
@@ -60,10 +60,9 @@ object ScalaNativeBuild:
     config: Config,
     trace: Throwable => Unit
   ): Path =
-    ScalaNativeSharedScope { implicit sharedScope: Scope =>
-      ScalaNativeAwait.await(trace) { implicit ec: ExecutionContext =>
-        Build.buildCached(config)
-      }
+    implicit val scope: Scope = Scope.forever
+    ScalaNativeAwait.await(trace) { implicit ec: ExecutionContext =>
+      Build.buildCached(config)
     }
 
   def createTestAdapter(
@@ -72,7 +71,6 @@ object ScalaNativeBuild:
     .Config()
     .withLogger(nativeLogger)
     .withBinaryFile(binaryTestFile)
-  //    .withEnvVars(envVars)
   )
 
   private def nativeLogger: LoggerN = new LoggerN:

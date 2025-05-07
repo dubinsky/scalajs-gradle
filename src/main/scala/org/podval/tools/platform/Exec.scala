@@ -15,7 +15,12 @@ object Exec:
   private def attempt(command: String): Option[String] =
     try Some(Exec(command)) catch case _: Exception => None
 
-  def apply(command: String): String = Process(command).!!.trim
+  private def apply(command: String): String = Process(command).!!.trim
+
+  def apply(command: Seq[String]): Unit =
+    logger.info("Running " + command.mkString(" "))
+    val exitCode: Int = Process(command).!
+    logger.info(if exitCode == 0 then "Done" else s"Failed: $exitCode")
 
   def apply(
     command: File,

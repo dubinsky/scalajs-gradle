@@ -6,6 +6,6 @@ import org.podval.tools.build.Gradle
 import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkMainTask
 
 abstract class ScalaNativeLinkMainTask extends NonJvmLinkMainTask[ScalaNativeLinkTask] with ScalaNativeLinkTask:
-  override protected def mainClass: Option[String] = Gradle.toOption(getMainClass)
-
   @Input @Optional def getMainClass: Property[String]
+  
+  override protected def mainClass: Option[String] = Gradle.toOption(getMainClass)

@@ -1,68 +1,46 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaLibrary, ScalaPlatform}
-import org.podval.tools.scalajsplugin.gradle.ScalaBasePlugin
-import org.slf4j.{Logger, LoggerFactory}
+import org.podval.tools.build.{DependencyRequirement, ScalaBackendKind, ScalaPlatform}
 
-abstract class BackendDelegate(
-  project: Project,
-  isModeMixed: Boolean
-):
-  type DependencyRequirements = Seq[DependencyRequirement[ScalaPlatform]]
+trait BackendDelegate:
+  final def bind(isModeMixed: Boolean) = BackendDelegateBinding(
+    this,
+    GradleNames(if isModeMixed then gradleNamesSuffix else "")
+  )
 
-  protected def kind: BackendDelegateKind
-  protected def gradleNamesSuffix: String
-  protected def isCreateForMixedMode: Boolean
-  protected def createConfigurations(): Unit
-  protected def setUpProject(): AddTestTask[?]
+  final protected def describe(what: String): String = s"${backendKind.displayName} $what."
 
-  protected def afterEvaluate(
+  def backendKind: ScalaBackendKind
+  def isCreateForMixedMode: Boolean
+  def sourceRoot: String
+  def gradleNamesSuffix: String
+  def pluginDependenciesConfigurationNameOpt: Option[String]
+  def scalaCompileParameters(isScala3: Boolean): Seq[String]
+
+  def createExtensions(
+    project: Project
+  ): Unit
+  
+  def addTasks(
+    project: Project, 
+    gradleNames: GradleNames
+  ): AddTestTask[?]
+
+  def applyDependencyRequirements(
+    project: Project,
+    gradleNames: GradleNames,
     pluginScalaPlatform: ScalaPlatform,
-    projectScalaLibrary: ScalaLibrary,
-    projectScalaPlatform: ScalaPlatform
-  ): Option[AddToClassPath]
+    projectScalaPlatform: ScalaPlatform,
+    isScala3: Boolean
+  ): Unit
 
-  final protected val gradleNames: GradleNames = GradleNames(if isModeMixed then gradleNamesSuffix else "")
+object BackendDelegate:
+  val sharedSourceRoot: String = "shared"
 
-  // Source sets, configurations, extensions, and tasks!
-  final def apply(jvmPluginServices: JvmPluginServices): Unit =
-    if isModeMixed then ScalaBasePlugin(
-      project = project,
-      jvmPluginServices = jvmPluginServices,
-      isCreate = isCreateForMixedMode,
-      sourceRoot = kind.sourceRoot,
-      sharedSourceRoot = BackendDelegateKind.sharedSourceRoot,
-      gradleNames = gradleNames
-    ).apply()
-
-    createConfigurations()
-
-    val addTestTask: AddTestTask[?] = setUpProject()
-
-    addTestTask.addTestTask(
-      isModeMixed,
-      project,
-      gradleNames.testSourceSetName,
-      gradleNames.testTaskName
-    )
-
-  final def afterEvaluate(pluginScalaPlatform: ScalaPlatform): Option[AddToClassPath] =
-    val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(
-      project,
-      gradleNames.implementationConfigurationName
-    )
-    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(kind.backendKind)
-
-    afterEvaluate(
-      pluginScalaPlatform,
-      projectScalaLibrary,
-      projectScalaPlatform
-    )
-
-  final protected def applyDependencyRequirements(
-    dependencyRequirements: DependencyRequirements,
+  def applyDependencyRequirements(
+    project: Project,
+    dependencyRequirements: Seq[DependencyRequirement[ScalaPlatform]],
     scalaPlatform: ScalaPlatform,
     configurationName: String
   ): Unit = dependencyRequirements.map(_.applyToConfiguration(
@@ -71,5 +49,3 @@ abstract class BackendDelegate(
     scalaPlatform
   ))
 
-object BackendDelegate:
-  val logger: Logger = LoggerFactory.getLogger(BackendDelegate.getClass)

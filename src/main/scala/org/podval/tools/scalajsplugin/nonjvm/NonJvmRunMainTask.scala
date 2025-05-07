@@ -2,7 +2,4 @@ package org.podval.tools.scalajsplugin.nonjvm
 
 import org.gradle.api.DefaultTask
 
-abstract class NonJvmRunMainTask[L <: NonJvmLinkTask[L]] extends DefaultTask with NonJvmRunTask[L]:
-  setGroup("other")
-
-  final override protected def flavourBase: String = "Run"
+abstract class NonJvmRunMainTask[L <: NonJvmLinkTask[L]] extends DefaultTask with NonJvmRunTask[L]

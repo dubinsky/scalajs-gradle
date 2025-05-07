@@ -70,8 +70,6 @@ final class ScalaBasePlugin(
   project: Project,
   jvmPluginServices: JvmPluginServices // TODO get from the project?
 ):
-  import ScalaBasePlugin.{javaPluginExtension, getJavaLauncher}
-
   private def objectFactory: ObjectFactory = project.getObjects
   private def dependencyFactory: DependencyFactory = project.getDependencyFactory
 
@@ -96,7 +94,7 @@ final class ScalaBasePlugin(
     val incrementalAnalysisUsage: Usage = objectFactory.named(classOf[Usage], "incremental-analysis")
     val incrementalAnalysisCategory: Category = objectFactory.named(classOf[Category], "scala-analysis")
 
-    if isCreate then configureCompilerPlugins(project.asInstanceOf[ProjectInternal])
+    configureCompilerPlugins(project.asInstanceOf[ProjectInternal])
 //      configureConfigurations(
 //        project.asInstanceOf[ProjectInternal],
 //      //  incrementalAnalysisCategory,
@@ -104,13 +102,13 @@ final class ScalaBasePlugin(
 //      //  scalaPluginExtension
 //      )
 
-      configureCompileDefaults(
-        project,
-        scalaRuntime,
-        javaPluginExtension(project).asInstanceOf[DefaultJavaPluginExtension],
-        scalaPluginExtension,
-        toolchainClasspath
-      )
+    configureCompileDefaults(
+      project,
+      scalaRuntime,
+      ScalaBasePlugin.javaPluginExtension(project).asInstanceOf[DefaultJavaPluginExtension],
+      scalaPluginExtension,
+      toolchainClasspath
+    )
 
     configureSourceSetDefaults(
       project.asInstanceOf[ProjectInternal],
@@ -119,23 +117,23 @@ final class ScalaBasePlugin(
       scalaPluginExtension
     )
 
-    if isCreate then // TODO do we need to reconfigure anything for the sourceRoot even when !isCreate?
-      ScalaBasePlugin.configureScaladoc(
-        project,
-        scalaRuntime,
-        scalaPluginExtension,
-        toolchainClasspath
-      )
+    configureScaladoc(
+      project,
+      scalaRuntime,
+      scalaPluginExtension,
+      toolchainClasspath
+    )
   
   // extracted from configureConfigurations()
   private def configureCompilerPlugins(
     project: ProjectInternal
   ): Unit =
-    val plugins: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(
-      gradleNames.scalaCompilerPluginsConfigurationName
-    )
-    plugins.setTransitive(false)
-    jvmPluginServices.configureAsRuntimeClasspath(plugins)
+    if !isCreate then project.getConfigurations.getByName(gradleNames.scalaCompilerPluginsConfigurationName) else
+      val plugins: Configuration = project.getConfigurations.resolvableDependencyScopeUnlocked(
+        gradleNames.scalaCompilerPluginsConfigurationName
+      )
+      plugins.setTransitive(false)
+      jvmPluginServices.configureAsRuntimeClasspath(plugins)
 
   private def configureSourceSetDefaults(
     project: ProjectInternal,
@@ -266,7 +264,7 @@ final class ScalaBasePlugin(
 
       scalaCompile.setDescription(s"Compiles the $scalaSource.")
       scalaCompile.setSource(scalaSource)
-      scalaCompile.getJavaLauncher.convention(getJavaLauncher(project))
+      scalaCompile.getJavaLauncher.convention(ScalaBasePlugin.getJavaLauncher(project))
       configureIncrementalAnalysis(sourceSet, incrementalAnalysis, scalaCompile)
 
     val compileTask: TaskProvider[? <: Task] =
@@ -328,6 +326,32 @@ final class ScalaBasePlugin(
     // it can potentially block trying to resolve project dependencies.
     scalaCompile.dependsOn(scalaCompile.getAnalysisFiles)
 
+  // TODO this needs to be created for each backend!
+  // extracted from configureConfigurations()
+  //  private def configureIncrementalAnalysisElements(
+  //    project: ProjectInternal,
+  //    incrementalAnalysisCategory: Category,
+  //    incrementalAnalysisUsage: Usage,
+  //  ) =
+  //    val incrementalAnalysisElements: Configuration = project.getConfigurations.migratingUnlocked(
+  //      "incrementalScalaAnalysisElements",
+  //      ConfigurationRolesForMigration.CONSUMABLE_DEPENDENCY_SCOPE_TO_CONSUMABLE
+  //    )
+  //    incrementalAnalysisElements.setVisible(false)
+  //    incrementalAnalysisElements.setDescription("Incremental compilation analysis files")
+  //    incrementalAnalysisElements.getAttributes.attribute(Usage.USAGE_ATTRIBUTE, incrementalAnalysisUsage)
+  //    incrementalAnalysisElements.getAttributes.attribute(Category.CATEGORY_ATTRIBUTE, incrementalAnalysisCategory)
+  //
+  //    val matchingStrategy: AttributeMatchingStrategy[Usage] = dependencyHandler.getAttributesSchema.attribute(Usage.USAGE_ATTRIBUTE)
+  //    matchingStrategy.getDisambiguationRules.add(
+  //      classOf[ScalaBasePlugin.UsageDisambiguationRules],
+  //      new Action[ActionConfiguration]:
+  //        override def execute(actionConfiguration: ActionConfiguration): Unit =
+  //          actionConfiguration.params(incrementalAnalysisUsage)
+  //          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_API))
+  //          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_RUNTIME))
+  //    )
+
   private def createIncrementalAnalysisConfigurationFor(
     configurations: RoleBasedConfigurationContainerInternal,
     incrementalAnalysisCategory: Category,
@@ -373,6 +397,25 @@ final class ScalaBasePlugin(
       compile.getScalaCompileOptions.getKeepAliveMode.convention(KeepAliveMode.SESSION)
     )
 
+  private def configureScaladoc(
+    project: Project,
+    scalaRuntime: ScalaRuntime,
+    scalaPluginExtension: ScalaPluginExtension,
+    scalaToolchainRuntimeClasspath: Provider[ResolvableConfiguration]
+  ): Unit =
+    project.getTasks.withType(classOf[ScalaDoc]).configureEach(scalaDoc =>
+      scalaDoc.getConventionMapping.map("scalaClasspath", () => ScalaBasePlugin.getScalaToolchainClasspath(
+        scalaPluginExtension,
+        scalaToolchainRuntimeClasspath,
+        scalaRuntime,
+        scalaDoc.getClasspath
+      ))
+      // TODO directory should be different for each backend, not fixed to "scaladoc"!
+      scalaDoc.getConventionMapping.map("destinationDir", () => ScalaBasePlugin.javaPluginExtension(project).getDocsDir.dir("scaladoc").get().getAsFile)
+      scalaDoc.getConventionMapping.map("title", () => project.getExtensions.getByType(classOf[ReportingExtension]).getApiDocTitle)
+      scalaDoc.getJavaLauncher.convention(ScalaBasePlugin.getJavaLauncher(project))
+    )
+
 object ScalaBasePlugin:
   private def computeJavaSourceCompatibilityConvention(javaExtension: DefaultJavaPluginExtension, compileTask: ScalaCompile): JavaVersion =
     val rawSourceCompatibility: JavaVersion = javaExtension.getRawSourceCompatibility
@@ -385,25 +428,7 @@ object ScalaBasePlugin:
     if rawTargetCompatibility != null
     then rawTargetCompatibility
     else JavaVersion.toVersion(compileTask.getSourceCompatibility)
-
-  private def configureScaladoc(
-     project: Project,
-     scalaRuntime: ScalaRuntime,
-     scalaPluginExtension: ScalaPluginExtension,
-     scalaToolchainRuntimeClasspath: Provider[ResolvableConfiguration]
-  ): Unit =
-    project.getTasks.withType(classOf[ScalaDoc]).configureEach(scalaDoc =>
-      scalaDoc.getConventionMapping.map("scalaClasspath", () => getScalaToolchainClasspath(
-        scalaPluginExtension,
-        scalaToolchainRuntimeClasspath,
-        scalaRuntime,
-        scalaDoc.getClasspath
-      ))
-      scalaDoc.getConventionMapping.map("destinationDir", () => javaPluginExtension(project).getDocsDir.dir("scaladoc").get().getAsFile)
-      scalaDoc.getConventionMapping.map("title", () => project.getExtensions.getByType(classOf[ReportingExtension]).getApiDocTitle)
-      scalaDoc.getJavaLauncher.convention(getJavaLauncher(project))
-    )
-
+  
   private def getScalaToolchainClasspath(
     scalaPluginExtension: ScalaPluginExtension,
     scalaToolchainRuntimeClasspath: Provider[ResolvableConfiguration],
@@ -457,31 +482,6 @@ object ScalaBasePlugin:
 //    // configureZinc(project, dependencyHandler, scalaPluginExtension)
 //    // configureIncrementalAnalysisElements(project, incrementalAnalysisCategory, incrementalAnalysisUsage)
 
-  // extracted from configureConfigurations()
-//  private def configureIncrementalAnalysisElements(
-//    project: ProjectInternal,
-//    incrementalAnalysisCategory: Category,
-//    incrementalAnalysisUsage: Usage,
-//  ) =
-//    val incrementalAnalysisElements: Configuration = project.getConfigurations.migratingUnlocked(
-//      "incrementalScalaAnalysisElements",
-//      ConfigurationRolesForMigration.CONSUMABLE_DEPENDENCY_SCOPE_TO_CONSUMABLE
-//    )
-//    incrementalAnalysisElements.setVisible(false)
-//    incrementalAnalysisElements.setDescription("Incremental compilation analysis files")
-//    incrementalAnalysisElements.getAttributes.attribute(Usage.USAGE_ATTRIBUTE, incrementalAnalysisUsage)
-//    incrementalAnalysisElements.getAttributes.attribute(Category.CATEGORY_ATTRIBUTE, incrementalAnalysisCategory)
-//    
-//    val matchingStrategy: AttributeMatchingStrategy[Usage] = dependencyHandler.getAttributesSchema.attribute(Usage.USAGE_ATTRIBUTE)
-//    matchingStrategy.getDisambiguationRules.add(
-//      classOf[ScalaBasePlugin.UsageDisambiguationRules],
-//      new Action[ActionConfiguration]:
-//        override def execute(actionConfiguration: ActionConfiguration): Unit =
-//          actionConfiguration.params(incrementalAnalysisUsage)
-//          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_API))
-//          actionConfiguration.params(objectFactory.named(classOf[Usage], Usage.JAVA_RUNTIME))
-//    )
-    
 // extracted from configureConfigurations()
 //  private def configureZinc(
 //    project: ProjectInternal,
