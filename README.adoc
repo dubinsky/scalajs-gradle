@@ -509,7 +509,10 @@ dependencies {
 
 == JVM
 
-TODO document that the run task can be added by applying `id 'application'` Gradle plugin.
+TODO document that the run task can be added by applying `id 'application'` Gradle plugin. Well, for mixed stuff it does not get the JVM classes...
+Add my own?
+
+TODO maybe adding overall dependencies will do it...
 
 == Scala.js
 

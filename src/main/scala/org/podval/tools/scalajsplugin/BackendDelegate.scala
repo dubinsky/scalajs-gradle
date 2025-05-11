@@ -1,20 +1,22 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.Project
+import org.gradle.api.{Project, Task}
+import org.gradle.api.tasks.TaskProvider
 import org.podval.tools.build.{DependencyRequirement, ScalaBackendKind, ScalaPlatform}
+import org.podval.tools.test.task.TestTask
 
 trait BackendDelegate:
+  def testTaskClass: Class[? <: TestTask]
+
   final def bind(isModeMixed: Boolean) = BackendDelegateBinding(
     this,
-    GradleNames(if isModeMixed then gradleNamesSuffix else "")
+    GradleNames(if isModeMixed then sourceRoot else "")
   )
 
   final protected def describe(what: String): String = s"${backendKind.displayName} $what."
 
   def backendKind: ScalaBackendKind
-  def isCreateForMixedMode: Boolean
   def sourceRoot: String
-  def gradleNamesSuffix: String
   def pluginDependenciesConfigurationNameOpt: Option[String]
   def scalaCompileParameters(isScala3: Boolean): Seq[String]
 
@@ -22,10 +24,11 @@ trait BackendDelegate:
     project: Project
   ): Unit
   
+  // Returns an optional TaskProvider the test task depends on.
   def addTasks(
     project: Project, 
     gradleNames: GradleNames
-  ): AddTestTask[?]
+  ): Option[TaskProvider[? <: Task]]
 
   def applyDependencyRequirements(
     project: Project,
@@ -36,8 +39,6 @@ trait BackendDelegate:
   ): Unit
 
 object BackendDelegate:
-  val sharedSourceRoot: String = "shared"
-
   def applyDependencyRequirements(
     project: Project,
     dependencyRequirements: Seq[DependencyRequirement[ScalaPlatform]],

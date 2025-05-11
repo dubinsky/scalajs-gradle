@@ -14,7 +14,7 @@ object Gradle:
     .getConfigurations
     .getByName(name)
   
-  def getSourceSet(project: Project, name: String): SourceSet = project
+  def getSourceSet(project: Project, name: String): SourceSet = project // TODO replace with gradleName.XXXSourceSet()
     .getExtensions
     .getByType(classOf[JavaPluginExtension])
     .getSourceSets

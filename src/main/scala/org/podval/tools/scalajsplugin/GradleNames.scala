@@ -1,27 +1,20 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.scala.ScalaBasePlugin
-import org.gradle.api.tasks.SourceSet
+import org.gradle.util.internal.GUtil
 
 // Names to use for various Gradle things: source sets, configurations, tasks...
+object GradleNames:
+  val sharedSourceRoot: String = "shared"
+
 final class GradleNames(suffix: String):
-  private def s(string: String) = string + suffix
-  val featureName: String = s("main")
-  
-  val mainSourceSetName: String = s(SourceSet.MAIN_SOURCE_SET_NAME)
-  val implementationConfigurationName: String = s(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
-  val linkTaskName: String = s("link")
-  val runTaskName: String = s("run")
-  val scalaDocTaskName: String = s("scaladoc")
+  def suffix(what: String): String = GUtil.toLowerCamelCase(s"$what $suffix")
 
-  val testSourceSetName: String= s(SourceSet.TEST_SOURCE_SET_NAME)
-  val testImplementationConfigurationName: String = s(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME)
-  val testLinkTaskName: String = s("testLink")
-  val testTaskName: String = s("test")
+  def scalaCompilerPluginsConfigurationName: String = suffix(ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME)
 
-  val scalaCompilerPluginsConfigurationName: String = s(ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME)
-  val runtimeClasspathConfigurationName: String = s(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
-  
-  val incrementalScalaAnalysisElementsConfigurationName: String = s("incrementalScalaAnalysisElements")
-  val scalaCompileTaskName: String = s("scala")
+  def mainSourceSetName: String = if suffix.isEmpty then "main" else suffix // also feature name
+  def linkTaskName: String = suffix("link")
+  def runTaskName: String = suffix("run")
+
+  def testSourceSetName: String = suffix("test") // also test suite name and test task name
+  def testLinkTaskName: String = suffix("linkTest")

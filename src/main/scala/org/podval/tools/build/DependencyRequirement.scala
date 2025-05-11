@@ -18,7 +18,7 @@ final class DependencyRequirement[-P](
 
     val result: Dependency.WithVersion = findable.findInConfiguration(project, configurationName).getOrElse:
       val toAdd: Dependency.WithVersion = dependency.withVersion(version)
-      DependencyRequirement.logger.info(s"Adding dependency $toAdd to the $configurationName ${maker.description}.")
+      DependencyRequirement.logger.info(s"Adding dependency $toAdd to the '$configurationName' configuration: ${maker.description}")
       Gradle
         .getConfiguration(project, configurationName)
         .getDependencies
