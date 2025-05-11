@@ -16,5 +16,6 @@ final class AddToClassPath(
   )
     
   def verify(project: Project) : Unit = projectScalaLibrary.verify(
+    runtimeClasspathConfigurationName,
     ScalaLibrary.getFromClasspath(Gradle.getConfiguration(project, runtimeClasspathConfigurationName).asScala)
   )  

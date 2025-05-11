@@ -3,13 +3,13 @@ package org.podval.tools.scalajsplugin.gradle
 import org.gradle.api.{Action, Project, Task}
 import org.gradle.api.artifacts.{ConfigurablePublishArtifact, Configuration}
 import org.gradle.api.file.{ConfigurableFileCollection, RegularFile}
+import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.internal.JavaPluginHelper
 import org.gradle.api.plugins.jvm.internal.{JvmFeatureInternal, JvmPluginServices}
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.{ScalaSourceDirectorySet, TaskProvider}
+import org.gradle.api.tasks.{ScalaSourceDirectorySet, SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaDoc
 import org.gradle.language.scala.tasks.AbstractScalaCompile
-import org.podval.tools.scalajsplugin.GradleNames
 
 // The idea here is:
 // for JVM: re-configure existing setup
@@ -27,45 +27,25 @@ import org.podval.tools.scalajsplugin.GradleNames
 // Some of them do source-set-specific things which do need to be replicated:
 // - ScalaPlugin;
 // - ScalaBasePlugin;
-// - JavaPlugin;
-// - JavaBasePlugin.
+// - JavaPlugin.
 //
-// Actually, I am not sure that JavaBasePlugin is really needs to be replicated;
-// on the other hand, I do not see where the "main" and "test" source sets are created,
-// so it is possible that some DefaultJvmFeature, DefaultXXXContainer or DefaultXXXExtension also need to be replicated.
-//
-// To replicate whatever needs to be replicated, the corresponding Gradle code is copied and adjusted to:
-// - create entities when needed and reconfigure existing ones otherwise;
+// To replicate whatever needs to be replicated, the corresponding Gradle code was copied and adjusted to:
 // - not assume that the only source sets that exist are "main" and "test";
-// - use appropriate names for source sets, configurations and tasks.
+// - use appropriate names for source sets, configurations, and tasks.
 //
-// It is extremely unfortunate that Gradle does not provide extension mechanisms and the code actually needs to be copied ;)
+// It would be much better if this functionality was exposed by Gradle in one method call.
+// It would be even better if there was a way to affect the class of the test task created.
+// Since the chances of this ever happening are zero, I made method signatures convenient for my needs ;)
 
-// see org.gradle.api.plugins.scala.ScalaPlugin
-final class ScalaPlugin(
-  isCreate: Boolean,
-  sourceRoot: String,
-  sharedSourceRoot: String,
-  gradleNames: GradleNames,
-  backendDisplayName: String,
-  project: Project,
-  jvmPluginServices: JvmPluginServices
-):
-  def apply(): Unit =
-    ScalaBasePlugin(
-      isCreate,
-      sourceRoot,
-      sharedSourceRoot,
-      gradleNames,
-      project,
-      jvmPluginServices
-    ).apply()
-
-    val feature: JvmFeatureInternal = JavaPluginHelper.getJavaComponent(project).getFeatures.findByName(gradleNames.featureName)
-    configureScaladoc(feature)
-
-    val incrementalAnalysisElements: Configuration = project.getConfigurations.getByName(gradleNames.incrementalScalaAnalysisElementsConfigurationName)
-    val compileTaskName: String = feature.getSourceSet.getCompileTaskName(gradleNames.scalaCompileTaskName)
+// Adopted from org.gradle.api.plugins.scala.ScalaPlugin.
+object ScalaPluginAsLibrary:
+  def configureIncrementalAnalysisElements(
+    project: Project,
+    compileTaskName: String,
+    incrementalScalaAnalysisElementsConfigurationName: String
+  ): Unit =
+    // TODO and for the test source set?
+    val incrementalAnalysisElements: Configuration = project.getConfigurations.getByName(incrementalScalaAnalysisElementsConfigurationName)
     val compileScalaMapping: Provider[RegularFile] = project.getLayout.getBuildDirectory.file(s"tmp/scala/compilerAnalysis/$compileTaskName.mapping")
     val compileScala: TaskProvider[AbstractScalaCompile] = project.getTasks.withType(classOf[AbstractScalaCompile]).named(compileTaskName)
     compileScala.configure(_.getAnalysisMappingFile.set(compileScalaMapping))
@@ -75,28 +55,35 @@ final class ScalaPlugin(
         override def execute(configurablePublishArtifact: ConfigurablePublishArtifact): Unit = configurablePublishArtifact.builtBy(compileScala)
     )
 
-  private def configureScaladoc(feature: JvmFeatureInternal): Unit =
+  def configureScaladoc(
+    project: Project,
+    isCreate: Boolean,
+    sourceSet: SourceSet,
+    backendDisplayName: String,
+    scalaDocTaskName: String
+  ): Unit =
     project.getTasks.withType(classOf[ScalaDoc]).configureEach(scalaDoc =>
       // only for this backend
-      if scalaDoc.getName == gradleNames.scalaDocTaskName then
+      if scalaDoc.getName == scalaDocTaskName then
         scalaDoc.getConventionMapping.map("classpath", () =>
           val files: ConfigurableFileCollection = project.files()
-          files.from(feature.getSourceSet.getOutput)
-          files.from(feature.getSourceSet.getCompileClasspath)
+          files.from(sourceSet.getOutput)
+          files.from(sourceSet.getCompileClasspath)
           files
         )
-        scalaDoc.setSource(feature.getSourceSet.getExtensions.getByType(classOf[ScalaSourceDirectorySet]))
-        scalaDoc.getCompilationOutputs.from(feature.getSourceSet.getOutput)
+        scalaDoc.setSource(sourceSet.getExtensions.getByType(classOf[ScalaSourceDirectorySet]))
+        scalaDoc.getCompilationOutputs.from(sourceSet.getOutput)
     )
     
     val scalaDocTaskConfigureAction: Action[Task] = (scalaDoc: Task) =>
       scalaDoc.setDescription(s"Generates Scaladoc for the $backendDisplayName main source code.")
       scalaDoc.setGroup(JavaBasePlugin.DOCUMENTATION_GROUP)
+
     if isCreate then project.getTasks.register(
-      gradleNames.scalaDocTaskName,
+      scalaDocTaskName,
       classOf[ScalaDoc],
       scalaDocTaskConfigureAction
     ) else project.getTasks
-      .named(gradleNames.scalaDocTaskName)
+      .named(scalaDocTaskName)
       .configure(scalaDocTaskConfigureAction)
     

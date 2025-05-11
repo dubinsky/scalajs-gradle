@@ -3,18 +3,20 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.gradle.api.{Plugin, Project}
+import org.gradle.api.{Plugin, Project, Task}
 import org.podval.tools.build.{Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary, ScalaPlatform}
-import org.podval.tools.scalajsplugin.gradle.ScalaPlugin
 import org.podval.tools.scalajsplugin.jvm.Jvm
 import org.podval.tools.scalajsplugin.scalajs.ScalaJS
 import org.podval.tools.scalajsplugin.scalanative.ScalaNative
+import org.podval.tools.test.task.TestTask
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava}
 import javax.inject.Inject
 
+// TODO add dependency on the backend test task to the overall test task
 final class ScalaJSPlugin @Inject(
   jvmPluginServices: JvmPluginServices
 ) extends Plugin[Project]:
@@ -23,31 +25,32 @@ final class ScalaJSPlugin @Inject(
 
     val (isModeMixed: Boolean, bindings: Set[BackendDelegateBinding]) = ScalaJSPlugin.getDelegateBindings(project)
 
-    if isModeMixed then
-      for binding: BackendDelegateBinding <- bindings do ScalaPlugin(
-        project = project,
-        jvmPluginServices = jvmPluginServices,
-        isCreate = binding.delegate.isCreateForMixedMode,
-        sourceRoot = binding.delegate.sourceRoot,
-        sharedSourceRoot = BackendDelegate.sharedSourceRoot,
-        gradleNames = binding.gradleNames,
-        backendDisplayName = binding.delegate.backendKind.displayName
-      ).apply()
+    val sharedImplementationConfigurationName: String = GradleFeatures.configure(
+      project,
+      jvmPluginServices,
+      isModeMixed,
+      bindings
+    )
 
     for binding: BackendDelegateBinding <- bindings do
       binding.delegate.pluginDependenciesConfigurationNameOpt.map(configurationName =>
-         // TODO use new one-shot methods resolvable()/consumable() etc.
-         val configuration: Configuration = project.getConfigurations.create(configurationName)
-         configuration.setVisible(false)
-         configuration.setCanBeConsumed(false)
-         configuration.setDescription(s"${binding.delegate.backendKind.displayName} dependencies used by the ScalaJS plugin.")
+        // TODO use new one-shot methods resolvable()/consumable() etc.
+        val configuration: Configuration = project.getConfigurations.create(configurationName)
+        configuration.setVisible(false)
+        configuration.setCanBeConsumed(false)
+        configuration.setDescription(s"${binding.delegate.backendKind.displayName} dependencies used by the ScalaJS plugin.")
       )
+
       binding.delegate.createExtensions(project)
-      binding.delegate.addTasks(project, binding.gradleNames).addTestTask(
-        isModeMixed && binding.delegate.isCreateForMixedMode,
-        project,
-        binding.gradleNames.testSourceSetName,
-        binding.gradleNames.testTaskName
+
+      val testTaskDependency: Option[TaskProvider[? <: Task]] = binding.delegate.addTasks(project, binding.gradleNames)
+
+      val testTask: TestTask = project.getTasks.replace(binding.gradleNames.testSourceSetName, binding.delegate.testTaskClass)
+      testTask.dependsOn(Gradle.getClassesTaskProvider(project, binding.gradleNames.testSourceSetName))
+      testTaskDependency.foreach(testTask.dependsOn(_))
+
+      project.getTasks.withType(binding.delegate.testTaskClass).configureEach((task: TestTask) =>
+        task.setDescription(s"Test ${binding.delegate.backendKind.displayName} code using sbt frameworks.")
       )
     
     project.afterEvaluate: (project: Project) =>
@@ -57,8 +60,8 @@ final class ScalaJSPlugin @Inject(
       val addToClassPath: Set[Option[AddToClassPath]] = for binding: BackendDelegateBinding <- bindings yield
         val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(
           project,
-          binding.gradleNames.implementationConfigurationName
-        )
+          sharedImplementationConfigurationName
+       )
 
         val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(binding.delegate.backendKind)
         val isScala3: Boolean = projectScalaPlatform.version.isScala3
@@ -96,7 +99,7 @@ final class ScalaJSPlugin @Inject(
         binding.delegate.pluginDependenciesConfigurationNameOpt.map(configurationName => AddToClassPath(
           configurationName,
           projectScalaLibrary,
-          binding.gradleNames.runtimeClasspathConfigurationName
+          Gradle.getSourceSet(project, binding.gradleNames.mainSourceSetName).getRuntimeClasspathConfigurationName
         ))
 
       // Expand classpath.
@@ -109,24 +112,22 @@ object ScalaJSPlugin:
   val backendProperty: String = "org.podval.tools.scalajs.backend"
 
   private def getDelegateBindings(project: Project): (Boolean, Set[BackendDelegateBinding]) =
-    val all: Set[BackendDelegate] = Set(Jvm, ScalaJS, ScalaNative)
-    
-    val explicitDelegates: Set[BackendDelegate] = all
+    val nonJvmDelegates: Set[BackendDelegate] = Set(ScalaJS, ScalaNative)
       .filter(delegate => project.file(delegate.sourceRoot).exists)
 
     val delegates: Set[BackendDelegate] =
-      if explicitDelegates.nonEmpty
-      then Set(Jvm) // TODO explicitlyActivated.incl(Jvm)
+      if nonJvmDelegates.nonEmpty
+      then nonJvmDelegates.incl(Jvm)
       else Set(Option(project.findProperty(backendProperty)).map(_.toString) match
         case None => Jvm
-        case Some(name) => all
+        case Some(name) => Set(Jvm, ScalaJS, ScalaNative)
           .find(_.backendKind.name == name)
           .getOrElse(throw IllegalArgumentException(s"Unknown backend '$name'."))
       )
     
     val delegateNames: String = delegates.map(_.backendKind.displayName).mkString(",")
     logger.info(s"ScalaJSPlugin: running with $delegateNames.")
-    explicitDelegates.nonEmpty -> delegates.map(_.bind(explicitDelegates.nonEmpty))
+    nonJvmDelegates.nonEmpty -> delegates.map(_.bind(nonJvmDelegates.nonEmpty))
   
   private def ensureParameters(
     scalaCompile: ScalaCompile,

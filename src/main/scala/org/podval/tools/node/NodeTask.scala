@@ -5,7 +5,7 @@ import org.gradle.api.tasks.{Input, TaskAction}
 
 abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNode:
   setGroup("other")
-  setDescription(s"Run commands with '$commandName'.")
+  setDescription(s"Runs commands with '$commandName'.")
 
   protected var arguments: String = ""
   @Input def getArguments: String = arguments

@@ -1,9 +1,9 @@
 package org.podval.tools.scalajsplugin.nonjvm
 
-import org.gradle.api.{Action, Project}
+import org.gradle.api.{Action, Project, Task}
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
-import org.podval.tools.scalajsplugin.{AddTestTask, BackendDelegate, GradleNames}
+import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames}
 
 trait NonJvm extends BackendDelegate:
   def linkMainTaskClass: Class[? <: NonJvmLinkMainTask[?]]
@@ -33,31 +33,26 @@ trait NonJvm extends BackendDelegate:
 
   override def backendKind: ScalaBackendKind.NonJvm
 
-  final override def isCreateForMixedMode: Boolean = true
   final override def pluginDependenciesConfigurationNameOpt: Option[String] = Some(pluginDependenciesConfigurationName)
   
-  final override def addTasks(project: Project, gradleNames: GradleNames): AddTestTask[NonJvmTestTask[?]] =
-    def configureLinkTask(sourceSetName: String, task: NonJvmLinkTask[?]): Unit =
-      val sourceSet: SourceSet = Gradle.getSourceSet(project, sourceSetName)
+  final override def addTasks(project: Project, gradleNames: GradleNames): Option[TaskProvider[? <: Task]] =
+    project.getTasks.withType(linkMainTaskClass).configureEach((task: NonJvmLinkMainTask[?]) =>
+      task.setDescription(s"Links ${backendKind.displayName} code.")
+      task.setGroup("build")
+      val sourceSet: SourceSet = Gradle.getSourceSet(project, gradleNames.mainSourceSetName)
       task.dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
       task.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-
-    project.getTasks.withType(linkMainTaskClass).configureEach((task: NonJvmLinkMainTask[?]) =>
-      task.setDescription(s"Link ${backendKind.displayName} code.")
-      task.setGroup("build")
-      configureLinkTask(gradleNames.mainSourceSetName, task)
     )
     project.getTasks.withType(linkTestTaskClass).configureEach((task: NonJvmLinkTestTask[?]) =>
-      task.setDescription(s"Link test ${backendKind.displayName} code.")
+      task.setDescription(s"Links test ${backendKind.displayName} code.")
       task.setGroup("build")
-      configureLinkTask(gradleNames.testSourceSetName, task)
+      val sourceSet: SourceSet = Gradle.getSourceSet(project, gradleNames.testSourceSetName)
+      task.dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
+      task.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
     )
     project.getTasks.withType(runMainTaskClass).configureEach((task: NonJvmRunMainTask[?]) =>
-      task.setDescription(s"Run ${backendKind.displayName} code.")
+      task.setDescription(s"Runs ${backendKind.displayName} code.")
       task.setGroup("other")
-    )
-    project.getTasks.withType(testTaskClass).configureEach((task: NonJvmTestTask[?]) =>
-      task.setDescription(s"Test ${backendKind.displayName} code using sbt frameworks.")
     )
 
     val linkMain: TaskProvider[? <: NonJvmLinkTask[?]] = project.getTasks.register(
@@ -77,10 +72,7 @@ trait NonJvm extends BackendDelegate:
       linkTestTaskClass
     )
 
-    AddTestTask[NonJvmTestTask[?]](
-      testTaskClass,
-      (task: NonJvmTestTask[?]) => task.dependsOn(linkTest)
-    )
+    Some(linkTest)
 
   final override def applyDependencyRequirements(
     project: Project,
@@ -89,10 +81,14 @@ trait NonJvm extends BackendDelegate:
     projectScalaPlatform: ScalaPlatform,
     isScala3: Boolean
   ): Unit =
+    val implementationConfigurationName: String = Gradle
+      .getSourceSet(project, gradleNames.mainSourceSetName)
+      .getImplementationConfigurationName
+
     val libraryDependency: ScalaDependency.Maker = library(isScala3)
 
     val backendVersion: Version = libraryDependency
-      .findInConfiguration(projectScalaPlatform, project, gradleNames.implementationConfigurationName)
+      .findInConfiguration(projectScalaPlatform, project, implementationConfigurationName)
       .map(_.version)
       .map(versionExtractor)
       .getOrElse(libraryDependency.versionDefault)
@@ -106,7 +102,7 @@ trait NonJvm extends BackendDelegate:
       implementation.map(_.required(backendVersion)) ++
       additionalImplementationDependencyRequirements(backendVersion, projectScalaPlatform),
       projectScalaPlatform,
-      gradleNames.implementationConfigurationName
+      implementationConfigurationName
     )
 
     BackendDelegate.applyDependencyRequirements(
@@ -117,13 +113,17 @@ trait NonJvm extends BackendDelegate:
       pluginDependenciesConfigurationName
     )
 
+    val testImplementationConfigurationName: String = Gradle
+      .getSourceSet(project, gradleNames.testSourceSetName)
+      .getImplementationConfigurationName
+
     if !areCompilerPluginsBuiltIntoScala3 || !isScala3 then
       // Add JUnit4 compiler plugin only when JUnit4 is in use, otherwise with Scala.js `testClasses` task throws
       //   "scala.reflect.internal.MissingRequirementError: object org.junit.Test in compiler mirror not found.";
       // somehow, `classes` task works fine, so there is no need, it seems, to create for a separate configuration
       //   `testScalaCompilerPlugins` (like Scala Native SBT plugin does).
       val isJUnit4Present: Boolean = junit4
-        .findInConfiguration(projectScalaPlatform, project, gradleNames.testImplementationConfigurationName)
+        .findInConfiguration(projectScalaPlatform, project, testImplementationConfigurationName)
         .isDefined
 
       val plugins: Seq[ScalaDependency.Maker] =
@@ -141,5 +141,5 @@ trait NonJvm extends BackendDelegate:
       project,
       Seq(testBridge.required(backendVersion)),
       projectScalaPlatform,
-      gradleNames.testImplementationConfigurationName
+      testImplementationConfigurationName
     )

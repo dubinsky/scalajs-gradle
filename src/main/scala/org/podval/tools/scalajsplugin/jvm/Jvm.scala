@@ -1,14 +1,15 @@
 package org.podval.tools.scalajsplugin.jvm
 
-import org.gradle.api.Project
-import org.podval.tools.build.{JavaDependency, ScalaBackendKind, ScalaPlatform, Version}
-import org.podval.tools.scalajsplugin.{AddTestTask, BackendDelegate, GradleNames}
+import org.gradle.api.tasks.{SourceSet, TaskProvider}
+import org.gradle.api.{Project, Task}
+import org.podval.tools.build.{Gradle, JavaDependency, ScalaBackendKind, ScalaPlatform, Version}
+import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames}
 
 object Jvm extends BackendDelegate:
+  override def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
+
   override def backendKind: ScalaBackendKind = ScalaBackendKind.JVM
-  override def isCreateForMixedMode: Boolean = false
   override def sourceRoot: String = "jvm"
-  override def gradleNamesSuffix: String = ""
   override def pluginDependenciesConfigurationNameOpt: Option[String] = None
   override def createExtensions(project: Project): Unit = ()
   override def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty
@@ -16,11 +17,21 @@ object Jvm extends BackendDelegate:
   override def addTasks(
     project: Project,
     gradleNames: GradleNames
-  ): AddTestTask[JvmTestTask] =
-    AddTestTask[JvmTestTask](
-      classOf[JvmTestTask],
-      (_: JvmTestTask) => ()
+  ): Option[TaskProvider[? <: Task]] =
+    project.getTasks.withType(classOf[JvmRunTask]).configureEach((task: JvmRunTask) =>
+      task.setDescription(s"Runs ${backendKind.displayName} code.")
+      task.setGroup("other")
+      val sourceSet: SourceSet = Gradle.getSourceSet(project, gradleNames.mainSourceSetName)
+      task.dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
+      task.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
     )
+
+    project.getTasks.register(
+      gradleNames.runTaskName,
+      classOf[JvmRunTask]
+    )
+    
+    None
 
   override def applyDependencyRequirements(
     project: Project,
@@ -33,7 +44,7 @@ object Jvm extends BackendDelegate:
       project,
       Seq(Jvm.SbtTestInterface.required()),
       projectScalaPlatform,
-      gradleNames.testImplementationConfigurationName
+      Gradle.getSourceSet(project, gradleNames.testSourceSetName).getImplementationConfigurationName
     )
   
   object SbtTestInterface extends JavaDependency.Maker:

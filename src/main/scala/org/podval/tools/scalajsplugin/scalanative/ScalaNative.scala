@@ -15,7 +15,6 @@ object ScalaNative extends NonJvm:
 
   override def backendKind: ScalaBackendKind.NonJvm = ScalaBackendKind.Native
   override def sourceRoot: String = "native"
-  override def gradleNamesSuffix: String = "Native"
   override def pluginDependenciesConfigurationName: String = "scalanative"
   override def createExtensions(project: Project): Unit = ()
   override def areCompilerPluginsBuiltIntoScala3: Boolean = false
