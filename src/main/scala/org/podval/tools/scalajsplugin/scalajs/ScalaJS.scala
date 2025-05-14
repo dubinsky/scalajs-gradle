@@ -1,20 +1,18 @@
 package org.podval.tools.scalajsplugin.scalajs
 
-import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform, ScalaVersion, 
-  Version}
+import org.podval.tools.build.{CreateExtension, DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform,
+  ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
-import org.podval.tools.scalajsplugin.nonjvm.{NonJvm, NonJvmLinkMainTask, NonJvmLinkTask, NonJvmLinkTestTask, 
-  NonJvmRunMainTask, NonJvmTestTask}
-import org.podval.tools.scalajsplugin.BackendDelegate
+import org.podval.tools.scalajsplugin.nonjvm.NonJvm
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-object ScalaJS extends NonJvm:
-  override def linkMainTaskClass: Class[? <: NonJvmLinkMainTask[?]] = classOf[ScalaJSLinkMainTask]
-  override def linkTestTaskClass: Class[? <: NonJvmLinkTestTask[?]] = classOf[ScalaJSLinkTestTask]
-  override def runMainTaskClass : Class[? <: NonJvmRunMainTask [?]] = classOf[ScalaJSRunMainTask ]
-  override def testTaskClass    : Class[? <: NonJvmTestTask    [?]] = classOf[ScalaJSTestTask    ]
+object ScalaJS extends NonJvm[ScalaJSTask]:
+  override def taskClass        : Class[ScalaJSTask        ] = classOf[ScalaJSTask        ]
+  override def linkTaskClass    : Class[ScalaJSLinkMainTask] = classOf[ScalaJSLinkMainTask]
+  override def testLinkTaskClass: Class[ScalaJSLinkTestTask] = classOf[ScalaJSLinkTestTask]
+  override def runTaskClass     : Class[ScalaJSRunMainTask ] = classOf[ScalaJSRunMainTask ]
+  override def testTaskClass    : Class[ScalaJSTestTask    ] = classOf[ScalaJSTestTask    ]
 
   override def backendKind: ScalaBackendKind.NonJvm = ScalaBackendKind.JS
   override def sourceRoot: String = "js"
@@ -25,9 +23,11 @@ object ScalaJS extends NonJvm:
   override def versionExtractor(version: Version): Version = version
   override def versionComposer(projectScalaVersion: Version, backendVersion: Version): Version = backendVersion.simple
   
-  override def createExtensions(project: Project): Unit =
-    val nodeExtension: NodeExtension = NodeExtension.addTo(project)
-    nodeExtension.getModules.convention(List("jsdom").asJava)
+  override def createExtension: Some[CreateExtension[NodeExtension]] = Some(
+    NodeExtension.create((nodeExtension: NodeExtension) =>
+      nodeExtension.getModules.convention(List("jsdom").asJava)
+    )
+  )
   
   private val group: String = "org.scala-js"
   
@@ -80,11 +80,10 @@ object ScalaJS extends NonJvm:
 
   override def additionalImplementationDependencyRequirements(
     backendVersion: Version,
-    projectScalaPlatform: ScalaPlatform
+    scalaVersion: Version,
+    isScala3: Boolean
   ): Seq[DependencyRequirement[ScalaPlatform]] = Seq(
     DomSJS.required()
   ) ++
-    // only for Scala 3
-    (if !projectScalaPlatform.version.isScala3 then Seq.empty else Seq(
-      ScalaVersion.Scala3.ScalaLibraryJS.required(projectScalaPlatform.scalaVersion)
-    ))
+  // only for Scala 3
+  (if !isScala3 then Seq.empty else Seq(ScalaVersion.Scala3.ScalaLibraryJS.required(scalaVersion)))

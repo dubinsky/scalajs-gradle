@@ -5,7 +5,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Internal, Optional, OutputDirectory, OutputFile, TaskAction}
 import org.podval.tools.build.Gradle
 import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkTask
-import org.podval.tools.scalanative.{GC, LTO, Mode, ScalaNativeBuild}
+import org.podval.tools.scalanative.{GC, LTO, Mode, ScalaNativeBuild, ScalaNativeLink}
 import org.podval.tools.util.Named
 import java.io.File
 import java.nio.file.Path
@@ -33,21 +33,23 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
   @OutputDirectory final def getNativeDirectory: File = outputFile("native")
 
   private def moduleName: String = s"$projectName-${mode.name}"
-  
-  @OutputFile final def getOutputFile: File = File(getNativeDirectory, moduleName)
 
-  // TODO if the main class is not set, link with a different build type to avoid errors?
-  @TaskAction final def execute(): Unit =
+  @TaskAction final def execute(): Unit = scalaNativeLink.link
+
+  @OutputFile final def getOutputFile: File = scalaNativeLink.artifactPath.toFile
+
+  // TODO if the main class is not set, link with a different build type to avoid errors!!!
+  private lazy val scalaNativeLink: ScalaNativeLink =
     val sourcesClassPath: Seq[Path] = Seq.empty // TODO
-    val outputFile: File = ScalaNativeBuild.link(
+    ScalaNativeLink(
       lto = LTO(getLto),
       gc = GC(getGc),
       optimize = getOptimize.get,
       baseDir = getNativeDirectory.toPath,
       mode = mode,
       moduleName = moduleName,
-      mainClass = mainClass, 
-      testConfig = isTest, 
+      mainClass = mainClass,
+      testConfig = isTest,
       classpath = runtimeClassPath.map(_.toPath),
       sourcesClassPath = sourcesClassPath
     )

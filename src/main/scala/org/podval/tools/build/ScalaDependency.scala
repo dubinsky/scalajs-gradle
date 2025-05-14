@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(
@@ -74,10 +74,9 @@ object ScalaDependency:
 
     final def findInConfiguration(
       scalaPlatform: ScalaPlatform,
-      project: Project,
-      configurationName: String
+      configuration: Configuration
     ): Option[Dependency.WithVersion] = 
-      findable(scalaPlatform).findInConfiguration(project, configurationName)
+      findable(scalaPlatform).findInConfiguration(configuration)
   
     final override def dependency(scalaPlatform: ScalaPlatform): WithScalaVersion =
       findable(scalaPlatform).withScalaVersion(adjusted(scalaPlatform).scalaVersion)

@@ -1,19 +1,14 @@
 package org.podval.tools.scalajsplugin.nonjvm
 
-import org.gradle.api.DefaultTask
-import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.tasks.{InputFiles, Internal}
+import org.podval.tools.scalajsplugin.BackendTask
 import org.podval.tools.util.Files
-import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
 
-abstract class NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends DefaultTask with NonJvmTask[L]:
-  this: L =>
+trait NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends NonJvmTask[L]
+  with BackendTask.HasRuntimeClassPath
+  with BackendTask.DependsOnClasses:
   
-  @InputFiles def getRuntimeClassPath: ConfigurableFileCollection
-  final protected def runtimeClassPath: Seq[File] = getRuntimeClassPath.getFiles.asScala.toSeq
-
-  @Internal protected def isTest: Boolean
+  this: L =>
   
   final override protected def linkTask: L = this
 
@@ -22,3 +17,10 @@ abstract class NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends DefaultTask with N
   final protected def outputFile(name: String): File = Files.file(buildDirectory, buildSubDirectory, getName, name)
 
   protected def buildSubDirectory: String
+
+object NonJvmLinkTask:
+  abstract class Main[L <: NonJvmLinkTask[L]] extends BackendTask.Link.Main with NonJvmLinkTask[L]:
+    this: L =>
+
+  abstract class Test[L <: NonJvmLinkTask[L]] extends BackendTask.Link.Test with NonJvmLinkTask[L]:
+    this: L =>

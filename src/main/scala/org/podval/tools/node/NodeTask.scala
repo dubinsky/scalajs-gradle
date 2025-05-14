@@ -5,8 +5,10 @@ import org.gradle.api.tasks.{Input, TaskAction}
 
 abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNode:
   setGroup("other")
-  setDescription(s"Runs commands with '$commandName'.")
+  setDescription(s"Runs command supplied with the command line option '--$optionName' using '$commandName'.")
 
+  protected def optionName: String
+  
   protected var arguments: String = ""
   @Input def getArguments: String = arguments
 
@@ -19,19 +21,23 @@ abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNo
 
 object NodeTask:
   abstract class NodeRunTask extends NodeTask("node"):
-    override protected def command(node: Node): (String, String => Unit) => Unit = node.node
+    final override protected def command(node: Node): (String, String => Unit) => Unit = node.node
+
+    final override protected def optionName: String = "node-arguments"
 
     @org.gradle.api.tasks.options.Option(
       option = "node-arguments",
-      description = "The command to execute with 'node'"
+      description = "The command to execute with 'node'."
     )
     def setArguments(value: String): Unit = arguments = value
 
   abstract class NpmRunTask extends NodeTask("npm"):
     override protected def command(node: Node): (String, String => Unit) => Unit = node.npm
 
+    final override protected def optionName: String = "npm-arguments"
+
     @org.gradle.api.tasks.options.Option(
       option = "npm-arguments",
-      description = "The command to execute with 'npm'"
+      description = "The command to execute with 'npm'."
     )
     def setArguments(value: String): Unit = arguments = value
