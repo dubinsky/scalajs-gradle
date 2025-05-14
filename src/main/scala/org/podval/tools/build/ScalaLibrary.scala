@@ -1,13 +1,15 @@
 package org.podval.tools.build
 
-import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
 final class ScalaLibrary private(
   val scala3: Option[Dependency.WithVersion],
   val scala2: Option[Dependency.WithVersion]
 ):
+  def isScala3: Boolean = scala3.isDefined
+  
   def toPlatform(backendKind: ScalaBackendKind): ScalaPlatform = ScalaPlatform(
     scalaVersion = scala3.getOrElse(scala2.get).version,
     backendKind
@@ -15,10 +17,10 @@ final class ScalaLibrary private(
 
   override def toString: String = s"ScalaLibrary(scala3=${scala3.map(_.version)}, scala2=${scala2.map(_.version)})"
 
-  def verify(
-    configurationName: String,
-    other: ScalaLibrary
-  ): Unit =
+  def verify(runtimeClasspathConfiguration: Configuration): Unit =
+    val other: ScalaLibrary= ScalaLibrary.getFromClasspath(runtimeClasspathConfiguration.asScala)
+    val configurationName: String = runtimeClasspathConfiguration.getName
+    
     require(
       other.scala3.nonEmpty == scala3.nonEmpty,
       s"Scala 3 presence changed from ${scala3.nonEmpty} to ${other.scala3.nonEmpty} in configuration '$configurationName'."
@@ -34,14 +36,11 @@ final class ScalaLibrary private(
     )
 
 object ScalaLibrary:
-  def getFromConfiguration(
-    project: Project,
-    configurationName: String
-  ): ScalaLibrary = ScalaLibrary(
-    source = s"in configuration '$configurationName'",
+  def getFromConfiguration(configuration: Configuration): ScalaLibrary = ScalaLibrary(
+    source = s"in configuration '$configuration.getName'",
     mustHaveScala2 = false,
-    scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(project, configurationName),
-    scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(project, configurationName)
+    scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(configuration),
+    scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(configuration)
   )
 
   def getFromClasspath(classPath: Iterable[File]): ScalaLibrary = ScalaLibrary(

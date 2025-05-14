@@ -5,7 +5,6 @@ import org.gradle.api.internal.artifacts.configurations.RoleBasedConfigurationCo
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.plugins.JvmTestSuitePlugin
 import org.gradle.api.{Action, NamedDomainObjectProvider, Project, Task}
-import org.gradle.api.plugins.internal.JavaPluginHelper
 import org.gradle.api.plugins.jvm.JvmTestSuite
 import org.gradle.api.plugins.jvm.internal.{JvmFeatureInternal, JvmPluginServices}
 import org.gradle.api.tasks.SourceSet
@@ -21,20 +20,16 @@ object GradleFeatures:
   
   def configure(
     project: Project,
+    component: DefaultJvmSoftwareComponent,
+    sharedFeature: JvmFeatureInternal,
     jvmPluginServices: JvmPluginServices,
     isModeMixed: Boolean,
     bindings: Set[BackendDelegateBinding]
-  ): String =
+  ): Unit =
     val configurations: RoleBasedConfigurationContainerInternal = project.asInstanceOf[ProjectInternal].getConfigurations
-
-    val component: DefaultJvmSoftwareComponent = JavaPluginHelper
-      .getJavaComponent(project)
-      .asInstanceOf[DefaultJvmSoftwareComponent]
-
+    
     val testing: TestingExtension = project.getExtensions.findByType(classOf[TestingExtension])
     
-    val sharedFeature: JvmFeatureInternal = component.getMainFeature
-
     val sharedTestSuiteSourceSet: SourceSet = testing
       .getSuites
       .getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
@@ -54,8 +49,6 @@ object GradleFeatures:
       binding.gradleNames
     )
 
-    sharedFeature.getImplementationConfiguration.getName
-
   private def configure(
     project: Project,
     configurations: RoleBasedConfigurationContainerInternal,
@@ -65,7 +58,7 @@ object GradleFeatures:
     sharedTestSuiteSourceSet: SourceSet,
     jvmPluginServices: JvmPluginServices,
     isModeMixed: Boolean,
-    delegate: BackendDelegate,
+    delegate: BackendDelegate[?],
     gradleNames: GradleNames
   ): Unit =
     val isCreate: Boolean = isModeMixed

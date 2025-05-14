@@ -9,6 +9,7 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.{ScalaSourceDirectorySet, SourceSet, SourceSetContainer}
 import org.gradle.api.tasks.scala.ScalaCompile
+import java.io.File
 import scala.jdk.CollectionConverters.*
 
 // TODO - this is reported by `./gradlew resolvableConfigurations` even without me touching anything:
@@ -113,15 +114,15 @@ object ScalaBasePluginAsLibrary:
     sourceRoot: String,
     sharedSourceRoot: String,
     srcDirectory: String
-  ): Unit = sourceSet
+  ): Unit =
+    val srcDirs: Seq[File] = Seq(
+      s"$sourceRoot/src/$srcDirectory/scala",
+      s"$sharedSourceRoot/src/$srcDirectory/scala",
+      s"src/$srcDirectory/scala"
+    )
+      .map(project.file)
+
+    sourceSet
     .getExtensions
     .getByType(classOf[ScalaSourceDirectorySet])
-    .setSrcDirs(
-      Seq(
-        s"$sourceRoot/src/$srcDirectory/scala",
-        s"$sharedSourceRoot/src/$srcDirectory/scala",
-        s"src/$srcDirectory/scala"
-      )
-        .map(project.file)
-        .asJava
-    )
+    .setSrcDirs(srcDirs.asJava)

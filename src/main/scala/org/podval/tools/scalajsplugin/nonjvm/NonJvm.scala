@@ -1,16 +1,16 @@
 package org.podval.tools.scalajsplugin.nonjvm
 
-import org.gradle.api.{Action, Project, Task}
-import org.gradle.api.tasks.{SourceSet, TaskProvider}
-import org.podval.tools.build.{DependencyRequirement, Gradle, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
-import org.podval.tools.scalajsplugin.{BackendDelegate, GradleNames}
+import org.gradle.api.artifacts.Configuration
+import org.podval.tools.build.{DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
+import org.podval.tools.scalajsplugin.{BackendDelegate, BackendDependencyRequirements}
 
-trait NonJvm extends BackendDelegate:
-  def linkMainTaskClass: Class[? <: NonJvmLinkMainTask[?]]
-  def linkTestTaskClass: Class[? <: NonJvmLinkTestTask[?]]
-  def runMainTaskClass : Class[? <: NonJvmRunMainTask [?]]
-  def testTaskClass    : Class[? <: NonJvmTestTask    [?]]
-  
+trait NonJvm[T <: NonJvmTask[?]] extends BackendDelegate[T]:
+  final override def linkTaskClassOpt    : Option[Class[? <: T & NonJvmLinkTask.Main[?]]] = Some(linkTaskClass    )
+  final override def testLinkTaskClassOpt: Option[Class[? <: T & NonJvmLinkTask.Test[?]]] = Some(testLinkTaskClass)
+
+  def linkTaskClass    : Class[? <: T & NonJvmLinkTask.Main[?]]
+  def testLinkTaskClass: Class[? <: T & NonJvmLinkTask.Test[?]]
+
   def pluginDependenciesConfigurationName: String
   def areCompilerPluginsBuiltIntoScala3: Boolean
   def versionExtractor(version: Version): Version
@@ -28,118 +28,47 @@ trait NonJvm extends BackendDelegate:
 
   def additionalImplementationDependencyRequirements(
     backendVersion: Version,
-    projectScalaPlatform: ScalaPlatform
+    scalaVersion: Version,
+    isScala3: Boolean
   ): Seq[DependencyRequirement[ScalaPlatform]]
 
   override def backendKind: ScalaBackendKind.NonJvm
 
   final override def pluginDependenciesConfigurationNameOpt: Option[String] = Some(pluginDependenciesConfigurationName)
-  
-  final override def addTasks(project: Project, gradleNames: GradleNames): Option[TaskProvider[? <: Task]] =
-    project.getTasks.withType(linkMainTaskClass).configureEach((task: NonJvmLinkMainTask[?]) =>
-      task.setDescription(s"Links ${backendKind.displayName} code.")
-      task.setGroup("build")
-      val sourceSet: SourceSet = Gradle.getSourceSet(project, gradleNames.mainSourceSetName)
-      task.dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
-      task.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-    )
-    project.getTasks.withType(linkTestTaskClass).configureEach((task: NonJvmLinkTestTask[?]) =>
-      task.setDescription(s"Links test ${backendKind.displayName} code.")
-      task.setGroup("build")
-      val sourceSet: SourceSet = Gradle.getSourceSet(project, gradleNames.testSourceSetName)
-      task.dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
-      task.getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-    )
-    project.getTasks.withType(runMainTaskClass).configureEach((task: NonJvmRunMainTask[?]) =>
-      task.setDescription(s"Runs ${backendKind.displayName} code.")
-      task.setGroup("other")
-    )
 
-    val linkMain: TaskProvider[? <: NonJvmLinkTask[?]] = project.getTasks.register(
-      gradleNames.linkTaskName,
-      linkMainTaskClass
-    )
-
-    project.getTasks.register(
-      gradleNames.runTaskName,
-      runMainTaskClass,
-      new Action[NonJvmRunMainTask[?]]:
-        override def execute(task: NonJvmRunMainTask[?]): Unit = task.dependsOn(linkMain)
-    )
-
-    val linkTest: TaskProvider[? <: NonJvmLinkTask[?]] = project.getTasks.register(
-      gradleNames.testLinkTaskName,
-      linkTestTaskClass
-    )
-
-    Some(linkTest)
-
-  final override def applyDependencyRequirements(
-    project: Project,
-    gradleNames: GradleNames,
-    pluginScalaPlatform: ScalaPlatform,
-    projectScalaPlatform: ScalaPlatform,
-    isScala3: Boolean
-  ): Unit =
-    val implementationConfigurationName: String = Gradle
-      .getSourceSet(project, gradleNames.mainSourceSetName)
-      .getImplementationConfigurationName
-
+  final override def dependencyRequirements(
+    implementationConfiguration: Configuration,
+    testImplementationConfiguration: Configuration,
+    projectScalaPlatform: ScalaPlatform
+  ): BackendDependencyRequirements =
+    val scalaVersion: Version = projectScalaPlatform.scalaVersion
+    val isScala3: Boolean = projectScalaPlatform.version.isScala3
     val libraryDependency: ScalaDependency.Maker = library(isScala3)
 
     val backendVersion: Version = libraryDependency
-      .findInConfiguration(projectScalaPlatform, project, implementationConfigurationName)
+      .findInConfiguration(projectScalaPlatform, implementationConfiguration)
       .map(_.version)
       .map(versionExtractor)
       .getOrElse(libraryDependency.versionDefault)
 
-    val libraryDependencyRequirement: DependencyRequirement[ScalaPlatform] = libraryDependency
-      .required(versionComposer(projectScalaPlatform.scalaVersion, backendVersion))
-
-    BackendDelegate.applyDependencyRequirements(
-      project,
-      Seq(libraryDependencyRequirement) ++
-      implementation.map(_.required(backendVersion)) ++
-      additionalImplementationDependencyRequirements(backendVersion, projectScalaPlatform),
-      projectScalaPlatform,
-      implementationConfigurationName
-    )
-
-    BackendDelegate.applyDependencyRequirements(
-      project,
-      Seq(linker, testAdapter).map(_.required(backendVersion)) ++
-      additionalPluginDependencyRequirements,
-      pluginScalaPlatform,
-      pluginDependenciesConfigurationName
-    )
-
-    val testImplementationConfigurationName: String = Gradle
-      .getSourceSet(project, gradleNames.testSourceSetName)
-      .getImplementationConfigurationName
-
-    if !areCompilerPluginsBuiltIntoScala3 || !isScala3 then
-      // Add JUnit4 compiler plugin only when JUnit4 is in use, otherwise with Scala.js `testClasses` task throws
-      //   "scala.reflect.internal.MissingRequirementError: object org.junit.Test in compiler mirror not found.";
-      // somehow, `classes` task works fine, so there is no need, it seems, to create for a separate configuration
-      //   `testScalaCompilerPlugins` (like Scala Native SBT plugin does).
-      val isJUnit4Present: Boolean = junit4
-        .findInConfiguration(projectScalaPlatform, project, testImplementationConfigurationName)
-        .isDefined
-
-      val plugins: Seq[ScalaDependency.Maker] =
-        Seq(compiler) ++
-        (if !isJUnit4Present then Seq.empty else Seq(junit4Plugin))
-
-      BackendDelegate.applyDependencyRequirements(
-        project,
-        plugins.map(_.required(backendVersion)),
-        projectScalaPlatform,
-        gradleNames.scalaCompilerPluginsConfigurationName
-      )
-
-    BackendDelegate.applyDependencyRequirements(
-      project,
-      Seq(testBridge.required(backendVersion)),
-      projectScalaPlatform,
-      testImplementationConfigurationName
+    // Add JUnit4 compiler plugin only when JUnit4 is in use, otherwise with Scala.js `testClasses` task throws
+    //   "scala.reflect.internal.MissingRequirementError: object org.junit.Test in compiler mirror not found.";
+    // somehow, `classes` task works fine, so there is no need, it seems, to create for a separate configuration
+    //   `testScalaCompilerPlugins` (like Scala Native SBT plugin does).
+    BackendDependencyRequirements(
+      implementation =
+        Seq(libraryDependency.required(versionComposer(scalaVersion, backendVersion))) ++
+        implementation.map(_.required(backendVersion)) ++
+        additionalImplementationDependencyRequirements(backendVersion, scalaVersion, isScala3),
+      testImplementation =
+        Seq(testBridge.required(backendVersion)),
+      pluginDependencies =
+        Seq(linker, testAdapter).map(_.required(backendVersion)) ++
+        additionalPluginDependencyRequirements,
+      scalaCompilerPlugins =
+        (if areCompilerPluginsBuiltIntoScala3 && isScala3 then Seq.empty else Seq(compiler) ++ (
+          if junit4.findInConfiguration(projectScalaPlatform, testImplementationConfiguration).isEmpty
+          then Seq.empty
+          else Seq(junit4Plugin)
+        )).map(_.required(backendVersion))
     )

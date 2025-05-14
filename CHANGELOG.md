@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - doc: Scala Native;
 - cleanup: use TaskProvider instead of Task more;
 - cleanup: `NonJvm`;
+- cleanup: `BackendDelegate`;
 - feat (WIP): multiple backends in the same project;
 
 ## [0.7.0] - 2025-05-05

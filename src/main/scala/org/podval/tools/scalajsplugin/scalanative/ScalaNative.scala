@@ -1,22 +1,21 @@
 package org.podval.tools.scalajsplugin.scalanative
 
-import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
-import org.podval.tools.scalajsplugin.nonjvm.{NonJvm, NonJvmLinkMainTask, NonJvmLinkTask, NonJvmLinkTestTask, 
-  NonJvmRunMainTask, NonJvmTestTask}
-import org.podval.tools.scalajsplugin.BackendDelegate
+import org.podval.tools.build.{CreateExtension, DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform,
+  Version}
+import org.podval.tools.scalajsplugin.nonjvm.NonJvm
 import org.podval.tools.test.framework.JUnit4ScalaNative
 
-object ScalaNative extends NonJvm:
-  override def linkMainTaskClass: Class[? <: NonJvmLinkMainTask[?]] = classOf[ScalaNativeLinkMainTask]
-  override def linkTestTaskClass: Class[? <: NonJvmLinkTestTask[?]] = classOf[ScalaNativeLinkTestTask]
-  override def runMainTaskClass : Class[? <: NonJvmRunMainTask [?]] = classOf[ScalaNativeRunMainTask ]
-  override def testTaskClass    : Class[? <: NonJvmTestTask    [?]] = classOf[ScalaNativeTestTask    ]
+object ScalaNative extends NonJvm[ScalaNativeTask]:
+  override def taskClass        : Class[ScalaNativeTask        ] = classOf[ScalaNativeTask        ]
+  override def linkTaskClass    : Class[ScalaNativeLinkMainTask] = classOf[ScalaNativeLinkMainTask]
+  override def testLinkTaskClass: Class[ScalaNativeLinkTestTask] = classOf[ScalaNativeLinkTestTask]
+  override def runTaskClass     : Class[ScalaNativeRunMainTask ] = classOf[ScalaNativeRunMainTask ]
+  override def testTaskClass    : Class[ScalaNativeTestTask    ] = classOf[ScalaNativeTestTask    ]
 
   override def backendKind: ScalaBackendKind.NonJvm = ScalaBackendKind.Native
   override def sourceRoot: String = "native"
   override def pluginDependenciesConfigurationName: String = "scalanative"
-  override def createExtensions(project: Project): Unit = ()
+  override def createExtension: Option[CreateExtension[?]] = None
   override def areCompilerPluginsBuiltIntoScala3: Boolean = false
   override def junit4: ScalaDependency.Maker = JUnit4ScalaNative
   override def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty
@@ -69,7 +68,8 @@ object ScalaNative extends NonJvm:
 
   override def additionalImplementationDependencyRequirements(
     backendVersion: Version,
-    projectScalaPlatform: ScalaPlatform
+    scalaVersion: Version,
+    isScala3: Boolean
   ): Seq[DependencyRequirement[ScalaPlatform]] = Seq.empty
 
 // TODO exclusions?

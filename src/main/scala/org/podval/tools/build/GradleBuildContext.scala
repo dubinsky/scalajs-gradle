@@ -12,7 +12,10 @@ import java.io.File
 object GradleBuildContext:
   private val logger: Logger = LoggerFactory.getLogger(GradleBuildContext.getClass)
 
-final class GradleBuildContext(project: Project, execOperations: ExecOperations)
+final class GradleBuildContext(
+  project: Project, 
+  execOperations: ExecOperations
+)
   extends GradleBuildContextCore(
     gradleUserHomeDir = project.getGradle.getGradleUserHomeDir
   ) with BuildContext:

@@ -1,5 +1,6 @@
 package org.podval.tools.build
 
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{GradleException, Project}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -10,22 +11,21 @@ final class DependencyRequirement[-P](
 ):
   def applyToConfiguration(
     project: Project,
-    configurationName: String,
+    configuration: Configuration,
     platform: P
   ): Dependency.WithVersion =
     val findable: FindableDependency[?] = maker.findable(platform)
     val dependency: Dependency = maker.dependency(platform)
 
-    val result: Dependency.WithVersion = findable.findInConfiguration(project, configurationName).getOrElse:
+    val result: Dependency.WithVersion = findable.findInConfiguration(configuration).getOrElse:
       val toAdd: Dependency.WithVersion = dependency.withVersion(version)
-      DependencyRequirement.logger.info(s"Adding dependency $toAdd to the '$configurationName' configuration: ${maker.description}")
-      Gradle
-        .getConfiguration(project, configurationName)
+      DependencyRequirement.logger.info(s"Adding dependency $toAdd to the '${configuration.getName}' configuration: ${maker.description}")
+      configuration
         .getDependencies
         .add(project.getDependencies.create(toAdd.dependencyNotation))
       findable
-        .findInConfiguration(project, configurationName)
-        .getOrElse(throw GradleException(s"Failed to add dependency $toAdd to configuration $configurationName."))
+        .findInConfiguration(configuration)
+        .getOrElse(throw GradleException(s"Failed to add dependency $toAdd to configuration ${configuration.getName}."))
     
     if maker.useExactVersionInVerifyRequired && result.version != version then
       DependencyRequirement.logger.warn(s"Found $result, but the project uses version $version.")
