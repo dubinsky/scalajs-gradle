@@ -8,4 +8,5 @@ import org.podval.tools.scalajsplugin.nonjvm.NonJvmRunTask
 abstract class ScalaNativeRunMainTask extends NonJvmRunTask.Main[ScalaNativeLinkTask] with ScalaNativeRunTask:
   final override protected def linkTaskClass: Class[ScalaNativeLinkMainTask] = classOf[ScalaNativeLinkMainTask]
   
-  @TaskAction final def execute(): Unit = Exec(Seq(linkTask.getOutputFile.getAbsolutePath))
+  // TODO use exec services
+  @TaskAction final def execute(): Unit = Exec(Seq(linkTask.getOutputFile.getAbsolutePath), outputHandler)

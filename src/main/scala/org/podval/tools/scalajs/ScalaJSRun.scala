@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.files.PipeOutputThread
+import org.podval.tools.files.{OutputHandler, PipeOutputThread}
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Await
@@ -9,9 +9,9 @@ import scala.concurrent.duration.Duration
 import java.io.InputStream
 
 final class ScalaJSRun(runCommon: ScalaJSRunCommon):
-  def run(): Unit =
+  def run(outputHandler: OutputHandler): Unit =
     val jsEnv: JSEnv = runCommon.mkJsEnv
-    runCommon.common.logLifecycle(s"Running ${runCommon.mainModulePath} on ${jsEnv.name}\n")
+    ScalaJSRun.logger.info(s"Running ${runCommon.mainModulePath} on ${jsEnv.name}.\n")
 
     /* The list of threads that are piping output to System.out and
      * System.err. This is not an AtomicReference or any other thread-safe
@@ -37,8 +37,8 @@ final class ScalaJSRun(runCommon: ScalaJSRunCommon):
       .withInheritOut(false)
       .withInheritErr(false)
       .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => pipeOutputThreads =
-        PipeOutputThread.pipe(out, runCommon.common.logLifecycle, "") ::: // TODO just print?
-        PipeOutputThread.pipe(err, ScalaJSRun.logger.error      , "err: ")
+        PipeOutputThread.pipe(out, outputHandler.out) :::
+        PipeOutputThread.pipe(err, outputHandler.err)
       )
 
     // TODO Without this delay (or with a shorter one)

@@ -26,6 +26,7 @@ abstract class JvmRunTask @Inject(execOperations: ExecOperations) extends Backen
     case Some(mainClass) =>
       JvmRunTask.logger.info(s"Running $mainClass.")
       execOperations.javaexec: (exec: JavaExecSpec) =>
+        // TODO use PipeOutputThread.pipe into the outputHandler
         exec.setClasspath(getRuntimeClassPath)
         exec.getMainClass.set(mainClass)
         ()

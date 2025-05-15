@@ -10,7 +10,6 @@ trait ScalaJSTask extends NonJvmTask[ScalaJSLinkTask] with TaskWithNode:
     jsDirectory = linkTask.getJSDirectory,
     reportBinFile = linkTask.getReportBinFile,
     moduleKind = ModuleKind(linkTask.getModuleKind),
-    logSource = s"ScalaJS $getName",
-    logLifecycle = (message: String) => getLogger.lifecycle(message),
+    logSource = s"Scala.js $getName",
     abort = (message: String) => GradleException(message)
   )

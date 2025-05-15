@@ -12,7 +12,8 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.{Plugin, Project}
 import org.gradle.jvm.component.internal.DefaultJvmSoftwareComponent
 import org.gradle.testing.base.TestingExtension
-import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary,
+import org.gradle.util.internal.GUtil
+import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary, 
   ScalaPlatform}
 import org.podval.tools.scalajsplugin.jvm.Jvm
 import org.podval.tools.scalajsplugin.scalajs.ScalaJS
@@ -30,13 +31,20 @@ final class ScalaJSPlugin @Inject(
 ) extends Plugin[Project]:
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])
-
-    val nonJvmDelegates: Set[BackendDelegate[?]] = Set(ScalaJS, ScalaNative) // TODO all
-      .filter(delegate => project.file(delegate.sourceRoot).exists)
+    
+    val nonJvmDelegates: Set[BackendDelegate[?]] = Set(
+      // TODO include JVM here too
+      ScalaJS,
+      ScalaNative
+    ) 
+      .filter((delegate: BackendDelegate[?]) =>
+        val file = project.file(delegate.sourceRoot)
+        file.exists && file.isDirectory
+      )
 
     val delegates: Set[BackendDelegate[?]] =
       if nonJvmDelegates.nonEmpty
-      then nonJvmDelegates.incl(Jvm) // TODO do not incl
+      then nonJvmDelegates.incl(Jvm) // TODO do not include JVM here
       else Set(Option(project.findProperty(ScalaJSPlugin.backendProperty)).map(_.toString) match
         case None => Jvm
         case Some(name) => Set(Jvm, ScalaJS, ScalaNative)
@@ -44,12 +52,28 @@ final class ScalaJSPlugin @Inject(
           .getOrElse(throw IllegalArgumentException(s"Unknown backend '$name'."))
       )
 
-    val delegateNames: String = delegates.map(_.backendKind.displayName).mkString(",")
-    ScalaJSPlugin.logger.info(s"ScalaJSPlugin: running with $delegateNames.")
+    ScalaJSPlugin.logger.info(s"ScalaJSPlugin: running with ${delegates.map(_.backendKind.displayName).mkString(",")}.")
 
     val isModeMixed: Boolean = nonJvmDelegates.nonEmpty
-    val bindings: Set[BackendDelegateBinding] = delegates.map(_.bind(nonJvmDelegates.nonEmpty))
 
+    // returns the names of the main and test source sets
+    // main source set name is also the name of the feature;
+    // test source set name is also the name of the test suite and the test task
+    def sourceSetNames(delegate: BackendDelegate[?]): (String, String) =
+      if !isModeMixed
+      // the only feature that exists
+      then ("main", JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME) 
+      else (delegate.sourceRoot, GUtil.toLowerCamelCase(s"${JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME} ${delegate.sourceRoot}"))
+    
+    def getSourceSets(delegate: BackendDelegate[?]): (SourceSet, SourceSet) =
+      val (mainSourceSetName: String, testSourceSetName: String) = sourceSetNames(delegate)
+      (
+        Gradle.getSourceSet(project, mainSourceSetName),
+        Gradle.getSourceSet(project, testSourceSetName)
+      )
+
+    // TODO get the source sets here!
+    
     val configurations: RoleBasedConfigurationContainerInternal = project.asInstanceOf[ProjectInternal].getConfigurations
 
     val component: DefaultJvmSoftwareComponent = JavaPluginHelper
@@ -79,8 +103,8 @@ final class ScalaJSPlugin @Inject(
         sharedTestSuiteSourceSet
       )
 
-      for binding: BackendDelegateBinding <- bindings do
-        val gradleNames = binding.gradleNames
+      for delegate: BackendDelegate[?] <- delegates do
+        val (mainSourceSetName: String, testSourceSetName: String) = sourceSetNames(delegate)
         GradleFeatures.createFeature(
           project,
           configurations,
@@ -89,31 +113,22 @@ final class ScalaJSPlugin @Inject(
           sharedFeature,
           sharedTestSuiteSourceSet,
           jvmPluginServices,
-          backendDisplayName = binding.delegate.backendKind.displayName,
-          sourceRoot = binding.delegate.sourceRoot,
+          backendDisplayName = delegate.backendKind.displayName,
+          sourceRoot = delegate.sourceRoot,
           sharedSourceRoot = GradleNames.sharedSourceRoot,
-          mainSourceSetName = gradleNames.mainSourceSetName,
-          testSourceSetName = gradleNames.testSourceSetName,
-          scalaCompilerPluginsConfigurationName = gradleNames.scalaCompilerPluginsConfigurationName,
-          incrementalAnalysisUsageName = gradleNames.suffix("incremental-analysis"),
-          incrementalAnalysisCategoryName = gradleNames.suffix("scala-analysis"),
-          incrementalScalaAnalysisElementsConfigurationName = gradleNames.suffix("incrementalScalaAnalysisElements")
+          mainSourceSetName = mainSourceSetName,
+          testSourceSetName = testSourceSetName
         )
 
-    bindings.foreach((binding: BackendDelegateBinding) =>
-      val delegate: BackendDelegate[?] = binding.delegate
-      val gradleNames: GradleNames = binding.gradleNames
-
+    delegates.foreach((delegate: BackendDelegate[?]) =>
+      val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(delegate)
+ 
       // Create extension.
       delegate.createExtension.foreach(_.create(project))
 
       // Set 'runtimeClassPath' and dependency on the 'classes' task.
       project.getTasks.withType(delegate.taskClass).configureEach((task: BackendTask) =>
-        def sourceSet: SourceSet = Gradle.getSourceSet(project,
-          if task.isTest
-          then gradleNames.testSourceSetName
-          else gradleNames.mainSourceSetName
-        )
+        def sourceSet: SourceSet = if task.isTest then testSourceSet else mainSourceSet
         if task.isInstanceOf[BackendTask.HasRuntimeClassPath] then
           task.asInstanceOf[BackendTask.HasRuntimeClassPath].getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
         if task.isInstanceOf[BackendTask.DependsOnClasses] then
@@ -132,10 +147,8 @@ final class ScalaJSPlugin @Inject(
       // Register tasks.
       delegate.registerTasks(
         project.getTasks,
-        linkTaskName = gradleNames.linkTaskName,
-        runTaskName = gradleNames.runTaskName,
-        testLinkTaskName = gradleNames.testLinkTaskName,
-        testTaskName = gradleNames.testSourceSetName // test task and test source set are named the same
+        mainSourceSet = mainSourceSet,
+        testSourceSet = testSourceSet
       )
     )
 
@@ -148,24 +161,24 @@ final class ScalaJSPlugin @Inject(
       )
       
       // Configure.
-      bindings.foreach((binding: BackendDelegateBinding) =>
-        val gradleNames: GradleNames = binding.gradleNames
-        binding.delegate.configure(
+      delegates.foreach((delegate: BackendDelegate[?]) =>
+        val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(delegate)
+        delegate.configure(
           project,
           projectScalaLibrary,
           pluginScalaPlatform,
-          mainSourceSetName = gradleNames.mainSourceSetName,
-          testSourceSetName = gradleNames.testSourceSetName,
-          scalaCompilerPluginsConfigurationName = gradleNames.scalaCompilerPluginsConfigurationName
+          mainSourceSet = mainSourceSet,
+          testSourceSet = testSourceSet
         )
       )
 
       // Expand classpath.
-      val addToClassPath: Set[AddConfigurationToClassPath] = bindings.flatMap((binding: BackendDelegateBinding) =>
-        binding.delegate.pluginDependenciesConfigurationNameOpt.map((pluginDependenciesConfigurationName: String) =>
+      val addToClassPath: Set[AddConfigurationToClassPath] = delegates.flatMap((delegate: BackendDelegate[?]) =>
+        val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(delegate)
+        delegate.pluginDependenciesConfigurationNameOpt.map((pluginDependenciesConfigurationName: String) =>
           AddConfigurationToClassPath(
             project.getConfigurations.getByName(pluginDependenciesConfigurationName),
-            project.getConfigurations.getByName(Gradle.getSourceSet(project, binding.gradleNames.mainSourceSetName).getRuntimeClasspathConfigurationName)
+            project.getConfigurations.getByName(mainSourceSet.getRuntimeClasspathConfigurationName)
           )
         )
       )

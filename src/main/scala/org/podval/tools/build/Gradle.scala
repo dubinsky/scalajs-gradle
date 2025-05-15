@@ -18,11 +18,6 @@ object Gradle:
   def getClassesTaskProvider(project: Project, sourceSet: SourceSet): TaskProvider[Task] = project
     .getTasks
     .named(sourceSet.getClassesTaskName)
-
-  def getClassesTaskProvider(project: Project, sourceSetName: String): TaskProvider[Task] = getClassesTaskProvider(
-    project,
-    getSourceSet(project, sourceSetName)
-  )
   
   def toOption[T](property: Property[T]): Option[T] =
     if !property.isPresent then None else Some(property.get)
