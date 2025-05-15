@@ -14,7 +14,6 @@ object Jvm extends BackendDelegate[JvmTask]:
   override def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
 
   override def backendKind: ScalaBackendKind = ScalaBackendKind.JVM
-  override def sourceRoot: String = "jvm"
   override def pluginDependenciesConfigurationNameOpt: Option[String] = None
   override def createExtension: Option[CreateExtension[?]] = None
   override def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty

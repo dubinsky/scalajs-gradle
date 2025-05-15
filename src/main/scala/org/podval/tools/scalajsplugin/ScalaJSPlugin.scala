@@ -12,13 +12,13 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.{Plugin, Project}
 import org.gradle.jvm.component.internal.DefaultJvmSoftwareComponent
 import org.gradle.testing.base.TestingExtension
-import org.gradle.util.internal.GUtil
 import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary, 
   ScalaPlatform}
 import org.podval.tools.scalajsplugin.jvm.Jvm
 import org.podval.tools.scalajsplugin.scalajs.ScalaJS
 import org.podval.tools.scalajsplugin.scalanative.ScalaNative
 import org.slf4j.{Logger, LoggerFactory}
+import java.io.File
 import javax.inject.Inject
 
 object ScalaJSPlugin:
@@ -32,19 +32,21 @@ final class ScalaJSPlugin @Inject(
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])
     
-    val nonJvmDelegates: Set[BackendDelegate[?]] = Set(
-      // TODO include JVM here too
+    val presentDelegates: Set[BackendDelegate[?]] = Set(
+      Jvm,
       ScalaJS,
       ScalaNative
     ) 
       .filter((delegate: BackendDelegate[?]) =>
-        val file = project.file(delegate.sourceRoot)
+        val file: File = project.file(delegate.backendKind.sourceRoot)
         file.exists && file.isDirectory
       )
 
+    val isModeMixed: Boolean = presentDelegates.nonEmpty
+
     val delegates: Set[BackendDelegate[?]] =
-      if nonJvmDelegates.nonEmpty
-      then nonJvmDelegates.incl(Jvm) // TODO do not include JVM here
+      if presentDelegates.nonEmpty
+      then presentDelegates
       else Set(Option(project.findProperty(ScalaJSPlugin.backendProperty)).map(_.toString) match
         case None => Jvm
         case Some(name) => Set(Jvm, ScalaJS, ScalaNative)
@@ -53,9 +55,7 @@ final class ScalaJSPlugin @Inject(
       )
 
     ScalaJSPlugin.logger.info(s"ScalaJSPlugin: running with ${delegates.map(_.backendKind.displayName).mkString(",")}.")
-
-    val isModeMixed: Boolean = nonJvmDelegates.nonEmpty
-
+    
     // returns the names of the main and test source sets
     // main source set name is also the name of the feature;
     // test source set name is also the name of the test suite and the test task
@@ -63,7 +63,7 @@ final class ScalaJSPlugin @Inject(
       if !isModeMixed
       // the only feature that exists
       then ("main", JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME) 
-      else (delegate.sourceRoot, GUtil.toLowerCamelCase(s"${JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME} ${delegate.sourceRoot}"))
+      else (delegate.backendKind.sourceRoot, GradleNames.testSuiteName(delegate.backendKind))
     
     def getSourceSets(delegate: BackendDelegate[?]): (SourceSet, SourceSet) =
       val (mainSourceSetName: String, testSourceSetName: String) = sourceSetNames(delegate)
@@ -114,7 +114,7 @@ final class ScalaJSPlugin @Inject(
           sharedTestSuiteSourceSet,
           jvmPluginServices,
           backendDisplayName = delegate.backendKind.displayName,
-          sourceRoot = delegate.sourceRoot,
+          sourceRoot = delegate.backendKind.sourceRoot,
           sharedSourceRoot = GradleNames.sharedSourceRoot,
           mainSourceSetName = mainSourceSetName,
           testSourceSetName = testSourceSetName

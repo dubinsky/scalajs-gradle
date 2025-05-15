@@ -17,12 +17,15 @@ abstract class TestEnvironment:
 
     val result: List[Framework] = loadFrameworks
     
-    val report: String = result.map(framework => FrameworkDescriptor.forName(framework.name).displayName).mkString(", ")
-    TestEnvironment.logger.info(s"Loaded test frameworks: $report")
+    TestEnvironment.logger.info(
+      s"Loaded test frameworks: ${result.map(framework => FrameworkDescriptor.forName(framework.name).displayName).mkString(", ")}"
+    )
 
-    // Check uniqueness; implementation class can not be used since in Scala.js mode they all are
+    // Check uniqueness; implementation class cannot be used since in Scala.js mode they all are
     // `org.scalajs.testing.adapter.FrameworkAdapter`.
     require(result.map(_.name).toSet.size == result.size, "Different frameworks with the same name!")
+    
+    if result.isEmpty then TestEnvironment.logger.warn(s"No test frameworks on the classpath: ${testClassPath.mkString(", ")}.")
     
     result
 
