@@ -11,34 +11,9 @@ import org.gradle.api.tasks.{ScalaSourceDirectorySet, SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaDoc
 import org.gradle.language.scala.tasks.AbstractScalaCompile
 
-// The idea here is:
-// for JVM: re-configure existing setup
-// ("main" and "test" source sets, associated configurations and tasks)
-// so that both JVM-specific and shared code is included;
-// for a non-JVM backend: create a parallel setup
-// ("main<backend>" and "test<backend>" source sets, associated configurations and tasks).
-//
-// When Scala plugin gets applied originally, it applies a number of other plugins.
-// Some of them do non-source-set-specific things which do not need to be replicated:
-// - BasePlugin;
-// - JvmEcosystemPlugin;
-// - ReportingBasePlugin;
-// - JvmToolchainsPlugin.
-// Some of them do source-set-specific things which do need to be replicated:
-// - ScalaPlugin;
-// - ScalaBasePlugin;
-// - JavaPlugin.
-//
-// To replicate whatever needs to be replicated, the corresponding Gradle code was copied and adjusted to:
-// - not assume that the only source sets that exist are "main" and "test";
-// - use appropriate names for source sets, configurations, and tasks.
-//
-// It would be much better if this functionality was exposed by Gradle in one method call.
-// It would be even better if there was a way to affect the class of the test task created.
-// Since the chances of this ever happening are zero, I made method signatures convenient for my needs ;)
-
 // Adopted from org.gradle.api.plugins.scala.ScalaPlugin.
 object ScalaPluginAsLibrary:
+  // Adopted from org.gradle.api.plugins.scala.ScalaPlugin.
   def configureIncrementalAnalysisElements(
     project: Project,
     compileTaskName: String,
@@ -57,7 +32,7 @@ object ScalaPluginAsLibrary:
 
   def configureScaladoc(
     project: Project,
-    isCreate: Boolean,
+    isRegisterNotReplaceScaladocTask: Boolean,
     sourceSet: SourceSet,
     backendDisplayName: String,
     scalaDocTaskName: String
@@ -79,7 +54,7 @@ object ScalaPluginAsLibrary:
       scalaDoc.setDescription(s"Generates Scaladoc for the $backendDisplayName main source code.")
       scalaDoc.setGroup(JavaBasePlugin.DOCUMENTATION_GROUP)
 
-    if isCreate then project.getTasks.register(
+    if isRegisterNotReplaceScaladocTask then project.getTasks.register(
       scalaDocTaskName,
       classOf[ScalaDoc],
       scalaDocTaskConfigureAction
