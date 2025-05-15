@@ -15,7 +15,6 @@ object ScalaJS extends NonJvm[ScalaJSTask]:
   override def testTaskClass    : Class[ScalaJSTestTask    ] = classOf[ScalaJSTestTask    ]
 
   override def backendKind: ScalaBackendKind.NonJvm = ScalaBackendKind.JS
-  override def sourceRoot: String = "js"
   override def pluginDependenciesConfigurationName: String = "scalajs"
   override def areCompilerPluginsBuiltIntoScala3: Boolean = true
   override def junit4: ScalaDependency.Maker = JUnit4ScalaJS

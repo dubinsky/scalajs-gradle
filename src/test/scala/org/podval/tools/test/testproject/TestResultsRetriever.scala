@@ -1,0 +1,31 @@
+package org.podval.tools.test.testproject
+
+import org.gradle.api.Action
+import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
+import org.podval.tools.build.ScalaBackendKind
+import org.podval.tools.scalajsplugin.GradleNames
+import org.podval.tools.util.Files
+import scala.jdk.CollectionConverters.ListHasAsScala
+import java.io.File
+
+final class TestResultsRetriever(projectDir: File):
+  def testResults(backend: Option[ScalaBackendKind]): List[TestClassResult] =
+    val directory: String = backend.map(GradleNames.testSuiteName).getOrElse("test")
+    readTestClassResults(directory)
+
+  private def readTestClassResults(name: String): List[TestClassResult] =
+    val binaryTestReportDir: File = Files.file(projectDir, "build", "test-results", name, "binary")
+    val testResults: TestResultSerializer = TestResultSerializer(binaryTestReportDir)
+    var classResults: List[TestClassResult] = List.empty
+    val visitor: Action[TestClassResult] = (result: TestClassResult) => classResults = result +: classResults
+    testResults.read(visitor)
+    classResults
+
+  private def dumpTestClassResults(results: List[TestClassResult]): List[String] = (
+    for result: TestClassResult <- results yield
+      val classSummary: String = s"${result.getId}: ${result.getClassName} failed=${result.getFailuresCount} skipped=${result.getSkippedCount}"
+      val methodResults: List[String] = for result: TestMethodResult <- result.getResults.asScala.toList yield
+        s"  ${result.getId}: ${result.getName} resultType=${result.getResultType}"
+      List(classSummary) ++ methodResults
+    ).flatten
+  
