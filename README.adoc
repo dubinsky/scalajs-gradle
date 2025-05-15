@@ -654,11 +654,6 @@ If Node.js version is specified, plugin install that version.
 
 Node is installed under `~/.gradle/nodejs`.
 
-Scala.js does not support versions of Node.js newer than "{version-node}",
-so none of the "17.9.1", "18.15.0", "19.8.1".
-I do not know anything about Node.js, and find this surprising -
-but I am sure there is a good technical or political reason for this ;)
-
 If no Node modules to install are listed, plugin installs the `jsdom` module,
 which is required for `org.scala-js:scalajs-env-jsdom-nodejs`.
 

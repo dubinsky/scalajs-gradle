@@ -10,7 +10,6 @@ final class ScalaJSCommon(
   val reportBinFile: File,
   val moduleKind: ModuleKind,
   val logSource: String,
-  val logLifecycle: String => Unit,
   val abort: String => Exception
 ):
   private val logger: Logger = LoggerFactory.getLogger(classOf[ScalaJSCommon])

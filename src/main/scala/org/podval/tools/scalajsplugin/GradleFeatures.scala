@@ -41,11 +41,7 @@ import org.podval.tools.scalajsplugin.gradle.{JavaPluginAsLibrary, ScalaBasePlug
 object GradleFeatures:
   private def scalaCompileTaskName(sourceSet: SourceSet): String = sourceSet.getCompileTaskName("scala")
   private def scaladocTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName(null, "scaladoc")
-
-  // TODO this better return the same result as GradleNames!
-  private def linkTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName("link", "")
-  private def runTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName("run", "")
-
+  
   def configureShared(
     project: Project,
     sharedFeature: JvmFeatureInternal,
@@ -55,7 +51,7 @@ object GradleFeatures:
     disableSharedTasks(project, sharedTestSuiteSourceSet)
 
 //    project.getTasks.register(linkTaskName(sharedFeature.getSourceSet))
-    project.getTasks.register(runTaskName (sharedFeature.getSourceSet))
+    project.getTasks.register(GradleNames.runTaskName(sharedFeature.getSourceSet))
 
   private def disableSharedTasks(project: Project, sourceSet: SourceSet): Unit =
     def disable(taskName: SourceSet => String): Unit =
@@ -90,7 +86,7 @@ object GradleFeatures:
     dependsOn(scalaCompileTaskName)
     dependsOn(scaladocTaskName)
 //    dependsOn(linkTaskName)
-    dependsOn(runTaskName)
+    dependsOn(GradleNames.runTaskName)
   
   // TODO figure out which parts need to happen when pre-existing main feature needs to be turned into a JVM one...
   def createFeature(
@@ -105,11 +101,7 @@ object GradleFeatures:
     sourceRoot: String,
     sharedSourceRoot: String,
     mainSourceSetName: String,
-    testSourceSetName: String,
-    scalaCompilerPluginsConfigurationName: String,
-    incrementalAnalysisUsageName: String,
-    incrementalAnalysisCategoryName: String,
-    incrementalScalaAnalysisElementsConfigurationName: String
+    testSourceSetName: String
   ): Unit =
     // skip for pre-existing
     val feature: JvmFeatureInternal = JavaPluginAsLibrary.createFeature(
@@ -119,6 +111,10 @@ object GradleFeatures:
       mainSourceSetName = mainSourceSetName
     )
     val mainSourceSet: SourceSet = feature.getSourceSet
+    val scalaCompilerPluginsConfigurationName: String = GradleNames.scalaCompilerPluginsConfigurationName(mainSourceSet)
+    val incrementalAnalysisUsageName: String = mainSourceSet.getTaskName("incremental-analysis", "")
+    val incrementalAnalysisCategoryName: String = mainSourceSet.getTaskName("scala-analysis", "")
+    val incrementalScalaAnalysisElementsConfigurationName: String = mainSourceSet.getTaskName("incrementalScalaAnalysisElements", "")
 
     // skip for pre-existing
     ScalaBasePluginAsLibrary.configureCompilerPluginsConfiguration(
@@ -156,6 +152,8 @@ object GradleFeatures:
       feature,
       testSuiteName = testSourceSetName
     )
+    val testSourceSet: SourceSet = testSuite.get.getSources
+    
     ScalaBasePluginAsLibrary.configureSourceSetDefaults(
       project,
       sourceRoot = sourceRoot,
@@ -166,8 +164,8 @@ object GradleFeatures:
     ScalaBasePluginAsLibrary.configureCompileDefaults(
       project,
       scalaCompilerPluginsConfigurationName = scalaCompilerPluginsConfigurationName,
-      mainScalaCompileTaskName = scalaCompileTaskName(Gradle.getSourceSet(project, mainSourceSetName)),
-      testScalaCompileTaskName = scalaCompileTaskName(Gradle.getSourceSet(project, testSourceSetName))
+      mainScalaCompileTaskName = scalaCompileTaskName(mainSourceSet),
+      testScalaCompileTaskName = scalaCompileTaskName(testSourceSet)
     )
 
     sharedTasksDependOn(project, sharedFeature.getSourceSet, mainSourceSet)

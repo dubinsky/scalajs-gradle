@@ -1,5 +1,6 @@
 package org.podval.tools.platform
 
+import org.podval.tools.files.OutputHandler
 import java.io.File
 import org.slf4j.{Logger, LoggerFactory}
 import scala.sys.process.{Process, ProcessLogger}
@@ -17,9 +18,13 @@ object Exec:
 
   private def apply(command: String): String = Process(command).!!.trim
 
-  def apply(command: Seq[String]): Unit =
+  def apply(command: Seq[String], outputHandler: OutputHandler): Unit =
+    val processLogger: ProcessLogger = ProcessLogger(
+      fout = outputHandler.out,
+      ferr = outputHandler.err
+    )
     logger.info("Running " + command.mkString(" "))
-    val exitCode: Int = Process(command).!
+    val exitCode: Int = Process(command).!(processLogger)
     logger.info(if exitCode == 0 then "Done" else s"Failed: $exitCode")
 
   def apply(

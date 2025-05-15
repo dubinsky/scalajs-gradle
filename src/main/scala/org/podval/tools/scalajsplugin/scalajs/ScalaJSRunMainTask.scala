@@ -7,4 +7,4 @@ import org.podval.tools.scalajsplugin.nonjvm.NonJvmRunTask
 abstract class ScalaJSRunMainTask extends NonJvmRunTask.Main[ScalaJSLinkTask] with ScalaJSRunTask:
   final override protected def linkTaskClass: Class[ScalaJSLinkMainTask] = classOf[ScalaJSLinkMainTask]
 
-  @TaskAction final def execute(): Unit = ScalaJSRun(scalaJSRunCommon).run()
+  @TaskAction final def execute(): Unit = ScalaJSRun(scalaJSRunCommon).run(outputHandler)

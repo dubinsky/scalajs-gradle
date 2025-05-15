@@ -66,7 +66,7 @@ final class ScalaJSLink(common: ScalaJSCommon):
       Files.write(reportTextFile, report.toString)
       Files.writeBytes(common.reportBinFile, Report.serialize(report))
     catch
-      case e: LinkingException => throw common.abort("ScalaJS link error: " + e.getMessage)
+      case e: LinkingException => throw common.abort(s"ScalaJS link error: ${e.getMessage}")
 
 object ScalaJSLink:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSLink.getClass)

@@ -3,6 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.{DefaultTask, Task}
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.tasks.{InputFiles, Internal}
+import org.podval.tools.files.OutputHandler
 import org.podval.tools.test.task.TestTask
 import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
@@ -32,5 +33,7 @@ object BackendTask:
   sealed trait Run extends BackendTask
 
   object Run:
-    abstract class Main extends DefaultTask with Run with BackendTask.Main
+    abstract class Main extends DefaultTask with Run with BackendTask.Main:
+      final def outputHandler: OutputHandler = OutputHandler(getLogger)
+
     abstract class Test extends TestTask    with Run with BackendTask.Test
