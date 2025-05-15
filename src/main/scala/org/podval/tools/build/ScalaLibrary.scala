@@ -8,17 +8,19 @@ final class ScalaLibrary private(
   val scala3: Option[Dependency.WithVersion],
   val scala2: Option[Dependency.WithVersion]
 ):
+  override def toString: String = s"ScalaLibrary(scala3=${scala3.map(_.version)}, scala2=${scala2.map(_.version)})"
+
   def isScala3: Boolean = scala3.isDefined
   
+  def suffixString: String = if scala3.isDefined then "_3" else s"_2.${scala2.get.version.simple.segment(1)}"
+      
   def toPlatform(backendKind: ScalaBackendKind): ScalaPlatform = ScalaPlatform(
     scalaVersion = scala3.getOrElse(scala2.get).version,
     backendKind
   )
-
-  override def toString: String = s"ScalaLibrary(scala3=${scala3.map(_.version)}, scala2=${scala2.map(_.version)})"
-
+  
   def verify(runtimeClasspathConfiguration: Configuration): Unit =
-    val other: ScalaLibrary= ScalaLibrary.getFromClasspath(runtimeClasspathConfiguration.asScala)
+    val other: ScalaLibrary = ScalaLibrary.getFromClasspath(runtimeClasspathConfiguration.asScala)
     val configurationName: String = runtimeClasspathConfiguration.getName
     
     require(

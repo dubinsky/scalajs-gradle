@@ -4,8 +4,8 @@ import org.gradle.api.{Action, Project}
 import org.gradle.api.artifacts.{Configuration, ConfigurationContainer}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.gradle.api.tasks.{TaskContainer, TaskProvider}
-import org.podval.tools.build.{CreateExtension, DependencyRequirement, Gradle, ScalaBackendKind, ScalaLibrary, 
+import org.gradle.api.tasks.{SourceSet, TaskContainer, TaskProvider}
+import org.podval.tools.build.{CreateExtension, DependencyRequirement, Gradle, ScalaBackendKind, ScalaLibrary,
   ScalaPlatform}
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
@@ -110,8 +110,16 @@ trait BackendDelegate[T <: BackendTask]:
     
     val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(backendKind)
 
+    val mainSourceSet: SourceSet = Gradle.getSourceSet(project, mainSourceSetName)
+
+    GradleFeatures.configureJar(
+      project,
+      mainSourceSet.getJarTaskName,
+      archiveAppendixConvention = backendKind.suffixString + projectScalaLibrary.suffixString
+    )
+
     val implementationConfiguration: Configuration = getConfiguration(
-      Gradle.getSourceSet(project, mainSourceSetName).getImplementationConfigurationName
+      mainSourceSet.getImplementationConfigurationName
     )
     val testImplementationConfiguration: Configuration = getConfiguration(
       Gradle.getSourceSet(project, testSourceSetName).getImplementationConfigurationName

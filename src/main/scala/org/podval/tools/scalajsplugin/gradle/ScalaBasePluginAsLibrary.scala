@@ -24,6 +24,7 @@ import scala.jdk.CollectionConverters.*
 
 // Adopted from org.gradle.api.plugins.scala.ScalaBasePlugin.
 object ScalaBasePluginAsLibrary:
+  // Adopted from org.gradle.api.plugins.scala.ScalaBasePlugin.
   def configureCompilerPluginsConfiguration(
     project: Project,
     scalaCompilerPluginsConfigurationName: String,
@@ -123,6 +124,6 @@ object ScalaBasePluginAsLibrary:
       .map(project.file)
 
     sourceSet
-    .getExtensions
-    .getByType(classOf[ScalaSourceDirectorySet])
-    .setSrcDirs(srcDirs.asJava)
+     .getExtensions
+     .getByType(classOf[ScalaSourceDirectorySet])
+     .setSrcDirs(srcDirs.asJava)

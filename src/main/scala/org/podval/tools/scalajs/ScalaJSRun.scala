@@ -37,7 +37,7 @@ final class ScalaJSRun(runCommon: ScalaJSRunCommon):
       .withInheritOut(false)
       .withInheritErr(false)
       .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => pipeOutputThreads =
-        PipeOutputThread.pipe(out, runCommon.common.logLifecycle, "out: ") :::
+        PipeOutputThread.pipe(out, runCommon.common.logLifecycle, "") ::: // TODO just print?
         PipeOutputThread.pipe(err, ScalaJSRun.logger.error      , "err: ")
       )
 
