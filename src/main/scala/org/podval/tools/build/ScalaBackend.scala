@@ -2,6 +2,7 @@ package org.podval.tools.build
 
 import org.podval.tools.node.NodeDependency
 
+// TODO when we start running on different Node versions, use ScalaBackend to display Node version
 sealed trait ScalaBackend:
   def kind: ScalaBackendKind
   override def toString: String = kind.toString

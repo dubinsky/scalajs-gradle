@@ -24,7 +24,6 @@ trait BackendDelegate[T <: BackendTask]:
   final protected def describe(what: String): String = s"${backendKind.displayName} $what."
 
   def backendKind: ScalaBackendKind
-  def sourceRoot: String
   def pluginDependenciesConfigurationNameOpt: Option[String]
   def scalaCompileParameters(isScala3: Boolean): Seq[String]
   def createExtension: Option[CreateExtension[?]]

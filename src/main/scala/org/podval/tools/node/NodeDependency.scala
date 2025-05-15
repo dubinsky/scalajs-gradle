@@ -12,8 +12,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
   artifact = "node"
 ) with InstallableDependency[NodeInstallation]:
 
-  // Anything later than that breaks ScalaJS: 17.9.1, 18.15.0, 19.8.1
-  override val versionDefault: Version = Version("16.19.1")
+  override val versionDefault: Version = Version("22.15.1")
 
   override def cacheDirectory: String = "nodejs"
 

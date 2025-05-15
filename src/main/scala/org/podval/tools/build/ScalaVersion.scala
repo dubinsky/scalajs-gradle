@@ -23,6 +23,12 @@ sealed trait ScalaVersion:
 object ScalaVersion:
   val group: String = "org.scala-lang"
 
+  def versionDefaults: Seq[Version] = Seq(
+    ScalaVersion.Scala3         .versionDefault,
+    ScalaVersion.Scala2.Scala213.versionDefault,
+    ScalaVersion.Scala2.Scala212.versionDefault
+  )
+
   def forVersion(scalaVersion: Version): ScalaVersion =
     if ScalaVersion.Scala3.isSameMajor(scalaVersion)
     then ScalaVersion.Scala3

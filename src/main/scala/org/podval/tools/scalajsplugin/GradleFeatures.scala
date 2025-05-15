@@ -41,7 +41,7 @@ import org.podval.tools.scalajsplugin.gradle.{JavaPluginAsLibrary, ScalaBasePlug
 object GradleFeatures:
   private def scalaCompileTaskName(sourceSet: SourceSet): String = sourceSet.getCompileTaskName("scala")
   private def scaladocTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName(null, "scaladoc")
-  
+
   def configureShared(
     project: Project,
     sharedFeature: JvmFeatureInternal,
@@ -49,15 +49,18 @@ object GradleFeatures:
   ): Unit =
     disableSharedTasks(project, sharedFeature.getSourceSet)
     disableSharedTasks(project, sharedTestSuiteSourceSet)
+    disableTask(project, sharedTestSuiteSourceSet.getName)
 
 //    project.getTasks.register(linkTaskName(sharedFeature.getSourceSet))
     project.getTasks.register(GradleNames.runTaskName(sharedFeature.getSourceSet))
 
+  private def disableTask(project: Project, sharedTaskName: String): Unit =
+    // TODO use named()?
+    val task: Task = project.getTasks.findByName(sharedTaskName)
+    if task != null then task.setEnabled(false)
+
   private def disableSharedTasks(project: Project, sourceSet: SourceSet): Unit =
-    def disable(taskName: SourceSet => String): Unit =
-      // TODO use named()?
-      val task: Task = project.getTasks.findByName(taskName(sourceSet))
-      if task != null then task.setEnabled(false)
+    def disable(taskName: SourceSet => String): Unit = disableTask(project, taskName(sourceSet))
 
     disable(_.getClassesTaskName)
     disable(_.getProcessResourcesTaskName)
@@ -70,10 +73,12 @@ object GradleFeatures:
     disable(scalaCompileTaskName)
     disable(scaladocTaskName)
 
+  private def taskDependsOn(project: Project, sharedTaskName: String, taskName: String): Unit =
+    val sharedTask: Task = project.getTasks.findByName(sharedTaskName)
+    if sharedTask != null then sharedTask.dependsOn(taskName)
+
   private def sharedTasksDependOn(project: Project, sharedSourceSet: SourceSet, sourceSet: SourceSet): Unit =
-    def dependsOn(taskName: SourceSet => String): Unit =
-      val sharedTask: Task = project.getTasks.findByName(taskName(sharedSourceSet))
-      if sharedTask != null then sharedTask.dependsOn(taskName(sourceSet))
+    def dependsOn(taskName: SourceSet => String): Unit = taskDependsOn(project, taskName(sharedSourceSet), taskName(sourceSet))
 
     dependsOn(_.getClassesTaskName)
     dependsOn(_.getProcessResourcesTaskName)
@@ -183,6 +188,7 @@ object GradleFeatures:
       val testSourceSet: SourceSet = suite.getSources
 
       sharedTasksDependOn(project, sharedTestSuiteSourceSet, testSourceSet)
+      taskDependsOn(project, sharedTestSuiteSourceSet.getName, testSourceSet.getName)
 
       def extendsFrom(configurationName: SourceSet => String): Unit =
         configurations.getByName(configurationName(testSourceSet))
@@ -194,11 +200,6 @@ object GradleFeatures:
       extendsFrom(_.getCompileClasspathConfigurationName)
       extendsFrom(_.getRuntimeClasspathConfigurationName)
     )
-
-    // TODO looks like I do not need this?
-    //    val sharedTestTask: Task = tasks.getByName(sharedTestSuiteSourceSet.getName)
-    //    sharedTestTask.setEnabled(false)
-    //    sharedTestTask.dependsOn(testSuite)
 
   def configureJar(
     project: Project, 

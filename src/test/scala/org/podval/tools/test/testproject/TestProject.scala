@@ -1,36 +1,52 @@
 package org.podval.tools.test.testproject
 
-import org.gradle.api.Action
-import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, JavaDependency, ScalaBackendKind, ScalaPlatform, ScalaVersion, Version}
-import org.podval.tools.scalajsplugin.ScalaJSPlugin
-import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.build.{Dependency, ScalaBackendKind}
 import org.podval.tools.util.Files
-import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 
-// TODO delegate some parts to writers that BackendDelegates provide.
 // TODO move up to `org.podval.tools.testproject`
 final class TestProject(projectDir: File):
+  def writeSources(backend: Option[ScalaBackendKind], isTest: Boolean, sources: Seq[SourceFile]): Unit =
+    val directory: File = Files.fileSeq(projectDir,
+      backend.toSeq.map(_.sourceRoot) ++ Seq(
+      "src",
+      if isTest then "test" else "main",
+      "scala",
+      "org",
+      "podval",
+      "tools",
+      "test"
+    ))
+    
+    for sourceFile: SourceFile <- sources do
+      val content: String = sourceFile.content
+      Files.write(
+        file = Files.file(directory, s"${sourceFile.name}.scala"),
+        content =
+          if content.contains("package ")
+          then content
+          else s"package ${ForClass.testPackage}\n\n" + content
+      )
+  
   private def gradleRunner: GradleRunner = GradleRunner.create.withProjectDir(projectDir)
 
-  def test(commandLineIncludeTestNames: Seq[String]): (List[TestClassResult], String) =
+  def test(commandLineIncludeTestNames: Seq[String]): TestResultsRetriever =
     val testsArgument: List[String] =
       if commandLineIncludeTestNames.isEmpty
       then List.empty
       else List("--tests", commandLineIncludeTestNames.mkString("\"", ", ", "\""))
 
-    // I assume that there are failing tests among the tests being executed.
+    // To get test results for all backends, I tell Gradle to `--continue` running the build even when a task fails.
+    // TODO do it using a setting on the test task, so that the project is runnable stand-alone.
     val testOutput: String = gradleRunner
-      .withArguments((List("clean", "test", "-i") ++ testsArgument).asJava)
+      .withArguments((List("clean", "test", "-i", "--continue") ++ testsArgument).asJava)
       .forwardOutput
       .buildAndFail
       .getOutput
 
-    val testResults: List[TestClassResult] = TestProject.readTestClassResults(projectDir)
-
-    (testResults, testOutput)
+    TestResultsRetriever(projectDir)
 
   def run: String = gradleRunner
     .withArguments("run")
@@ -38,22 +54,6 @@ final class TestProject(projectDir: File):
     .getOutput
 
 object TestProject:
-  private def readTestClassResults(projectDir: File): List[TestClassResult] =
-    val binaryTestReportDir: File = Files.file(projectDir, "build", "test-results", "test", "binary")
-    val testResults: TestResultSerializer = TestResultSerializer(binaryTestReportDir)
-    var classResults: List[TestClassResult] = List.empty
-    val visitor: Action[TestClassResult] = (result: TestClassResult) => classResults = result +: classResults
-    testResults.read(visitor)
-    classResults
-
-  private def dumpTestClassResults(results: List[TestClassResult]): List[String] = (
-    for result: TestClassResult <- results yield
-      val classSummary: String = s"${result.getId}: ${result.getClassName} failed=${result.getFailuresCount} skipped=${result.getSkippedCount}"
-      val methodResults: List[String] = for result: TestMethodResult <- result.getResults.asScala.toList yield
-        s"  ${result.getId}: ${result.getName} resultType=${result.getResultType}"
-      List(classSummary) ++ methodResults
-    ).flatten
-
   private def root: File = Files.url2file(getClass.getResource("/org/podval/tools/test/testproject/anchor.txt"))
     .getParentFile // testproject
     .getParentFile // test
@@ -64,173 +64,67 @@ object TestProject:
     .getParentFile // resources
     .getParentFile // build
     .getParentFile
-
-  private def scalaFile(projectDir: File, isTest: Boolean, name: String): File = Files.file(
-    projectDir,
-    "src",
-    if isTest then "test" else "main",
-    "scala",
-    "org",
-    "podval",
-    "tools",
-    "test",
-    s"$name.scala"
-  )
-
+  
   final def writeProject(
     projectName: Seq[String],
-    platform: ScalaPlatform,
-    mainSources: Seq[SourceFile],
-    testSources: Seq[SourceFile],
-    frameworks: Seq[FrameworkDescriptor],
-    includeTestNames: Seq[String],
-    excludeTestNames: Seq[String],
-    includeTags: Seq[String],
-    excludeTags: Seq[String],
-    maxParallelForks: Int,
-    mainClassName: Option[String]
+    properties: Seq[(String, String)],
+    dependencies: Map[String, Seq[Dependency.WithVersion]],
+    buildGradleFragments: Seq[String],
   ): TestProject =
     val projectNameString: String = projectName.mkString("-")
     val projectDir: File = Files.file(
       root,
       Seq("build", "test-projects") ++ projectName ++ Seq(projectNameString)*
     )
-    
-    Files.write(Files.file(projectDir, "gradle.properties"),
-      gradleProperties(platform.backendKind))
+    val pluginProjectDir: File = root
+
+    if properties.nonEmpty then
+      Files.write(Files.file(projectDir, "gradle.properties"),
+        properties.map { case (name, value) => s"$name=$value" }.mkString("\n"))
 
     Files.write(Files.file(projectDir, "settings.gradle"),
-      settingsGradle(projectNameString, pluginProjectDir = root))
-
-    writeSources(projectDir, mainSources, isTest = false)
-    writeSources(projectDir, testSources, isTest = true)
+      s"""pluginManagement {
+         |  repositories {
+         |    mavenLocal()
+         |    mavenCentral()
+         |    gradlePluginPortal()
+         |  }
+         |}
+         |
+         |dependencyResolutionManagement {
+         |  repositories {
+         |    mavenLocal()
+         |    mavenCentral()
+         |  }
+         |}
+         |
+         |rootProject.name = '$projectNameString'
+         |
+         |includeBuild '${pluginProjectDir.getAbsolutePath}'
+         |""".stripMargin
+    )
+    
+    val dependenciesString: String = dependencies
+      .map { case (key: String, dependencies: Seq[Dependency.WithVersion]) => dependencies
+        .map((dependency: Dependency.WithVersion) => s"  $key '${dependency.dependencyNotation}'")
+        .mkString("\n")
+      }
+      .mkString("\n")
     
     Files.write(Files.file(projectDir, "build.gradle"),
-      buildGradle(
-        scalaLibraryDependency = platform.version.scalaLibraryDependency.withVersion(platform.scalaVersion),
-        frameworks = frameworks.map((framework: FrameworkDescriptor) =>
-          require(framework.forBackend(platform.backendKind).isSupported)
-          framework.dependency(platform).withVersion(
-            if platform.version.isScala3
-            then framework.versionDefault
-            else framework.versionDefaultScala2.getOrElse(framework.versionDefault)
-          )
-        ),
-        includeTestNames = includeTestNames,
-        excludeTestNames = excludeTestNames,
-        includeTags = includeTags,
-        excludeTags = excludeTags,
-        maxParallelForks = maxParallelForks,
-        link = platform.backendKind match
-          case ScalaBackendKind.JS => link(mainClassName)
-          case _ => ""
-      )
+      s"""plugins {
+         |  id 'org.podval.tools.scalajs' version '0.0.0'
+         |}
+         |
+         |// There is no Java in the project :)
+         |project.gradle.startParameter.excludedTaskNames.add('compileJava')
+         |
+         |dependencies {
+         |$dependenciesString
+         |}
+         |
+         |${buildGradleFragments.filter(_.nonEmpty).mkString("\n\n")}
+         |""".stripMargin
     )
 
     TestProject(projectDir)
-  
-  private def writeSources(projectDir: File, sources: Seq[SourceFile], isTest: Boolean): Unit =
-    for sourceFile: SourceFile <- sources do
-      val content: String = sourceFile.content
-      val contentEffective: String =
-        if content.contains("package ")
-        then content
-        else s"package ${ForClass.testPackage}\n\n" + content
-
-      Files.write(scalaFile(projectDir, isTest, sourceFile.name), contentEffective)
-
-  private def gradleProperties(backendKind: ScalaBackendKind): String =
-    s"""${ScalaJSPlugin.backendProperty}=$backendKind
-       |""".stripMargin
-
-  private def settingsGradle(projectName: String, pluginProjectDir: File): String =
-    s"""pluginManagement {
-       |  repositories {
-       |    mavenLocal()
-       |    mavenCentral()
-       |    gradlePluginPortal()
-       |  }
-       |}
-       |
-       |dependencyResolutionManagement {
-       |  repositories {
-       |    mavenLocal()
-       |    mavenCentral()
-       |  }
-       |}
-       |
-       |rootProject.name = '$projectName'
-       |
-       |includeBuild '${pluginProjectDir.getAbsolutePath}'
-       |""".stripMargin
-
-  private def buildGradle(
-    scalaLibraryDependency: Dependency.WithVersion,
-    frameworks: Seq[Dependency.WithVersion],
-    includeTestNames: Seq[String],
-    excludeTestNames: Seq[String],
-    includeTags: Seq[String],
-    excludeTags: Seq[String],
-    maxParallelForks: Int,
-    link: String
-  ): String =
-    val includeTestNamesString: String = includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")
-    val excludeTestNamesString: String = excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")
-    val includeTagsString: String = includeTags.map(string => s"'$string'").mkString("[", ", ", "]")
-    val excludeTagsString: String = excludeTags.map(string => s"'$string'").mkString("[", ", ", "]")
-
-    val frameworksString: String = (
-      for framework: Dependency.WithVersion <- frameworks yield
-        s"  testImplementation '${framework.dependencyNotation}'"
-      ).mkString("\n")
-
-    s"""plugins {
-       |  id 'org.podval.tools.scalajs' version '0.0.0'
-       |}
-       |
-       |// There is no Java in the project :)
-       |project.gradle.startParameter.excludedTaskNames.add('compileJava')
-       |
-       |dependencies {
-       |  implementation '${scalaLibraryDependency.dependencyNotation}'
-       |$frameworksString
-       |}
-       |
-       |$link
-       |
-       |test {
-       |  filter {
-       |$includeTestNamesString
-       |$excludeTestNamesString
-       |  }
-       |  testLogging.lifecycle {
-       |    events("STARTED", "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR")
-       |  }
-       |  useSbt {
-       |    includeCategories = $includeTagsString
-       |    excludeCategories = $excludeTagsString
-       |  }
-       |  maxParallelForks = $maxParallelForks
-       |}
-       |""".stripMargin
-    
-  private def link(mainClassName: Option[String]): String =
-    val moduleInitializerString: String = mainClassName.fold("")(moduleInitializer)
-    s"""link {
-       |  optimization     = 'Full'          // one of: 'Fast', 'Full'
-       |  moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
-       |  moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
-       |  prettyPrint      = false
-       |$moduleInitializerString
-       |}
-       |""".stripMargin
-
-  private def moduleInitializer(mainClassName: String): String =
-    s"""moduleInitializers {
-       |    main {
-       |      className = '${ForClass.testPackage}.$mainClassName'
-       |      mainMethodName = 'main'
-       |      mainMethodHasArgs = true
-       |    }
-       |  }
-       |""".stripMargin

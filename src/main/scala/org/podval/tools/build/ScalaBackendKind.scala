@@ -5,6 +5,7 @@ import org.podval.tools.node.NodeDependency
 sealed trait ScalaBackendKind derives CanEqual:
   def name: String
   def displayName: String
+  def sourceRoot: String
   def suffix: Option[String]
   def testsCanNotBeForked: Boolean
 
@@ -18,6 +19,7 @@ object ScalaBackendKind:
   case object JVM extends ScalaBackendKind:
     override val name: String = "JVM"
     override val displayName: String = "JVM"
+    override val sourceRoot: String = "jvm"
     override val suffix: Option[String] = None
     override val testsCanNotBeForked: Boolean = false
 
@@ -27,6 +29,7 @@ object ScalaBackendKind:
   case object JS extends NonJvm:
     override val name: String = "JS"
     override val displayName: String = "Scala.js"
+    override val sourceRoot: String = "js"
     override val suffix: Option[String] = Some("sjs1")
     override val testsCanNotBeForked: Boolean = true
     override val versionDefault: Version = Version("1.19.0")
@@ -34,6 +37,7 @@ object ScalaBackendKind:
   case object Native extends NonJvm:
     override val name: String = "Native"
     override val displayName: String = "Scala Native"
+    override val sourceRoot: String = "native"
     override val suffix: Option[String] = Some("native0.5")
     override val testsCanNotBeForked: Boolean = true
     override val versionDefault: Version = Version("0.5.7")

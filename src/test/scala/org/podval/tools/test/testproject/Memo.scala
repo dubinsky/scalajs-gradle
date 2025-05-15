@@ -7,3 +7,4 @@ final class Memo[A](getter: => A):
   def get: A = value
 
   def map[B](f: A => B): Memo[B] = Memo(f(get))
+  

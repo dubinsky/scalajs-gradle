@@ -13,7 +13,6 @@ object ScalaNative extends NonJvm[ScalaNativeTask]:
   override def testTaskClass    : Class[ScalaNativeTestTask    ] = classOf[ScalaNativeTestTask    ]
 
   override def backendKind: ScalaBackendKind.NonJvm = ScalaBackendKind.Native
-  override def sourceRoot: String = "native"
   override def pluginDependenciesConfigurationName: String = "scalanative"
   override def createExtension: Option[CreateExtension[?]] = None
   override def areCompilerPluginsBuiltIntoScala3: Boolean = false
