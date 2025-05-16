@@ -44,7 +44,7 @@ final class ScalaDependency private(
     val (artifactAndBackend: String, scalaVersionOpt: Option[String]) = Strings.split(artifactName, '_')
     val (artifact: String, backendSuffixOpt: Option[String]) = Strings.split(artifactAndBackend, '_')
     val matches: Boolean =
-      (scalaPlatform.backendKind.suffix == backendSuffixOpt) &&
+      (scalaPlatform.backendKind.suffixOpt == backendSuffixOpt) &&
       scalaVersionOpt.isDefined
     if !matches then None else Some((artifact, Version(scalaVersionOpt.get)))
 

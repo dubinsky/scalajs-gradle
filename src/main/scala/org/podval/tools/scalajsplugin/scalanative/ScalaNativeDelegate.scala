@@ -2,10 +2,11 @@ package org.podval.tools.scalajsplugin.scalanative
 
 import org.podval.tools.build.{CreateExtension, DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform,
   Version}
-import org.podval.tools.scalajsplugin.nonjvm.NonJvm
+import org.podval.tools.scalajsplugin.nonjvm.NonJvmDelegate
 import org.podval.tools.test.framework.JUnit4ScalaNative
 
-object ScalaNative extends NonJvm[ScalaNativeTask]:
+// TODO merge into ScalaNativeBuild?
+object ScalaNativeDelegate extends NonJvmDelegate[ScalaNativeTask]:
   override def taskClass        : Class[ScalaNativeTask        ] = classOf[ScalaNativeTask        ]
   override def linkTaskClass    : Class[ScalaNativeLinkMainTask] = classOf[ScalaNativeLinkMainTask]
   override def testLinkTaskClass: Class[ScalaNativeLinkTestTask] = classOf[ScalaNativeLinkTestTask]
@@ -30,8 +31,8 @@ object ScalaNative extends NonJvm[ScalaNativeTask]:
     final override val isScalaVersionFull: Boolean = false
   ) extends ScalaDependency.Maker:
     final override def description: String = describe(what)
-    final override def versionDefault: Version = ScalaNative.backendKind.versionDefault
-    final override def group: String = ScalaNative.group
+    final override def versionDefault: Version = ScalaNativeDelegate.backendKind.versionDefault
+    final override def group: String = ScalaNativeDelegate.group
 
   override def implementation: Seq[ScalaDependency.Maker] = Seq(
     Maker("nativelib" , "Native Library" ),

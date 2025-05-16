@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: `BackendDelegate`;
 - cleanup: `GardleNames` and `BackendDelegateBinding`;
 - cleanup: `GroupingFunSpec` and `TestProject`;
+- cleanup: `scalajs` and `scalanative`;
 - feat (WIP): multiple backends in the same project;
 
 ## [0.7.0] - 2025-05-05

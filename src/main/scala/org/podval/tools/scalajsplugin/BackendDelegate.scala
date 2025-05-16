@@ -5,8 +5,11 @@ import org.gradle.api.artifacts.{Configuration, ConfigurationContainer}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{SourceSet, TaskContainer, TaskProvider}
-import org.podval.tools.build.{CreateExtension, DependencyRequirement, Gradle, ScalaBackendKind, ScalaLibrary,
+import org.podval.tools.build.{CreateExtension, DependencyRequirement, Gradle, ScalaBackendKind, ScalaLibrary, 
   ScalaPlatform}
+import org.podval.tools.scalajsplugin.jvm.{JvmDelegate, JvmTask}
+import org.podval.tools.scalajsplugin.scalajs.{ScalaJSDelegate, ScalaJSTask}
+import org.podval.tools.scalajsplugin.scalanative.{ScalaNativeDelegate, ScalaNativeTask}
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava}
@@ -49,7 +52,7 @@ trait BackendDelegate[T <: BackendTask]:
           task.setGroup("build")
         )
         tasks.register(
-          GradleNames.linkTaskName(mainSourceSet),
+          GradleFeatures.linkTaskName(mainSourceSet),
           linkTaskClass
         )
       )
@@ -60,7 +63,7 @@ trait BackendDelegate[T <: BackendTask]:
       task.setGroup("other")
     )
     tasks.register(
-      GradleNames.runTaskName(mainSourceSet),
+      GradleFeatures.runTaskName(mainSourceSet),
       runTaskClass,
       new Action[BackendTask.Main]:
         override def execute(runTask: BackendTask.Main): Unit = runTaskDependency.foreach(runTask.dependsOn(_))
@@ -74,7 +77,7 @@ trait BackendDelegate[T <: BackendTask]:
           task.setGroup("build")
         )
         tasks.register(
-          GradleNames.linkTaskName(testSourceSet),
+          GradleFeatures.linkTaskName(testSourceSet),
           testLinkTaskClass
         )
       )
@@ -115,7 +118,7 @@ trait BackendDelegate[T <: BackendTask]:
     )
 
     val scalaCompilerPluginsConfiguration: Configuration = getConfiguration(
-      GradleNames.scalaCompilerPluginsConfigurationName(mainSourceSet)
+      GradleFeatures.scalaCompilerPluginsConfigurationName(mainSourceSet)
     )
 
     val requirements: BackendDependencyRequirements = dependencyRequirements(
@@ -188,6 +191,12 @@ trait BackendDelegate[T <: BackendTask]:
 object BackendDelegate:
   private val logger: Logger = LoggerFactory.getLogger(classOf[BackendDelegate[?]])
 
+  val all: Set[BackendDelegate[?]] = Set(
+    JvmDelegate,
+    ScalaJSDelegate,
+    ScalaNativeDelegate
+  )
+  
   private def ensureParameters(
     scalaCompile: ScalaCompile,
     toAdd: Seq[String]

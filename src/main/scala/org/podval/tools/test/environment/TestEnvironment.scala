@@ -1,12 +1,15 @@
 package org.podval.tools.test.environment
 
-import org.podval.tools.build.GradleClassPath
+import org.podval.tools.build.{GradleClassPath, ScalaBackendKind}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework
 import java.io.File
 
 // Based on org.scalajs.testing.adapter.TestAdapter.
+object TestEnvironment:
+  private val logger: Logger = LoggerFactory.getLogger(TestEnvironment.getClass)
+
 abstract class TestEnvironment:
   final def loadedFrameworks(testClassPath: Iterable[File]): List[Framework] =
     // This is the only way I know to:
@@ -32,11 +35,9 @@ abstract class TestEnvironment:
   protected def expandClassPath: Boolean
   
   protected def loadFrameworks: List[Framework]
+
+  def backend: ScalaBackendKind
   
   def sourceMapper: Option[SourceMapper]
   
   def close(): Unit
-
-object TestEnvironment:
-  private val logger: Logger = LoggerFactory.getLogger(TestEnvironment.getClass)
-  

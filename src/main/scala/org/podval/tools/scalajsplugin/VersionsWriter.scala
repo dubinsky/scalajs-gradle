@@ -2,8 +2,8 @@ package org.podval.tools.scalajsplugin
 
 import org.podval.tools.build.{ScalaBackendKind, ScalaModules, ScalaVersion, Version}
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.scalajsplugin.jvm.Jvm
-import org.podval.tools.scalajsplugin.scalajs.ScalaJS
+import org.podval.tools.scalajsplugin.jvm.JvmDelegate
+import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
 import org.podval.tools.test.framework
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
@@ -20,11 +20,11 @@ object VersionsWriter:
     "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
     "scala2" -> ScalaVersion.Scala2.Scala213.versionDefault,
     
-    "sbt-test-interface" -> Jvm.SbtTestInterface.versionDefault,
+    "sbt-test-interface" -> JvmDelegate.SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaBackendKind.JS.versionDefault,
-    "scalajs-dom" -> ScalaJS.DomSJS.versionDefault,
-    "scalajs-env-jsdom-nodejs" -> ScalaJS.JSDomNodeJS.versionDefault,
+    "scalajs-dom" -> ScalaJSDelegate.DomSJS.versionDefault,
+    "scalajs-env-jsdom-nodejs" -> ScalaJSDelegate.JSDomNodeJS.versionDefault,
     
     "node" -> NodeDependency.versionDefault,
 

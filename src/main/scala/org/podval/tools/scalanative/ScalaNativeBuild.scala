@@ -1,6 +1,8 @@
 package org.podval.tools.scalanative
 
+import org.podval.tools.nonjvm.NonJvmTestAdapter
 import org.slf4j.{Logger, LoggerFactory}
+import sbt.testing.Framework
 import scala.concurrent.ExecutionContext
 import scala.scalanative.build.{Build, Config, Logger as LoggerN}
 import scala.scalanative.testinterface.adapter.TestAdapter
@@ -33,12 +35,19 @@ object ScalaNativeBuild:
       )
     }
 
-  def createTestAdapter(
+  def createTestEnvironment(
     binaryTestFile: File
-  ): TestAdapter = TestAdapter(TestAdapter
-    .Config()
-    .withLogger(nativeLogger)
-    .withBinaryFile(binaryTestFile)
+  ): ScalaNativeTestEnvironment = ScalaNativeTestEnvironment(
+    sourceMapper = None, // TODO
+    testAdapter = new NonJvmTestAdapter:
+      override def loadFrameworks(frameworkNames: List[List[String]]): List[Option[Framework]] =
+        testAdapter.loadFrameworks(frameworkNames)
+      override def close(): Unit = testAdapter.close()
+      private lazy val testAdapter: TestAdapter = TestAdapter(TestAdapter
+        .Config()
+        .withLogger(nativeLogger)
+        .withBinaryFile(binaryTestFile)
+      )
   )
 
   private def nativeLogger: LoggerN = new LoggerN:

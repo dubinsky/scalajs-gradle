@@ -1,4 +1,4 @@
-package org.podval.tools.files
+package org.podval.tools.platform
 
 import java.io.{BufferedReader, InputStream, InputStreamReader}
 import scala.annotation.tailrec

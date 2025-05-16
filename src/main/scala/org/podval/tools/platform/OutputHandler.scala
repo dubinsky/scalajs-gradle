@@ -1,4 +1,4 @@
-package org.podval.tools.files
+package org.podval.tools.platform
 
 import org.gradle.api.logging.Logger
 

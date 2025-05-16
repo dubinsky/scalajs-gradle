@@ -1810,6 +1810,8 @@ https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
 - https://github.com/kyri-petrou[kyri-petrou] for helping me fix
 ZIO Test's treatment of https://github.com/zio/zio/pull/9680[test wildcards]
 and https://github.com/zio/zio/pull/9756[test name matching];
+- https://github.com/hearnadam[hearnadam] for approving my fix to ZIO Test's
+https://github.com/zio/zio/pull/9756[test name matching];
 - https://github.com/sjrd[sjrd] for the helpful text
 https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
 and for working with me on fixing issues with JUnit4 for Scala.js reporting of

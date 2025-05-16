@@ -4,9 +4,8 @@ import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, Test
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.podval.tools.build.{Dependency, ScalaBackendKind, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.test.framework.FrameworkDescriptor
-import org.podval.tools.scalajsplugin.{GradleNames, ScalaJSPlugin}
+import org.podval.tools.scalajsplugin.ScalaJSPlugin
 import org.scalatest.funspec.AnyFunSpec
-
 import scala.jdk.CollectionConverters.*
 import ForClass.{ClassExpectation, MethodExpectation}
 import ClassExpectation.*
@@ -19,7 +18,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
 
   // Running tests per-backend in addition to mixed exercises mode-setting functionality,
   // but currently the focus is on the mixed projects, so no.
-  protected def testByBackend: Boolean = true // TODO set to false once mixed projects work
+  protected def testByBackend: Boolean = false
   
   protected def groupByFeature: Boolean = true
   protected def buildGradleFragments: Seq[String] = Seq.empty
@@ -139,17 +138,16 @@ abstract class GroupingFunSpec extends AnyFunSpec:
                 backend
               )
 
-      // TODO enable once I figure out the absent/number of tests/number of failed tests
       if backendsSupported.size > 1 then
         val backendString: String = "mixed"
-//        describe(backendString):
-//          forProject(
-//            projectName :+ backendString,
-//            feature,
-//            fixtures,
-//            scalaVersion,
-//            backendsSupported
-//          )
+        describe(backendString):
+          forProject(
+            projectName :+ backendString,
+            feature,
+            fixtures,
+            scalaVersion,
+            backendsSupported
+          )
 
   private def forProject(
     projectName: Seq[String],
@@ -166,7 +164,9 @@ abstract class GroupingFunSpec extends AnyFunSpec:
           "implementation" -> Seq(scalaDependency(scalaVersion)),
           "testImplementation" -> frameworkDependencies(fixtures, scalaVersion, backend)
         ),
-        buildGradleFragments = this.buildGradleFragments ++ Seq(testTask(feature, fixtures))
+        buildGradleFragments =
+          buildGradleFragments ++
+          Seq(testTask(backend = None, feature, fixtures))
       )
 
       project.writeSources(backend = None, isTest = false, fixtures.flatMap(_.mainSources))
@@ -198,7 +198,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     def createProject: TestProject =
       val testImplementationDependencies: Map[String, Seq[Dependency.WithVersion]] = backends
         .map((backend: ScalaBackendKind) =>
-          GradleNames.testImplementationConfigurationName(backend) ->
+          backend.testImplementationConfigurationName ->
             frameworkDependencies(fixturesSupported(fixtures, backend), scalaVersion, backend)
         )
         .toMap
@@ -206,8 +206,12 @@ abstract class GroupingFunSpec extends AnyFunSpec:
       val project: TestProject = TestProject.writeProject(
         projectName,
         properties = Seq.empty,
-        dependencies = Map("implementation" -> Seq(scalaDependency(scalaVersion))) ++ testImplementationDependencies,
-        buildGradleFragments = this.buildGradleFragments // TODO name of the test task is backend-specific ++ Seq(testTask(feature, fixtures))
+        dependencies =
+          Map("implementation" -> Seq(scalaDependency(scalaVersion))) ++
+          testImplementationDependencies,
+        buildGradleFragments =
+          buildGradleFragments ++
+          backends.toSeq.map((backend: ScalaBackendKind) => testTask(backend = Some(backend), feature, fixtures))
       )
 
       for backend: ScalaBackendKind <- backends do
@@ -254,9 +258,11 @@ abstract class GroupingFunSpec extends AnyFunSpec:
       )
     
   private def testTask(
+    backend: Option[ScalaBackendKind],
     feature: Feature,
     fixtures: Seq[Fixture]
   ): String = TestTask.testTask(
+    backend = backend,
     includeTestNames = fixtures.flatMap(_.includeTestNames),
     excludeTestNames = fixtures.flatMap(_.excludeTestNames),
     includeTags = feature.includeTags,

@@ -5,6 +5,7 @@ import org.gradle.api.internal.artifacts.configurations.RoleBasedConfigurationCo
 import org.gradle.api.{NamedDomainObjectProvider, Project, Task}
 import org.gradle.api.plugins.jvm.JvmTestSuite
 import org.gradle.api.plugins.jvm.internal.{JvmFeatureInternal, JvmPluginServices}
+import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.SourceSet
 import org.gradle.jvm.component.internal.DefaultJvmSoftwareComponent
 import org.gradle.jvm.tasks.Jar
@@ -39,8 +40,13 @@ import org.podval.tools.scalajsplugin.gradle.{JavaPluginAsLibrary, ScalaBasePlug
 // It would be even better if there was a way to affect the class of the test task created.
 // Since the chances of this ever happening are zero, I modified the code ;)
 object GradleFeatures:
+  def linkTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName("link", "")
+  def runTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName("run", "")
   private def scalaCompileTaskName(sourceSet: SourceSet): String = sourceSet.getCompileTaskName("scala")
   private def scaladocTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName(null, "scaladoc")
+
+  def scalaCompilerPluginsConfigurationName(sourceSet: SourceSet): String =
+    sourceSet.getTaskName(ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME, "")
 
   def configureShared(
     project: Project,
@@ -52,7 +58,7 @@ object GradleFeatures:
     disableTask(project, sharedTestSuiteSourceSet.getName)
 
 //    project.getTasks.register(linkTaskName(sharedFeature.getSourceSet))
-    project.getTasks.register(GradleNames.runTaskName(sharedFeature.getSourceSet))
+    project.getTasks.register(runTaskName(sharedFeature.getSourceSet))
 
   private def disableTask(project: Project, sharedTaskName: String): Unit =
     // TODO use named()?
@@ -91,7 +97,7 @@ object GradleFeatures:
     dependsOn(scalaCompileTaskName)
     dependsOn(scaladocTaskName)
 //    dependsOn(linkTaskName)
-    dependsOn(GradleNames.runTaskName)
+    dependsOn(runTaskName)
   
   // TODO figure out which parts need to happen when pre-existing main feature needs to be turned into a JVM one...
   def createFeature(
@@ -116,7 +122,7 @@ object GradleFeatures:
       mainSourceSetName = mainSourceSetName
     )
     val mainSourceSet: SourceSet = feature.getSourceSet
-    val scalaCompilerPluginsConfigurationName: String = GradleNames.scalaCompilerPluginsConfigurationName(mainSourceSet)
+    val scalaCompilerPluginsConfigurationName: String = GradleFeatures.scalaCompilerPluginsConfigurationName(mainSourceSet)
     val incrementalAnalysisUsageName: String = mainSourceSet.getTaskName("incremental-analysis", "")
     val incrementalAnalysisCategoryName: String = mainSourceSet.getTaskName("scala-analysis", "")
     val incrementalScalaAnalysisElementsConfigurationName: String = mainSourceSet.getTaskName("incrementalScalaAnalysisElements", "")
