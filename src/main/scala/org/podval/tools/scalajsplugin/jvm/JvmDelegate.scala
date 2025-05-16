@@ -4,7 +4,7 @@ import org.gradle.api.artifacts.Configuration
 import org.podval.tools.build.{CreateExtension, JavaDependency, ScalaBackendKind, ScalaPlatform, Version}
 import org.podval.tools.scalajsplugin.{BackendDelegate, BackendDependencyRequirements, BackendTask}
 
-object Jvm extends BackendDelegate[JvmTask]:
+object JvmDelegate extends BackendDelegate[JvmTask]:
   override def taskClass: Class[JvmTask] = classOf[JvmTask]
 
   override def linkTaskClassOpt    : Option[Class[? <: JvmTask & BackendTask.Link.Main]] = None
@@ -24,7 +24,7 @@ object Jvm extends BackendDelegate[JvmTask]:
     projectScalaPlatform: ScalaPlatform
   ): BackendDependencyRequirements = BackendDependencyRequirements(
     implementation = Seq.empty,
-    testImplementation = Seq(Jvm.SbtTestInterface.required()),
+    testImplementation = Seq(SbtTestInterface.required()),
     scalaCompilerPlugins = Seq.empty,
     pluginDependencies = Seq.empty
   )

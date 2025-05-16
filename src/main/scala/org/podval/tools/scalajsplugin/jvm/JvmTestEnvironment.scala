@@ -6,6 +6,8 @@ import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider}
 import sbt.testing.Framework
 
 final class JvmTestEnvironment extends TestEnvironment:
+  override def backend: ScalaBackendKind = ScalaBackendKind.JVM
+
   override def close(): Unit = ()
 
   override def sourceMapper: Option[SourceMapper] = None
@@ -13,5 +15,5 @@ final class JvmTestEnvironment extends TestEnvironment:
   protected def expandClassPath: Boolean = true
   
   override protected def loadFrameworks: List[Framework] = FrameworkDescriptor
-    .forBackend(ScalaBackendKind.JVM)
+    .forBackend(backend)
     .flatMap(FrameworkProvider(_).frameworkOpt)

@@ -6,7 +6,7 @@ import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 
-// TODO move up to `org.podval.tools.testproject`
+// TODO abstract, calculate overall test failure, and move up to `org.podval.tools.testproject`.
 final class TestProject(projectDir: File):
   def writeSources(backend: Option[ScalaBackendKind], isTest: Boolean, sources: Seq[SourceFile]): Unit =
     val directory: File = Files.fileSeq(projectDir,
@@ -41,7 +41,7 @@ final class TestProject(projectDir: File):
     // To get test results for all backends, I tell Gradle to `--continue` running the build even when a task fails.
     // TODO do it using a setting on the test task, so that the project is runnable stand-alone.
     val testOutput: String = gradleRunner
-      .withArguments((List("clean", "test", "-i", "--continue") ++ testsArgument).asJava)
+      .withArguments((List("clean", "test", "-i") ++ testsArgument).asJava)
       .forwardOutput
       .buildAndFail
       .getOutput
@@ -115,6 +115,9 @@ object TestProject:
       s"""plugins {
          |  id 'org.podval.tools.scalajs' version '0.0.0'
          |}
+         |
+         |// Do not stop on test failures (needed when test tasks for multiple backends need to run):
+         |gradle.startParameter.continueOnFailure = true
          |
          |// There is no Java in the project :)
          |project.gradle.startParameter.excludedTaskNames.add('compileJava')

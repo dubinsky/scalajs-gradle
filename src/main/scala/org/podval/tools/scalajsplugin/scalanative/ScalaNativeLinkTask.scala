@@ -34,12 +34,12 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
 
   private def moduleName: String = s"$projectName-${mode.name}"
 
-  @TaskAction final def execute(): Unit = scalaNativeLink.link
+  @TaskAction final def execute(): Unit = linkData.link
 
-  @OutputFile final def getOutputFile: File = scalaNativeLink.artifactPath.toFile
+  @OutputFile final def getOutputFile: File = linkData.artifactPath.toFile
 
   // TODO if the main class is not set, link with a different build type to avoid errors!!!
-  private lazy val scalaNativeLink: ScalaNativeLink =
+  private lazy val linkData: ScalaNativeLink =
     val sourcesClassPath: Seq[Path] = Seq.empty // TODO
     ScalaNativeLink(
       lto = LTO(getLto),

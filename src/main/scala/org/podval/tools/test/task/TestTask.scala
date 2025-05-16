@@ -6,7 +6,6 @@ import org.gradle.api.Action
 import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.time.Clock
@@ -20,11 +19,22 @@ import java.lang.reflect.Method
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
+object TestTask:
+  private def useTestFramework(task: Test, value: TestFramework): Unit =
+    val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[TestFramework])
+    useTestFramework.setAccessible(true)
+    useTestFramework.invoke(task, value)
+
 abstract class TestTask extends Test:
-  setGroup(JavaBasePlugin.VERIFICATION_GROUP)
+  // TODO I'd love to remove this and use getTestEnvironment.backendKind instead,
+  // but since the test task is materialized when replacing the pre-existing one,
+  // `useSbt` is called on it, which calls `createTestEnvironment` before the classpath is
+  // extended with the backend-specific stuff...
+  // Look into calling `useSbt` via a convention - if Gradle does this when creating its own test task!
+  protected def backendKind: ScalaBackendKind
 
-  useSbt()
-
+  protected def createTestEnvironment: TestEnvironment
+  
   final def useSbt(@DelegatesTo(classOf[SbtTestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
     useSbt(ConfigureUtil.configureUsing(testFrameworkConfigure))
 
@@ -33,6 +43,17 @@ abstract class TestTask extends Test:
     Actions.`with`(Cast.cast(classOf[SbtTestFrameworkOptions], getOptions), testFrameworkConfigure)
 
   final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
+  
+  private var testEnvironment: Option[TestEnvironment] = None
+
+  private def getTestEnvironment: TestEnvironment =
+    if testEnvironment.isEmpty then testEnvironment = Some(createTestEnvironment)
+    testEnvironment.get
+
+  private def closeTestEnvironment(): Unit =
+    if testEnvironment.isDefined then
+      testEnvironment.get.close()
+      testEnvironment = None
 
   private lazy val sbtTestFramework: SbtTestFramework = SbtTestFramework(
     backendKind = backendKind,
@@ -45,20 +66,7 @@ abstract class TestTask extends Test:
     // delayed: not available at the time of the TestFramework construction (task creation)
     loadedFrameworks = (testClassPath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClassPath)
   )
-
-  private var testEnvironment: Option[TestEnvironment] = None
-
-  private def getTestEnvironment: TestEnvironment =
-    if testEnvironment.isEmpty then testEnvironment = Some(createTestEnvironment)
-    testEnvironment.get
-
-  private def closeTestEnvironment(): Unit =
-    if testEnvironment.isDefined then
-      testEnvironment.get.close()
-      testEnvironment = None
-      
-  protected def createTestEnvironment: TestEnvironment
-
+  
   // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
   // best be done with this here, before `super.createTestExecuter()` is called.
   @TaskAction override def executeTests(): Unit =
@@ -86,15 +94,7 @@ abstract class TestTask extends Test:
     documentationRegistry = getServices.get(classOf[DocumentationRegistry])
   )
 
-  protected def backendKind: ScalaBackendKind
-
   final override def getMaxParallelForks: Int = 
     if backendKind.testsCanNotBeForked
     then 1
     else super.getMaxParallelForks
-
-object TestTask:
-  private def useTestFramework(task: Test, value: TestFramework): Unit =
-    val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[TestFramework])
-    useTestFramework.setAccessible(true)
-    useTestFramework.invoke(task, value)

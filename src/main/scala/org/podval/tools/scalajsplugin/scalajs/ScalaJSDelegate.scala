@@ -3,11 +3,12 @@ package org.podval.tools.scalajsplugin.scalajs
 import org.podval.tools.build.{CreateExtension, DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform,
   ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
-import org.podval.tools.scalajsplugin.nonjvm.NonJvm
+import org.podval.tools.scalajsplugin.nonjvm.NonJvmDelegate
 import org.podval.tools.test.framework.JUnit4ScalaJS
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-object ScalaJS extends NonJvm[ScalaJSTask]:
+// TODO merge into ScalaJSBuild?
+object ScalaJSDelegate extends NonJvmDelegate[ScalaJSTask]:
   override def taskClass        : Class[ScalaJSTask        ] = classOf[ScalaJSTask        ]
   override def linkTaskClass    : Class[ScalaJSLinkMainTask] = classOf[ScalaJSLinkMainTask]
   override def testLinkTaskClass: Class[ScalaJSLinkTestTask] = classOf[ScalaJSLinkTestTask]
@@ -36,8 +37,8 @@ object ScalaJS extends NonJvm[ScalaJSTask]:
     final override val isScalaVersionFull: Boolean = false
   ) extends ScalaDependency.MakerScala2Jvm:
     final override def description: String = describe(what)
-    final override def versionDefault: Version = ScalaJS.backendKind.versionDefault
-    final override def group: String = ScalaJS.group
+    final override def versionDefault: Version = ScalaJSDelegate.backendKind.versionDefault
+    final override def group: String = ScalaJSDelegate.group
 
   override def implementation: Seq[ScalaDependency.Maker] = Seq.empty
   override def library(isScala3: Boolean): ScalaDependency.Maker = Maker("scalajs-library", "Library")
@@ -62,13 +63,13 @@ object ScalaJS extends NonJvm[ScalaJSTask]:
   
   object JSDomNodeJS extends ScalaDependency.MakerScala2Jvm:
     override val versionDefault: Version = Version("1.1.0")
-    override def group: String = ScalaJS.group
+    override def group: String = ScalaJSDelegate.group
     override val artifact: String = "scalajs-env-jsdom-nodejs"
     override val description: String = describe("Library for DOM manipulations on Node.js")
 
   object DomSJS extends ScalaDependency.Maker:
     override val versionDefault: Version = Version("2.8.0")
-    override def group: String = ScalaJS.group
+    override def group: String = ScalaJSDelegate.group
     override val artifact: String = "scalajs-dom"
     override val description: String = describe("Library for DOM manipulations")
 

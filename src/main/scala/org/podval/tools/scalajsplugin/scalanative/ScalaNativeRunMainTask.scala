@@ -1,12 +1,20 @@
 package org.podval.tools.scalajsplugin.scalanative
 
 import org.gradle.api.tasks.TaskAction
-import org.podval.tools.platform.Exec
+import org.gradle.process.{ExecOperations, ExecSpec}
+import org.podval.tools.platform.OutputPiper
 import org.podval.tools.scalajsplugin.nonjvm.NonJvmRunTask
+import javax.inject.Inject
   
 // TODO add properties to set arguments?
-abstract class ScalaNativeRunMainTask extends NonJvmRunTask.Main[ScalaNativeLinkTask] with ScalaNativeRunTask:
+abstract class ScalaNativeRunMainTask  @Inject(execOperations: ExecOperations)
+  extends NonJvmRunTask.Main[ScalaNativeLinkTask]
+  with ScalaNativeRunTask:
   final override protected def linkTaskClass: Class[ScalaNativeLinkMainTask] = classOf[ScalaNativeLinkMainTask]
   
-  // TODO use exec services
-  @TaskAction final def execute(): Unit = Exec(Seq(linkTask.getOutputFile.getAbsolutePath), outputHandler)
+  @TaskAction final def execute(): Unit =
+    val running: String = linkTask.getOutputFile.getAbsolutePath
+    execOperations.exec: (exec: ExecSpec) =>
+      OutputPiper.run(outputHandler, running): (outputPiper: OutputPiper) =>
+        exec.setCommandLine(linkTask.getOutputFile.getAbsolutePath)
+        outputPiper.start(exec)

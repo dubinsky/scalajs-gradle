@@ -17,6 +17,7 @@ final class ScalaNativeLink(
   classpath: Seq[Path],
   sourcesClassPath: Seq[Path]
 ):
+  // TODO pass individual parameters to ScalaNativeBuild and convert there
   private val nativeConfig: NativeConfig = NativeConfig.empty
     .withClang(ScalaNativeBuild.interceptBuildException(Discover.clang()))
     .withClangPP(ScalaNativeBuild.interceptBuildException(Discover.clangpp()))
@@ -49,9 +50,9 @@ object ScalaNativeLink:
     case LTO.Full => LTON.full
   
   private def toNative(gc: GC): GCN = gc match
-    case GC.None => GCN.none
-    case GC.Boehm => GCN.boehm
-    case GC.Immix => GCN.immix
+    case GC.None   => GCN.none
+    case GC.Boehm  => GCN.boehm
+    case GC.Immix  => GCN.immix
     case GC.Commix => GCN.commix
   
   private def toNative(mode: Mode): ModeN = mode match

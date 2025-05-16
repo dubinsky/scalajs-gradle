@@ -4,7 +4,7 @@ import org.gradle.api.artifacts.Configuration
 import org.podval.tools.build.{DependencyRequirement, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
 import org.podval.tools.scalajsplugin.{BackendDelegate, BackendDependencyRequirements}
 
-trait NonJvm[T <: NonJvmTask[?]] extends BackendDelegate[T]:
+trait NonJvmDelegate[T <: NonJvmTask[?]] extends BackendDelegate[T]:
   final override def linkTaskClassOpt    : Option[Class[? <: T & NonJvmLinkTask.Main[?]]] = Some(linkTaskClass    )
   final override def testLinkTaskClassOpt: Option[Class[? <: T & NonJvmLinkTask.Test[?]]] = Some(testLinkTaskClass)
 

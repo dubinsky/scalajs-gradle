@@ -3,7 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.internal.artifacts.configurations.RoleBasedConfigurationContainerInternal
 import org.gradle.api.internal.project.ProjectInternal
-import org.gradle.api.plugins.JvmTestSuitePlugin
+import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.internal.JavaPluginHelper
 import org.gradle.api.plugins.jvm.JvmTestSuite
 import org.gradle.api.plugins.jvm.internal.{JvmFeatureInternal, JvmPluginServices}
@@ -12,11 +12,10 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.{Plugin, Project}
 import org.gradle.jvm.component.internal.DefaultJvmSoftwareComponent
 import org.gradle.testing.base.TestingExtension
-import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary, 
+import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary,
   ScalaPlatform}
-import org.podval.tools.scalajsplugin.jvm.Jvm
-import org.podval.tools.scalajsplugin.scalajs.ScalaJS
-import org.podval.tools.scalajsplugin.scalanative.ScalaNative
+import org.podval.tools.scalajsplugin.jvm.JvmDelegate
+import org.podval.tools.test.task.TestTask
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import javax.inject.Inject
@@ -31,12 +30,13 @@ final class ScalaJSPlugin @Inject(
 ) extends Plugin[Project]:
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])
-    
-    val presentDelegates: Set[BackendDelegate[?]] = Set(
-      Jvm,
-      ScalaJS,
-      ScalaNative
-    ) 
+
+    project.getTasks.withType(classOf[TestTask]).configureEach((testTask: TestTask) =>
+      testTask.setGroup(JavaBasePlugin.VERIFICATION_GROUP)
+      testTask.useSbt()
+    )
+
+    val presentDelegates: Set[BackendDelegate[?]] = BackendDelegate.all
       .filter((delegate: BackendDelegate[?]) =>
         val file: File = project.file(delegate.backendKind.sourceRoot)
         file.exists && file.isDirectory
@@ -48,8 +48,9 @@ final class ScalaJSPlugin @Inject(
       if presentDelegates.nonEmpty
       then presentDelegates
       else Set(Option(project.findProperty(ScalaJSPlugin.backendProperty)).map(_.toString) match
-        case None => Jvm
-        case Some(name) => Set(Jvm, ScalaJS, ScalaNative)
+        case None => JvmDelegate
+        case Some(name) => BackendDelegate
+          .all
           .find(_.backendKind.name == name)
           .getOrElse(throw IllegalArgumentException(s"Unknown backend '$name'."))
       )
@@ -62,8 +63,8 @@ final class ScalaJSPlugin @Inject(
     def sourceSetNames(delegate: BackendDelegate[?]): (String, String) =
       if !isModeMixed
       // the only feature that exists
-      then ("main", JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME) 
-      else (delegate.backendKind.sourceRoot, GradleNames.testSuiteName(delegate.backendKind))
+      then ("main", ScalaBackendKind.defaultTestSuiteName)
+      else (delegate.backendKind.sourceRoot, delegate.backendKind.testSuiteName)
     
     def getSourceSets(delegate: BackendDelegate[?]): (SourceSet, SourceSet) =
       val (mainSourceSetName: String, testSourceSetName: String) = sourceSetNames(delegate)
@@ -92,7 +93,7 @@ final class ScalaJSPlugin @Inject(
     val sharedFeature: JvmFeatureInternal = component.getMainFeature
     val sharedTestSuiteSourceSet: SourceSet = testing
       .getSuites
-      .getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
+      .getByName(ScalaBackendKind.defaultTestSuiteName)
       .asInstanceOf[JvmTestSuite]
       .getSources
 
@@ -115,7 +116,7 @@ final class ScalaJSPlugin @Inject(
           jvmPluginServices,
           backendDisplayName = delegate.backendKind.displayName,
           sourceRoot = delegate.backendKind.sourceRoot,
-          sharedSourceRoot = GradleNames.sharedSourceRoot,
+          sharedSourceRoot = ScalaBackendKind.sharedSourceRoot,
           mainSourceSetName = mainSourceSetName,
           testSourceSetName = testSourceSetName
         )

@@ -1,14 +1,17 @@
 package org.podval.tools.test.testproject
 
+import org.podval.tools.build.ScalaBackendKind
+
 object TestTask:
   def testTask(
+    backend: Option[ScalaBackendKind],
     includeTestNames: Seq[String],
     excludeTestNames: Seq[String],
     includeTags: Seq[String],
     excludeTags: Seq[String],
     maxParallelForks: Int
   ): String =
-    s"""test {
+    s"""${ScalaBackendKind.testSuiteName(backend)} {
        |  filter {
        |${includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")}
        |${excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")}
@@ -23,4 +26,3 @@ object TestTask:
        |  maxParallelForks = $maxParallelForks
        |}
        |""".stripMargin
-
