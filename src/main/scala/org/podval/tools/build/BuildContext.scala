@@ -6,5 +6,3 @@ trait BuildContext extends BuildContextCore:
   def getArtifact(repository: Option[Repository], dependencyNotation: String): Option[File]
 
   def unpackArchive(file: File, isZip: Boolean, into: File): Unit
-
-  def javaexec(mainClass: String, args: String*): Unit

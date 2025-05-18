@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackendKind, ScalaDependency}
+import org.podval.tools.build.scalajs.ScalaJSBackend
+import org.podval.tools.build.ScalaDependency
 
 // https://github.com/scala-js/scala-js/tree/main/junit-runtime/src/main/scala
 // https://github.com/scala-js/scala-js/blob/main/junit-runtime/src/main/scala/org/scalajs/junit/JUnitFramework.scala
@@ -10,7 +11,7 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   displayName = "JUnit4 Scala.js",
   group = "org.scala-js",
   artifact = "scalajs-junit-test-runtime",
-  versionDefault = ScalaBackendKind.JS.versionDefault,
+  versionDefault = ScalaJSBackend.versionDefault,
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
   usesTestSelectorAsNestedTestSelector = true,

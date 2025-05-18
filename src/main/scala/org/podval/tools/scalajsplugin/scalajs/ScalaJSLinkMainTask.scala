@@ -2,7 +2,7 @@ package org.podval.tools.scalajsplugin.scalajs
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.tasks.Nested
-import org.podval.tools.scalajs.ModuleInitializer
+import org.podval.tools.build.scalajs.ModuleInitializer
 import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkTask
 import scala.jdk.CollectionConverters.SetHasAsScala
 

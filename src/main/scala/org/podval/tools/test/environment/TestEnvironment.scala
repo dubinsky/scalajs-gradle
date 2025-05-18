@@ -1,6 +1,6 @@
 package org.podval.tools.test.environment
 
-import org.podval.tools.build.{GradleClassPath, ScalaBackendKind}
+import org.podval.tools.build.{GradleClassPath, ScalaBackend}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework
@@ -36,7 +36,7 @@ abstract class TestEnvironment:
   
   protected def loadFrameworks: List[Framework]
 
-  def backend: ScalaBackendKind
+  def backend: ScalaBackend
   
   def sourceMapper: Option[SourceMapper]
   

@@ -14,9 +14,9 @@ final class ScalaLibrary private(
   
   def suffixString: String = if scala3.isDefined then "_3" else s"_2.${scala2.get.version.simple.segment(1)}"
       
-  def toPlatform(backendKind: ScalaBackendKind): ScalaPlatform = ScalaPlatform(
+  def toPlatform(backend: ScalaBackend): ScalaPlatform = ScalaPlatform(
     scalaVersion = scala3.getOrElse(scala2.get).version,
-    backendKind
+    backend
   )
   
   def verify(runtimeClasspathConfiguration: Configuration): Unit =

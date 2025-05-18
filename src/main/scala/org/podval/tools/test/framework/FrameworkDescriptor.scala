@@ -1,6 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{Dependency, ScalaBackendKind, ScalaDependency, ScalaPlatform, Version}
+import org.podval.tools.build.jvm.JvmBackend
+import org.podval.tools.build.scalajs.ScalaJSBackend
+import org.podval.tools.build.scalanative.ScalaNativeBackend
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaDependency, ScalaPlatform, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.
@@ -26,10 +29,10 @@ abstract class FrameworkDescriptor(
 
   final override def description: String = displayName
 
-  final def forBackend(kind: ScalaBackendKind): ForBackend = kind match
-    case ScalaBackendKind.JVM    => forJVM
-    case ScalaBackendKind.JS     => forJS
-    case ScalaBackendKind.Native => forNative
+  final def forBackend(backend: ScalaBackend): ForBackend = backend match
+    case JvmBackend         => forJVM
+    case ScalaJSBackend     => forJS
+    case ScalaNativeBackend => forNative
 
   final def args(
     includeTags: Array[String],
@@ -53,7 +56,7 @@ object FrameworkDescriptor:
     ZioTest
   )
 
-  def forBackend(kind: ScalaBackendKind): List[FrameworkDescriptor] = all.toList.filter(_.forBackend(kind).isSupported)
+  def forBackend(backend: ScalaBackend): List[FrameworkDescriptor] = all.toList.filter(_.forBackend(backend).isSupported)
 
   def forName(name: String): FrameworkDescriptor = arrayFind(all, _.name == name)
     .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))

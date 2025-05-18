@@ -4,18 +4,13 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.{Configuration, Dependency}
 import org.gradle.api.artifacts.repositories.{ArtifactRepository, IvyArtifactRepository, IvyPatternRepositoryLayout}
 import org.gradle.api.file.CopySpec
-import org.gradle.api.tasks.SourceSet
-import org.gradle.process.{ExecOperations, JavaExecSpec}
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
 object GradleBuildContext:
   private val logger: Logger = LoggerFactory.getLogger(GradleBuildContext.getClass)
 
-final class GradleBuildContext(
-  project: Project, 
-  execOperations: ExecOperations
-)
+final class GradleBuildContext(project: Project)
   extends GradleBuildContextCore(
     gradleUserHomeDir = project.getGradle.getGradleUserHomeDir
   ) with BuildContext:
@@ -78,13 +73,4 @@ final class GradleBuildContext(
       copySpec
         .from(if isZip then project.zipTree(file) else project.tarTree(file))
         .into(into)
-      ()
-
-  override def javaexec(mainClass: String, args: String*): Unit =
-    logger.info(s"Running $mainClass(${args.mkString(", ")})")
-
-    execOperations.javaexec: (exec: JavaExecSpec) =>
-      exec.setClasspath(Gradle.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getRuntimeClasspath)
-      exec.getMainClass.set(mainClass)
-      exec.args(args*)
       ()

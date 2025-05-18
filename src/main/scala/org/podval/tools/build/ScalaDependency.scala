@@ -1,6 +1,7 @@
 package org.podval.tools.build
 
 import org.gradle.api.artifacts.Configuration
+import org.podval.tools.build.jvm.JvmBackend
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(
@@ -28,7 +29,7 @@ final class ScalaDependency private(
       then scalaVersion.toString
       else scalaPlatform.version.versionSuffix(scalaVersion)
 
-    s"${scalaPlatform.backendKind.suffixString}_$versionSuffix"
+    s"${scalaPlatform.backend.suffixString}_$versionSuffix"
 
   override protected def dependencyForArtifactName(
     artifactName: String
@@ -44,7 +45,7 @@ final class ScalaDependency private(
     val (artifactAndBackend: String, scalaVersionOpt: Option[String]) = Strings.split(artifactName, '_')
     val (artifact: String, backendSuffixOpt: Option[String]) = Strings.split(artifactAndBackend, '_')
     val matches: Boolean =
-      (scalaPlatform.backendKind.suffixOpt == backendSuffixOpt) &&
+      (scalaPlatform.backend.suffixOpt == backendSuffixOpt) &&
       scalaVersionOpt.isDefined
     if !matches then None else Some((artifact, Version(scalaVersionOpt.get)))
 
@@ -61,7 +62,7 @@ object ScalaDependency:
     override protected def artifactNameSuffix: String = findable.artifactNameSuffix(scalaVersion)
   
   trait Maker extends Dependency.Maker[ScalaPlatform]:
-    def backendKind: Option[ScalaBackendKind] = None
+    def backend: Option[ScalaBackend] = None
     def scala2: Boolean = false
     def isScalaVersionFull: Boolean = false
 
@@ -87,14 +88,14 @@ object ScalaDependency:
         then scalaPlatform
         else scalaPlatform.toScala2
   
-      def adjustForBackend(scalaPlatform: ScalaPlatform) = backendKind
+      def adjustForBackend(scalaPlatform: ScalaPlatform) = backend
         .map(scalaPlatform.withBackend)
         .getOrElse(scalaPlatform)
   
       adjustForBackend(adjustForScala2(scalaPlatform))
 
   trait MakerJvm extends Maker:
-    final override def backendKind: Option[ScalaBackendKind] = Some(ScalaBackendKind.JVM)
+    final override def backend: Some[JvmBackend.type] = Some(JvmBackend)
 
   trait MakerScala2 extends Maker:
     final override def scala2: Boolean = true

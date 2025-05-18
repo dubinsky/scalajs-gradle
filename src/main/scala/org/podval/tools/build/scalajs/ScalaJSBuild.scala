@@ -1,9 +1,11 @@
-package org.podval.tools.scalajs
+package org.podval.tools.build.scalajs
 
+import org.podval.tools.build.nonjvm.NonJvmTestAdapter
 import org.podval.tools.node.Node
-import org.podval.tools.nonjvm.NonJvmTestAdapter
+import org.podval.tools.platform.{OutputHandler, OutputPiper}
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
+import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,
   ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS, ModuleSplitStyle as ModuleSplitStyleSJS}
@@ -11,11 +13,13 @@ import org.scalajs.logging.{Level as LevelJS, Logger as LoggerJS}
 import org.scalajs.testing.adapter.{TestAdapter, TestAdapterInitializer}
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework
-import java.io.File
+import java.io.{File, InputStream}
+import java.nio.file.Path
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
+// TODO merge into backend
 object ScalaJSBuild:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSBuild.getClass)
 
@@ -35,40 +39,68 @@ object ScalaJSBuild:
         case LevelJS.Info  => logger.info (toLog)
         case LevelJS.Debug => logger.debug(toLog)
 
+  private def mkJsEnv(node: Node): JSEnv = JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
+    .withExecutable(node.installation.node.getAbsolutePath)
+    .withEnv(node.nodeEnv.toMap)
+  )
+
   def run(
-    jsEnv: JSEnv,
-    input: Input,
-    config: RunConfig,
-    logSource: String
+    jsDirectory: File,
+    reportBinFile: File,
+    moduleKind: ModuleKind,
+    node: Node,
+    logSource: String,
+    abort: String => Nothing,
+    outputHandler: OutputHandler
   ): Unit =
-    val jsRun: JSRun = jsEnv.start(
-      Seq(input),
-      config
-        .withLogger(loggerJS(logSource))
-    )
-    Await.result(awaitable = jsRun.future, atMost = Duration.Inf)
+    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKind, abort)
+    val jsEnv: JSEnv = mkJsEnv(node)
+
+    OutputPiper.run(
+      outputHandler,
+      running = s"${modulePath(jsDirectory, module)} on ${jsEnv.name}"
+    ): (outputPiper: OutputPiper) =>
+    /* #4560 Explicitly redirect out/err to System.out/System.err, instead
+     * of relying on `inheritOut` and `inheritErr`, so that streams
+     * installed with `System.setOut` and `System.setErr` are always taken
+     * into account. sbt installs such alternative outputs when it runs in
+     * server mode.
+     */
+      val jsRun: JSRun = jsEnv.start(
+        Seq(input(jsDirectory, module, moduleKind)),
+        RunConfig()
+          .withInheritOut(false)
+          .withInheritErr(false)
+          .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => outputPiper.start(out, err))
+          .withLogger(loggerJS(logSource))
+      )
+      Await.result(awaitable = jsRun.future, atMost = Duration.Inf)
 
   def createTestEnvironment(
     jsDirectory: File,
-    jsEnv: JSEnv,
-    mainModule: Report.Module,
-    input: Input,
-    logSource: String
-  ): ScalaJSTestEnvironment = ScalaJSTestEnvironment(
-    sourceMapper = mainModule
-      .sourceMapName
-      .map((name: String) => Files.file(jsDirectory, name))
-      .map(ClosureCompilerSourceMapper(_)),
-    testAdapter = new NonJvmTestAdapter:
-      override def loadFrameworks(frameworkNames: List[List[String]]): List[Option[Framework]] =
-        testAdapter.loadFrameworks(frameworkNames)
-      override def close(): Unit = testAdapter.close()
-      private lazy val testAdapter: TestAdapter = TestAdapter(
-        jsEnv = jsEnv,
-        input = Seq(input),
-        config = TestAdapter.Config().withLogger(loggerJS(logSource))
-      )
-  )
+    reportBinFile: File,
+    moduleKind: ModuleKind,
+    node: Node,
+    logSource: String,
+    abort: String => Nothing
+  ): ScalaJSTestEnvironment =
+    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKind, abort)
+
+    ScalaJSTestEnvironment(
+      sourceMapper = module
+        .sourceMapName
+        .map((name: String) => Files.file(jsDirectory, name))
+        .map(ClosureCompilerSourceMapper(_)),
+      testAdapter = new NonJvmTestAdapter:
+        override def loadFrameworks(frameworkNames: List[List[String]]): List[Option[Framework]] =
+          testAdapter.loadFrameworks(frameworkNames)
+        override def close(): Unit = testAdapter.close()
+        private lazy val testAdapter: TestAdapter = TestAdapter(
+          jsEnv = mkJsEnv(node),
+          input = Seq(input(jsDirectory, module, moduleKind)),
+          config = TestAdapter.Config().withLogger(loggerJS(logSource))
+        )
+    )
 
   def link(
     jsDirectory: File,
@@ -132,7 +164,46 @@ object ScalaJSBuild:
     catch
       case e: LinkingException => throw abort(s"ScalaJS link error: ${e.getMessage}")
 
-  def toSJS(moduleKind: ModuleKind): ModuleKindSJS = moduleKind match
+  private def module(
+    reportBinFile: File,
+    moduleKind: ModuleKind,
+    abort: String => Nothing
+  ): Report.Module =
+    val result: Report.Module = Report
+      .deserialize(Files.readBytes(reportBinFile))
+      .get
+      .publicModules
+      .find(_.moduleID == "main")
+      .getOrElse(abort(s"Linking report does not have a module named 'main'. See $reportBinFile."))
+
+    given CanEqual[ModuleKindSJS, ModuleKindSJS] = CanEqual.derived
+
+    require(
+      ScalaJSBuild.toSJS(moduleKind) == result.moduleKind,
+      s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}"
+    )
+    result
+
+  private def modulePath(
+    jsDirectory: File,
+    module: Report.Module
+  ): Path = Files.file(
+    directory = jsDirectory,
+    segments = module.jsFileName
+  ).toPath
+
+  private def input(
+    jsDirectory: File,
+    module: Report.Module,
+    moduleKind: ModuleKind
+  ): Input =
+    val modulePath: Path = ScalaJSBuild.modulePath(jsDirectory, module)
+    moduleKind match
+      case ModuleKind.NoModule       => Input.Script(modulePath)
+      case ModuleKind.ESModule       => Input.ESModule(modulePath)
+      case ModuleKind.CommonJSModule => Input.CommonJSModule(modulePath)
+
+  private def toSJS(moduleKind: ModuleKind): ModuleKindSJS = moduleKind match
     case ModuleKind.NoModule       => ModuleKindSJS.NoModule
     case ModuleKind.ESModule       => ModuleKindSJS.ESModule
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule

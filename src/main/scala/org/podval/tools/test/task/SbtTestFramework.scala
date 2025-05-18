@@ -9,7 +9,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.podval.tools.build.{GradleClassPath, ScalaBackendKind}
+import org.podval.tools.build.{GradleClassPath, ScalaBackend}
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.framework.FrameworkDescriptor
@@ -23,7 +23,7 @@ import java.net.URL
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class SbtTestFramework(
-  backendKind: ScalaBackendKind,
+  backend: ScalaBackend,
   logLevelEnabled: LogLevel,
   defaultTestFilter: DefaultTestFilter,
   options: SbtTestFrameworkOptions,
@@ -39,7 +39,7 @@ class SbtTestFramework(
     val copiedOptions: SbtTestFrameworkOptions = SbtTestFrameworkOptions()
     copiedOptions.copyFrom(this.options)
     SbtTestFramework(
-      this.backendKind,
+      this.backend,
       this.logLevelEnabled,
       newTestFilters.asInstanceOf[DefaultTestFilter],
       copiedOptions,
@@ -148,7 +148,7 @@ class SbtTestFramework(
   // we do not yet know what frameworks were actually loaded,
   // so we have to take into account all that could load - depending on the back-end in use.
   private val sharedPackages: List[String] =
-    FrameworkDescriptor.forBackend(backendKind).flatMap(_.sharedPackages) ++
+    FrameworkDescriptor.forBackend(backend).flatMap(_.sharedPackages) ++
     List(
       // Scala 3 and Scala 2 libraries;
       // when running on Scala 3, both jars themselves are already on the classpath;

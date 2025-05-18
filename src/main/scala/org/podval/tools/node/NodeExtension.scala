@@ -3,7 +3,6 @@ package org.podval.tools.node
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
-import org.gradle.process.ExecOperations
 import org.podval.tools.build.{CreateExtension, Gradle, GradleBuildContext}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SetHasAsScala}
 import java.io.File
@@ -18,7 +17,7 @@ object NodeExtension:
     configure = configure
   )
 
-abstract class NodeExtension @Inject(project: Project, execOperations: ExecOperations):
+abstract class NodeExtension @Inject(project: Project):
   def getVersion: Property[String]
 
   def getModules: ListProperty[String]
@@ -33,14 +32,12 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
   project.getTasks.register("npm" , classOf[NodeTask.NpmRunTask])
   project.getTasks.register("node", classOf[NodeTask.NodeRunTask])
 
+  // install Node (if needed) and set up Node project (if needed).
   project.afterEvaluate: (project: Project) =>
-    val context: GradleBuildContext = GradleBuildContext(project, execOperations)
-
-    // install Node (if needed) and set up Node project (if needed).
     NodeDependency
       .getInstalledOrInstall(
         version = Gradle.toOption(getVersion),
-        context = context
+        context = GradleBuildContext(project)
       )
       .node(
         nodeModulesParent = NodeExtension.nodeModulesParent(project)

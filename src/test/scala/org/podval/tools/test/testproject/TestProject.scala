@@ -1,14 +1,18 @@
 package org.podval.tools.test.testproject
 
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.{Dependency, ScalaBackendKind}
+import org.podval.tools.build.{Dependency, ScalaBackend}
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 
 // TODO abstract, calculate overall test failure, and move up to `org.podval.tools.testproject`.
 final class TestProject(projectDir: File):
-  def writeSources(backend: Option[ScalaBackendKind], isTest: Boolean, sources: Seq[SourceFile]): Unit =
+  def writeSources(
+    backend: Option[ScalaBackend],
+    isTest: Boolean, 
+    sources: Seq[SourceFile]
+  ): Unit =
     val directory: File = Files.fileSeq(projectDir,
       backend.toSeq.map(_.sourceRoot) ++ Seq(
       "src",

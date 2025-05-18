@@ -1,12 +1,11 @@
-package org.podval.tools.scalajsplugin.jvm
+package org.podval.tools.build.jvm
 
-import org.podval.tools.build.ScalaBackendKind
 import org.podval.tools.test.environment.{SourceMapper, TestEnvironment}
 import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider}
 import sbt.testing.Framework
 
 final class JvmTestEnvironment extends TestEnvironment:
-  override def backend: ScalaBackendKind = ScalaBackendKind.JVM
+  override def backend: JvmBackend.type = JvmBackend
 
   override def close(): Unit = ()
 

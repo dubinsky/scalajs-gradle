@@ -2,17 +2,17 @@ package org.podval.tools.build
 
 final class ScalaPlatform(
   val scalaVersion: Version,
-  val backendKind: ScalaBackendKind
+  val backend: ScalaBackend
 ):
   def version: ScalaVersion = ScalaVersion.forVersion(scalaVersion)
 
-  def withBackend(backendKind: ScalaBackendKind): ScalaPlatform = ScalaPlatform(
+  def withBackend(backend: ScalaBackend): ScalaPlatform = ScalaPlatform(
     scalaVersion,
-    backendKind
+    backend
   )
 
   def toScala2: ScalaPlatform =
     if !version.isScala3 then this else ScalaPlatform(
       ScalaVersion.Scala2.majorAndMinor,
-      backendKind
+      backend
     )

@@ -12,8 +12,3 @@ final class DefaultBuildContext(
 
   override def unpackArchive(file: File, isZip: Boolean, into: File): Unit =
     throw UnsupportedOperationException("unpackArchive() is not available")
-
-  override def javaexec(mainClass: String, args: String*): Unit = Class
-    .forName(mainClass)
-    .getMethod("main", classOf[Array[String]])
-    .invoke(null, args.toArray)

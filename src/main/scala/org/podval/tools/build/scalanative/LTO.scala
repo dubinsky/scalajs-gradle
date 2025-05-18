@@ -1,4 +1,4 @@
-package org.podval.tools.scalanative
+package org.podval.tools.build.scalanative
 
 import org.podval.tools.util.Named
 

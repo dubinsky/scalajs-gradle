@@ -1,4 +1,4 @@
-package org.podval.tools.scalajs
+package org.podval.tools.build.scalajs
 
 class ModuleInitializer(
   val moduleId: String,

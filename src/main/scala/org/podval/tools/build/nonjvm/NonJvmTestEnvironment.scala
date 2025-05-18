@@ -1,4 +1,4 @@
-package org.podval.tools.nonjvm
+package org.podval.tools.build.nonjvm
 
 import org.podval.tools.test.environment.{SourceMapper, TestEnvironment}
 import org.podval.tools.test.framework.FrameworkDescriptor
@@ -8,6 +8,8 @@ abstract class NonJvmTestEnvironment(
   testAdapter: NonJvmTestAdapter,
   override val sourceMapper: Option[SourceMapper]
 ) extends TestEnvironment:
+  override def backend: NonJvmBackend
+
   final override protected def expandClassPath: Boolean = false
 
   final override def close(): Unit = testAdapter.close()

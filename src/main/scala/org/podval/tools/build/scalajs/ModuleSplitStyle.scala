@@ -1,4 +1,4 @@
-package org.podval.tools.scalajs
+package org.podval.tools.build.scalajs
 
 import org.podval.tools.util.Named
 

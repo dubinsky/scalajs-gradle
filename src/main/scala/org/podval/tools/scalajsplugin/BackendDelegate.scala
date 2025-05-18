@@ -5,16 +5,18 @@ import org.gradle.api.artifacts.{Configuration, ConfigurationContainer}
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{SourceSet, TaskContainer, TaskProvider}
-import org.podval.tools.build.{CreateExtension, DependencyRequirement, Gradle, ScalaBackendKind, ScalaLibrary, 
-  ScalaPlatform}
-import org.podval.tools.scalajsplugin.jvm.{JvmDelegate, JvmTask}
-import org.podval.tools.scalajsplugin.scalajs.{ScalaJSDelegate, ScalaJSTask}
-import org.podval.tools.scalajsplugin.scalanative.{ScalaNativeDelegate, ScalaNativeTask}
+import org.podval.tools.build.{BackendDependencyRequirements, CreateExtension, DependencyRequirement, Gradle,
+  ScalaBackend, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.scalajsplugin.jvm.JvmDelegate
+import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
+import org.podval.tools.scalajsplugin.scalanative.ScalaNativeDelegate
 import org.slf4j.{Logger, LoggerFactory}
-import java.io.File
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava}
+import java.io.File
 
 trait BackendDelegate[T <: BackendTask]:
+  def backend: ScalaBackend
+
   // TODO capture class tag or something
   def taskClass: Class[? <: T]
 
@@ -24,18 +26,8 @@ trait BackendDelegate[T <: BackendTask]:
   def linkTaskClassOpt    : Option[Class[? <: T & BackendTask.Link.Main]]
   def testLinkTaskClassOpt: Option[Class[? <: T & BackendTask.Link.Test]]
 
-  final protected def describe(what: String): String = s"${backendKind.displayName} $what."
-
-  def backendKind: ScalaBackendKind
   def pluginDependenciesConfigurationNameOpt: Option[String]
-  def scalaCompileParameters(isScala3: Boolean): Seq[String]
   def createExtension: Option[CreateExtension[?]]
-
-  def dependencyRequirements(
-    implementationConfiguration: Configuration,
-    testImplementationConfiguration: Configuration,
-    projectScalaPlatform: ScalaPlatform
-  ): BackendDependencyRequirements
 
   final def registerTasks(
     tasks: TaskContainer,
@@ -43,12 +35,13 @@ trait BackendDelegate[T <: BackendTask]:
     testSourceSet: SourceSet
   ): Unit =
     // TODO unify task description here and for scaladoc task with the javadoc style...
+    // TODO make utility methods for adding/replacing/configuring tasks...
     
     // Create 'link' task.
     val runTaskDependency: Option[TaskProvider[?]] =
       linkTaskClassOpt.map((linkTaskClass: Class[? <: BackendTask]) =>
         tasks.withType(linkTaskClass).configureEach((task: BackendTask) =>
-          task.setDescription(s"Links ${backendKind.displayName} code.")
+          task.setDescription(s"Links ${backend.displayName} code.")
           task.setGroup("build")
         )
         tasks.register(
@@ -57,9 +50,9 @@ trait BackendDelegate[T <: BackendTask]:
         )
       )
 
-    // Create 'run' task.
+    // Create 'run' task. - TODO only if it does not exist!
     tasks.withType(runTaskClass).configureEach((task: BackendTask.Main) =>
-      task.setDescription(s"Runs ${backendKind.displayName} code.")
+      task.setDescription(s"Runs ${backend.displayName} code.")
       task.setGroup("other")
     )
     tasks.register(
@@ -73,7 +66,7 @@ trait BackendDelegate[T <: BackendTask]:
     val testTaskDependency: Option[TaskProvider[?]] =
       testLinkTaskClassOpt.map((testLinkTaskClass: Class[? <: BackendTask]) =>
         tasks.withType(testLinkTaskClass).configureEach((task: BackendTask) =>
-          task.setDescription(s"Links test ${backendKind.displayName} code.")
+          task.setDescription(s"Links test ${backend.displayName} code.")
           task.setGroup("build")
         )
         tasks.register(
@@ -84,7 +77,7 @@ trait BackendDelegate[T <: BackendTask]:
 
     // Create 'test' task.
     tasks.withType(testTaskClass).configureEach((task: BackendTask.Test) =>
-      task.setDescription(s"Test ${backendKind.displayName} code using sbt frameworks.")
+      task.setDescription(s"Test ${backend.displayName} code using sbt frameworks.")
     )
     val testTask: BackendTask.Test = tasks.replace(
       testSourceSet.getName, // test task and test source set are named the same
@@ -102,12 +95,12 @@ trait BackendDelegate[T <: BackendTask]:
     val configurations: ConfigurationContainer = project.getConfigurations
     def getConfiguration(name: String): Configuration = configurations.getByName(name)
     
-    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(backendKind)
+    val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(backend)
 
     GradleFeatures.configureJar(
       project,
       mainSourceSet.getJarTaskName,
-      archiveAppendixConvention = backendKind.suffixString + projectScalaLibrary.suffixString
+      archiveAppendixConvention = backend.suffixString + projectScalaLibrary.suffixString
     )
 
     val implementationConfiguration: Configuration = getConfiguration(
@@ -121,14 +114,15 @@ trait BackendDelegate[T <: BackendTask]:
       GradleFeatures.scalaCompilerPluginsConfigurationName(mainSourceSet)
     )
 
-    val requirements: BackendDependencyRequirements = dependencyRequirements(
+    val requirements: BackendDependencyRequirements = backend.dependencyRequirements(
       implementationConfiguration = implementationConfiguration,
       testImplementationConfiguration = testImplementationConfiguration,
       projectScalaPlatform = projectScalaPlatform
     )
 
     def applyDependencyRequirements(
-      dependencyRequirements: Seq[DependencyRequirement[ScalaPlatform]],
+      // Arrays are used all the way to here for Scala 2.12 compatibility :(
+      dependencyRequirements: Array[DependencyRequirement[ScalaPlatform]],
       scalaPlatform: ScalaPlatform,
       configuration: Configuration
     ): Unit = dependencyRequirements.map(_.applyToConfiguration(
@@ -160,7 +154,7 @@ trait BackendDelegate[T <: BackendTask]:
       )
     )
 
-    val scalaCompileParametersToAdd: Seq[String] = scalaCompileParameters(projectScalaLibrary.isScala3)
+    val scalaCompileParameters: Seq[String] = backend.scalaCompileParameters(projectScalaLibrary.isScala3)
 
     def configureScalaCompile(
       sourceSet: SourceSet,
@@ -177,7 +171,7 @@ trait BackendDelegate[T <: BackendTask]:
 
       BackendDelegate.ensureParameters(
         scalaCompile,
-        scalaCompileParametersToAdd
+        scalaCompileParameters
       )
 
       BackendDelegate.addScalaCompilerPlugins(
@@ -196,7 +190,7 @@ object BackendDelegate:
     ScalaJSDelegate,
     ScalaNativeDelegate
   )
-  
+
   private def ensureParameters(
     scalaCompile: ScalaCompile,
     toAdd: Seq[String]

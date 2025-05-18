@@ -1,18 +1,27 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.internal.artifacts.configurations.RoleBasedConfigurationContainerInternal
-import org.gradle.api.{NamedDomainObjectProvider, Project, Task}
+import org.gradle.api.artifacts.{ConfigurablePublishArtifact, Configuration}
+import org.gradle.api.attributes.{Category, Usage}
+import org.gradle.api.file.{ConfigurableFileCollection, RegularFile}
+import org.gradle.api.internal.artifacts.configurations.{ConfigurationRolesForMigration, RoleBasedConfigurationContainerInternal}
+import org.gradle.api.internal.project.ProjectInternal
+import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.{Action, NamedDomainObjectProvider, Project, Task}
 import org.gradle.api.plugins.jvm.JvmTestSuite
 import org.gradle.api.plugins.jvm.internal.{JvmFeatureInternal, JvmPluginServices}
 import org.gradle.api.plugins.scala.ScalaBasePlugin
-import org.gradle.api.tasks.SourceSet
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.scala.{ScalaCompile, ScalaDoc}
+import org.gradle.api.tasks.{ScalaSourceDirectorySet, SourceSet, TaskProvider}
 import org.gradle.jvm.component.internal.DefaultJvmSoftwareComponent
 import org.gradle.jvm.tasks.Jar
+import org.gradle.language.scala.tasks.AbstractScalaCompile
 import org.gradle.testing.base.TestingExtension
 import org.gradle.util.internal.GUtil
 import org.podval.tools.build.Gradle
-import org.podval.tools.scalajsplugin.gradle.{JavaPluginAsLibrary, ScalaBasePluginAsLibrary, ScalaPluginAsLibrary}
+import org.podval.tools.scalajsplugin.gradle.JavaPluginAsLibrary
+import scala.jdk.CollectionConverters.*
+import java.io.File
 
 // The idea here is:
 // for JVM: re-configure existing setup
@@ -128,13 +137,13 @@ object GradleFeatures:
     val incrementalScalaAnalysisElementsConfigurationName: String = mainSourceSet.getTaskName("incrementalScalaAnalysisElements", "")
 
     // skip for pre-existing
-    ScalaBasePluginAsLibrary.configureCompilerPluginsConfiguration(
+    configureCompilerPluginsConfiguration(
       project,
       scalaCompilerPluginsConfigurationName,
       jvmPluginServices
     )
     // skip for pre-existing - or change the description of the configuration
-    ScalaBasePluginAsLibrary.configureIncrementalAnalysisElements(
+    configureIncrementalAnalysisElements(
       project,
       incrementalAnalysisUsageName = incrementalAnalysisUsageName,
       incrementalAnalysisCategoryName = incrementalAnalysisCategoryName,
@@ -142,12 +151,12 @@ object GradleFeatures:
       backendDisplayName = backendDisplayName
     )
     // skip for pre-existing
-    ScalaPluginAsLibrary.configureIncrementalAnalysisElements(
+    configureIncrementalAnalysisElements(
       project,
       compileTaskName = scalaCompileTaskName(mainSourceSet),
       incrementalScalaAnalysisElementsConfigurationName = incrementalScalaAnalysisElementsConfigurationName
     )
-    ScalaPluginAsLibrary.configureScaladoc(
+    configureScaladoc(
       project,
       isRegisterNotReplaceScaladocTask = true,
       sourceSet = mainSourceSet,
@@ -165,18 +174,22 @@ object GradleFeatures:
     )
     val testSourceSet: SourceSet = testSuite.get.getSources
     
-    ScalaBasePluginAsLibrary.configureSourceSetDefaults(
+    configureSourceRoots(
       project,
-      sourceRoot = sourceRoot,
-      sharedSourceRoot = sharedSourceRoot,
-      mainSourceSetName = mainSourceSetName,
-      testSourceSetName = testSourceSetName
+      mainSourceSet = mainSourceSet,
+      testSourceSet = testSourceSet,
+      sourceRoots = Seq(
+        s"$sourceRoot/src",
+        s"$sharedSourceRoot/src",
+        s"src"
+      )
     )
-    ScalaBasePluginAsLibrary.configureCompileDefaults(
+
+    configureCompileDefaults(
       project,
       scalaCompilerPluginsConfigurationName = scalaCompilerPluginsConfigurationName,
-      mainScalaCompileTaskName = scalaCompileTaskName(mainSourceSet),
-      testScalaCompileTaskName = scalaCompileTaskName(testSourceSet)
+      mainSourceSet = mainSourceSet,
+      testSourceSet = testSourceSet
     )
 
     sharedTasksDependOn(project, sharedFeature.getSourceSet, mainSourceSet)
@@ -205,6 +218,106 @@ object GradleFeatures:
       extendsFrom(_.getRuntimeOnlyConfigurationName)
       extendsFrom(_.getCompileClasspathConfigurationName)
       extendsFrom(_.getRuntimeClasspathConfigurationName)
+    )
+
+  // Adopted from org.gradle.api.plugins.scala.ScalaBasePlugin.
+  private def configureCompilerPluginsConfiguration(
+    project: Project,
+    scalaCompilerPluginsConfigurationName: String,
+    jvmPluginServices: JvmPluginServices
+  ): Unit =
+    val plugins: Configuration = project.asInstanceOf[ProjectInternal].getConfigurations.resolvableDependencyScopeUnlocked(
+      scalaCompilerPluginsConfigurationName
+    )
+    plugins.setTransitive(false)
+    jvmPluginServices.configureAsRuntimeClasspath(plugins)
+  
+  def addSharedSibling(
+    sharedSibling: File,
+    mainSourceSet: SourceSet,
+    testSourceSet: SourceSet
+  ): Unit =
+    def addSharedSourceRoots(sourceSet: SourceSet, srcDirectory: String): Unit =
+      val toAdd: File = File(File(sharedSibling, srcDirectory), "scala")
+      println(s"adding $toAdd")
+      sourceSet
+      .getExtensions
+      .getByType(classOf[ScalaSourceDirectorySet])
+      .srcDir(toAdd)
+
+    addSharedSourceRoots(mainSourceSet, srcDirectory = "main")
+    addSharedSourceRoots(testSourceSet, srcDirectory = "test")
+
+
+  // Adopted from org.gradle.api.plugins.scala.ScalaBasePlugin.
+  private def configureSourceRoots(
+    project: Project,
+    sourceRoots: Seq[String],
+    mainSourceSet: SourceSet,
+    testSourceSet: SourceSet
+  ): Unit =
+    def configureSourceSetDefaults(sourceSet: SourceSet, srcDirectory: String): Unit = sourceSet
+      .getExtensions
+      .getByType(classOf[ScalaSourceDirectorySet])
+      .setSrcDirs(sourceRoots.map(sourceRoot => s"$sourceRoot/$srcDirectory/scala").map(project.file).asJava)
+
+    configureSourceSetDefaults(mainSourceSet, srcDirectory = "main")
+    configureSourceSetDefaults(testSourceSet, srcDirectory = "test")
+
+  // Adopted from org.gradle.api.plugins.scala.ScalaBasePlugin.
+  private def configureCompileDefaults(
+    project: Project,
+    scalaCompilerPluginsConfigurationName: String,
+    mainSourceSet: SourceSet,
+    testSourceSet: SourceSet
+  ): Unit =
+    def configureCompileDefaults(sourceSet: SourceSet): Unit =
+      val scalaCompileTaskName: String = GradleFeatures.scalaCompileTaskName(sourceSet)
+      project.getTasks.withType(classOf[ScalaCompile]).configureEach(compile =>
+        if compile.getName == scalaCompileTaskName then compile.getConventionMapping.map(
+          "scalaCompilerPlugins",
+          () => project.getConfigurations.getAt(scalaCompilerPluginsConfigurationName)
+        )
+      )
+
+    configureCompileDefaults(mainSourceSet)
+    configureCompileDefaults(testSourceSet)
+
+  // Adopted from org.gradle.api.plugins.scala.ScalaBasePlugin.
+  private def configureIncrementalAnalysisElements(
+    project: Project,
+    incrementalAnalysisUsageName: String,
+    incrementalAnalysisCategoryName: String,
+    incrementalScalaAnalysisElementsConfigurationName: String,
+    backendDisplayName: String
+  ): Unit =
+    val incrementalAnalysisUsage: Usage = project.getObjects.named(classOf[Usage], incrementalAnalysisUsageName)
+    val incrementalAnalysisCategory: Category = project.getObjects.named(classOf[Category], incrementalAnalysisCategoryName)
+
+    val incrementalAnalysisElements: Configuration = project.asInstanceOf[ProjectInternal].getConfigurations.migratingUnlocked(
+      incrementalScalaAnalysisElementsConfigurationName,
+      ConfigurationRolesForMigration.CONSUMABLE_DEPENDENCY_SCOPE_TO_CONSUMABLE
+    )
+    incrementalAnalysisElements.setVisible(false)
+    incrementalAnalysisElements.setDescription(s"Incremental compilation analysis files for $backendDisplayName")
+    incrementalAnalysisElements.getAttributes.attribute(Usage.USAGE_ATTRIBUTE, incrementalAnalysisUsage)
+    incrementalAnalysisElements.getAttributes.attribute(Category.CATEGORY_ATTRIBUTE, incrementalAnalysisCategory)
+
+  // Adopted from org.gradle.api.plugins.scala.ScalaPlugin.
+  private def configureIncrementalAnalysisElements(
+    project: Project,
+    compileTaskName: String,
+    incrementalScalaAnalysisElementsConfigurationName: String
+  ): Unit =
+    // TODO and for the test source set?
+    val incrementalAnalysisElements: Configuration = project.getConfigurations.getByName(incrementalScalaAnalysisElementsConfigurationName)
+    val compileScalaMapping: Provider[RegularFile] = project.getLayout.getBuildDirectory.file(s"tmp/scala/compilerAnalysis/$compileTaskName.mapping")
+    val compileScala: TaskProvider[AbstractScalaCompile] = project.getTasks.withType(classOf[AbstractScalaCompile]).named(compileTaskName)
+    compileScala.configure(_.getAnalysisMappingFile.set(compileScalaMapping))
+    incrementalAnalysisElements.getOutgoing.artifact(
+      compileScalaMapping,
+      new Action[ConfigurablePublishArtifact]:
+        override def execute(configurablePublishArtifact: ConfigurablePublishArtifact): Unit = configurablePublishArtifact.builtBy(compileScala)
     )
 
   def configureJar(
@@ -236,3 +349,46 @@ object GradleFeatures:
     if !GUtil.isTrue(value) then ""
     else if !GUtil.isTrue(prefix) then value
     else "-".concat(value)
+
+  // Adopted from org.gradle.api.plugins.scala.ScalaPlugin.
+  private def configureScaladoc(
+    project: Project,
+    isRegisterNotReplaceScaladocTask: Boolean,
+    sourceSet: SourceSet,
+    backendDisplayName: String,
+    scalaDocTaskName: String
+  ): Unit =
+    project.getTasks.withType(classOf[ScalaDoc]).configureEach(scalaDoc =>
+      // only for this backend
+      if scalaDoc.getName == scalaDocTaskName then
+        scalaDoc.getConventionMapping.map("classpath", () =>
+          val files: ConfigurableFileCollection = project.files()
+          files.from(sourceSet.getOutput)
+          files.from(sourceSet.getCompileClasspath)
+          files
+        )
+        scalaDoc.setSource(sourceSet.getExtensions.getByType(classOf[ScalaSourceDirectorySet]))
+        scalaDoc.getCompilationOutputs.from(sourceSet.getOutput)
+    )
+
+    val scalaDocTaskConfigureAction: Action[Task] = (scalaDoc: Task) =>
+      scalaDoc.setDescription(s"Generates Scaladoc for the $backendDisplayName main source code.")
+      scalaDoc.setGroup(JavaBasePlugin.DOCUMENTATION_GROUP)
+
+    if isRegisterNotReplaceScaladocTask then project.getTasks.register(
+      scalaDocTaskName,
+      classOf[ScalaDoc],
+      scalaDocTaskConfigureAction
+    ) else project.getTasks
+      .named(scalaDocTaskName)
+      .configure(scalaDocTaskConfigureAction)
+
+// TODO - this is reported by `./gradlew resolvableConfigurations` even without me touching anything:
+// Consumable configurations with identical capabilities within a project
+// (other than the default configuration) must have unique attributes,
+// but configuration ':incrementalScalaAnalysisFormain' and [configuration ':incrementalScalaAnalysisElements']
+// contain identical attribute sets.
+// Consider adding an additional attribute to one of the configurations to disambiguate them.
+// For more information, please refer to
+// https://docs.gradle.org/8.13/userguide/upgrading_version_7.html#unique_attribute_sets
+// in the Gradle documentation.
