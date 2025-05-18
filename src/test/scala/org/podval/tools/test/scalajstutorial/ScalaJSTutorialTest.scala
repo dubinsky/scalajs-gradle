@@ -1,6 +1,7 @@
 package org.podval.tools.test.scalajstutorial
 
-import org.podval.tools.build.ScalaBackendKind
+import org.podval.tools.build.ScalaBackend
+import org.podval.tools.build.scalajs.ScalaJSBackend
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, GroupingFunSpec, TestProject}
 
 class ScalaJSTutorialTest extends GroupingFunSpec:
@@ -8,7 +9,7 @@ class ScalaJSTutorialTest extends GroupingFunSpec:
   
   override protected def features: Seq[Feature] = Seq(Feature("ScalaJS Tutorial"))
   override protected def fixtures: List[Fixture] = List(ScalaJSTutorialScalaTestFixture)
-  override protected def backends: Set[ScalaBackendKind] = Set(ScalaBackendKind.JS)
+  override protected def backends: Set[ScalaBackend] = Set(ScalaJSBackend)
   override protected def checkRun: Boolean = true
 
   override protected def buildGradleFragments: Seq[String] = Seq(

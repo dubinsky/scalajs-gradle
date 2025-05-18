@@ -1,4 +1,4 @@
-package org.podval.tools.scalanative
+package org.podval.tools.build.scalanative
 
 import java.util.concurrent.Executors
 import scala.concurrent.duration.Duration

@@ -3,16 +3,17 @@ package org.podval.tools.scalajsplugin
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.internal.artifacts.configurations.RoleBasedConfigurationContainerInternal
 import org.gradle.api.internal.project.ProjectInternal
-import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.plugins.{JavaBasePlugin, JavaPluginExtension}
 import org.gradle.api.plugins.internal.JavaPluginHelper
 import org.gradle.api.plugins.jvm.JvmTestSuite
 import org.gradle.api.plugins.jvm.internal.{JvmFeatureInternal, JvmPluginServices}
 import org.gradle.api.plugins.scala.ScalaPlugin
-import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.{SourceSet, SourceSetContainer}
 import org.gradle.api.{Plugin, Project}
 import org.gradle.jvm.component.internal.DefaultJvmSoftwareComponent
 import org.gradle.testing.base.TestingExtension
-import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackendKind, ScalaLibrary,
+import org.podval.tools.build.jvm.JvmBackend
+import org.podval.tools.build.{AddConfigurationToClassPath, Gradle, GradleClassPath, ScalaBackend, ScalaLibrary,
   ScalaPlatform}
 import org.podval.tools.scalajsplugin.jvm.JvmDelegate
 import org.podval.tools.test.task.TestTask
@@ -31,50 +32,51 @@ final class ScalaJSPlugin @Inject(
   override def apply(project: Project): Unit =
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
+    val (isModeMixed: Boolean, delegates) = Option(project.findProperty(ScalaJSPlugin.backendProperty))
+      .map(_.toString)
+      .map((name: String) => BackendDelegate.all
+        .find(_.backend.name == name)
+        .getOrElse(throw IllegalArgumentException(s"Unknown backend '$name'."))
+      ) match
+      case Some(backend) => (false, Set(backend))
+      case None =>
+        val presentDelegates: Set[BackendDelegate[?]] = BackendDelegate.all
+          .filter((delegate: BackendDelegate[?]) =>
+            val file: File = project.file(delegate.backend.sourceRoot)
+            file.exists && file.isDirectory
+        )
+        if presentDelegates.nonEmpty
+        then (true, presentDelegates)
+        else (false, Set(JvmDelegate))
+
+    ScalaJSPlugin.logger.info(s"ScalaJSPlugin: project '${project.getName}' running ${if isModeMixed then "mixed" else "single"} with ${delegates.map(_.backend.displayName).mkString(",")}.")
+
+    val sharedSibling: File = File(project.getProjectDir.getParent, ScalaBackend.sharedSourceRoot)
+    val sharedSiblingExists: Boolean = sharedSibling.exists() && sharedSibling.isDirectory
+    
     project.getTasks.withType(classOf[TestTask]).configureEach((testTask: TestTask) =>
       testTask.setGroup(JavaBasePlugin.VERIFICATION_GROUP)
       testTask.useSbt()
     )
 
-    val presentDelegates: Set[BackendDelegate[?]] = BackendDelegate.all
-      .filter((delegate: BackendDelegate[?]) =>
-        val file: File = project.file(delegate.backendKind.sourceRoot)
-        file.exists && file.isDirectory
-      )
+    val sourceSets: SourceSetContainer = project.getExtensions.getByType(classOf[JavaPluginExtension]).getSourceSets
 
-    val isModeMixed: Boolean = presentDelegates.nonEmpty
-
-    val delegates: Set[BackendDelegate[?]] =
-      if presentDelegates.nonEmpty
-      then presentDelegates
-      else Set(Option(project.findProperty(ScalaJSPlugin.backendProperty)).map(_.toString) match
-        case None => JvmDelegate
-        case Some(name) => BackendDelegate
-          .all
-          .find(_.backendKind.name == name)
-          .getOrElse(throw IllegalArgumentException(s"Unknown backend '$name'."))
-      )
-
-    ScalaJSPlugin.logger.info(s"ScalaJSPlugin: running with ${delegates.map(_.backendKind.displayName).mkString(",")}.")
-    
     // returns the names of the main and test source sets
     // main source set name is also the name of the feature;
     // test source set name is also the name of the test suite and the test task
     def sourceSetNames(delegate: BackendDelegate[?]): (String, String) =
       if !isModeMixed
       // the only feature that exists
-      then ("main", ScalaBackendKind.defaultTestSuiteName)
-      else (delegate.backendKind.sourceRoot, delegate.backendKind.testSuiteName)
-    
+      then ("main", ScalaBackend.defaultTestSuiteName)
+      else (delegate.backend.sourceRoot, delegate.backend.testSuiteName)
+
     def getSourceSets(delegate: BackendDelegate[?]): (SourceSet, SourceSet) =
       val (mainSourceSetName: String, testSourceSetName: String) = sourceSetNames(delegate)
       (
-        Gradle.getSourceSet(project, mainSourceSetName),
-        Gradle.getSourceSet(project, testSourceSetName)
+        sourceSets.getByName(mainSourceSetName),
+        sourceSets.getByName(testSourceSetName)
       )
 
-    // TODO get the source sets here!
-    
     val configurations: RoleBasedConfigurationContainerInternal = project.asInstanceOf[ProjectInternal].getConfigurations
 
     val component: DefaultJvmSoftwareComponent = JavaPluginHelper
@@ -93,7 +95,7 @@ final class ScalaJSPlugin @Inject(
     val sharedFeature: JvmFeatureInternal = component.getMainFeature
     val sharedTestSuiteSourceSet: SourceSet = testing
       .getSuites
-      .getByName(ScalaBackendKind.defaultTestSuiteName)
+      .getByName(ScalaBackend.defaultTestSuiteName)
       .asInstanceOf[JvmTestSuite]
       .getSources
 
@@ -114,16 +116,18 @@ final class ScalaJSPlugin @Inject(
           sharedFeature,
           sharedTestSuiteSourceSet,
           jvmPluginServices,
-          backendDisplayName = delegate.backendKind.displayName,
-          sourceRoot = delegate.backendKind.sourceRoot,
-          sharedSourceRoot = ScalaBackendKind.sharedSourceRoot,
+          backendDisplayName = delegate.backend.displayName,
+          sourceRoot = delegate.backend.sourceRoot,
+          sharedSourceRoot = ScalaBackend.sharedSourceRoot,
           mainSourceSetName = mainSourceSetName,
           testSourceSetName = testSourceSetName
         )
 
     delegates.foreach((delegate: BackendDelegate[?]) =>
       val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(delegate)
- 
+
+//      if sharedSiblingExists then GradleFeatures.addSharedSibling(sharedSibling, mainSourceSet, testSourceSet)
+
       // Create extension.
       delegate.createExtension.foreach(_.create(project))
 
@@ -142,7 +146,7 @@ final class ScalaJSPlugin @Inject(
         val configuration: Configuration = project.getConfigurations.create(configurationName)
         configuration.setVisible(false)
         configuration.setCanBeConsumed(false)
-        configuration.setDescription(s"${delegate.backendKind.displayName} dependencies used by the ScalaJS plugin.")
+        configuration.setDescription(s"${delegate.backend.displayName} dependencies used by the ScalaJS plugin.")
       )
 
       // Register tasks.
@@ -155,7 +159,7 @@ final class ScalaJSPlugin @Inject(
 
     project.afterEvaluate: (project: Project) =>
       val pluginScalaPlatform: ScalaPlatform =
-        ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(ScalaBackendKind.JVM)
+        ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(JvmBackend)
 
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromConfiguration(
         sharedFeature.getImplementationConfiguration

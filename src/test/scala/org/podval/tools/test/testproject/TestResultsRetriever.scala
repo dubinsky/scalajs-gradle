@@ -2,14 +2,14 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
-import org.podval.tools.build.ScalaBackendKind
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 final class TestResultsRetriever(projectDir: File):
-  def testResults(backend: Option[ScalaBackendKind]): List[TestClassResult] =
-    readTestClassResults(ScalaBackendKind.testSuiteName(backend))
+  def testResults(backend: Option[ScalaBackend]): List[TestClassResult] =
+    readTestClassResults(ScalaBackend.testSuiteName(backend))
 
   private def readTestClassResults(name: String): List[TestClassResult] =
     val binaryTestReportDir: File = Files.file(projectDir, "build", "test-results", name, "binary")

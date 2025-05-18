@@ -38,17 +38,17 @@ object Scala212Collections:
     elementArray(0) = element
     arrayConcat(array, elementArray)
 
-  def arrayForAll[A](
-    array: Array[A],
-    p: A => Boolean
-  ): Boolean =
-    var result: Boolean = true
-    var i: Int = 0
-    while result && (i < array.length) do
-      result = p(array(i))
-      i = i + 1
-    result
-    
+//  def arrayForAll[A](
+//    array: Array[A],
+//    p: A => Boolean
+//  ): Boolean =
+//    var result: Boolean = true
+//    var i: Int = 0
+//    while result && (i < array.length) do
+//      result = p(array(i))
+//      i = i + 1
+//    result
+
   def arrayZipForAll[A](
     left: Array[A],
     right: Array[A],

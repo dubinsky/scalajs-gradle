@@ -12,7 +12,7 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.{Gradle, ScalaBackendKind}
+import org.podval.tools.build.{Gradle, ScalaBackend}
 import org.podval.tools.test.environment.TestEnvironment
 import java.io.File
 import java.lang.reflect.Method
@@ -26,12 +26,12 @@ object TestTask:
     useTestFramework.invoke(task, value)
 
 abstract class TestTask extends Test:
-  // TODO I'd love to remove this and use getTestEnvironment.backendKind instead,
+  // TODO I'd love to remove this and use getTestEnvironment.backend instead,
   // but since the test task is materialized when replacing the pre-existing one,
   // `useSbt` is called on it, which calls `createTestEnvironment` before the classpath is
   // extended with the backend-specific stuff...
   // Look into calling `useSbt` via a convention - if Gradle does this when creating its own test task!
-  protected def backendKind: ScalaBackendKind
+  protected def backend: ScalaBackend
 
   protected def createTestEnvironment: TestEnvironment
   
@@ -56,7 +56,7 @@ abstract class TestTask extends Test:
       testEnvironment = None
 
   private lazy val sbtTestFramework: SbtTestFramework = SbtTestFramework(
-    backendKind = backendKind,
+    backend = backend,
     logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
     defaultTestFilter = getFilter.asInstanceOf[DefaultTestFilter],
     options = SbtTestFrameworkOptions(),
@@ -82,7 +82,7 @@ abstract class TestTask extends Test:
       closeTestEnvironment()
 
   final override def createTestExecuter: TestExecuter = TestExecuter(
-    testsCanNotBeForked = backendKind.testsCanNotBeForked,
+    testsCanNotBeForked = backend.testsCanNotBeForked,
     sourceMapper = getTestEnvironment.sourceMapper,
     testFilter = getFilter.asInstanceOf[DefaultTestFilter],
     maxWorkerCount = getServices.get(classOf[StartParameter]).getMaxWorkerCount,
@@ -95,6 +95,6 @@ abstract class TestTask extends Test:
   )
 
   final override def getMaxParallelForks: Int = 
-    if backendKind.testsCanNotBeForked
+    if backend.testsCanNotBeForked
     then 1
     else super.getMaxParallelForks

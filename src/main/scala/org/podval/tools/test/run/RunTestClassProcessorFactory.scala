@@ -10,7 +10,7 @@ import org.gradle.internal.time.Clock
 // This class gets serialized into the worker when tests are forked;
 // thus it, its parameters, and everything reachable from it must be serializable,
 // and thus it can not be an inner class of TestFramework,
-// so no further simplifications seems feasible.
+// so no further simplifications seem possible.
 final class RunTestClassProcessorFactory(
   includeTags: Array[String],
   excludeTags: Array[String],

@@ -4,8 +4,8 @@ import org.gradle.api.{Project, Task}
 import org.gradle.api.internal.provider.ProviderInternal
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
+
 import scala.jdk.CollectionConverters.SetHasAsScala
 
 object Gradle:
@@ -27,7 +27,7 @@ object Gradle:
       .map(_.get)
       .orElse(findDependsOnTask(task, clazz))
 
-  def findDependsOnTaskProvider[T <: Task](task: Task, clazz: Class[? <: T]): Option[TaskProvider[T]] = task
+  private def findDependsOnTaskProvider[T <: Task](task: Task, clazz: Class[? <: T]): Option[TaskProvider[T]] = task
     .getDependsOn
     .asScala
     .filter(_.isInstanceOf[TaskProvider[?]])
@@ -36,7 +36,7 @@ object Gradle:
     .find  (candidate => clazz.isAssignableFrom(candidate.getType))
     .map   (_.asInstanceOf[TaskProvider[T]])
 
-  def findDependsOnTask[T <: Task](task: Task, clazz: Class[? <: T]): Option[T] = task
+  private def findDependsOnTask[T <: Task](task: Task, clazz: Class[? <: T]): Option[T] = task
     .getDependsOn
     .asScala
     .filter(_.isInstanceOf[Task])

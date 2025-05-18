@@ -1,7 +1,6 @@
-package org.podval.tools.scalanative
+package org.podval.tools.build.scalanative
 
-import org.podval.tools.build.ScalaBackendKind
-import org.podval.tools.nonjvm.{NonJvmTestAdapter, NonJvmTestEnvironment}
+import org.podval.tools.build.nonjvm.{NonJvmTestAdapter, NonJvmTestEnvironment}
 import org.podval.tools.test.environment.SourceMapper
 
 final class ScalaNativeTestEnvironment(
@@ -11,4 +10,4 @@ final class ScalaNativeTestEnvironment(
   testAdapter,
   sourceMapper
 ):
-  override def backend: ScalaBackendKind = ScalaBackendKind.Native
+  override def backend: ScalaNativeBackend.type = ScalaNativeBackend

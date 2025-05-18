@@ -2,7 +2,7 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.build.{Dependency, ScalaBackendKind, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.scalajsplugin.ScalaJSPlugin
 import org.scalatest.funspec.AnyFunSpec
@@ -26,7 +26,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def features: Seq[Feature]
   protected def fixtures: Seq[Fixture]
   protected def scalaVersions: Seq[Version] = ScalaVersion.versionDefaults
-  protected def backends: Set[ScalaBackendKind] = ScalaBackendKind.all
+  protected def backends: Set[ScalaBackend] = ScalaBackend.all
   
   // TODO run it from the base class itself
 //  groupTestByFixtureAndCombined()
@@ -111,7 +111,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
 
   private def fixturesSupported(
     fixtures: Seq[Fixture],
-    backend: ScalaBackendKind
+    backend: ScalaBackend
   ): Seq[Fixture] = fixtures
     .filter(_.framework.forBackend(backend).isSupported)
 
@@ -121,11 +121,11 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     scalaVersion: Version
   ): Unit =
-    val backendsSupported: Set[ScalaBackendKind] = backends.filter(fixturesSupported(fixtures, _).nonEmpty)
+    val backendsSupported: Set[ScalaBackend] = backends.filter(fixturesSupported(fixtures, _).nonEmpty)
 
     if backendsSupported.nonEmpty then
       if backendsSupported.size == 1 || testByBackend then
-        for backend: ScalaBackendKind <- backendsSupported do
+        for backend: ScalaBackend <- backendsSupported do
           val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend)
           if fixturesSupported.nonEmpty then
             val backendString: String = s"on ${backend.displayName}"
@@ -154,12 +154,12 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     feature: Feature,
     fixtures: Seq[Fixture],
     scalaVersion: Version,
-    backend: ScalaBackendKind
+    backend: ScalaBackend
   ): Unit =
     def createProject: TestProject =
       val project: TestProject = TestProject.writeProject(
         projectName,
-        properties = Seq(ScalaJSPlugin.backendProperty -> backend.toString),
+        properties = Seq(ScalaJSPlugin.backendProperty -> backend.name),
         dependencies = Map(
           "implementation" -> Seq(scalaDependency(scalaVersion)),
           "testImplementation" -> frameworkDependencies(fixtures, scalaVersion, backend)
@@ -193,11 +193,11 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     feature: Feature,
     fixtures: Seq[Fixture],
     scalaVersion: Version,
-    backends: Set[ScalaBackendKind]
+    backends: Set[ScalaBackend]
   ): Unit =
     def createProject: TestProject =
       val testImplementationDependencies: Map[String, Seq[Dependency.WithVersion]] = backends
-        .map((backend: ScalaBackendKind) =>
+        .map((backend: ScalaBackend) =>
           backend.testImplementationConfigurationName ->
             frameworkDependencies(fixturesSupported(fixtures, backend), scalaVersion, backend)
         )
@@ -211,10 +211,10 @@ abstract class GroupingFunSpec extends AnyFunSpec:
           testImplementationDependencies,
         buildGradleFragments =
           buildGradleFragments ++
-          backends.toSeq.map((backend: ScalaBackendKind) => testTask(backend = Some(backend), feature, fixtures))
+          backends.toSeq.map((backend: ScalaBackend) => testTask(backend = Some(backend), feature, fixtures))
       )
 
-      for backend: ScalaBackendKind <- backends do
+      for backend: ScalaBackend <- backends do
         project.writeSources(backend = Some(backend), isTest = false, fixturesSupported(fixtures, backend).flatMap(_.mainSources))
         project.writeSources(backend = Some(backend), isTest = true , fixturesSupported(fixtures, backend).flatMap(_.testSources))
 
@@ -223,7 +223,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     val project: Memo[TestProject] = Memo(createProject)
     val testResultsRetriever: Memo[TestResultsRetriever] = project.map(_.test(fixtures.flatMap(_.commandLineIncludeTestNames)))
 
-    for backend: ScalaBackendKind <- backends do test(
+    for backend: ScalaBackend <- backends do test(
       // TODO to obtain test results for all backends, I need to stop Gradle failing the build when tests for one fail...
       testResultsRetriever.map(_.testResults(Some(backend))),
       s"${backend.sourceRoot} tests",
@@ -243,7 +243,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   private def frameworkDependencies(
     fixtures: Seq[Fixture],
     scalaVersion: Version,
-    backend: ScalaBackendKind
+    backend: ScalaBackend
   ): Seq[Dependency.WithVersion] =
     val platform: ScalaPlatform = ScalaPlatform(scalaVersion, backend)
     fixtures
@@ -258,7 +258,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
       )
     
   private def testTask(
-    backend: Option[ScalaBackendKind],
+    backend: Option[ScalaBackend],
     feature: Feature,
     fixtures: Seq[Fixture]
   ): String = TestTask.testTask(

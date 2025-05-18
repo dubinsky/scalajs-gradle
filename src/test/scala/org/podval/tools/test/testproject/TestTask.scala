@@ -1,17 +1,17 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.build.ScalaBackendKind
+import org.podval.tools.build.ScalaBackend
 
 object TestTask:
   def testTask(
-    backend: Option[ScalaBackendKind],
+    backend: Option[ScalaBackend],
     includeTestNames: Seq[String],
     excludeTestNames: Seq[String],
     includeTags: Seq[String],
     excludeTags: Seq[String],
     maxParallelForks: Int
   ): String =
-    s"""${ScalaBackendKind.testSuiteName(backend)} {
+    s"""${ScalaBackend.testSuiteName(backend)} {
        |  filter {
        |${includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")}
        |${excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")}

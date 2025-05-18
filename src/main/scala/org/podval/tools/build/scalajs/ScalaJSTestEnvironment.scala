@@ -1,7 +1,6 @@
-package org.podval.tools.scalajs
+package org.podval.tools.build.scalajs
 
-import org.podval.tools.build.ScalaBackendKind
-import org.podval.tools.nonjvm.{NonJvmTestAdapter, NonJvmTestEnvironment}
+import org.podval.tools.build.nonjvm.{NonJvmTestAdapter, NonJvmTestEnvironment}
 import org.podval.tools.test.environment.SourceMapper
 
 final class ScalaJSTestEnvironment(
@@ -11,4 +10,4 @@ final class ScalaJSTestEnvironment(
   testAdapter,
   sourceMapper
 ):
-  override def backend: ScalaBackendKind = ScalaBackendKind.JS
+  override def backend: ScalaJSBackend.type = ScalaJSBackend
