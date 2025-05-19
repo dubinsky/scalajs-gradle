@@ -14,8 +14,10 @@ final class ScalaLibrary private(
   
   def suffixString: String = if scala3.isDefined then "_3" else s"_2.${scala2.get.version.simple.segment(1)}"
       
+  def dependencyWithVersion: Dependency.WithVersion = scala3.getOrElse(scala2.get)
+  
   def toPlatform(backend: ScalaBackend): ScalaPlatform = ScalaPlatform(
-    scalaVersion = scala3.getOrElse(scala2.get).version,
+    scalaVersion = dependencyWithVersion.version,
     backend
   )
   
@@ -39,7 +41,7 @@ final class ScalaLibrary private(
 
 object ScalaLibrary:
   def getFromConfiguration(configuration: Configuration): ScalaLibrary = ScalaLibrary(
-    source = s"in configuration '$configuration.getName'",
+    source = s"in configuration '${configuration.getName}'",
     mustHaveScala2 = false,
     scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(configuration),
     scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(configuration)

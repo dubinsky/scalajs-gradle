@@ -1,11 +1,13 @@
 package org.podval.tools.build
 
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.plugins.JvmTestSuitePlugin
-import org.gradle.util.internal.GUtil
 import org.podval.tools.build.jvm.JvmBackend
 import org.podval.tools.build.scalajs.ScalaJSBackend
 import org.podval.tools.build.scalanative.ScalaNativeBackend
+
+object ScalaBackend:
+  val sharedSourceRoot: String = "shared"
+  def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
 
 trait ScalaBackend derives CanEqual:
   def name: String
@@ -15,13 +17,6 @@ trait ScalaBackend derives CanEqual:
   def testsCanNotBeForked: Boolean
 
   final def suffixString: String = suffixOpt.map(suffix => s"_$suffix").getOrElse("")
-
-  // The name of the test suite, its source set, and the test task.
-  final def testSuiteName: String =
-    GUtil.toLowerCamelCase(s"${ScalaBackend.defaultTestSuiteName} $sourceRoot")
-
-  final def testImplementationConfigurationName: String =
-    GUtil.toLowerCamelCase(s"test $sourceRoot implementation")
   
   final protected def describe(what: String): String = s"$displayName $what."
 
@@ -32,14 +27,3 @@ trait ScalaBackend derives CanEqual:
     testImplementationConfiguration: Configuration,
     projectScalaPlatform: ScalaPlatform
   ): BackendDependencyRequirements
-
-object ScalaBackend:
-  def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
-
-  val sharedSourceRoot: String = "shared"
-
-  def defaultTestSuiteName: String = JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME
-
-  def testSuiteName(backend: Option[ScalaBackend]): String = backend
-    .map(_.testSuiteName)
-    .getOrElse(defaultTestSuiteName)

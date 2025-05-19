@@ -10,13 +10,18 @@ import java.lang.reflect.{Field, Method}
 // https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLogger.gradle
 // https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/FileComparisonTestEventLoggerInit.gradle
 // https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/FileComparisonTestEventLogger.gradle
+// TODO move up from here!
 object IntelliJIdea:
+  def runningIn: Boolean =
+    Option(System.getProperty("idea.active")).contains("true")
+//    Option(System.getenv("XPC_SERVICE_NAME")).exists(_.contains("intellij"))
+  
   private val testListenerClassNames: Set[String] = Set(
     "IJTestEventLogger$1",
     "FileComparisonTestEventLogger$1"
   )
 
-  def runningIn(task: AbstractTestTask): Boolean =
+  def runningInOld(task: AbstractTestTask): Boolean =
     var result: Boolean = false
 
     val testListenerSubscriptions: Field = classOf[AbstractTestTask].getDeclaredField("testListenerSubscriptions")

@@ -8,8 +8,7 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 final class TestResultsRetriever(projectDir: File):
-  def testResults(backend: Option[ScalaBackend]): List[TestClassResult] =
-    readTestClassResults(ScalaBackend.testSuiteName(backend))
+  def testResults: List[TestClassResult] = readTestClassResults("test")
 
   private def readTestClassResults(name: String): List[TestClassResult] =
     val binaryTestReportDir: File = Files.file(projectDir, "build", "test-results", name, "binary")

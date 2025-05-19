@@ -2,7 +2,6 @@ package org.podval.tools.scalajsplugin.scalanative
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, OutputDirectory, OutputFile, TaskAction}
-import org.podval.tools.build.Gradle
 import org.podval.tools.build.scalanative.{GC, LTO, Mode, ScalaNativeBuild, ScalaNativeLinkConfig}
 import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkTask
 import org.podval.tools.util.Named

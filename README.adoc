@@ -175,7 +175,7 @@ dependencies {
   testImplementation 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
 
   // Test framework(s) you use:
-  testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
+  testImplementation 'com.github.sbt:junit-interface:{version-framework-junit4}'
   testImplementation 'org.scalameta:munit_3:{version-framework-munit}'
   testImplementation 'org.scalacheck:scalacheck_3:{version-framework-scalacheck}'
   testImplementation 'org.scalatest:scalatest_3:{version-framework-scalatest}'
@@ -438,7 +438,7 @@ The table below lists what is added to what configurations.
 |===
 
 
-=== Scala 3 Example
+==== Scala 3 Example
 
 [source,groovy,subs="+attributes"]
 ----
@@ -472,7 +472,7 @@ dependencies {
 }
 ----
 
-=== Scala 2 Example
+==== Scala 2 Example
 
 [source,groovy,subs="+attributes"]
 ----
@@ -1031,6 +1031,15 @@ and has different capabilities.
 - nested suites: not supported;
 - ignoring tests: not supported;
 - assumptions: not supported;
+
+TODO 'org.scala-native:test-interface_native0.5',
+which the plugin adds, brings Scala Native JUnit4 in indirectly,
+so the test will compile even without it being listed explicitly;
+but since Scala compiler plugin that produces the bootstrappers
+is only added by the plugin when JUnit4 is listed explicitly,
+no tests are run!
+Is there a smaller dependency or should I ask the Scala Native people to
+drop this transitivity?
 
 === MUnit
 MUnit uses JUnit internally, and brings in the underlying framework dependency transitively:

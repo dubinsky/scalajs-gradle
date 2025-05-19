@@ -1,8 +1,7 @@
 package org.podval.tools.scalajsplugin.nonjvm
 
 import org.gradle.api.GradleException
-import org.podval.tools.build.Gradle
-import org.podval.tools.scalajsplugin.BackendTask
+import org.podval.tools.scalajsplugin.{BackendTask, Gradle}
 
 trait NonJvmRunTask[L <: NonJvmLinkTask[L]] extends NonJvmTask[L]:
   protected def linkTaskClass: Class[? <: L]

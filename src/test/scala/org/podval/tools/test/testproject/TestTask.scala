@@ -4,14 +4,13 @@ import org.podval.tools.build.ScalaBackend
 
 object TestTask:
   def testTask(
-    backend: Option[ScalaBackend],
     includeTestNames: Seq[String],
     excludeTestNames: Seq[String],
     includeTags: Seq[String],
     excludeTags: Seq[String],
     maxParallelForks: Int
   ): String =
-    s"""${ScalaBackend.testSuiteName(backend)} {
+    s"""test {
        |  filter {
        |${includeTestNames.map(name => s"    includeTestsMatching '$name'").mkString("\n")}
        |${excludeTestNames.map(name => s"    excludeTestsMatching '$name'").mkString("\n")}
