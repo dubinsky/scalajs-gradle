@@ -48,6 +48,7 @@ object VersionsWriter:
 
   val attributes: Seq[(String, String)] = Seq(
     "scalajsBackendProperty" -> ScalaJSPlugin.backendProperty,
+    "scalajsIncludeSharedProperty" -> ScalaJSPlugin.includeSharedProperty
   )
   
   def main(args: Array[String]): Unit =

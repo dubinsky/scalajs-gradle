@@ -2,7 +2,6 @@ package org.podval.tools.scalajsplugin.scalajs
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Optional}
-import org.podval.tools.build.Gradle
 import org.podval.tools.build.scalajs.ModuleInitializer
 
 abstract class ModuleInitializerProperties:
@@ -14,6 +13,6 @@ abstract class ModuleInitializerProperties:
   final def toModuleInitializer: ModuleInitializer = ModuleInitializer(
     moduleId = getName,
     className = getClassName.get,
-    mainMethodName = Gradle.toOption(getMainMethodName),
+    mainMethodName = Option(getMainMethodName.getOrNull),
     mainMethodHasArgs = getMainMethodHasArgs.getOrElse(false)
   )

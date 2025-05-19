@@ -3,7 +3,7 @@ package org.podval.tools.node
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
-import org.podval.tools.build.{CreateExtension, Gradle, GradleBuildContext}
+import org.podval.tools.build.{CreateExtension, GradleBuildContext}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SetHasAsScala}
 import java.io.File
 import javax.inject.Inject
@@ -36,7 +36,7 @@ abstract class NodeExtension @Inject(project: Project):
   project.afterEvaluate: (project: Project) =>
     NodeDependency
       .getInstalledOrInstall(
-        version = Gradle.toOption(getVersion),
+        version = Option(getVersion.getOrNull),
         context = GradleBuildContext(project)
       )
       .node(

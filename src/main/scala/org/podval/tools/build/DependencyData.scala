@@ -35,7 +35,7 @@ class DependencyData(
 object DependencyData:
   def fromGradleDependency(dependency: org.gradle.api.artifacts.Dependency): Option[DependencyData] = dependency match
     case dependency: org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency =>
-      Some(DependencyData(
+      if dependency.getVersion == null then None else Some(DependencyData(
         group = Some(dependency.getGroup),
         artifactName= dependency.getName,
         version = Version(dependency.getVersion),

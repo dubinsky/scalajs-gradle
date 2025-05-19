@@ -12,7 +12,7 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.{Gradle, ScalaBackend}
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.test.environment.TestEnvironment
 import java.io.File
 import java.lang.reflect.Method
