@@ -8,9 +8,10 @@ import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 trait NonJvmBackend extends ScalaBackend:
   final override def testsCanNotBeForked: Boolean = true
 
-  final override def suffixOpt: Option[String] = Some(suffix)
+  final override def artifactSuffixOpt: Option[String] = Some(artifactSuffix)
+  final override def archiveAppendixOpt: Option[String] = Some(sourceRoot)
 
-  def suffix: String
+  def artifactSuffix: String
 
   def versionDefault: Version
 

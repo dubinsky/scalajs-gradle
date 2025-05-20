@@ -5,9 +5,9 @@ import org.podval.tools.build.{BackendDependencyRequirements, JavaDependency, Sc
 
 case object JvmBackend extends ScalaBackend:
   override val name: String = "JVM"
-  override val displayName: String = "JVM"
   override val sourceRoot: String = "jvm"
-  override val suffixOpt: Option[String] = None
+  override val artifactSuffixOpt: Option[String] = None
+  override val archiveAppendixOpt: Option[String] = None
   override val testsCanNotBeForked: Boolean = false
 
   override def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty

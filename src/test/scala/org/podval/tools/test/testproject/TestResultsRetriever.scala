@@ -8,10 +8,13 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 final class TestResultsRetriever(projectDir: File):
-  def testResults: List[TestClassResult] = readTestClassResults("test")
+  def testResults(backend: Option[ScalaBackend]): List[TestClassResult] =
+    readTestClassResults(Files.fileSeq(
+      projectDir,
+      backend.toSeq.map(_.sourceRoot) ++ Seq("build", "test-results", "test", "binary")
+    ))
 
-  private def readTestClassResults(name: String): List[TestClassResult] =
-    val binaryTestReportDir: File = Files.file(projectDir, "build", "test-results", name, "binary")
+  private def readTestClassResults(binaryTestReportDir: File): List[TestClassResult] =
     val testResults: TestResultSerializer = TestResultSerializer(binaryTestReportDir)
     var classResults: List[TestClassResult] = List.empty
     val visitor: Action[TestClassResult] = (result: TestClassResult) => classResults = result +: classResults

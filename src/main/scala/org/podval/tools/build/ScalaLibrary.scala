@@ -1,6 +1,8 @@
 package org.podval.tools.build
 
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.internal.tasks.JvmConstants
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
@@ -40,6 +42,10 @@ final class ScalaLibrary private(
     )
 
 object ScalaLibrary:
+  def getFromProject(project: Project): ScalaLibrary = getFromConfiguration(
+    project.getConfigurations.getByName(JvmConstants.IMPLEMENTATION_CONFIGURATION_NAME)
+  )
+  
   def getFromConfiguration(configuration: Configuration): ScalaLibrary = ScalaLibrary(
     source = s"in configuration '${configuration.getName}'",
     mustHaveScala2 = false,

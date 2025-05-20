@@ -7,8 +7,6 @@ import org.podval.tools.scalajsplugin.nonjvm.NonJvmLinkTask
 import java.io.File
 
 trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
-  final override protected def buildSubDirectory: String = "scalajs"
-
   def moduleInitializers: Option[Seq[ModuleInitializer]]
 
   @Input @Optional def getPrettyPrint: Property[Boolean]

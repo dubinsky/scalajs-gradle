@@ -5,10 +5,9 @@ import org.podval.tools.build.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaNative
 
 case object ScalaNativeBackend extends NonJvmBackend:
-  override val name: String = "Native"
-  override val displayName: String = "Scala Native"
+  override val name: String = "Scala Native"
   override val sourceRoot: String = "native"
-  override val suffix: String = "native0.5"
+  override val artifactSuffix: String = "native0.5"
   override val versionDefault: Version = Version("0.5.7")
 
   override def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty
