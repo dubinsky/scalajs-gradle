@@ -15,4 +15,5 @@ trait BackendDelegate[T <: BackendTask]:
   def testLinkTaskClassOpt: Option[Class[? <: T & BackendTask.Link.Test]]
 
   def pluginDependenciesConfigurationNameOpt: Option[String]
+  
   def createExtension: Option[CreateExtension[?]]

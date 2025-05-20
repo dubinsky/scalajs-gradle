@@ -12,11 +12,9 @@ trait NonJvmLinkTask[L <: NonJvmLinkTask[L]] extends NonJvmTask[L]
   
   final override protected def linkTask: L = this
 
-  // TODO depends on GradleNames etc.
   private val buildDirectory: File = getProject.getLayout.getBuildDirectory.get.getAsFile
-  final protected def outputFile(name: String): File = Files.file(buildDirectory, buildSubDirectory, getName, name)
-
-  protected def buildSubDirectory: String
+  final protected def outputDirectory: File = Files.file(buildDirectory, "tmp", getName)
+  final protected def outputFile(name: String): File = File(outputDirectory, name)
 
 object NonJvmLinkTask:
   abstract class Main[L <: NonJvmLinkTask[L]] extends BackendTask.Link.Main with NonJvmLinkTask[L]:

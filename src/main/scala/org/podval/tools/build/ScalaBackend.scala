@@ -11,14 +11,14 @@ object ScalaBackend:
 
 trait ScalaBackend derives CanEqual:
   def name: String
-  def displayName: String
   def sourceRoot: String
-  def suffixOpt: Option[String]
   def testsCanNotBeForked: Boolean
-
-  final def suffixString: String = suffixOpt.map(suffix => s"_$suffix").getOrElse("")
+  def artifactSuffixOpt: Option[String]
+  def archiveAppendixOpt: Option[String]
   
-  final protected def describe(what: String): String = s"$displayName $what."
+  final def artifactSuffixString: String = artifactSuffixOpt.map(suffix => s"_$suffix").getOrElse("")
+  
+  final protected def describe(what: String): String = s"$name $what."
 
   def scalaCompileParameters(isScala3: Boolean): Seq[String]
 

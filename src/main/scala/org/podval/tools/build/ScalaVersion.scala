@@ -33,7 +33,11 @@ object ScalaVersion:
     if ScalaVersion.Scala3.isSameMajor(scalaVersion)
     then ScalaVersion.Scala3
     else ScalaVersion.Scala2
-    
+
+  def scalaLibraryDependencyWithVersion(scalaVersion: Version): Dependency.WithVersion = forVersion(scalaVersion)
+    .scalaLibraryDependency
+    .withVersion(scalaVersion)
+
   object Scala3 extends ScalaVersion:
     override protected def versionMajor: Int = 3
     override def isScala3: Boolean = true

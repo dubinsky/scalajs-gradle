@@ -17,8 +17,8 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def testByFixture: Boolean = false
 
   // Running tests per-backend in addition to mixed exercises mode-setting functionality,
-  // but currently the focus is on the mixed projects, so when they start working again - set to false.
-  protected def testByBackend: Boolean = true
+  // but now the focus is on the mixed projects.
+  protected def testByBackend: Boolean = false
   
   protected def groupByFeature: Boolean = true
   protected def buildGradleFragments: Seq[String] = Seq.empty
@@ -128,7 +128,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         for backend: ScalaBackend <- backendsSupported do
           val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend)
           if fixturesSupported.nonEmpty then
-            val backendString: String = s"on ${backend.displayName}"
+            val backendString: String = s"on ${backend.name}"
             describe(backendString):
               forProject(
                 projectName :+ backendString,
@@ -138,17 +138,45 @@ abstract class GroupingFunSpec extends AnyFunSpec:
                 backend
               )
 
-//      if backendsSupported.size > 1 then
-//        val backendString: String = "mixed"
-//        describe(backendString):
-//          forProject(
-//            projectName :+ backendString,
-//            feature,
-//            fixtures,
-//            scalaVersion,
-//            backendsSupported
-//          )
+      if backendsSupported.size > 1 then
+        val backendString: String = "mixed"
+        describe(backendString):
+          forProject(
+            projectName :+ backendString,
+            feature,
+            fixtures,
+            scalaVersion,
+            backendsSupported
+          )
 
+  private def writeProject(
+    project: TestProject,
+    scalaVersion: Version,
+    settingsFragments: Seq[String],
+    testImplementation: Seq[Dependency.WithVersion],
+    buildFragments: Seq[String]
+  ): Unit =
+    val writer: TestProjectWriter = project.writer(backend = None)
+    
+    writer.writeSettings(Seq(
+      Fragments.settingsManagement,
+      Fragments.rootProjectName(project.projectNameString),
+      Fragments.includeScalaJsPluginBuild,
+    ) ++ settingsFragments)
+    
+    writer.writeBuild(
+      Seq(
+        Fragments.applyScalaJsPlugin,
+        Fragments.continueOnFailure,
+        Fragments.noJava,
+        Fragments.scalaVersion(scalaVersion),
+        Fragments.dependencies(
+          implementation = Seq.empty,
+          testImplementation = testImplementation
+        )
+      ) ++ buildFragments ++ buildGradleFragments
+    )
+  
   private def forProject(
     projectName: Seq[String],
     feature: Feature,
@@ -157,28 +185,24 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     backend: ScalaBackend
   ): Unit =
     def createProject: TestProject =
-      val project: TestProject = TestProject.writeProject(
-        projectName,
-        properties = Seq(ScalaJSPlugin.backendProperty -> backend.name),
-        dependencies = Map(
-          "implementation" -> Seq(scalaDependency(scalaVersion)),
-          "testImplementation" -> frameworkDependencies(fixtures, scalaVersion, backend)
-        ),
-        buildGradleFragments =
-          buildGradleFragments ++
-          Seq(testTask(feature, fixtures))
+      val project: TestProject = TestProject(projectName)
+      writeProject(
+        project,
+        scalaVersion,
+        settingsFragments = Seq.empty,
+        testImplementation = frameworkDependencies(fixtures, scalaVersion, backend),
+        buildFragments = Seq(testTask(feature, fixtures))
       )
-
-      project.writeSources(backend = None, isTest = false, fixtures.flatMap(_.mainSources))
-      project.writeSources(backend = None, isTest = true , fixtures.flatMap(_.testSources))
-
+      val writer: TestProjectWriter = project.writer(backend = None)
+      writer.writeProperties(Seq(ScalaJSPlugin.backendProperty -> backend.name))
+      writer.writeSources(fixtures)
       project
 
     val project: Memo[TestProject] = Memo(createProject)
     val testResultsRetriever: Memo[TestResultsRetriever] = project.map(_.test(fixtures.flatMap(_.commandLineIncludeTestNames)))
 
     test(
-      testResults = testResultsRetriever.map(_.testResults),
+      testResults = testResultsRetriever.map(_.testResults(backend = None)),
       description = "tests",
       checks = fixtures.flatMap(_.checks(feature))
     )
@@ -188,58 +212,47 @@ abstract class GroupingFunSpec extends AnyFunSpec:
       runOutputExpectations = fixtures.head.runOutputExpectations
     )
 
-  // TODO rework for the subproject-based approach!
-//  private def forProject(
-//    projectName: Seq[String],
-//    feature: Feature,
-//    fixtures: Seq[Fixture],
-//    scalaVersion: Version,
-//    backends: Set[ScalaBackend]
-//  ): Unit =
-//    def createProject: TestProject =
-//      val testImplementationDependencies: Map[String, Seq[Dependency.WithVersion]] = backends
-//        .map((backend: ScalaBackend) =>
-//          "testImplementation" ->
-//            frameworkDependencies(fixturesSupported(fixtures, backend), scalaVersion, backend)
-//        )
-//        .toMap
-//
-//      val project: TestProject = TestProject.writeProject(
-//        projectName,
-//        properties = Seq.empty,
-//        dependencies =
-//          Map("implementation" -> Seq(scalaDependency(scalaVersion))) ++
-//          testImplementationDependencies,
-//        buildGradleFragments =
-//          buildGradleFragments ++
-//          backends.toSeq.map((backend: ScalaBackend) => testTask(feature, fixtures))
-//      )
-//
-//      for backend: ScalaBackend <- backends do
-//        project.writeSources(backend = Some(backend), isTest = false, fixturesSupported(fixtures, backend).flatMap(_.mainSources))
-//        project.writeSources(backend = Some(backend), isTest = true , fixturesSupported(fixtures, backend).flatMap(_.testSources))
-//
-//      project
-//
-//    val project: Memo[TestProject] = Memo(createProject)
-//    val testResultsRetriever: Memo[TestResultsRetriever] = project.map(_.test(fixtures.flatMap(_.commandLineIncludeTestNames)))
-//
-//    for backend: ScalaBackend <- backends do test(
-//      // TODO to obtain test results for all backends, I need to stop Gradle failing the build when tests for one fail...
-//      testResultsRetriever.map(_.testResults),
-//      s"${backend.sourceRoot} tests",
-//      checks = fixturesSupported(fixtures, backend).flatMap(_.checks(feature))
-//    )
+  private def forProject(
+    projectName: Seq[String],
+    feature: Feature,
+    fixtures: Seq[Fixture],
+    scalaVersion: Version,
+    backends: Set[ScalaBackend]
+  ): Unit =
+    def createProject: TestProject =
+      val project: TestProject = TestProject(projectName)
+      writeProject(
+        project,
+        scalaVersion,
+        settingsFragments = Seq(Fragments.includeSubprojects(backends.toSeq.map(_.sourceRoot))),
+        testImplementation = Seq.empty,
+        buildFragments = Seq.empty
+      )
+      for backend: ScalaBackend <- backends do
+        val writer: TestProjectWriter = project.writer(backend = Some(backend))
+        writer.writeBuild(Seq(
+          Fragments.dependencies(
+            implementation = Seq.empty,
+            testImplementation = frameworkDependencies(fixturesSupported(fixtures, backend), scalaVersion, backend)
+          ),
+          testTask(feature, fixtures)
+        ))
+        writer.writeSources(fixturesSupported(fixtures, backend))
+      project
+
+    val project: Memo[TestProject] = Memo(createProject)
+    val testResultsRetriever: Memo[TestResultsRetriever] = project.map(_.test(fixtures.flatMap(_.commandLineIncludeTestNames)))
+
+    for backend: ScalaBackend <- backends do test(
+      testResultsRetriever.map(_.testResults(backend = Some(backend))),
+      s"${backend.sourceRoot} tests",
+      checks = fixturesSupported(fixtures, backend).flatMap(_.checks(feature))
+    )
 
 //    if doRun then run(
 //      project,
 //      runOutputExpectations = fixtures.head.runOutputExpectations
 //    )
-
-  private def scalaDependency(scalaVersion: Version) = ScalaVersion
-    .forVersion(scalaVersion)
-    .scalaLibraryDependency
-    .withVersion(scalaVersion)
   
   private def frameworkDependencies(
     fixtures: Seq[Fixture],
@@ -261,7 +274,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   private def testTask(
     feature: Feature,
     fixtures: Seq[Fixture]
-  ): String = TestTask.testTask(
+  ): String = Fragments.testTask(
     includeTestNames = fixtures.flatMap(_.includeTestNames),
     excludeTestNames = fixtures.flatMap(_.excludeTestNames),
     includeTags = feature.includeTags,

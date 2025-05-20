@@ -9,8 +9,6 @@ import java.io.File
 import java.nio.file.Path
 
 trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with ScalaNativeTask:
-  final override protected def buildSubDirectory: String = "scalanative"
-  
   protected def mainClass: Option[String]
 
   @Input def getMode: Property[String]
@@ -25,7 +23,7 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
   @Input def getOptimize: Property[Boolean]
   Named.conventionBoolean(getOptimize, "SCALANATIVE_OPTIMIZE")
 
-  @OutputDirectory final def getNativeDirectory: File = outputFile("native")
+  @OutputDirectory final def getNativeDirectory: File = outputDirectory
   
   @TaskAction final def execute(): Unit = linkConfig.link(getName)
 

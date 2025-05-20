@@ -4,6 +4,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.DefaultSourceDirectorySet
 import org.gradle.api.internal.provider.ProviderInternal
+import org.gradle.api.internal.tasks.JvmConstants
 import org.gradle.api.plugins.{JavaPluginExtension, JvmTestSuitePlugin}
 import org.gradle.api.{Action, Project, Task}
 import org.gradle.api.plugins.jvm.internal.JvmFeatureInternal
@@ -11,7 +12,7 @@ import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{ScalaSourceDirectorySet, SourceSet, SourceSetContainer, TaskProvider}
 import org.gradle.jvm.tasks.Jar
 import org.gradle.util.internal.GUtil
-import org.podval.tools.build.ScalaLibrary
+import org.podval.tools.build.{ScalaBackend, ScalaLibrary}
 import org.podval.tools.util.Files
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.*
@@ -20,7 +21,7 @@ import java.lang.reflect.Field
 
 object Gradle:
   private val logger: Logger = LoggerFactory.getLogger(classOf[BackendDelegate[?]])
-  
+
   def getClassesTaskProvider(project: Project, sourceSet: SourceSet): TaskProvider[Task] = project
     .getTasks
     .named(sourceSet.getClassesTaskName)
@@ -58,9 +59,12 @@ object Gradle:
     .asInstanceOf[TaskProvider[ScalaCompile]]
     .get
 
-  private def getSourceSets(project: Project) = project.getExtensions.getByType(classOf[JavaPluginExtension]).getSourceSets
-  def getMainSourceSet(project: Project): SourceSet = getSourceSets(project).getByName("main") // TODO use official constant
-  def getTestSourceSet(project: Project): SourceSet = getSourceSets(project).getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
+  def getSourceSets(project: Project): (SourceSet, SourceSet) = 
+    val sourceSets: SourceSetContainer = project.getExtensions.getByType(classOf[JavaPluginExtension]).getSourceSets
+    (
+      sourceSets.getByName(JvmConstants      .JAVA_MAIN_FEATURE_NAME ),
+      sourceSets.getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
+    )
 
   def findSubproject(project: Project, name: String): Option[Project] = project
     .getSubprojects
@@ -90,73 +94,55 @@ object Gradle:
       .asScala
       .toList
     val sourceFiltered: List[Object] = source.filterNot(o =>
-      val it = o.isInstanceOf[File] && o.asInstanceOf[File].getAbsolutePath == sourceDirectory.getAbsolutePath
-//      if it then println(s"removing $o")
-      it
+      o.isInstanceOf[File] && o.asInstanceOf[File].getAbsolutePath == sourceDirectory.getAbsolutePath
     )
     scalaSourceDirectorySet.setSrcDirs(sourceFiltered.asJava)
 
-  // TODO move to plugin
-  def addSharedSources(
-    project: Project,
-    sharedSibling: Project,
-    isRunningInIntelliJ: Boolean
-  ): Unit =
-    def scalaSources(isTest: Boolean) = Files.file(
-      sharedSibling.getProjectDir,
-      "src",
-      if isTest then "test" else "main",
-      "scala"
+  private def sharedScalaSources(project: Project, isTest: Boolean) = Files.file(
+    project.getProjectDir.getParentFile, // mixed project
+    ScalaBackend.sharedSourceRoot,       // shared sibling directory
+    "src",
+    if isTest then "test" else "main",
+    "scala"
+  )
+
+  def addSharedScalaSources(project: Project): Unit =
+    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
+    addScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
+    addScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
+
+  // Add before compilation and remove after, so that IntelliJ does not
+  // run into "duplicate content roots" issue during project import.
+  def addSharedScalaSourcesForTask(project: Project): Action[Task] = (task: Task) =>
+    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
+    task.doFirst(new Action[Task]:
+      override def execute(t: Task): Unit =
+        addScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
+        addScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
     )
-
-    // TODO unfold
-    def addScalaSourcesBoth(): Unit =
-      addScalaSources(getMainSourceSet(project), scalaSources(isTest = false))
-      addScalaSources(getTestSourceSet(project), scalaSources(isTest = true ))
-
-    // Permanently.
-    if !isRunningInIntelliJ then addScalaSourcesBoth() else
-      // Add before compilation and remove after, so that during project import IntelliJ does not
-      // run into "duplicate content roots" issue.
-      project.getTasks.withType(classOf[ScalaCompile]).configureEach: (scalaCompile: ScalaCompile) =>
-        scalaCompile.doFirst(new Action[Task]:
-          override def execute(t: Task): Unit = addScalaSourcesBoth()
-        )
-        scalaCompile.doLast(new Action[Task]:
-          override def execute(t: Task): Unit =
-            removeScalaSources(getMainSourceSet(project), scalaSources(isTest = false))
-            removeScalaSources(getTestSourceSet(project), scalaSources(isTest = true ))
-        )
+    task.doLast(new Action[Task]:
+      override def execute(t: Task): Unit =
+        removeScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
+        removeScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
+    )
 
   private def removeAllScalaSources(sourceSet: SourceSet): Unit =
     getScalaSourceDirectorySet(sourceSet).setSrcDirs(List.empty.asJava)
 
-  def removeAllScalaSources(project: Project): Unit =
-    removeAllScalaSources(getMainSourceSet(project))
-    removeAllScalaSources(getTestSourceSet(project))
+  def removeAllScalaSources(project: Project): Unit =   
+    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
+    removeAllScalaSources(mainSourceSet)
+    removeAllScalaSources(testSourceSet)
+  
+  def archiveAppendixConvention(appendix: String, project: Project): Action[Jar] = (jar: Jar) => jar
+    .getArchiveAppendix
+    .convention(project.provider(() =>
+      if jar.getArchiveClassifier.isPresent then appendix else null
+    ))
 
-  def addScalaLibraryDependency(
-    project: Project,
-    projectScalaLibrary: ScalaLibrary
-  ): Unit =
-    project.getDependencies.add(
-      getMainSourceSet(project).getImplementationConfigurationName,
-      projectScalaLibrary.dependencyWithVersion.dependencyNotation
-    )
-
-  // TODO move to plugin
-  def configureJar(
-    project: Project, 
-    jarTaskName: String,
-    archiveAppendixConvention: String
-  ): Unit =
-    project.getTasks.withType(classOf[Jar]).named(jarTaskName).configure((jar: Jar) =>
-      setArchiveJarConvention(jar, project)
-      jar.getArchiveAppendix.convention(archiveAppendixConvention)
-    )
-
-  private def setArchiveJarConvention(jar: Jar, project: Project) =
-    jar.getArchiveFileName.convention(project.provider(() =>
+  def removeDashBeforeArchiveAppendix(project: Project): Action[Jar] = (jar: Jar) => jar
+    .getArchiveFileName
+    .convention(project.provider(() =>
       // The only change: no dash before the appendix.
       // [baseName][appendix]-[version]-[classifier].[extension]
       var name: String = GUtil.elvis(jar.getArchiveBaseName.getOrNull, "")

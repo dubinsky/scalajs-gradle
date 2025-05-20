@@ -5,10 +5,9 @@ import org.podval.tools.build.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaJS
 
 case object ScalaJSBackend extends NonJvmBackend:
-  override val name: String = "JS"
-  override val displayName: String = "Scala.js"
+  override val name: String = "Scala.js"
   override val sourceRoot: String = "js"
-  override val suffix: String = "sjs1"
+  override val artifactSuffix: String = "sjs1"
   override val versionDefault: Version = Version("1.19.0")
 
   override def scalaCompileParameters(isScala3: Boolean): Seq[String] = if !isScala3 then Seq.empty else Seq("-scalajs")
