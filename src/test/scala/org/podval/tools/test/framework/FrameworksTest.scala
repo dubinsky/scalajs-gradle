@@ -8,8 +8,6 @@ class FrameworksTest extends GroupingFunSpec:
   
   override protected def features: Seq[Feature] = List(
     FrameworksTest.basicFunctionality,
-    // TODO supply included tags on the build command line and reuse the projects?
-    // TODO add tests for test case filtering?
     FrameworksTest.withTagInclusions
   )
 

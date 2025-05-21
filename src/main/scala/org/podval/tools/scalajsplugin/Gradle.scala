@@ -1,27 +1,21 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.DefaultSourceDirectorySet
 import org.gradle.api.internal.provider.ProviderInternal
 import org.gradle.api.internal.tasks.JvmConstants
 import org.gradle.api.plugins.{JavaPluginExtension, JvmTestSuitePlugin}
 import org.gradle.api.{Action, Project, Task}
-import org.gradle.api.plugins.jvm.internal.JvmFeatureInternal
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.{ScalaSourceDirectorySet, SourceSet, SourceSetContainer, TaskProvider}
 import org.gradle.jvm.tasks.Jar
 import org.gradle.util.internal.GUtil
-import org.podval.tools.build.{ScalaBackend, ScalaLibrary}
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.util.Files
-import org.slf4j.{Logger, LoggerFactory}
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.{ListHasAsScala, IterableHasAsJava, SetHasAsScala}
 import java.io.File
 import java.lang.reflect.Field
 
 object Gradle:
-  private val logger: Logger = LoggerFactory.getLogger(classOf[BackendDelegate[?]])
-
   def getClassesTaskProvider(project: Project, sourceSet: SourceSet): TaskProvider[Task] = project
     .getTasks
     .named(sourceSet.getClassesTaskName)
@@ -65,11 +59,6 @@ object Gradle:
       sourceSets.getByName(JvmConstants      .JAVA_MAIN_FEATURE_NAME ),
       sourceSets.getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
     )
-
-  def findSubproject(project: Project, name: String): Option[Project] = project
-    .getSubprojects
-    .asScala
-    .find(_.getName == name)
 
   def disableAllTasks(project: Project): Unit = project
     .getTasks
@@ -126,13 +115,8 @@ object Gradle:
         removeScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
     )
 
-  private def removeAllScalaSources(sourceSet: SourceSet): Unit =
+  def removeAllScalaSources(sourceSet: SourceSet): Unit =
     getScalaSourceDirectorySet(sourceSet).setSrcDirs(List.empty.asJava)
-
-  def removeAllScalaSources(project: Project): Unit =   
-    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
-    removeAllScalaSources(mainSourceSet)
-    removeAllScalaSources(testSourceSet)
   
   def archiveAppendixConvention(appendix: String, project: Project): Action[Jar] = (jar: Jar) => jar
     .getArchiveAppendix
@@ -159,46 +143,3 @@ object Gradle:
     if !GUtil.isTrue(value) then ""
     else if !GUtil.isTrue(prefix) then value
     else "-".concat(value)
-
-  def ensureParameters(
-    scalaCompile: ScalaCompile,
-    toAdd: Seq[String]
-  ): Unit =
-    val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // nullable
-      .map(_.asScala.toList)
-      .getOrElse(List.empty)
-
-    val parametersNew: List[String] = toAdd.foldLeft(parameters) {
-      case (parameters, parameter) =>
-        if parameters.contains(parameter) then parameters else
-          logger.info(s"scalaCompileOptions.additionalParameters of the ${scalaCompile.getName} task: adding '$parameter'.")
-          parameters :+ parameter
-    }
-
-    scalaCompile
-      .getScalaCompileOptions
-      .setAdditionalParameters(parametersNew.asJava)
-
-  def addScalaCompilerPlugins(
-    scalaCompilerPluginsConfiguration: Configuration,
-    scalaCompile: ScalaCompile
-  ): Unit =
-    // There seems to be no need to add `"-Xplugin:" + plugin.getPath` parameters:
-    // just adding plugins to the list is sufficient.
-    val scalaCompilerPlugins: Iterable[File] = scalaCompilerPluginsConfiguration.asScala
-    if scalaCompilerPlugins.nonEmpty then
-      logger.info(s"Adding ${scalaCompile.getName} to ${scalaCompilerPluginsConfiguration.getName}: $scalaCompilerPlugins.")
-      val plugins: FileCollection = Option(scalaCompile.getScalaCompilerPlugins)
-        .map((existingPlugins: FileCollection) => existingPlugins.plus(scalaCompilerPluginsConfiguration))
-        .getOrElse(scalaCompilerPluginsConfiguration)
-      scalaCompile.setScalaCompilerPlugins(plugins)
-
-// TODO - this is reported by `./gradlew resolvableConfigurations` even without me touching anything:
-// Consumable configurations with identical capabilities within a project
-// (other than the default configuration) must have unique attributes,
-// but configuration ':incrementalScalaAnalysisFormain' and [configuration ':incrementalScalaAnalysisElements']
-// contain identical attribute sets.
-// Consider adding an additional attribute to one of the configurations to disambiguate them.
-// For more information, please refer to
-// https://docs.gradle.org/8.13/userguide/upgrading_version_7.html#unique_attribute_sets
-// in the Gradle documentation.

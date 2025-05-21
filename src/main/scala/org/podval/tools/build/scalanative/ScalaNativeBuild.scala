@@ -11,10 +11,8 @@ import scala.scalanative.util.Scope
 import java.io.File
 import java.nio.file.Path
 
-// TODO add abort
-// TODO merge into backend
-
 // see scala.scalanative.sbtplugin.ScalaNativePluginInternal
+// https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala
 object ScalaNativeBuild:
   val logger: Logger = LoggerFactory.getLogger(ScalaNativeBuild.getClass)
 
@@ -93,7 +91,7 @@ object ScalaNativeBuild:
       )
   )
 
-  // TODO is there a Gradle MessageOnlyException analogue?
+  // TODO is there a Gradle MessageOnlyException analogue? Add and use abort!
 
   /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
   private def interceptBuildException[T](op: => T): T =

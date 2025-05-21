@@ -1,4 +1,4 @@
-= Gradle plugin for Scala.js
+= Gradle plugin for Scala.js and Scala Native
 :toc:
 :toclevels: 4
 :toc: preamble
@@ -29,7 +29,12 @@
 :attribute-scalajsBackendProperty: org.podval.tools.scalajs.backend
 // INCLUDED ATTRIBUTES
 
-image::https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
+image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
+image:https://img.shields.io/badge/Version-{version-plugin}-brightgreen[]
+image:https://img.shields.io/badge/Gradle-{version-gradle}-blue?logo=gradle[]
+image:https://img.shields.io/badge/Scala.js-{version-scalajs}-blue[]
+image:https://img.shields.io/badge/Scala_Native-{version-scalanative}-blue[]
+image:https://img.shields.io/badge/Node-{version-node}-blue?logo=nodedotjs[]
 
 == Summary
 
@@ -65,7 +70,7 @@ Plugin works with:
 - `Gradle` {version-gradle};
 - `Scala.js` 1.x;
 - `Node.js` 16.x;
-- `Scala NAtive` 0.5.x.
+- `Scala Native` 0.5.x.
 
 Plugin itself is written in Scala 3.
 Project that the plugin is _applied_ to can use Scala 3, 2.13 or 2.12.
@@ -550,7 +555,7 @@ Plugin does this automatically unless a dependency on
 `org.scala-js:scalajs-compiler` is declared explicitly.
 
 If the project uses Scala 2 _and_ JUnit 4 for Scala.js,
-a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scala-2>>):
+a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scalanative>>):
 
 [source,groovy,subs="+attributes"]
 ----
@@ -693,7 +698,7 @@ Plugin does this automatically unless a dependency on
 `org.scala-native:nscplugin` is declared explicitly.
 
 If the project uses JUnit 4 for Scala Native,
-a JUnit Scala compiler plugin is also needed (<<junit4-scalanative>>):
+a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scalanative>>):
 
 [source,groovy,subs="+attributes"]
 ----
@@ -1342,18 +1347,22 @@ For `specs2` and `uTest`, there are no gutter icons for individual test methods.
 
 == Implementation Notes
 
-=== Scala.js Linking
-It is reasonably easy - if repetitive - to configure the Scala compiler and add needed Scala.js dependencies by hand;
+=== Linking and Running Scala.js and Scala Native
+It is reasonably easy, if repetitive, to configure the Scala compiler and add needed Scala.js dependencies by hand;
 what really pushed me to build this plugin is the difficulty and ugliness involved in
 manually setting up Scala.js linking in a Gradle build script.
 
-I perused the code of:
+For Scala.js, I perused the code of:
 
 - https://www.scala-js.org/doc/tutorial/basic[Scala.js Tutorial]
 - https://github.com/scala-js/scala-js/tree/main/linker-interface[Scala.js Linker]
 - https://github.com/scala-js/scala-js/tree/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin[Scala.js sbt plugin]
 - https://github.com/gtache/scalajs-gradle[Old Scala.js Gradle plugin] by https://github.com/gtache[gtache]
 - https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
+
+For Scala.Native, I perused the code of:
+- https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[Scala Native sbt plugin];
+- https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill] (a little).
 
 === Testing
 
@@ -1398,10 +1407,14 @@ it was reasonably easy to re-use this integration to run tests
 using sbt-compatible frameworks _without_ any Scala.js involved -
 in plain Scala projects.
 
-=== Testing on Scala.js
+=== Testing on Scala.js and Scala Native
 
-Scala.js tests must be run in the same JVM where their frameworks were instantiated
-(see https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal]).
+Scala.js and Scala Native tests must be run in the same JVM
+where their frameworks were instantiated
+(see 
+https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal],
+https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[scala.scalanative.sbtplugin.ScalaNativePluginInternal]
+).
 `TestExecuter` makes sure that the tests are not forked,
 and `TestTask` overrides
 `org.gradle.api.tasks.testing.Test.getMaxParallelForks()`
@@ -1549,13 +1562,7 @@ plugin uses, so that Scala 2.12 can be supported.
 Classpath expansion allows the plugin to use classes from dependencies
 that are added dynamically, but since they become available only after
 classpath is expanded, they can only be used indirectly;
-that is why such classes are only mentioned by name in dedicated intermediate classes:
-
-- `RunTestClassProcessor` uses `ExceptionConverter`, which uses
-`JUnitFrameworkComparisonFailureConverter` and friends, which mention
-test framework-specific exceptions;
-- Scala.js tasks use `ScalaJSCommon` and friends,
-which mention Scala.js-specific classes.
+that is why such classes are only mentioned by name in dedicated intermediate classes.
 
 === Scala 2.12
 When running on JVM (and not on Scala.js), tests are forked into a separate JVM.
@@ -1579,16 +1586,7 @@ Some of the issues:
 - java.lang.NoSuchMethodError: scala.Predef$.wrapRefArray()
 - java.lang.NoSuchMethodError: scala.collection.immutable.Map.updated()
 
-Affected code:
-
-- FrameworkDescriptor
-- OptionStyle
-- DryRunSbtTask
-- RunTestClassProcessor
-- Fingerprints
-- Selectors
-- TaskDefs
-- TestClassRunForking
+Among affected are: FrameworkDescriptor, OptionStyle, DryRunSbtTask, RunTestClassProcessor, Fingerprints, Selectors, TaskDefs, TestClassRunForking...
 
 Some of the affected code runs even when using Scala.js,
 and it works without those compatibility changes;
@@ -1608,29 +1606,31 @@ arguments that allow them to do the filtering internally;
 - destructive, since none of the test frameworks plugin supports
 populate `task.tags`, so with explicit tag inclusions, none of the tests run!
 
-[#junit4-scalajs-scala-2]
-=== JUnit4 for Scala.js and Scala 2
-Turns out, `JUnit4 for Scala.js` assumes existence of a `bootstrapper`
+[#junit4-scalajs-scalanative]
+=== JUnit4 for Scala.js and Scala Native
+Turns out, `JUnit4 for Scala.js` and `JUnit4 for Scala Native`
+assume existence of a `bootstrapper`
 in every test class - apparently, because test discovery for `JUnit4`
-is based on annotations, and reflection on Scala.js is not powerful enough,
-so tests are pre-discovered _at compile time_,
+is based on annotations, and reflection on `Scala.js` and `Scala Native`
+is not powerful enough, so tests are pre-discovered _at compile time_,
 and JUnit4-specific bootstrappers generated for them.
 
-On Scala 3, bootstrappers are generated by the `Scala.js` compiler;
-on Scala 2, they are not, resulting in:
-
+Without bootstrappers, we get:
 [source]
 ----
-Error while loading test class org.podval.tools.test.JUnit4ScalaJSTest failed:
-java.lang.ClassNotFoundException: Cannot find org.podval.tools.test.JUnit4ScalaJSTest$scalajs$junit$bootstrapper$
-  at org.scalajs.junit.JUnitTask.loadBootstrapper(main.js:13275)
-  at org.scalajs.junit.JUnitTask.execute(main.js:13365)
+Error while loading test class ... failed:
+java.lang.ClassNotFoundException: Cannot find ...$scalajs$junit$bootstrapper$
 ----
+(and similar for `Scala Native`).
 
-To get the bootsrappers generated on Scala 2,
+For `Scala.js` on Scala 3, bootstrappers are generated by the `Scala.js` compiler;
+for `Scala.js` on Scala 2, and always for `Scala Native`,
+to get the bootsrappers generated,
 a dedicated Scala compiler plugin has to be added:
-`org.scala-js:scalajs-junit-test-plugin`.
-This compiler plugin can _only_ be added when `JUnit4 for Scala.js`
+for Scala.js - `org.scala-js:scalajs-junit-test-plugin`,
+for Scala Native - `org.scala-native:junit-plugin`.
+
+This compiler plugin can _only_ be added when `JUnit4`
 is actually on the classpath - or Scala compiler breaks ;)
 
 see:
@@ -1638,19 +1638,6 @@ see:
 - https://github.com/scala-js/scala-js/issues/2937
 - https://github.com/scala-js/scala-js/commit/269d1aaf1fa20afbcc3940b9dba58e99ee010dc1
 - https://github.com/scala-js/scala-js/issues/4191
-
-[#junit4-scalanative]
-=== JUnit4 for Scala Native
-Turns out, `JUnit4 for Scala Native` assumes existence of a `bootstrapper`
-in every test class - apparently, because test discovery for `JUnit4`
-is based on annotations, and reflection on Scala Native is not powerful enough,
-so tests are pre-discovered _at compile time_,
-and JUnit4-specific bootstrappers generated for them.
-
-To get the bootsrappers generated on Scala 2,
-a dedicated Scala compiler plugin has to be added: `org.scala-native:junit-plugin`.
-This compiler plugin can _only_ be added when `JUnit4 for Scala Native`
-is actually on the classpath - or Scala compiler breaks ;)
 
 [#test-detection]
 === Test Detection
@@ -1735,9 +1722,6 @@ that made it pretty clear that other modifications to Gradle that would make my 
 cleaner would be to, so I did not even bother;
 here are examples of resulting ugliness:
 
-- to determine if Gradle is being run by IntelliJ Idea
-I had to access non-public classes and methods using reflection
-in link:src/main/scala/org/podval/tools/test/task/IntelliJIdea.scala[IntelliJIdea];
 - to add to the implementation class path of `WorkerProcessBuilder`,
 I had to use reflection in
 link:src/main/scala/org/podval/tools/test/task/SbtTestFramework.scala[SbtTestFramework];
@@ -1753,18 +1737,17 @@ which is not accessible from the plugin and results in `java.lang.NoSuchMethodEr
 which recognizes only the test frameworks explicitly supported by Gradle (`JUnit` and `TestNG`); since I can not override it, I just use
 `org.gradle.api.tasks.testing.junit.JUnitOptions` as `SbtTestFrameworkOptions`.
 
-=== Scala Native Support
+=== Mixing Backends
 
-Scala Native follows the trail blazed by Scala.js, and I follow :)
+TODO describe original approach
 
-I perused the code of:
+TODO describe the "duplicate content roots" issue and my solution;
+speculate about the approach of the IntelliJ Scala plugin:
 
-- https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[Scala Native sbt plugin]
-
-and that is all it took to add support for Scala Native.
-
-Some additional insights were found in
-https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill].
+https://youtrack.jetbrains.com/issue/IDEABKL-6745/Cannot-define-two-identical-content-roots-in-different-module-within-a-single-project
+- https://github.com/JetBrains/intellij-scala[Scala Plugin for IntelliJ IDEA];
+- org.jetbrains.sbt.project.sources.SharedSourcesModuleType
+- its description: "During compilation, dependency to a shared sources module mixes in module sources rather than module output"
 
 === AsciiDoc
 GitHub stupidly disables AsciDoc includes in README;

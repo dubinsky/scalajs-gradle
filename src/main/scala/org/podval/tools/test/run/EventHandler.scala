@@ -58,7 +58,7 @@ final private class EventHandler(runTestClass: RunTestClass):
         handling match
           case Handling.Failed =>
 //            ()
-            // TODO JUnit4 for Scala Native does not populate Event.throwable!
+            // TODO remove when JUnit4 for Scala Native with my fix gets released.
             startedThen(_.failure(_, IllegalArgumentException("FAKE THROWABLE")))
 
           case Handling.Failure(throwable) =>

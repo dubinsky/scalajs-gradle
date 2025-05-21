@@ -29,7 +29,7 @@ object JUnit4ScalaNativeFixture extends Fixture(
        |    assertSame("should be same", aNumber, aNumber)
        |  }
        |
-       |  @Test def testAssertTrue(): Unit = assertTrue("failure - should be true", true)
+       |  @Test def testAssertTrue(): Unit = assertTrue("true is true", true)
        |  @Test def failure(): Unit = assertTrue("failure - should be true", false)
        |}
        |""".stripMargin
@@ -37,12 +37,11 @@ object JUnit4ScalaNativeFixture extends Fixture(
 ):
   override def checks(feature: Feature): Seq[ForClass] = Seq(
     forClass("JUnit4ScalaNativeTest",
-      // TODO test report does not show failure, although failure event is emitted?
-  //    failedCount(1),
+      failedCount(1),
       skippedCount(0),
       passed("testAssertNotNull"),
       passed("testAssertNotSame"),
-  //    failed("failure")
+      failed("failure")
     )
   )
 
