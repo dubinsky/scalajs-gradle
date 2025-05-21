@@ -37,12 +37,10 @@ object JUnit4ScalaJSFixture extends Fixture(
 ):
   override def checks(feature: Feature): Seq[ForClass] = Seq(
     forClass("JUnit4ScalaJSTest",
-      // TODO test report does not show failure, although failure event is emitted?
-  //    failedCount(1),
+      failedCount(1),
       skippedCount(0),
       passed("testAssertNotNull"),
       passed("testAssertNotSame"),
-  //    failed("failure")
+      failed("failure")
     )
   )
-

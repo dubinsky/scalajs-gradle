@@ -2,76 +2,87 @@ package org.podval.tools.scalajsplugin
 
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.internal.tasks.JvmConstants
+import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.{ExtraPropertiesExtension, JavaBasePlugin}
 import org.gradle.api.plugins.scala.{ScalaBasePlugin, ScalaPlugin, ScalaPluginExtension}
 import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.gradle.api.{Action, Plugin, Project, Task}
+import org.gradle.api.{Action, GradleException, Plugin, Project, Task}
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.podval.tools.build.jvm.JvmBackend
 import org.podval.tools.build.{AddConfigurationToClassPath, BackendDependencyRequirements, Dependency, GradleClassPath,
   ScalaBackend, ScalaLibrary, ScalaPlatform}
+import org.podval.tools.build.ScalaBackend.sharedSourceRoot
+import org.podval.tools.platform.IntelliJIdea
 import org.podval.tools.scalajsplugin.jvm.JvmDelegate
 import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
 import org.podval.tools.scalajsplugin.scalanative.ScalaNativeDelegate
-import org.podval.tools.test.task.{IntelliJIdea, TestTask}
+import org.podval.tools.test.task.TestTask
+import org.slf4j.Logger
+import scala.jdk.CollectionConverters.*
 import java.io.File
-import ScalaBackend.sharedSourceRoot
 
 final class ScalaJSPlugin extends Plugin[Project]:
   override def apply(project: Project): Unit =
     // Apply Scala plugin to this project.
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
+    def backendNames: String = ScalaBackend.all.map(_.name).mkString(", ")
+    def sourceRoots: String = ScalaBackend.all.map(_.sourceRoot).mkString(", ")
     def pluginMessage(message: String): String = s"Plugin 'org.podval.tools.scalajs' in $project: $message."
+    def help(message: String): Unit = project.getLogger.lifecycle(
+      s"${pluginMessage(message)}\nDocumentation: https://github.com/dubinsky/scalajs-gradle"
+    )
 
     val delegateOpt: Option[BackendDelegate[?]] = Option(project.findProperty(ScalaJSPlugin.backendProperty))
       .map(_.toString)
       .map((name: String) => Set(JvmDelegate, ScalaJSDelegate, ScalaNativeDelegate)
         .find(_.backend.name == name)
-        .getOrElse(throw IllegalArgumentException(pluginMessage(
-          s"unknown Scala backend '$name'; known backends: ${ScalaBackend.all.map(_.name).mkString(", ")}"
-        )))
+        .getOrElse(throw GradleException(pluginMessage(s"unknown Scala backend '$name'; use one of $backendNames")))
       )
 
     def isBackendPresent(backend: ScalaBackend): Boolean = project.file(backend.sourceRoot).exists && {
-      val isSubproject: Boolean = Gradle.findSubproject(project, backend.sourceRoot).isDefined
+      val isSubproject: Boolean = ScalaJSPlugin.findBackendSubproject(project, backend).isDefined
       if !isSubproject then project.getLogger.warn(pluginMessage(
-        s"'${backend.sourceRoot}' is not included as a subproject in 'settings.gradle'."
+        s"'${backend.sourceRoot}' is not included as a subproject in 'settings.gradle'"
       ))
       isSubproject
     }
 
     val subprojectBackends: Set[ScalaBackend] = ScalaBackend.all.filter(isBackendPresent)
 
-    if delegateOpt.isEmpty && subprojectBackends.isEmpty then project.getLogger.lifecycle(pluginMessage(
-      s"""to choose Scala backend, set property '${ScalaJSPlugin.backendProperty}' to one of ${ScalaBackend.all.map(_.name).mkString(", ")}
-         |or include in 'settings.gradle' at least one of the subprojects ${ScalaBackend.all.map(_.sourceRoot).mkString(", ")};
-         |see documentation at: https://github.com/dubinsky/scalajs-gradle""".stripMargin
-    ))
+    if delegateOpt.isEmpty && subprojectBackends.isEmpty then help(
+      s"""to choose Scala backend, set property '${ScalaJSPlugin.backendProperty}' to one of $backendNames
+         |or include in 'settings.gradle' at least one of the subprojects $sourceRoots""".stripMargin
+    )
 
-    val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
+    val isModeMixed: Boolean = delegateOpt.isEmpty && subprojectBackends.nonEmpty
 
     val sharedExists: Boolean =
       val file: File = project.file(sharedSourceRoot)
       file.exists && file.isDirectory
-    
-    if delegateOpt.isEmpty && subprojectBackends.nonEmpty && !sharedExists then project.getLogger.lifecycle(pluginMessage(
-      s"to share code between backends, create directory '$sharedSourceRoot'"
-    ))
-    
-    val sharedNotAvailable: Boolean =
-      sharedExists && 
-      isRunningInIntelliJ &&
-      Option(project.findProject(sharedSourceRoot)).isEmpty
-        
-    if sharedNotAvailable then project.getLogger.warn(pluginMessage(
-      s"for shared sources to be visible in IntelliJ IDE, '$sharedSourceRoot' must be included as a subproject in 'settings.gradle'"
-    ))
-      
-    if delegateOpt.isEmpty && subprojectBackends.nonEmpty then
-      project.getLogger.lifecycle(pluginMessage(s"using Scala backends ${subprojectBackends.map(_.name).mkString(", ")}"))
+
+    if sharedExists then
+      if !isModeMixed then help(
+        s"""to share code between backends, do not set property '${ScalaJSPlugin.backendProperty}'
+           |and include in 'settings.gradle' at least one of the subprojects $sourceRoots""".stripMargin
+      )
+    else
+      if isModeMixed then help(
+        s"to share code between backends, create directory '$sharedSourceRoot'"
+      )
+
+    val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
+    val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
+    val sharedNotAvailable: Boolean = sharedExists && isRunningInIntelliJ && ScalaJSPlugin.findSharedSubproject(project).isEmpty
+
+    if sharedNotAvailable then help(
+      s"for shared sources to be visible in IntelliJ IDE, include '$sharedSourceRoot' as a subproject in 'settings.gradle'"
+    )
+
+    if isModeMixed then
+      project.getLogger.lifecycle(pluginMessage(s"using Scala backends ${subprojectBackends.map(_.name).mkString(", ")}$ijString"))
       ScalaJSPlugin.applyMixed(
         project,
         subprojectBackends,
@@ -82,20 +93,13 @@ final class ScalaJSPlugin extends Plugin[Project]:
         .map(_.toString)
         .contains("true")
 
-      val sharedSiblingOpt: Option[Project] =
-        if !includeShared
-        then None
-        else Option(project.getParent.findProject(sharedSourceRoot))
-
       val delegate: BackendDelegate[?] = delegateOpt.getOrElse(JvmDelegate)
       val sharedString: String = if !includeShared then "" else s" (including '$sharedSourceRoot')"
-      val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
       project.getLogger.lifecycle(pluginMessage(s"using Scala backend ${delegate.backend.name}$sharedString$ijString"))
 
       ScalaJSPlugin.applySingle(
         project,
         delegate,
-        sharedSiblingOpt,
         includeShared = includeShared,
         isRunningInIntelliJ = isRunningInIntelliJ
       )
@@ -104,16 +108,29 @@ object ScalaJSPlugin:
   val backendProperty: String = "org.podval.tools.scalajs.backend"
   val includeSharedProperty: String = "org.podval.tools.scalajs.includeShared"
 
+  // We look up projects by their *directory* names, not by their *project* names,
+  // so `Option(project.findProject(name))` does not do it for projects renamed in `settings.gradle` ;)
+  private def findSubproject(project: Project, name: String): Option[Project] = project
+    .getSubprojects
+    .asScala
+    .find(_.getProjectDir.getName == name)
+
+  private def findSharedSubproject(project: Project) = findSubproject(project, sharedSourceRoot)
+  private def findBackendSubproject(project: Project, backend: ScalaBackend) = findSubproject(project, backend.sourceRoot)
+
   private def applyMixed(
     project: Project,
     subprojectBackends: Set[ScalaBackend],
     includeShared: Boolean
   ): Unit =
-    val sharedSubprojectOpt: Option[Project] = Gradle.findSubproject(project, sharedSourceRoot)
+    val sharedSubprojectOpt: Option[Project] = findSharedSubproject(project)
 
     // Disable all tasks and remove all Scala sources from the overall project.
     Gradle.disableAllTasks(project)
-    Gradle.removeAllScalaSources(project)
+    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
+    Gradle.removeAllScalaSources(mainSourceSet)
+    Gradle.removeAllScalaSources(testSourceSet)
+
 
     // Disable all tasks and apply 'scala' plugin to the shared project (if it exists).
     sharedSubprojectOpt.foreach((sharedSubproject: Project) =>
@@ -123,7 +140,7 @@ object ScalaJSPlugin:
 
     for subprojectBackend: ScalaBackend <- subprojectBackends do
       // Configure backend and apply the plugin to the subprojects.
-      val subproject: Project = Gradle.findSubproject(project, subprojectBackend.sourceRoot).get
+      val subproject: Project = findBackendSubproject(project, subprojectBackend).get
       val backendName: String = subprojectBackend.name
       val extraProperties: ExtraPropertiesExtension = subproject.getExtensions.getByType(classOf[ExtraPropertiesExtension])
       extraProperties.set(backendProperty, backendName)
@@ -132,10 +149,11 @@ object ScalaJSPlugin:
 
     project.afterEvaluate: (project: Project) =>
       // Set Scala version on the subprojects and the shared project (if it exists).
-      val scalaLibraryDependency: Dependency.WithVersion = ScalaLibrary.getFromProject(project).dependencyWithVersion
       val subprojectsToSetScalaVersionOn: Seq[Project] =
         sharedSubprojectOpt.toSeq ++
-        subprojectBackends.map(_.sourceRoot).map(Gradle.findSubproject(project, _)).map(_.get)
+        subprojectBackends.map(findBackendSubproject(project, _)).map(_.get)
+
+      val scalaLibraryDependency: Dependency.WithVersion = ScalaLibrary.getFromProject(project).dependencyWithVersion
       subprojectsToSetScalaVersionOn.foreach(_
         .getExtensions
         .getByType(classOf[ScalaPluginExtension])
@@ -151,7 +169,6 @@ object ScalaJSPlugin:
   private def applySingle(
     project: Project,
     delegate: BackendDelegate[?],
-    sharedSiblingOpt: Option[Project],
     includeShared: Boolean,
     isRunningInIntelliJ: Boolean
   ): Unit =
@@ -168,67 +185,64 @@ object ScalaJSPlugin:
       else
         // Add dependency on the shared sibling.
         // TODO exclude this dependency from publications!
-        sharedSiblingOpt.foreach(sharedSibling => project
-          .getDependencies
-          .add(JvmConstants.IMPLEMENTATION_CONFIGURATION_NAME, sharedSibling)
-        )
+        val sharedSibling: Project = ScalaJSPlugin.findSharedSubproject(project.getParent).get
+        project.getDependencies.add(JvmConstants.IMPLEMENTATION_CONFIGURATION_NAME, sharedSibling)
 
+        // Add shared sources for the execution of the tasks that need them.
         val addSharedScalaSourcesForTask: Action[Task] = Gradle.addSharedScalaSourcesForTask(project)
         project.getTasks.withType(classOf[ScalaCompile]).configureEach(addSharedScalaSourcesForTask)
-        project.getTasks.withType(classOf[Jar]).configureEach(addSharedScalaSourcesForTask)
+        project.getTasks.withType(classOf[Jar         ]).configureEach(addSharedScalaSourcesForTask)
 
     project.afterEvaluate: (project: Project) =>
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromProject(project)
       val pluginScalaPlatform: ScalaPlatform = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).toPlatform(JvmBackend)
       configureJarTask(project, delegate, projectScalaLibrary)
-      applyDependencyRequirements(project, delegate, projectScalaLibrary, pluginScalaPlatform)
+      dependencyRequirements(project, delegate, projectScalaLibrary, pluginScalaPlatform).foreach(_.apply(project))
       configureScalaCompile(project, delegate, projectScalaLibrary)
       expandClassPath(project, delegate, projectScalaLibrary)
 
   private def configureArchiveAppendix(
     project: Project,
     delegate: BackendDelegate[?]
-  ): Unit =
-    delegate.backend.archiveAppendixOpt.foreach((archiveAppendix: String) =>
-      project.getTasks.withType(classOf[Jar])
-        .configureEach(Gradle.archiveAppendixConvention(archiveAppendix, project))
-    )
+  ): Unit = delegate.backend.archiveAppendixOpt.foreach((archiveAppendix: String) =>
+    project.getTasks.withType(classOf[Jar])
+      .configureEach(Gradle.archiveAppendixConvention(archiveAppendix, project))
+  )
 
-  private def configureTestTask(project: Project): Unit =
-    project.getTasks.withType(classOf[TestTask]).configureEach((testTask: TestTask) =>
-      testTask.setGroup(JavaBasePlugin.VERIFICATION_GROUP)
-      testTask.useSbt()
-    )
+  private def configureTestTask(
+    project: Project
+  ): Unit = project.getTasks.withType(classOf[TestTask]).configureEach((testTask: TestTask) =>
+    testTask.setGroup(JavaBasePlugin.VERIFICATION_GROUP)
+    testTask.useSbt()
+  )
 
+  // Set 'runtimeClassPath' and dependency on the 'classes' task.
   private def configureRuntimeAndClassesTasks(
     project: Project,
     delegate: BackendDelegate[?]
-  ): Unit =
-    // Set 'runtimeClassPath' and dependency on the 'classes' task.
-    project.getTasks.withType(delegate.taskClass).configureEach((task: BackendTask) =>
-      def sourceSet: SourceSet =
-        val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
-        if task.isTest
-        then testSourceSet
-        else mainSourceSet
+  ): Unit = project.getTasks.withType(delegate.taskClass).configureEach((task: BackendTask) =>
+    def sourceSet: SourceSet =
+      val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
+      if task.isTest
+      then testSourceSet
+      else mainSourceSet
 
-      if task.isInstanceOf[BackendTask.HasRuntimeClassPath] then
-        task.asInstanceOf[BackendTask.HasRuntimeClassPath].getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-      if task.isInstanceOf[BackendTask.DependsOnClasses] then
-        task.asInstanceOf[BackendTask.DependsOnClasses].dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
-    )
+    if task.isInstanceOf[BackendTask.HasRuntimeClassPath] then
+      task.asInstanceOf[BackendTask.HasRuntimeClassPath].getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
+    if task.isInstanceOf[BackendTask.DependsOnClasses] then
+      task.asInstanceOf[BackendTask.DependsOnClasses].dependsOn(Gradle.getClassesTaskProvider(project, sourceSet))
+  )
 
   private def createPluginDependenciesConfiguration(
     project: Project,
     delegate: BackendDelegate[?]
-  ): Unit =
-    delegate.pluginDependenciesConfigurationNameOpt.map(configurationName =>
-      // TODO use new one-shot methods resolvable()/consumable() etc.
-      val configuration: Configuration = project.getConfigurations.create(configurationName)
-      configuration.setVisible(false)
-      configuration.setCanBeConsumed(false)
-      configuration.setDescription(s"${delegate.backend.name} dependencies used by the ScalaJS plugin.")
-    )
+  ): Unit = delegate.pluginDependenciesConfigurationNameOpt.map((configurationName: String) =>
+    // TODO use new one-shot methods resolvable()/consumable() etc.
+    val configuration: Configuration = project.getConfigurations.create(configurationName)
+    configuration.setVisible(false)
+    configuration.setCanBeConsumed(false)
+    configuration.setDescription(s"${delegate.backend.name} dependencies used by the ScalaJS plugin.")
+  )
 
   private def registerTasks(
     project: Project,
@@ -237,6 +251,8 @@ object ScalaJSPlugin:
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
     def linkTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName("link", "")
 
+    // TODO look into link tasks self-registering run/test counterparts.
+    
     def registerTask[T <: BackendTask](
       clazz: Class[? <: T],
       name: String,
@@ -321,14 +337,13 @@ object ScalaJSPlugin:
       jar.getArchiveAppendix.convention(jarAppendix)
     )
 
-  private def applyDependencyRequirements(
+  private def dependencyRequirements(
     project: Project,
     delegate: BackendDelegate[?],
     projectScalaLibrary: ScalaLibrary,
     pluginScalaPlatform: ScalaPlatform
-  ): Unit =
+  ): Seq[ApplyDependencyRequirements] =
     val projectScalaPlatform: ScalaPlatform = projectScalaLibrary.toPlatform(delegate.backend)
-
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
     val implementationConfigurationName    : String = mainSourceSet.getImplementationConfigurationName
     val testImplementationConfigurationName: String = testSourceSet.getImplementationConfigurationName
@@ -339,7 +354,7 @@ object ScalaJSPlugin:
       projectScalaPlatform = projectScalaPlatform
     )
 
-    val applications: Seq[ApplyDependencyRequirements] = Seq(
+    Seq(
       ApplyDependencyRequirements(
         requirements.implementation,
         projectScalaPlatform,
@@ -362,9 +377,7 @@ object ScalaJSPlugin:
         pluginDependenciesConfigurationName
       )
     )
-
-    applications.foreach(_.apply(project))
-
+  
   private def configureScalaCompile(
     project: Project,
     delegate: BackendDelegate[?],
@@ -376,8 +389,8 @@ object ScalaJSPlugin:
 
     def configureScalaCompile(sourceSet: SourceSet): Unit =
       val scalaCompile: ScalaCompile = Gradle.scalaCompile(project, sourceSet)
-      Gradle.ensureParameters(scalaCompile, scalaCompileParameters)
-      Gradle.addScalaCompilerPlugins(scalaCompilerPluginsConfiguration, scalaCompile)
+      ensureParameters(scalaCompile, scalaCompileParameters, project.getLogger)
+      addScalaCompilerPlugins(scalaCompilerPluginsConfiguration, scalaCompile, project.getLogger)
 
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
     configureScalaCompile(mainSourceSet)
@@ -399,3 +412,48 @@ object ScalaJSPlugin:
 
     addToClassPath.foreach(_.add())
     addToClassPath.foreach(_.verify(projectScalaLibrary))
+
+  private def ensureParameters(
+    scalaCompile: ScalaCompile,
+    toAdd: Seq[String],
+    logger: Logger
+  ): Unit =
+    val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // nullable
+      .map(_.asScala.toList)
+      .getOrElse(List.empty)
+
+    val parametersNew: List[String] = toAdd.foldLeft(parameters) {
+      case (parameters, parameter) =>
+        if parameters.contains(parameter) then parameters else
+          logger.info(s"scalaCompileOptions.additionalParameters of the ${scalaCompile.getName} task: adding '$parameter'.")
+          parameters :+ parameter
+    }
+
+    scalaCompile
+      .getScalaCompileOptions
+      .setAdditionalParameters(parametersNew.asJava)
+
+  private def addScalaCompilerPlugins(
+    scalaCompilerPluginsConfiguration: Configuration,
+    scalaCompile: ScalaCompile,
+    logger: Logger
+  ): Unit =
+    // There seems to be no need to add `"-Xplugin:" + plugin.getPath` parameters:
+    // just adding plugins to the list is sufficient.
+    val scalaCompilerPlugins: Iterable[File] = scalaCompilerPluginsConfiguration.asScala
+    if scalaCompilerPlugins.nonEmpty then
+      logger.info(s"Adding ${scalaCompile.getName} to ${scalaCompilerPluginsConfiguration.getName}: $scalaCompilerPlugins.")
+      val plugins: FileCollection = Option(scalaCompile.getScalaCompilerPlugins)
+        .map((existingPlugins: FileCollection) => existingPlugins.plus(scalaCompilerPluginsConfiguration))
+        .getOrElse(scalaCompilerPluginsConfiguration)
+      scalaCompile.setScalaCompilerPlugins(plugins)
+
+// TODO - this is reported by `./gradlew resolvableConfigurations` even without me touching anything:
+// Consumable configurations with identical capabilities within a project
+// (other than the default configuration) must have unique attributes,
+// but configuration ':incrementalScalaAnalysisFormain' and [configuration ':incrementalScalaAnalysisElements']
+// contain identical attribute sets.
+// Consider adding an additional attribute to one of the configurations to disambiguate them.
+// For more information, please refer to
+// https://docs.gradle.org/8.13/userguide/upgrading_version_7.html#unique_attribute_sets
+// in the Gradle documentation.

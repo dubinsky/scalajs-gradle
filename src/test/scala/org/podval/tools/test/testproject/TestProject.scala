@@ -27,9 +27,7 @@ final class TestProject(projectName: Seq[String]):
       if commandLineIncludeTestNames.isEmpty
       then List.empty
       else List("--tests", commandLineIncludeTestNames.mkString("\"", ", ", "\""))
-
-    // To get test results for all backends, I tell Gradle to `--continue` running the build even when a task fails.
-    // TODO do it using a setting on the test task, so that the project is runnable stand-alone.
+    
     val testOutput: String = gradleRunner
       .withArguments((List("clean", "test", "-i") ++ testsArgument).asJava)
       .forwardOutput

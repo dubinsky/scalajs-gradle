@@ -19,11 +19,9 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-// TODO merge into backend
 object ScalaJSBuild:
   private val logger: Logger = LoggerFactory.getLogger(ScalaJSBuild.getClass)
 
-  // TODO add logSource in Scala Native
   private def loggerJS(logSource: String): LoggerJS = new LoggerJS:
     override def trace(t: => Throwable): Unit =
       logger.error(s"$logSource Error", t)
