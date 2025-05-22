@@ -6,10 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.8.0] - 2025-05-
+## [0.8.0] - 2025-05-23
 - cleanup: `TestProject` and `TestProjectWriter`;
 - feat: multiple backends in subprojects;
 - doc: added usage hints;
+- doc: multiple backends documentation;
 
 ## [0.7.9] - 2025-05-09 - unpublished
 - doc: Scala Native;

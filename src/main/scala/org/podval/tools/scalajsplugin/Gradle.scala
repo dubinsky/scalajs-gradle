@@ -60,12 +60,7 @@ object Gradle:
       sourceSets.getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
     )
 
-  def disableAllTasks(project: Project): Unit = project
-    .getTasks
-    .withType(classOf[Task])
-    .configureEach(_.setEnabled(false))
-
-  private def getScalaSourceDirectorySet(sourceSet: SourceSet): ScalaSourceDirectorySet = sourceSet
+  def getScalaSourceDirectorySet(sourceSet: SourceSet): ScalaSourceDirectorySet = sourceSet
     .getExtensions
     .getByType(classOf[ScalaSourceDirectorySet])  
   
@@ -114,9 +109,6 @@ object Gradle:
         removeScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
         removeScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
     )
-
-  def removeAllScalaSources(sourceSet: SourceSet): Unit =
-    getScalaSourceDirectorySet(sourceSet).setSrcDirs(List.empty.asJava)
   
   def archiveAppendixConvention(appendix: String, project: Project): Action[Jar] = (jar: Jar) => jar
     .getArchiveAppendix
