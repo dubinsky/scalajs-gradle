@@ -5,7 +5,7 @@ import org.gradle.api.internal.tasks.JvmConstants
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.{ExtraPropertiesExtension, JavaBasePlugin}
 import org.gradle.api.plugins.scala.{ScalaBasePlugin, ScalaPlugin, ScalaPluginExtension}
-import org.gradle.api.tasks.{SourceSet, TaskProvider}
+import org.gradle.api.tasks.{SourceSet, SourceTask, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.{Action, GradleException, Plugin, Project, Task}
 import org.gradle.jvm.tasks.Jar
@@ -19,6 +19,7 @@ import org.podval.tools.scalajsplugin.jvm.JvmDelegate
 import org.podval.tools.scalajsplugin.scalajs.ScalaJSDelegate
 import org.podval.tools.scalajsplugin.scalanative.ScalaNativeDelegate
 import org.podval.tools.test.task.TestTask
+import org.podval.tools.util.Files
 import org.slf4j.Logger
 import scala.jdk.CollectionConverters.*
 import java.io.File
@@ -28,7 +29,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
     // Apply Scala plugin to this project.
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
-    def backendNames: String = ScalaBackend.all.map(_.name).mkString(", ")
+    def backendNames: String = ScalaBackend.all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
     def sourceRoots: String = ScalaBackend.all.map(_.sourceRoot).mkString(", ")
     def pluginMessage(message: String): String = s"Plugin 'org.podval.tools.scalajs' in $project: $message."
     def help(message: String): Unit = project.getLogger.lifecycle(
@@ -38,26 +39,30 @@ final class ScalaJSPlugin extends Plugin[Project]:
     val delegateOpt: Option[BackendDelegate[?]] = Option(project.findProperty(ScalaJSPlugin.backendProperty))
       .map(_.toString)
       .map((name: String) => Set(JvmDelegate, ScalaJSDelegate, ScalaNativeDelegate)
-        .find(_.backend.name == name)
+        .find(_.backend.is(name))
         .getOrElse(throw GradleException(pluginMessage(s"unknown Scala backend '$name'; use one of $backendNames")))
       )
-
-    def isBackendPresent(backend: ScalaBackend): Boolean = project.file(backend.sourceRoot).exists && {
-      val isSubproject: Boolean = ScalaJSPlugin.findBackendSubproject(project, backend).isDefined
-      if !isSubproject then project.getLogger.warn(pluginMessage(
-        s"'${backend.sourceRoot}' is not included as a subproject in 'settings.gradle'"
-      ))
-      isSubproject
-    }
-
-    val subprojectBackends: Set[ScalaBackend] = ScalaBackend.all.filter(isBackendPresent)
-
-    if delegateOpt.isEmpty && subprojectBackends.isEmpty then help(
-      s"""to choose Scala backend, set property '${ScalaJSPlugin.backendProperty}' to one of $backendNames
-         |or include in 'settings.gradle' at least one of the subprojects $sourceRoots""".stripMargin
+    
+    val backendCandidates: Set[ScalaBackend] = ScalaBackend.all.filter(backend => project.file(backend.sourceRoot).exists)
+    val notSubprojects: Set[ScalaBackend] = backendCandidates.filterNot(ScalaJSPlugin.findBackendSubproject(project, _).isDefined)
+    if notSubprojects.nonEmpty then project.getLogger.warn(pluginMessage(
+        s"subprojects ${notSubprojects.map(_.sourceRoot).map(n => s"'$n'").mkString(", ")} must be included in 'settings.gradle'"
+    ))
+    
+    if delegateOpt.isEmpty && backendCandidates.isEmpty then help(
+      s"""to choose Scala backend, set property '${ScalaJSPlugin.backendProperty}' to one of $backendNames;
+         |to share code between backends, create at least one of the subprojects $sourceRoots""".stripMargin
     )
 
-    val isModeMixed: Boolean = delegateOpt.isEmpty && subprojectBackends.nonEmpty
+    val isModeMixed: Boolean = delegateOpt.isEmpty && backendCandidates.nonEmpty
+    
+    // Write `settings-includes.gradle`.
+    if isModeMixed then Files.write(
+      file = File(project.getProjectDir, "settings-includes.gradle"),
+      content = (Seq(sharedSourceRoot) ++ backendCandidates.map(_.sourceRoot))
+        .map(name => s"include '${project.getProjectDir.getName}:$name'")
+        .mkString("\n")
+    )
 
     val sharedExists: Boolean =
       val file: File = project.file(sharedSourceRoot)
@@ -66,7 +71,7 @@ final class ScalaJSPlugin extends Plugin[Project]:
     if sharedExists then
       if !isModeMixed then help(
         s"""to share code between backends, do not set property '${ScalaJSPlugin.backendProperty}'
-           |and include in 'settings.gradle' at least one of the subprojects $sourceRoots""".stripMargin
+           |and create at least one of the subprojects $sourceRoots""".stripMargin
       )
     else
       if isModeMixed then help(
@@ -74,18 +79,19 @@ final class ScalaJSPlugin extends Plugin[Project]:
       )
 
     val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
-    val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
     val sharedNotAvailable: Boolean = sharedExists && isRunningInIntelliJ && ScalaJSPlugin.findSharedSubproject(project).isEmpty
 
     if sharedNotAvailable then help(
-      s"for shared sources to be visible in IntelliJ IDE, include '$sharedSourceRoot' as a subproject in 'settings.gradle'"
+      s"for shared sources to be visible in IntelliJ IDE, include subproject '$sharedSourceRoot' in 'settings.gradle'"
     )
 
+    val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
     if isModeMixed then
-      project.getLogger.lifecycle(pluginMessage(s"using Scala backends ${subprojectBackends.map(_.name).mkString(", ")}$ijString"))
+      val backends: Set[ScalaBackend] = backendCandidates.filter(ScalaJSPlugin.findBackendSubproject(project, _).isDefined)
+      project.getLogger.lifecycle(pluginMessage(s"using Scala backends ${backends.map(_.name).mkString(", ")}$ijString"))
       ScalaJSPlugin.applyMixed(
         project,
-        subprojectBackends,
+        backends,
         includeShared = sharedExists && !sharedNotAvailable
       )
     else
@@ -120,30 +126,28 @@ object ScalaJSPlugin:
 
   private def applyMixed(
     project: Project,
-    subprojectBackends: Set[ScalaBackend],
+    backends: Set[ScalaBackend],
     includeShared: Boolean
   ): Unit =
     val sharedSubprojectOpt: Option[Project] = findSharedSubproject(project)
 
-    // Disable all tasks and remove all Scala sources from the overall project.
-    Gradle.disableAllTasks(project)
+    // Disable `SourceTask` tasks of the overall project and unregister all its Scala sources.
+    project.getTasks.withType(classOf[SourceTask]).configureEach(_.setEnabled(false))
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
-    Gradle.removeAllScalaSources(mainSourceSet)
-    Gradle.removeAllScalaSources(testSourceSet)
+    Gradle.getScalaSourceDirectorySet(mainSourceSet).setSrcDirs(List.empty.asJava)
+    Gradle.getScalaSourceDirectorySet(testSourceSet).setSrcDirs(List.empty.asJava)
 
-
-    // Disable all tasks and apply 'scala' plugin to the shared project (if it exists).
+    // If the shared subproject exists, apply 'scala' plugin to it and disable all its tasks.
     sharedSubprojectOpt.foreach((sharedSubproject: Project) =>
-      Gradle.disableAllTasks(sharedSubproject)
       sharedSubproject.getPluginManager.apply("scala")
+      sharedSubproject.getTasks.withType(classOf[Task]).configureEach(_.setEnabled(false))
     )
 
-    for subprojectBackend: ScalaBackend <- subprojectBackends do
+    for backend: ScalaBackend <- backends do
       // Configure backend and apply the plugin to the subprojects.
-      val subproject: Project = findBackendSubproject(project, subprojectBackend).get
-      val backendName: String = subprojectBackend.name
+      val subproject: Project = findBackendSubproject(project, backend).get
       val extraProperties: ExtraPropertiesExtension = subproject.getExtensions.getByType(classOf[ExtraPropertiesExtension])
-      extraProperties.set(backendProperty, backendName)
+      extraProperties.set(backendProperty, backend.name)
       if includeShared then extraProperties.set(includeSharedProperty, "true")
       subproject.getPluginManager.apply(classOf[ScalaJSPlugin])
 
@@ -151,7 +155,7 @@ object ScalaJSPlugin:
       // Set Scala version on the subprojects and the shared project (if it exists).
       val subprojectsToSetScalaVersionOn: Seq[Project] =
         sharedSubprojectOpt.toSeq ++
-        subprojectBackends.map(findBackendSubproject(project, _)).map(_.get)
+        backends.map(findBackendSubproject(project, _)).map(_.get)
 
       val scalaLibraryDependency: Dependency.WithVersion = ScalaLibrary.getFromProject(project).dependencyWithVersion
       subprojectsToSetScalaVersionOn.foreach(_
@@ -377,7 +381,7 @@ object ScalaJSPlugin:
         pluginDependenciesConfigurationName
       )
     )
-  
+
   private def configureScalaCompile(
     project: Project,
     delegate: BackendDelegate[?],
