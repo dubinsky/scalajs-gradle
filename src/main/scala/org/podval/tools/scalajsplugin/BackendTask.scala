@@ -1,6 +1,6 @@
 package org.podval.tools.scalajsplugin
 
-import org.gradle.api.{DefaultTask, Task}
+import org.gradle.api.{DefaultTask, GradleException, Task}
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.tasks.{InputFiles, Internal}
 import org.podval.tools.platform.OutputHandler
@@ -10,6 +10,9 @@ import java.io.File
 
 trait BackendTask extends Task:
   @Internal def isTest: Boolean
+
+  // TODO use more specific exception?
+  protected final def abort: String => Nothing = (message: String) => throw GradleException(message)
 
 object BackendTask:
   sealed trait Main extends BackendTask:

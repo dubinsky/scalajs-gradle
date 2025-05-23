@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2025-0
+- cleanup: test interface dependency goes to `testRuntimeOnly`, not `testImplementation` configuration;
+- cleanup: create `run` task only if one does not exist;
+- cleanup: `OutputPiper.start(BaseExecSpec)` implemented;
+- dependency updates;
+- cleanup: use `abort` for `ScalaNative` too;
+- doc: dependencies documentation cleanup;
+
 ## [0.8.0] - 2025-05-23
 - cleanup: `TestProject` and `TestProjectWriter`;
 - feat: multiple backends in subprojects;

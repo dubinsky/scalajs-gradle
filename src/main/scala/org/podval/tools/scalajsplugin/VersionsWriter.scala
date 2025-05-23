@@ -14,7 +14,7 @@ import java.io.File
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
 object VersionsWriter:
   private val versions: Seq[(String, Version)] = Seq(
-    "gradle" -> Version("8.14"),
+    "gradle" -> Version("8.14.1"),
     "plugin" -> Version("0.8.0"),
     
     "scala" -> ScalaVersion.Scala3.versionDefault,

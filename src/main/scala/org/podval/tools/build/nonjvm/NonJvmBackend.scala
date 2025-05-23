@@ -62,7 +62,7 @@ trait NonJvmBackend extends ScalaBackend:
           ),
           additionalImplementationDependencyRequirements(backendVersion, scalaVersion, isScala3)
         ),
-      testImplementation =
+      testRuntimeOnly =
         Array(testBridge.required(backendVersion)),
       pluginDependencies =
         arrayConcat(

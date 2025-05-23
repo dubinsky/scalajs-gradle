@@ -1,11 +1,12 @@
 package org.podval.tools.build.scalanative
 
 import org.podval.tools.build.nonjvm.NonJvmTestAdapter
+import org.scalajs.linker.interface.LinkingException
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework
 import scala.concurrent.ExecutionContext
-import scala.scalanative.build.{Build, Config, Discover, GC as GCN, LTO as LTON, Logger as LoggerN, Mode as ModeN,
-  NativeConfig}
+import scala.scalanative.build.{Build, BuildException, Config, Discover, NativeConfig, GC as GCN, LTO as LTON,
+  Logger as LoggerN, Mode as ModeN}
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.scalanative.util.Scope
 import java.io.File
@@ -26,14 +27,15 @@ object ScalaNativeBuild:
     mainClass: Option[String],
     testConfig: Boolean,
     classpath: Seq[Path],
-    sourcesClassPath: Seq[Path]
+    sourcesClassPath: Seq[Path],
+    abort: String => Nothing
   ): ScalaNativeLinkConfig =
     val moduleName: String = s"$projectName-${mode.name}"
 
   // TODO if the main class is not set, link with a different build type to avoid errors!!!
     val nativeConfig: NativeConfig = NativeConfig.empty
-      .withClang(ScalaNativeBuild.interceptBuildException(Discover.clang()))
-      .withClangPP(ScalaNativeBuild.interceptBuildException(Discover.clangpp()))
+      .withClang(ScalaNativeBuild.interceptBuildException(Discover.clang(), abort))
+      .withClangPP(ScalaNativeBuild.interceptBuildException(Discover.clangpp(), abort))
       .withCompileOptions(Discover.compileOptions())
       .withLinkingOptions(Discover.linkingOptions())
       .withLTO(toNative(lto))
@@ -55,7 +57,8 @@ object ScalaNativeBuild:
 
   def link(
     config: Config,
-    logSource: String
+    logSource: String,
+    abort: String => Nothing
   ): Path =
     logger.info(s"ScalaNativeBuild.nativeLinkImpl($config)")
 
@@ -63,7 +66,8 @@ object ScalaNativeBuild:
       buildCachedSync(
         config.withLogger(loggerN(logSource)),
         (throwable: Throwable) => logger.warn(s"Trace: $throwable")
-      )
+      ),
+      abort
     )
     
   private def buildCachedSync(
@@ -91,15 +95,12 @@ object ScalaNativeBuild:
       )
   )
 
-  // TODO is there a Gradle MessageOnlyException analogue? Add and use abort!
-
   /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
-  private def interceptBuildException[T](op: => T): T =
-    op
-  //    try op
-  //    catch
-  //      case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
-  //      case ex: LinkingException => throw new MessageOnlyException(ex.getMessage)
+  private def interceptBuildException[T](op: => T, abort: String => Nothing): T =
+    try op
+    catch
+      case ex: BuildException   => abort(ex.getMessage)
+      case ex: LinkingException => abort(ex.getMessage)
 
   private def loggerN(logSource: String): LoggerN = new LoggerN:
     def toLog(message: String): String = s"$logSource: $message"

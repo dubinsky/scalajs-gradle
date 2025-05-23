@@ -25,7 +25,7 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
 
   @OutputDirectory final def getNativeDirectory: File = outputDirectory
   
-  @TaskAction final def execute(): Unit = linkConfig.link(getName)
+  @TaskAction final def execute(): Unit = linkConfig.link(getName, abort)
 
   @OutputFile final def getOutputFile: File = linkConfig.artifactPath.toFile
 
@@ -41,5 +41,6 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
       mainClass = mainClass,
       testConfig = isTest,
       classpath = runtimeClassPath.map(_.toPath),
-      sourcesClassPath = sourcesClassPath
+      sourcesClassPath = sourcesClassPath,
+      abort = abort
     )
