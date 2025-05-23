@@ -2,23 +2,14 @@ package org.podval.tools.platform
 
 import org.gradle.process.BaseExecSpec
 import org.slf4j.{Logger, LoggerFactory}
-
 import java.io.{InputStream, OutputStream}
 
 final class OutputPiper(outputHandler: OutputHandler):
   // this one is for the ExecSpec-based ones: JVM and Scala Native
-  def start(exec: BaseExecSpec): Unit = start(
-    exec.getStandardOutput,
-    exec.getErrorOutput
-  )
-
-  private def start(
-    out: OutputStream,
-    err: OutputStream
-  ): Unit =
-    // TODO implement!!!
-    ()
-
+  def start(exec: BaseExecSpec): Unit =
+    exec.setStandardOutput(CallbackOutputStream(outputHandler.out))
+    exec.setErrorOutput   (CallbackOutputStream(outputHandler.err))
+  
   /* The list of threads that are piping output to System.out and
    * System.err. This is not an AtomicReference or any other thread-safe
    * structure because:

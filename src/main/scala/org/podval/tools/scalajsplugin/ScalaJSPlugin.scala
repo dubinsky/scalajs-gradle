@@ -5,9 +5,10 @@ import org.gradle.api.internal.tasks.JvmConstants
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.{ExtraPropertiesExtension, JavaBasePlugin}
 import org.gradle.api.plugins.scala.{ScalaBasePlugin, ScalaPlugin, ScalaPluginExtension}
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.{SourceSet, SourceTask, TaskProvider}
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.gradle.api.{Action, GradleException, Plugin, Project, Task}
+import org.gradle.api.{Action, GradleException, Plugin, Project, Task, UnknownTaskException}
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.podval.tools.build.jvm.JvmBackend
@@ -68,15 +69,13 @@ final class ScalaJSPlugin extends Plugin[Project]:
       val file: File = project.file(sharedSourceRoot)
       file.exists && file.isDirectory
 
-    if sharedExists then
-      if !isModeMixed then help(
-        s"""to share code between backends, do not set property '${ScalaJSPlugin.backendProperty}'
-           |and create at least one of the subprojects $sourceRoots""".stripMargin
-      )
-    else
-      if isModeMixed then help(
-        s"to share code between backends, create directory '$sharedSourceRoot'"
-      )
+    if sharedExists && !isModeMixed then help(
+      s"""to share code between backends, do not set property '${ScalaJSPlugin.backendProperty}'
+         |and create at least one of the subprojects $sourceRoots""".stripMargin
+    )
+    if !sharedExists &&isModeMixed then help(
+      s"to share code between backends, create directory '$sharedSourceRoot'"
+    )
 
     val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
     val sharedNotAvailable: Boolean = sharedExists && isRunningInIntelliJ && ScalaJSPlugin.findSharedSubproject(project).isEmpty
@@ -194,8 +193,8 @@ object ScalaJSPlugin:
 
         // Add shared sources for the execution of the tasks that need them.
         val addSharedScalaSourcesForTask: Action[Task] = Gradle.addSharedScalaSourcesForTask(project)
-        project.getTasks.withType(classOf[ScalaCompile]).configureEach(addSharedScalaSourcesForTask)
-        project.getTasks.withType(classOf[Jar         ]).configureEach(addSharedScalaSourcesForTask)
+        project.getTasks.withType(classOf[SourceTask         ]).configureEach(addSharedScalaSourcesForTask)
+        project.getTasks.withType(classOf[AbstractArchiveTask]).configureEach(addSharedScalaSourcesForTask)
 
     project.afterEvaluate: (project: Project) =>
       val projectScalaLibrary: ScalaLibrary = ScalaLibrary.getFromProject(project)
@@ -255,7 +254,7 @@ object ScalaJSPlugin:
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
     def linkTaskName(sourceSet: SourceSet): String = sourceSet.getTaskName("link", "")
 
-    // TODO look into link tasks self-registering run/test counterparts.
+    // TODO look into link tasks self-registering run/test counterparts - rules?
     
     def registerTask[T <: BackendTask](
       clazz: Class[? <: T],
@@ -264,8 +263,9 @@ object ScalaJSPlugin:
       after: String,
       group: String,
       dependsOn: Option[TaskProvider[?]] = None,
+      ifDoesNotExist: Boolean = false,
       replace: Boolean = false
-    ): TaskProvider[? <: T] =
+    ): TaskProvider[?] =
       project.getTasks.withType(clazz).configureEach((task: BackendTask) =>
         task.setDescription(s"$before ${delegate.backend.name} code$after.")
         task.setGroup(group)
@@ -274,9 +274,11 @@ object ScalaJSPlugin:
       // TODO fold with noop action
       val action: Action[T] = (task: T) => dependsOn.foreach(task.dependsOn(_))
 
-      if !replace
-      then
-        project.getTasks.register(name, clazz, action)
+      if !replace then
+        val existing: Option[TaskProvider[?]] = if !ifDoesNotExist then None else
+          try Some(project.getTasks.named(name))
+          catch case _: UnknownTaskException => None
+        existing.getOrElse(project.getTasks.register(name, clazz, action))
       else
         project.getTasks.replace(name, clazz)
         project.getTasks.withType(clazz).named(name, action)
@@ -293,14 +295,15 @@ object ScalaJSPlugin:
         )
       )
 
-    // Register 'run' task. - TODO only if it does not exist!
+    // Register 'run' task.
     registerTask(
       clazz = delegate.runTaskClass,
       name = "run",
       before = "Runs",
       after = "",
       group = "other",
-      dependsOn = link
+      dependsOn = link,
+      ifDoesNotExist = true
     )
 
     // Register 'testLink' task.
@@ -351,9 +354,10 @@ object ScalaJSPlugin:
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Gradle.getSourceSets(project)
     val implementationConfigurationName    : String = mainSourceSet.getImplementationConfigurationName
     val testImplementationConfigurationName: String = testSourceSet.getImplementationConfigurationName
+    val testRuntimeOnlyConfigurationName   : String = testSourceSet.getRuntimeOnlyConfigurationName
 
     val requirements: BackendDependencyRequirements = delegate.backend.dependencyRequirements(
-      implementationConfiguration = project.getConfigurations.getByName(implementationConfigurationName),
+      implementationConfiguration     = project.getConfigurations.getByName(implementationConfigurationName    ),
       testImplementationConfiguration = project.getConfigurations.getByName(testImplementationConfigurationName),
       projectScalaPlatform = projectScalaPlatform
     )
@@ -365,9 +369,9 @@ object ScalaJSPlugin:
         implementationConfigurationName
       ),
       ApplyDependencyRequirements(
-        requirements.testImplementation,
+        requirements.testRuntimeOnly,
         projectScalaPlatform,
-        testImplementationConfigurationName
+        testRuntimeOnlyConfigurationName
       ),
       ApplyDependencyRequirements(
         requirements.scalaCompilerPlugins,

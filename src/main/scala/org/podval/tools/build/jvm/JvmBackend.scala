@@ -18,7 +18,7 @@ case object JvmBackend extends ScalaBackend:
     projectScalaPlatform: ScalaPlatform
   ): BackendDependencyRequirements = BackendDependencyRequirements(
     implementation = Array.empty,
-    testImplementation = Array(SbtTestInterface.required()),
+    testRuntimeOnly = Array(SbtTestInterface.required()),
     scalaCompilerPlugins = Array.empty,
     pluginDependencies = Array.empty
   )
