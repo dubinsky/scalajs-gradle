@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.build.Version
 
 // http://etorreborre.github.io/specs2/
 // https://github.com/etorreborre/specs2
@@ -42,7 +42,7 @@ object Specs2 extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.ListWithoutEq,
   includeTagsOption = "include",
   excludeTagsOption = "exclude",
-  versionDefaultScala2 = Some(Version("4.20.9")),
-  // specs2 does not supported Scala Native
-  forNative = ForBackend.notSupported
-) with ScalaDependency.Maker
+  versionDefaultScala2 = Some(Version("4.20.9"))
+):
+  // specs2 does not support Scala Native
+  override def forNative: None.type = None

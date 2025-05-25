@@ -1,5 +1,6 @@
 package org.podval.tools.test.framework
 
+import org.podval.tools.build.jvm.JvmBackend
 import org.podval.tools.build.scalajs.ScalaJSBackend
 import org.podval.tools.build.ScalaDependency
 
@@ -14,8 +15,13 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   versionDefault = ScalaJSBackend.versionDefault,
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
-  usesTestSelectorAsNestedTestSelector = true,
+  usesTestSelectorAsNestedTestSelector = true
+):
+  override val forJS    : Some[ForBackend] = Some(ForBackend(
+    new Maker with ScalaDependency.Maker:
+      final override def scalaBackend: JvmBackend.type = JvmBackend
+      final override def scala2: Boolean = true
+  ))
   // This is a Scala.js-only test framework
-  forJVM = ForBackend.notSupported,
-  forNative = ForBackend.notSupported
-) with ScalaDependency.MakerScala2Jvm
+  override val forJVM   : None.type = None
+  override val forNative: Option[Nothing] = None

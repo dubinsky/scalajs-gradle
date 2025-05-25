@@ -1,6 +1,8 @@
 package org.podval.tools.build.scalajs
 
-import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.jvm.JvmBackend
+import org.podval.tools.build.{Dependency, DependencyRequirement, ScalaBinaryVersion, ScalaDependency, ScalaVersion,
+  Version}
 import org.podval.tools.build.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaJS
 
@@ -10,11 +12,15 @@ case object ScalaJSBackend extends NonJvmBackend:
   override val artifactSuffix: String = "sjs1"
   override val versionDefault: Version = Version("1.19.0")
 
-  override def scalaCompileParameters(isScala3: Boolean): Seq[String] = if !isScala3 then Seq.empty else Seq("-scalajs")
+  override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
+    if scalaVersion.isScala3 
+    then Seq("-scalajs")
+    else Seq.empty
+    
   override def areCompilerPluginsBuiltIntoScala3: Boolean = true
-  override def junit4: ScalaDependency.Maker = JUnit4ScalaJS
+  override def junit4: Dependency.Maker = JUnit4ScalaJS.forJS.get.maker
   override def versionExtractor(version: Version): Version = version
-  override def versionComposer(projectScalaVersion: Version, backendVersion: Version): Version = backendVersion.simple
+  override def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): Version = backendVersion.simple
 
   private val group: String = "org.scala-js"
 
@@ -22,10 +28,12 @@ case object ScalaJSBackend extends NonJvmBackend:
     final override val artifact: String,
     what: String,
     final override val isScalaVersionFull: Boolean = false
-  ) extends ScalaDependency.MakerScala2Jvm:
+  ) extends ScalaDependency.Maker:
     final override def description: String = describe(what)
     final override def versionDefault: Version = ScalaJSBackend.versionDefault
     final override def group: String = ScalaJSBackend.group
+    final override def scalaBackend: JvmBackend.type = JvmBackend
+    final override def scala2: Boolean = true
 
   override def implementation: Array[ScalaDependency.Maker] = Array.empty
   override def library(isScala3: Boolean): ScalaDependency.Maker = Maker("scalajs-library", "Library")
@@ -48,28 +56,30 @@ case object ScalaJSBackend extends NonJvmBackend:
     isScalaVersionFull = true
   )
 
-  object JSDomNodeJS extends ScalaDependency.MakerScala2Jvm:
+  object JSDomNodeJS extends ScalaDependency.Maker:
     override val versionDefault: Version = Version("1.1.0")
     override def group: String = ScalaJSBackend.group
     override val artifact: String = "scalajs-env-jsdom-nodejs"
     override val description: String = describe("Library for DOM manipulations on Node.js")
+    override def scalaBackend: JvmBackend.type = JvmBackend
+    override def scala2: Boolean = true
 
   object DomSJS extends ScalaDependency.Maker:
     override val versionDefault: Version = Version("2.8.0")
     override def group: String = ScalaJSBackend.group
     override val artifact: String = "scalajs-dom"
     override val description: String = describe("Library for DOM manipulations")
+    override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
 
-  override def additionalPluginDependencyRequirements: Array[DependencyRequirement[ScalaPlatform]] = Array(
+  override def additionalPluginDependencyRequirements: Array[DependencyRequirement] = Array(
     // ScalaModules.ParallelCollections,
     JSDomNodeJS.required()
   )
 
   override def additionalImplementationDependencyRequirements(
     backendVersion: Version,
-    scalaVersion: Version,
-    isScala3: Boolean
-  ): Array[DependencyRequirement[ScalaPlatform]] =
-    if !isScala3 // ++ is from IterableOnce and thus is not available on Scala 2.12...
+    scalaVersion: ScalaVersion
+  ): Array[DependencyRequirement] =
+    if !scalaVersion.isScala3 // ++ is from IterableOnce and thus is not available on Scala 2.12...
     then Array(DomSJS.required()) 
-    else Array(DomSJS.required(), ScalaVersion.Scala3.ScalaLibraryJS.required(scalaVersion)) // only for Scala 3
+    else Array(DomSJS.required(), ScalaBinaryVersion.Scala3.ScalaLibraryJS.required(scalaVersion.version)) // only for Scala 3

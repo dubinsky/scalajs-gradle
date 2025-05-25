@@ -2,7 +2,7 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.build.{Dependency, ScalaBackend, ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaBinaryVersion, ScalaVersion}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.scalajsplugin.ScalaJSPlugin
 import org.scalatest.funspec.AnyFunSpec
@@ -25,7 +25,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def checkRun: Boolean = false
   protected def features: Seq[Feature]
   protected def fixtures: Seq[Fixture]
-  protected def scalaVersions: Seq[Version] = ScalaVersion.versionDefaults
+  protected def scalaVersions: Seq[ScalaVersion] = ScalaBinaryVersion.versionDefaults
   protected def backends: Set[ScalaBackend] = ScalaBackend.all
   
   // TODO run it from the base class itself
@@ -46,7 +46,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
           describe(feature.name):
             for fixture: Fixture <- fixtures do
               describe(fixture.framework.displayName):
-                forPlatforms(
+                forScalaVersions(
                   projectName = Seq(
                     feature.name,
                     fixture.framework.displayName
@@ -59,7 +59,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
           describe(fixture.framework.displayName):
             for feature: Feature <- features do
               describe(feature.name):
-                forPlatforms(
+                forScalaVersions(
                   projectName = Seq(
                     fixture.framework.displayName,
                     feature.name
@@ -73,7 +73,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         for feature: Feature <- features do
           describe(feature.name):
             describe(combinedFixtureName):
-              forPlatforms(
+              forScalaVersions(
                 projectName = Seq(
                   feature.name,
                   combinedFixtureName
@@ -85,7 +85,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         describe(combinedFixtureName):
           for feature: Feature <- features do
             describe(feature.name):
-              forPlatforms(
+              forScalaVersions(
                 projectName = Seq(
                   combinedFixtureName,
                   feature.name
@@ -94,12 +94,12 @@ abstract class GroupingFunSpec extends AnyFunSpec:
                 fixtures
               )
 
-  private def forPlatforms(
+  private def forScalaVersions(
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture]
   ): Unit =
-    for scalaVersion: Version <- scalaVersions do
+    for scalaVersion: ScalaVersion <- scalaVersions do
       val scalaVersionString: String = s"in Scala v$scalaVersion"
       describe(scalaVersionString):
         forBackends(
@@ -113,13 +113,13 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     backend: ScalaBackend
   ): Seq[Fixture] = fixtures
-    .filter(_.framework.forBackend(backend).isSupported)
+    .filter(_.framework.forBackend(backend).isDefined)
 
   private def forBackends(
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    scalaVersion: Version
+    scalaVersion: ScalaVersion
   ): Unit =
     val backendsSupported: Set[ScalaBackend] = backends.filter(fixturesSupported(fixtures, _).nonEmpty)
 
@@ -151,7 +151,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
 
   private def writeProject(
     project: TestProject,
-    scalaVersion: Version,
+    scalaVersion: ScalaVersion,
     settingsFragments: Seq[String],
     testImplementation: Seq[Dependency.WithVersion],
     buildFragments: Seq[String]
@@ -181,7 +181,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    scalaVersion: Version,
+    scalaVersion: ScalaVersion,
     backend: ScalaBackend
   ): Unit =
     def createProject: TestProject =
@@ -194,7 +194,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         buildFragments = Seq(testTask(feature, fixtures))
       )
       val writer: TestProjectWriter = project.writer(backend = None)
-      writer.writeProperties(Seq(ScalaJSPlugin.backendProperty -> backend.name))
+      writer.writeProperties(Seq(ScalaJSPlugin.scalaBackendProperty -> backend.name))
       writer.writeSources(fixtures)
       project
 
@@ -216,7 +216,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    scalaVersion: Version,
+    scalaVersion: ScalaVersion,
     backends: Set[ScalaBackend]
   ): Unit =
     def createProject: TestProject =
@@ -256,21 +256,19 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   
   private def frameworkDependencies(
     fixtures: Seq[Fixture],
-    scalaVersion: Version,
+    scalaVersion: ScalaVersion,
     backend: ScalaBackend
-  ): Seq[Dependency.WithVersion] =
-    val platform: ScalaPlatform = ScalaPlatform(scalaVersion, backend)
-    fixtures
-      .map(_.framework)
-      .map((framework: FrameworkDescriptor) =>
-        require(framework.forBackend(backend).isSupported)
-        framework.dependency(platform).withVersion(
-          if platform.version.isScala3
-          then framework.versionDefault
-          else framework.versionDefaultScala2.getOrElse(framework.versionDefault)
-        )
+  ): Seq[Dependency.WithVersion] = fixtures
+    .map(_.framework)
+    .map((framework: FrameworkDescriptor) =>
+      require(framework.forBackend(backend).isDefined)
+      framework.forBackend(backend).get.maker.dependency(scalaVersion).withVersion(
+        if scalaVersion.isScala3
+        then framework.versionDefault
+        else framework.versionDefaultScala2.getOrElse(framework.versionDefault)
       )
-    
+    )
+  
   private def testTask(
     feature: Feature,
     fixtures: Seq[Fixture]

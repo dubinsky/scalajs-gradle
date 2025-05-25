@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaPlatform, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBinaryVersion, Version}
 import org.podval.tools.test.testproject.{Feature, Fixture, GroupingFunSpec}
 
 class FrameworksTest extends GroupingFunSpec:

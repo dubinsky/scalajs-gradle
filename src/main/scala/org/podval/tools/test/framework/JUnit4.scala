@@ -27,9 +27,13 @@ object JUnit4 extends FrameworkDescriptor(
   excludeTagsOption = "--exclude-categories",
   // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
   additionalOptions = Array("--ignore-runners=none"),
-  usesTestSelectorAsNestedTestSelector = true,
-  forJVM = ForBackend(underlying = Some(JUnit4Underlying)),
+  usesTestSelectorAsNestedTestSelector = true
+):
+  override val forJVM   : Some[ForBackend] = Some(ForBackend(
+    maker = new Maker with JavaDependency.Maker, 
+    underlying = Some(JUnit4Underlying)
+  ))
   // This is a JVM-only test framework
-  forJS = ForBackend.notSupported,
-  forNative = ForBackend.notSupported,
-) with JavaDependency.Maker
+  override val forJS    : None.type = None
+  override val forNative: None.type = None
+

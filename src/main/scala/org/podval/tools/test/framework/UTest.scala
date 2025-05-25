@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.build.Version
 
 // https://github.com/com-lihaoyi/utest
 // https://github.com/com-lihaoyi/utest/blob/master/utest/src/utest/runner/Framework.scala
@@ -27,4 +27,4 @@ object UTest extends FrameworkDescriptor(
   // `utest.runner.Framework` logs using `println`; to force the use of the SBT logs:
   className = "utest.runner.MillFramework",
   sharedPackages = List("utest.runner")
-) with ScalaDependency.Maker
+)

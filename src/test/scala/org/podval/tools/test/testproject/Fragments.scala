@@ -1,6 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.build.{Dependency, ScalaBackend, Version}
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaVersion}
 
 object Fragments:
   def settingsManagement: String =
@@ -42,7 +42,7 @@ object Fragments:
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |""".stripMargin
        
-  def scalaVersion(version: Version): String = s"scala.scalaVersion = '$version'"
+  def scalaVersion(version: ScalaVersion): String = s"scala.scalaVersion = '$version'"
   
   private def dependenciesString(
     configurationName: String,

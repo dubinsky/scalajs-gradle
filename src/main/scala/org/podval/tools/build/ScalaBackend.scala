@@ -24,10 +24,10 @@ trait ScalaBackend derives CanEqual:
   def artifactSuffixOpt: Option[String]
   def archiveAppendixOpt: Option[String]
   
-  def scalaCompileParameters(isScala3: Boolean): Seq[String]
+  def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String]
 
   def dependencyRequirements(
     implementationConfiguration: Configuration,
     testImplementationConfiguration: Configuration,
-    projectScalaPlatform: ScalaPlatform
+    scalaVersion: ScalaVersion
   ): BackendDependencyRequirements

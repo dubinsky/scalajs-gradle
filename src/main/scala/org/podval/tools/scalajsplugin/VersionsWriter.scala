@@ -3,7 +3,7 @@ package org.podval.tools.scalajsplugin
 import org.podval.tools.build.jvm.JvmBackend
 import org.podval.tools.build.scalajs.ScalaJSBackend
 import org.podval.tools.build.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{ScalaModules, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaModules, ScalaBinaryVersion, Version}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.test.framework
 import org.podval.tools.util.{Files, Strings}
@@ -17,9 +17,9 @@ object VersionsWriter:
     "gradle" -> Version("8.14.1"),
     "plugin" -> Version("0.8.0"),
     
-    "scala" -> ScalaVersion.Scala3.versionDefault,
-    "scala2-minor" -> ScalaVersion.Scala2.majorAndMinor,
-    "scala2" -> ScalaVersion.Scala2.Scala213.versionDefault,
+    "scala" -> ScalaBinaryVersion.Scala3.versionDefault.version,
+    "scala213-suffix" -> ScalaBinaryVersion.Scala213.versionSuffix,
+    "scala2" -> ScalaBinaryVersion.Scala213.versionDefault.version,
     
     "sbt-test-interface" -> JvmBackend.SbtTestInterface.versionDefault,
     
@@ -47,8 +47,9 @@ object VersionsWriter:
   )
 
   val attributes: Seq[(String, String)] = Seq(
-    "scalajsBackendProperty" -> ScalaJSPlugin.backendProperty,
-    "scalajsIncludeSharedProperty" -> ScalaJSPlugin.includeSharedProperty
+    "scalajsScalaBackendProperty"  -> ScalaJSPlugin.scalaBackendProperty,
+    "scalajsIncludeSharedProperty" -> ScalaJSPlugin.includeSharedProperty,
+    "scalajsScalaVersionProperty"  -> ScalaJSPlugin.scalaVersionProperty
   )
   
   def main(args: Array[String]): Unit =

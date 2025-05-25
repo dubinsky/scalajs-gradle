@@ -12,7 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: `OutputPiper.start(BaseExecSpec)` implemented;
 - dependency updates;
 - cleanup: use `abort` for `ScalaNative` too;
+- cleanup: no `run` task on JVM;
+- cleanup: `ScalaVersion` and `ScalaBinaryVersion`; removed `ScalaPlatform`;
+- cleanup: `Dependency.Maker` knows its `ScalaBackend`;
 - doc: dependencies documentation cleanup;
+- fix: `testScalaCompilerPlugins` configuration;
+- feat (WIP): Scala version property;
+- feat (WIP): `ScalaVersionData`;
 
 ## [0.8.0] - 2025-05-23
 - cleanup: `TestProject` and `TestProjectWriter`;

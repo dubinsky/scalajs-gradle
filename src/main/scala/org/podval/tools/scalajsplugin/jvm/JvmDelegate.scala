@@ -11,9 +11,9 @@ object JvmDelegate extends BackendDelegate[JvmTask]:
 
   override def linkTaskClassOpt    : Option[Class[? <: JvmTask & BackendTask.Link.Main]] = None
   override def testLinkTaskClassOpt: Option[Class[? <: JvmTask & BackendTask.Link.Test]] = None
-
-  override def runTaskClass : Class[JvmRunTask ] = classOf[JvmRunTask ]
+  override def runTaskClassOpt     : Option[Class[? <: JvmTask & BackendTask.Run .Main]] = None
   override def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
 
   override def pluginDependenciesConfigurationNameOpt: Option[String] = None
+  override def usesTestScalaCompilerPluginsConfiguration: Boolean = false
   override def createExtension: Option[CreateExtension[?]] = None

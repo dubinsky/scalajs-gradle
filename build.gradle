@@ -10,9 +10,9 @@ group = 'org.podval.tools'
 version = version_plugin
 description = 'Gradle plugin for Scala.js'
 
-final String scalaVersion       = version_scala
-final String scala2versionMinor = version_scala2_minor
-final String scalaJsVersion     = version_scalajs
+final String scalaVersion        = version_scala
+final String scala2versionSuffix = version_scala213_suffix
+final String scalaJsVersion      = version_scalajs
 
 dependencies {
   implementation "org.scala-lang:scala3-library_3:$scalaVersion"
@@ -22,15 +22,15 @@ dependencies {
 
   // Scala.js Linker uses it but somehow does not bring it onto the classpath
   // TODO adding this dynamically did not work!
-  implementation "org.scala-lang.modules:scala-parallel-collections_$scala2versionMinor:$version_scala_parallel_collections"
+  implementation "org.scala-lang.modules:scala-parallel-collections_$scala2versionSuffix:$version_scala_parallel_collections"
 
   // for running tests
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
 
   // for Scala.js support
-  compileOnly "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
-  compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
-  compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:$version_scalajs_env_jsdom_nodejs"
+  compileOnly "org.scala-js:scalajs-linker_$scala2versionSuffix:$scalaJsVersion"
+  compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionSuffix:$scalaJsVersion"
+  compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionSuffix:$version_scalajs_env_jsdom_nodejs"
 
   // for Scala Native support
   compileOnly "org.scala-native:tools_native0.5_3:$version_scalanative"

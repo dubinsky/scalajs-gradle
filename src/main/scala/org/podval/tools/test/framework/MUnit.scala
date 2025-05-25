@@ -1,6 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.build.jvm.JvmBackend
+import org.podval.tools.build.scalajs.ScalaJSBackend
+import org.podval.tools.build.scalanative.ScalaNativeBackend
+import org.podval.tools.build.{Dependency, ScalaBackend, Version}
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala
@@ -39,10 +42,15 @@ object MUnit extends FrameworkDescriptor(
   excludeTagsOption = "--exclude-tags",
   // use SBT loggers
   additionalOptions = Array("--logger=sbt"),
-  usesTestSelectorAsNestedTestSelector = true,
+  usesTestSelectorAsNestedTestSelector = true
+):
+  private def forBackend(backend: ScalaBackend, underlying: Dependency.Maker): Some[ForBackend] = Some(ForBackend(
+    maker = ScalaMaker(backend),
+    underlying = Some(underlying)
+  ))
+  
   // on JVM, uses underlying JUni4 - via its own internal interface
-  forJVM = ForBackend(underlying = Some(JUnit4Underlying)),
+  override val forJVM   : Some[ForBackend] = forBackend(JvmBackend, JUnit4Underlying)
   // on Scala.js, uses JUnit4 for Scala.js - with its own sbt.testing.Framework implementation
-  forJS = ForBackend(underlying = Some(JUnit4ScalaJS)),
-  forNative = ForBackend(underlying = Some(JUnit4ScalaNative))
-) with ScalaDependency.Maker
+  override val forJS    : Some[ForBackend] = forBackend(ScalaJSBackend, JUnit4ScalaJS.forJS.get.maker)
+  override val forNative: Some[ForBackend] = forBackend(ScalaNativeBackend, JUnit4ScalaNative.forNative.get.maker)
