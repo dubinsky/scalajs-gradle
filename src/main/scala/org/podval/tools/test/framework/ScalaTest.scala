@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.build.Version
 
 // implementation: https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala
 // runner arguments: https://www.scalatest.org/user_guide/using_the_runner
@@ -64,4 +64,4 @@ object ScalaTest extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-n",
   excludeTagsOption = "-l"
-) with ScalaDependency.Maker
+)

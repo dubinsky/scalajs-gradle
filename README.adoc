@@ -7,7 +7,7 @@
 :version-gradle: 8.14.1
 :version-plugin: 0.8.0
 :version-scala: 3.7.0
-:version-scala2-minor: 2.13
+:version-scala213-suffix: 2.13
 :version-scala2: 2.13.16
 :version-sbt-test-interface: 1.0
 :version-scalajs: 1.19.0
@@ -27,8 +27,9 @@
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.18
-:attribute-scalajsBackendProperty: org.podval.tools.scalajs.backend
+:attribute-scalajsScalaBackendProperty: org.podval.tools.scalajs.backend
 :attribute-scalajsIncludeSharedProperty: org.podval.tools.scalajs.includeShared
+:attribute-scalajsScalaVersionProperty: org.podval.tools.scalajs.scalaVersion
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -203,7 +204,7 @@ in some cases - better than the dedicated test-framework-specific plugins ;)
 [#single-backend]
 === Scala.js or Scala Native
 Sources under `src` are processed with one specific backend;
-backend used is selected by the project property `{attribute-scalajsBackendProperty}`.
+backend used is selected by the project property `{attribute-scalajsScalaBackendProperty}`.
 
 The value of this property is treated as case-insensitive.
 
@@ -222,7 +223,7 @@ put the following into the `gradle.properties` file of the project:
 
 [source,properties,subs="+attributes"]
 ----
-{attribute-scalajsBackendProperty}=js
+{attribute-scalajsScalaBackendProperty}=js
 ----
 
 === Multiple Backends
@@ -235,7 +236,7 @@ _together_ with the backend-specific sources.
 
 This mode is triggered when:
 
-- property `{attribute-scalajsBackendProperty}` is _not_ set for the project, and
+- property `{attribute-scalajsScalaBackendProperty}` is _not_ set for the project, and
 - at least one of the backend-specific directories `js`, `jvm`, `native` exists.
 
 Not all backends have to be used all the time;
@@ -306,7 +307,7 @@ In this mode, plugin:
 - propagates the Scala version set in the overall project's `build.gradle` to each of the backend-specific subprojects
 (so there is no need to set it manually in the backend-specific `build.gradle`);
 - configures appropriate backend for each of the backend-specific subprojects
-(so there is no need to set property `{attribute-scalajsBackendProperty}` manually in the backend-specific `gradle.properties`);
+(so there is no need to set property `{attribute-scalajsScalaBackendProperty}` manually in the backend-specific `gradle.properties`);
 - disables all source tasks and unregisters all Scala sources in the overall subproject;
 - applies `scala` plugin to the `shared` subproject;
 - disables all tasks in the `shared` subproject.
@@ -337,8 +338,6 @@ project <6>
 <6> there are no sources in the overall project
 
 == JVM
-
-TODO document the `run` task
 
 === Dependencies
 
@@ -372,7 +371,7 @@ dependencies {
 }
 ----
 <1> for Scala 2.13: `'{version-scala2}'`
-<2> for Scala 2.13: `'{version-scala2-minor}'`
+<2> for Scala 2.13: `'{version-scala213-suffix}'`
 <3> for Scala 2.13: `{version-framework-specs2-scala2}`
 
 == Scala.js
@@ -393,31 +392,31 @@ The table below lists what is added to what configurations.
 
 |Compiler Plugin
 |org.scala-js:scalajs-compiler
-|Scala 2 JVM
+|JVM Scala 2
 |scalaCompilerPlugins
 |only for Scala 2
 
 |JUnit Compiler Plugin
 |org.scala-js:scalajs-junit-test-plugin
-|Scala 2 JVM
-|scalaCompilerPlugins
+|JVM Scala 2
+|testScalaCompilerPlugins
 |only for Scala 2 and only if JUnit4 for Scala.js is used
 
 |Linker
 |org.scala-js:scalajs-linker
-|Scala 2 JVM
+|JVM Scala 2
 |scalajs
 |
 
 |Node.js Environment
 |org.scala-js:scalajs-env-jsdom-nodejs
-|Scala 2 JVM
+|JVM Scala 2
 |scalajs
 |
 
 |Test Adapter
 |org.scala-js:scalajs-sbt-test-adapter
-|Scala 2 JVM
+|JVM Scala 2
 |scalajs
 |
 
@@ -429,7 +428,7 @@ The table below lists what is added to what configurations.
 
 |Library
 |org.scala-js:scalajs-library
-|Scala 2 JVM
+|JVM Scala 2
 |implementation
 |
 
@@ -441,7 +440,7 @@ The table below lists what is added to what configurations.
 
 |Test Bridge
 |org.scala-js:scalajs-test-bridge
-|Scala 2 JVM
+|JVM Scala 2
 |testRuntimeOnly
 |
 
@@ -450,30 +449,30 @@ The table below lists what is added to what configurations.
 In Gradle-speak:
 [source,groovy,subs="+attributes"]
 ----
-final String scalaVersion       = '{version-scala}' // <1>
-final String scalaVersionSuffix = '3' // <2>
-final String scala2versionMinor = '{version-scala2-minor}'
-final String scalaJsVersion     = '{version-scalajs}'
+final String scalaVersion        = '{version-scala}' // <1>
+final String scalaVersionSuffix  = '3' // <2>
+final String scala2versionSuffix = '{version-scala213-suffix}'
+final String scalaJsVersion      = '{version-scalajs}'
 
 scala.scalaVersion = scalaVersion
 
 dependencies {
   // Plugin adds:
-  scalajs "org.scala-js:scalajs-linker_$scala2versionMinor:$scalaJsVersion"
-  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionMinor:$scalaJsVersion"
-  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionMinor:{version-scalajs-env-jsdom-nodejs}"
+  scalajs "org.scala-js:scalajs-linker_$scala2versionSuffix:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionSuffix:$scalaJsVersion"
+  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionSuffix:{version-scalajs-env-jsdom-nodejs}"
 
-  scalajsCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion" // <4>
-  scalajsCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:$scalaJsVersion" // <5>
+  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion" // <4>
+  testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:$scalaJsVersion" // <5>
 
   implementation "org.scala-lang:scala3-library_sjs1_$scalaVersionSuffix:$scalaVersion" // <6>
-  implementation "org.scala-js:scalajs-library_$scala2versionMinor:$scalaJsVersion"
+  implementation "org.scala-js:scalajs-library_$scala2versionSuffix:$scalaJsVersion"
   implementation "org.scala-js:scalajs-dom_sjs1_$scalaVersionSuffix:{version-scalajs-dom}"
 
-  testRuntimeOnly "org.scala-js:scalajs-test-bridge_$scala2versionMinor:$scalaJsVersion"
+  testRuntimeOnly "org.scala-js:scalajs-test-bridge_$scala2versionSuffix:$scalaJsVersion"
 
   // Test framework(s) you use:
-  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionMinor:{version-framework-junit4-scalajs}"
+  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionSuffix:{version-framework-junit4-scalajs}"
   testImplementation "org.scalameta:munit_sjs1_$scalaVersionSuffix:{version-framework-munit}"
   testImplementation "org.scalacheck:scalacheck_sjs1_$scalaVersionSuffix:{version-framework-scalacheck}"
   testImplementation "org.scalatest:scalatest_sjs1_$scalaVersionSuffix:{version-framework-scalatest}"
@@ -482,7 +481,7 @@ dependencies {
 }
 ----
 <1> for Scala 2.13: `'{version-scala2}'`
-<2> for Scala 2.13: `'{version-scala2-minor}'`
+<2> for Scala 2.13: `'{version-scala213-suffix}'`
 <3> for Scala 2.13: `{version-framework-specs2-scala2}`
 <4> only for Scala 2
 <5> only for Scala 2 and only if JUnit4 for Scala.js is used
@@ -527,7 +526,7 @@ a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scalanative>>):
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  scalajsCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:{version-scalajs}"
+  testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:{version-scalajs}"
 }
 ----
 
@@ -671,7 +670,7 @@ The table below lists what is added to what configurations.
 |JUnit Compiler Plugin
 |org.scala-native:junit-plugin
 |JVM
-|scalaCompilerPlugins
+|testScalaCompilerPlugins
 |only if JUnit4 for Scala Native is used
 
 |Linker
@@ -757,7 +756,7 @@ dependencies {
   scalanative "org.scala-native:test-runner_$scalaVersionSuffix:$scalaNativeVersion"
 
   scalaCompilerPlugins "org.scala-native:nscplugin_$scalaVersion:$scalaNativeVersion"
-  scalaCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:$scalaNativeVersion" // <3>
+  testScalaCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:$scalaNativeVersion" // <3>
 
   implementation "org.scala-native:scala3lib_native0.5_$scalaVersionSuffix:$scalaVersion+$scalaNativeVersion" // <4>
   implementation "org.scala-native:scalalib_native0.5_$scalaVersionSuffix:$scalaVersion+$scalaNativeVersion" // <5>
@@ -779,7 +778,7 @@ dependencies {
 }
 ----
 <1> for Scala 2.13: `'{version-scala2}'`
-<2> for Scala 2.13: `'{version-scala2-minor}'`
+<2> for Scala 2.13: `'{version-scala213-suffix}'`
 <3> only if JUnit4 for Scala Native is used
 <4> only for Scala 3
 <5> only for Scala 2
@@ -806,7 +805,7 @@ a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scalanative>>):
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  scalajsCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:{version-scalajs}"
+  testScalajsCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:{version-scalajs}"
 }
 ----
 
@@ -1917,7 +1916,8 @@ https://github.com/scala-native/scala-native/pull/4320[test failure throwable an
 https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill code]
 for Scala Native, for accepting my fix to the
 https://github.com/scala-native/scala-native/pull/4320[test failure throwable and duration] for Scala Native,
-and for adding `scala.scalanative.build.Build.buildCachedAwait()`
-method upon my https://github.com/scala-native/scala-native/issues/4323[request];
+for adding `scala.scalanative.build.Build.buildCachedAwait()`
+method upon my https://github.com/scala-native/scala-native/issues/4323[request],
+and for accepting my fix to a https://github.com/scala-native/scala-native/pull/4342[spurious dependency] issue;
 - https://github.com/LeeTibbert[LeeTibbert] for encouraging my
 https://github.com/scala-native/scala-native/pull/4320[typo fixes] to Scala Native;

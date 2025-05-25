@@ -1,8 +1,8 @@
 package org.podval.tools.build.nonjvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.build.{BackendDependencyRequirements, DependencyRequirement, ScalaBackend, ScalaDependency, 
-  ScalaPlatform, Version}
+import org.podval.tools.build.{BackendDependencyRequirements, Dependency, DependencyRequirement, ScalaBackend,
+  ScalaDependency, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 
 trait NonJvmBackend extends ScalaBackend:
@@ -17,7 +17,7 @@ trait NonJvmBackend extends ScalaBackend:
 
   def areCompilerPluginsBuiltIntoScala3: Boolean
   def versionExtractor(version: Version): Version
-  def versionComposer(projectScalaVersion: Version, backendVersion: Version): Version
+  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): Version
   def implementation: Array[ScalaDependency.Maker]
   def library(isScala3: Boolean): ScalaDependency.Maker
   def compiler: ScalaDependency.Maker
@@ -25,34 +25,33 @@ trait NonJvmBackend extends ScalaBackend:
   def testAdapter: ScalaDependency.Maker
   def testBridge: ScalaDependency.Maker
   def junit4Plugin: ScalaDependency.Maker
-  def junit4: ScalaDependency.Maker
-  def additionalPluginDependencyRequirements: Array[DependencyRequirement[ScalaPlatform]]
+  def junit4: Dependency.Maker
+  def additionalPluginDependencyRequirements: Array[DependencyRequirement]
 
   def additionalImplementationDependencyRequirements(
     backendVersion: Version,
-    scalaVersion: Version,
-    isScala3: Boolean
-  ): Array[DependencyRequirement[ScalaPlatform]]
+    scalaVersion: ScalaVersion
+  ): Array[DependencyRequirement]
 
   final override def dependencyRequirements(
     implementationConfiguration: Configuration,
     testImplementationConfiguration: Configuration,
-    projectScalaPlatform: ScalaPlatform
+    scalaVersion: ScalaVersion
   ): BackendDependencyRequirements =
-    val scalaVersion: Version = projectScalaPlatform.scalaVersion
-    val isScala3: Boolean = projectScalaPlatform.version.isScala3
-    val libraryDependency: ScalaDependency.Maker = library(isScala3)
+    val libraryDependency: ScalaDependency.Maker = library(scalaVersion.isScala3)
 
     val backendVersion: Version = libraryDependency
-      .findInConfiguration(projectScalaPlatform, implementationConfiguration)
+      .findInConfiguration(implementationConfiguration)
       .map(_.version)
       .map(versionExtractor)
       .getOrElse(libraryDependency.versionDefault)
 
-    // Add JUnit4 compiler plugin only when JUnit4 is in use, otherwise with Scala.js `testClasses` task throws
+    val addScalaCompilerPlugins: Boolean = !areCompilerPluginsBuiltIntoScala3 || !scalaVersion.isScala3
+    
+    // Add JUnit4 compiler plugin:
+    // only when JUnit4 is in use, otherwise with Scala.js `testClasses` task throws
     //   "scala.reflect.internal.MissingRequirementError: object org.junit.Test in compiler mirror not found.";
-    // somehow, `classes` task works fine, so there is no need, it seems, to create for a separate configuration
-    //   `testScalaCompilerPlugins` (like Scala Native SBT plugin does).
+    // only to a separate `testScalaCompilerPlugins` configuration to avoid the error when compiling main sources.
     BackendDependencyRequirements(
       implementation =
         arrayConcat(
@@ -60,7 +59,7 @@ trait NonJvmBackend extends ScalaBackend:
             Array(libraryDependency.required(versionComposer(scalaVersion, backendVersion))),
             arrayMap(implementation, _.required(backendVersion))
           ),
-          additionalImplementationDependencyRequirements(backendVersion, scalaVersion, isScala3)
+          additionalImplementationDependencyRequirements(backendVersion, scalaVersion)
         ),
       testRuntimeOnly =
         Array(testBridge.required(backendVersion)),
@@ -70,10 +69,11 @@ trait NonJvmBackend extends ScalaBackend:
           additionalPluginDependencyRequirements
         ),
       scalaCompilerPlugins =
-        val result: Array[ScalaDependency.Maker] = 
-          if areCompilerPluginsBuiltIntoScala3 && isScala3 then Array.empty else
-            if junit4.findInConfiguration(projectScalaPlatform, testImplementationConfiguration).isEmpty
-            then Array(compiler)
-            else Array(compiler, junit4Plugin)
-        arrayMap(result, _.required(backendVersion))  
+        if !addScalaCompilerPlugins
+        then Array.empty
+        else Array(compiler.required(backendVersion)),
+      testScalaCompilerPlugins =
+        if !addScalaCompilerPlugins || junit4.findInConfiguration(testImplementationConfiguration).isEmpty 
+        then Array.empty
+        else Array(junit4Plugin.required(backendVersion))
     )

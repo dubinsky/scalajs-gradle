@@ -1,27 +1,19 @@
 package org.podval.tools.build
 
-import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.internal.tasks.JvmConstants
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
 final class ScalaLibrary private(
-  val scala3: Option[Dependency.WithVersion],
-  val scala2: Option[Dependency.WithVersion]
+  val scala3: Option[ScalaVersion],
+  val scala2: Option[ScalaVersion]
 ):
-  override def toString: String = s"ScalaLibrary(scala3=${scala3.map(_.version)}, scala2=${scala2.map(_.version)})"
+  override def toString: String = s"ScalaLibrary(scala3=$scala3, scala2=$scala2)"
 
-  def isScala3: Boolean = scala3.isDefined
+  def scalaVersion: ScalaVersion = scala3.getOrElse(scala2.get)
   
-  def suffixString: String = if scala3.isDefined then "_3" else s"_2.${scala2.get.version.simple.segment(1)}"
-      
-  def dependencyWithVersion: Dependency.WithVersion = scala3.getOrElse(scala2.get)
-  
-  def toPlatform(backend: ScalaBackend): ScalaPlatform = ScalaPlatform(
-    scalaVersion = dependencyWithVersion.version,
-    backend
-  )
+  def isScala3: Boolean = scalaVersion.isScala3
   
   def verify(runtimeClasspathConfiguration: Configuration): Unit =
     val other: ScalaLibrary = ScalaLibrary.getFromClasspath(runtimeClasspathConfiguration.asScala)
@@ -33,31 +25,27 @@ final class ScalaLibrary private(
     )
     if scala3.nonEmpty
     then require(
-      other.scala3.get.version == scala3.get.version,
-      s"Scala 3 version changed from ${scala3.get.version} to ${other.scala3.get.version} in configuration '$configurationName'."
+      other.scala3.get == scala3.get,
+      s"Scala 3 version changed from ${scala3.get} to ${other.scala3.get} in configuration '$configurationName'."
     )
     else require(
-      other.scala2.get.version == scala2.get.version,
-      s"Scala 2 version changed from ${scala2.get.version} to ${other.scala2.get.version} in configuration '$configurationName'."
+      other.scala2.get == scala2.get,
+      s"Scala 2 version changed from ${scala2.get} to ${other.scala2.get} in configuration '$configurationName'."
     )
 
 object ScalaLibrary:
-  def getFromProject(project: Project): ScalaLibrary = getFromConfiguration(
-    project.getConfigurations.getByName(JvmConstants.IMPLEMENTATION_CONFIGURATION_NAME)
-  )
-  
   def getFromConfiguration(configuration: Configuration): ScalaLibrary = ScalaLibrary(
     source = s"in configuration '${configuration.getName}'",
     mustHaveScala2 = false,
-    scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInConfiguration(configuration),
-    scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInConfiguration(configuration)
+    scala3 = ScalaBinaryVersion.Scala3  .scalaLibraryDependency.findInConfiguration(configuration),
+    scala2 = ScalaBinaryVersion.Scala213.scalaLibraryDependency.findInConfiguration(configuration)
   )
 
   def getFromClasspath(classPath: Iterable[File]): ScalaLibrary = ScalaLibrary(
     source = "on classpath " + classPath.mkString(", "),
     mustHaveScala2 = true,
-    scala3 = ScalaVersion.Scala3.scalaLibraryDependency.findInClassPath(classPath),
-    scala2 = ScalaVersion.Scala2.scalaLibraryDependency.findInClassPath(classPath)
+    scala3 = ScalaBinaryVersion.Scala3  .scalaLibraryDependency.findInClassPath(classPath),
+    scala2 = ScalaBinaryVersion.Scala213.scalaLibraryDependency.findInClassPath(classPath)
   )
 
   private def apply(
@@ -70,7 +58,7 @@ object ScalaLibrary:
     if mustHaveScala2 then require(scala2.nonEmpty, s"No Scala 2 library $source")
 
     new ScalaLibrary(
-      scala3, 
-      scala2
+      scala3.map(dependency => ScalaVersion(dependency.version)), 
+      scala2.map(dependency => ScalaVersion(dependency.version))
     )
     

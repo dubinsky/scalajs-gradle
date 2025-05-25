@@ -1,19 +1,19 @@
 package org.podval.tools.scalajsplugin
 
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaPlatform}
+import org.gradle.api.artifacts.Configuration
+import org.podval.tools.build.{DependencyRequirement, ScalaVersion}
 
 // Arrays are used all the way to here for Scala 2.12 compatibility :(
 final class ApplyDependencyRequirements(
-  dependencyRequirements: Array[DependencyRequirement[ScalaPlatform]],
-  scalaPlatform: ScalaPlatform,
+  dependencyRequirements: Array[DependencyRequirement],
+  scalaVersion: ScalaVersion,
   configurationName: String
 ):
-  def apply(
-    project: Project,
-  ): Unit =
+  def apply(project: Project): Unit = if dependencyRequirements.length > 0 then
+    val configuration: Configuration = project.getConfigurations.getByName(configurationName)
     dependencyRequirements.map(_.applyToConfiguration(
-      project,
-      project.getConfigurations.getByName(configurationName),
-      scalaPlatform
+      project = project,
+      scalaVersion = scalaVersion,
+      configuration = configuration
     ))

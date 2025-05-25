@@ -7,13 +7,13 @@ trait BackendDelegate[T <: BackendTask]:
 
   // TODO capture class tag or something
   def taskClass: Class[? <: T]
-
-  def runTaskClass        :        Class[? <: T & BackendTask.Run.Main]
-  def testTaskClass       :        Class[? <: T & BackendTask.Run.Test]
-
+  
   def linkTaskClassOpt    : Option[Class[? <: T & BackendTask.Link.Main]]
   def testLinkTaskClassOpt: Option[Class[? <: T & BackendTask.Link.Test]]
+  def runTaskClassOpt     : Option[Class[? <: T & BackendTask.Run .Main]]
+  def testTaskClass       :        Class[? <: T & BackendTask.Run .Test]
 
   def pluginDependenciesConfigurationNameOpt: Option[String]
+  def usesTestScalaCompilerPluginsConfiguration: Boolean
   
   def createExtension: Option[CreateExtension[?]]

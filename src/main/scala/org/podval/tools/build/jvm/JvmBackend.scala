@@ -1,7 +1,7 @@
 package org.podval.tools.build.jvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.build.{BackendDependencyRequirements, JavaDependency, ScalaBackend, ScalaPlatform, Version}
+import org.podval.tools.build.{BackendDependencyRequirements, JavaDependency, ScalaBackend, ScalaVersion, Version}
 
 case object JvmBackend extends ScalaBackend:
   override val name: String = "JVM"
@@ -10,16 +10,17 @@ case object JvmBackend extends ScalaBackend:
   override val archiveAppendixOpt: Option[String] = None
   override val testsCanNotBeForked: Boolean = false
 
-  override def scalaCompileParameters(isScala3: Boolean): Seq[String] = Seq.empty
+  override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] = Seq.empty
 
   override def dependencyRequirements(
     implementationConfiguration: Configuration,
     testImplementationConfiguration: Configuration,
-    projectScalaPlatform: ScalaPlatform
+    scalaVersion: ScalaVersion
   ): BackendDependencyRequirements = BackendDependencyRequirements(
     implementation = Array.empty,
     testRuntimeOnly = Array(SbtTestInterface.required()),
     scalaCompilerPlugins = Array.empty,
+    testScalaCompilerPlugins = Array.empty,
     pluginDependencies = Array.empty
   )
   

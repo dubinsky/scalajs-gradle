@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.build.Version
 
 // https://github.com/typelevel/scalacheck
 // https://github.com/typelevel/scalacheck/blob/main/core/shared/src/main/scala/org/scalacheck/ScalaCheckFramework.scala
@@ -25,4 +25,4 @@ object ScalaCheck extends FrameworkDescriptor(
   versionDefault = Version("1.18.1"),
   className = "org.scalacheck.ScalaCheckFramework",
   sharedPackages = List("org.scalacheck")
-) with ScalaDependency.Maker
+)

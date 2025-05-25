@@ -3,9 +3,7 @@ package org.podval.tools.build
 sealed abstract class Version derives CanEqual:
   def simple: Version.Simple
   def compound: Version.Compound
-
-  final def compound(version: Version): Version.Compound = Version.Compound(simple, version.simple)
-
+  
   final override def equals(other: Any): Boolean = other match
     case that: Version => this.toString == that.toString
     case _ => false
@@ -15,6 +13,8 @@ object Version:
     override def simple: Simple = this
     override def compound: Version.Compound = throw ClassCastException(s"Version $this is not compound.")
     private val segments: Array[String] = toString.split("\\.")
+    def length: Int = segments.length
+    def take(n: Int): Simple = Version(segments.take(n).mkString(".")).simple
     def segment(index: Int): String = segments(index)
     def segmentInt(index: Int): Int = segments(index).toInt
       

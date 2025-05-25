@@ -4,22 +4,23 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{GradleException, Project}
 import org.slf4j.{Logger, LoggerFactory}
 
-// TODO fix P = Any
-final class DependencyRequirement[-P](
-  maker: Dependency.Maker[P],
+final class DependencyRequirement(
+  maker: Dependency.Maker,
   version: Version
 ):
   def applyToConfiguration(
     project: Project,
     configuration: Configuration,
-    platform: P
+    scalaVersion: ScalaVersion
   ): Dependency.WithVersion =
-    val findable: FindableDependency[?] = maker.findable(platform)
-    val dependency: Dependency = maker.dependency(platform)
+    val findable: FindableDependency[?] = maker.findable
+    val dependency: Dependency = maker.dependency(scalaVersion)
 
     val result: Dependency.WithVersion = findable.findInConfiguration(configuration).getOrElse:
       val toAdd: Dependency.WithVersion = dependency.withVersion(version)
-      DependencyRequirement.logger.info(s"Adding dependency $toAdd to the '${configuration.getName}' configuration: ${maker.description}")
+      DependencyRequirement.logger.info(
+        s"Adding dependency $toAdd to configuration '${project.getName}.${configuration.getName}': ${maker.description}"
+      )
       configuration
         .getDependencies
         .add(project.getDependencies.create(toAdd.dependencyNotation))

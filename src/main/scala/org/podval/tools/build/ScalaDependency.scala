@@ -1,11 +1,9 @@
 package org.podval.tools.build
 
-import org.gradle.api.artifacts.Configuration
-import org.podval.tools.build.jvm.JvmBackend
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(
-  scalaPlatform: ScalaPlatform,
+  scalaBackend: ScalaBackend,
   override val group: String,
   override val artifact: String,
   isScalaVersionFull: Boolean
@@ -13,46 +11,39 @@ final class ScalaDependency private(
   override def classifier(version: Version): Option[String] = None
   override def extension(version: Version): Option[String] = None
 
-  def withScalaVersion(scalaVersion: Version): ScalaDependency.WithScalaVersion =
-    require(
-      requirement = scalaPlatform.version.isScalaVersionAcceptable(scalaVersion),
-      message = s"Scala version $scalaVersion is not acceptable!"
-    )
-    ScalaDependency.WithScalaVersion(
-      findable = this,
-      scalaVersion
-    )
+  def withScalaVersion(scalaVersion: ScalaVersion): ScalaDependency.WithScalaVersion = ScalaDependency.WithScalaVersion(
+    findable = this,
+    scalaVersion
+  )
 
-  def artifactNameSuffix(scalaVersion: Version): String =
-    val versionSuffix: String =
+  def artifactNameSuffix(scalaVersion: ScalaVersion): String =
+    val versionSuffix: Version =
       if isScalaVersionFull
-      then scalaVersion.toString
-      else scalaPlatform.version.versionSuffix(scalaVersion)
+      then scalaVersion.version
+      else scalaVersion.versionSuffix
 
-    s"${scalaPlatform.backend.artifactSuffixString}_$versionSuffix"
+    s"${scalaBackend.artifactSuffixString}_$versionSuffix"
 
   override protected def dependencyForArtifactName(
     artifactName: String
   ): Option[ScalaDependency.WithScalaVersion] = artifactAndScalaVersion(artifactName)
     .flatMap: (artifact, scalaVersion) =>
-      val matches: Boolean =
-        (artifact == this.artifact) &&
-        scalaPlatform.version.isScalaVersionAcceptable(scalaVersion)
+      val matches: Boolean = artifact == this.artifact
       if !matches then None else Some(scalaVersion)
     .map(withScalaVersion)
 
-  private def artifactAndScalaVersion(artifactName: String): Option[(String, Version)] =
+  private def artifactAndScalaVersion(artifactName: String): Option[(String, ScalaVersion)] =
     val (artifactAndBackend: String, scalaVersionOpt: Option[String]) = Strings.split(artifactName, '_')
     val (artifact: String, backendSuffixOpt: Option[String]) = Strings.split(artifactAndBackend, '_')
     val matches: Boolean =
-      (scalaPlatform.backend.artifactSuffixOpt == backendSuffixOpt) &&
+      (scalaBackend.artifactSuffixOpt == backendSuffixOpt) &&
       scalaVersionOpt.isDefined
-    if !matches then None else Some((artifact, Version(scalaVersionOpt.get)))
+    if !matches then None else Some((artifact, ScalaVersion(scalaVersionOpt.get)))
 
 object ScalaDependency:
   final class WithScalaVersion(
     findable: ScalaDependency,
-    scalaVersion: Version
+    scalaVersion: ScalaVersion
   ) extends Dependency(
     group = findable.group,
     artifact = findable.artifact
@@ -61,43 +52,22 @@ object ScalaDependency:
     override def extension(version: Version): Option[String] = findable.extension(version)
     override protected def artifactNameSuffix: String = findable.artifactNameSuffix(scalaVersion)
   
-  trait Maker extends Dependency.Maker[ScalaPlatform]:
-    def backend: Option[ScalaBackend] = None
+  trait Maker extends Dependency.Maker:
     def scala2: Boolean = false
     def isScalaVersionFull: Boolean = false
 
-    final override def findable(scalaPlatform: ScalaPlatform): ScalaDependency = ScalaDependency(
-      scalaPlatform = adjusted(scalaPlatform),
-      group,
-      artifact,
-      isScalaVersionFull
+    final override def findable: ScalaDependency = ScalaDependency(
+      scalaBackend = scalaBackend,
+      group = group,
+      artifact = artifact,
+      isScalaVersionFull = isScalaVersionFull
     )
 
-    final def findInConfiguration(
-      scalaPlatform: ScalaPlatform,
-      configuration: Configuration
-    ): Option[Dependency.WithVersion] = 
-      findable(scalaPlatform).findInConfiguration(configuration)
-  
-    final override def dependency(scalaPlatform: ScalaPlatform): WithScalaVersion =
-      findable(scalaPlatform).withScalaVersion(adjusted(scalaPlatform).scalaVersion)
-
-    private def adjusted(scalaPlatform: ScalaPlatform): ScalaPlatform =
-      def adjustForScala2(scalaPlatform: ScalaPlatform): ScalaPlatform =
-        if !scala2
-        then scalaPlatform
-        else scalaPlatform.toScala2
-  
-      def adjustForBackend(scalaPlatform: ScalaPlatform) = backend
-        .map(scalaPlatform.withBackend)
-        .getOrElse(scalaPlatform)
-  
-      adjustForBackend(adjustForScala2(scalaPlatform))
-
-  trait MakerJvm extends Maker:
-    final override def backend: Some[JvmBackend.type] = Some(JvmBackend)
-
-  trait MakerScala2 extends Maker:
-    final override def scala2: Boolean = true
-
-  trait MakerScala2Jvm extends MakerJvm with MakerScala2
+    final override def dependency(scalaVersion: ScalaVersion): WithScalaVersion = findable.withScalaVersion(
+      if !scala2 || !scalaVersion.isScala3
+      then scalaVersion
+      else
+        // Scala 2 version used by Scala 3 from 3.0.0 to the current is 2.13.
+        // Assuming the latest version is somewhat troubling though ;)
+        ScalaBinaryVersion.Scala213.versionDefault
+    )
