@@ -58,7 +58,7 @@ object ScalaLibrary:
     if mustHaveScala2 then require(scala2.nonEmpty, s"No Scala 2 library $source")
 
     new ScalaLibrary(
-      scala3.map(dependency => ScalaVersion(dependency.version)), 
-      scala2.map(dependency => ScalaVersion(dependency.version))
+      scala3.map(dependency => ScalaVersion(dependency.version.simple)), 
+      scala2.map(dependency => ScalaVersion(dependency.version.simple))
     )
     

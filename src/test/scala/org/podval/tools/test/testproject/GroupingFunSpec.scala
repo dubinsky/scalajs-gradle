@@ -32,7 +32,6 @@ abstract class GroupingFunSpec extends AnyFunSpec:
 //  groupTestByFixtureAndCombined()
   
   final protected def groupTestByFixtureAndCombined(): Unit =
-    println(s"----- groupTestByFixtureAndCombined")
     if testByFixture || fixtures.size == 1 then
       groupTest()
 

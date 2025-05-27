@@ -33,25 +33,34 @@ class DependencyData(
     s"$artifactName-$version$classifierStr.$extensionStr"
 
 object DependencyData:
-  def fromGradleDependency(dependency: org.gradle.api.artifacts.Dependency): Option[DependencyData] = dependency match
+  def fromGradleDependency(
+    dependency: org.gradle.api.artifacts.Dependency,
+    isVersionCompound: Boolean
+  ): Option[DependencyData] = dependency match
     case dependency: org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency =>
-      if dependency.getVersion == null then None else Some(DependencyData(
-        group = Some(dependency.getGroup),
-        artifactName= dependency.getName,
-        version = Version(dependency.getVersion),
-        classifier = None,
-        extension = Some("jar")
+      Option(dependency.getVersion).flatMap(Version(_, isVersionCompound).map(version =>
+        DependencyData(
+          group = Some(dependency.getGroup),
+          artifactName= dependency.getName,
+          version = version,
+          classifier = None,
+          extension = Some("jar")
+        )
       ))
     case _ => None
 
-  def fromFile(file: File): Option[DependencyData] =
+  def fromFile(
+    file: File,
+    isVersionCompound: Boolean
+  ): Option[DependencyData] =
     val (nameAndVersion: String, fileExtension: Option[String]) = Files.nameAndExtension(file.getName)
     val (name: String, versionOpt: Option[String]) = Strings.split(nameAndVersion, '-')
-    if versionOpt.isEmpty then None else
-      Some(DependencyData(
+    versionOpt.flatMap(Version(_, isVersionCompound).map(version =>
+      DependencyData(
         group = None,
         artifactName = name,
-        version = Version(versionOpt.get),
+        version = version,
         classifier = None,
         extension = fileExtension
-      ))
+      )
+    ))

@@ -30,7 +30,7 @@ object Dependency:
     def scalaBackend: ScalaBackend
     def group: String
     def artifact: String
-    def versionDefault: Version
+    def versionDefault: Version.Simple
     def description: String
     def useExactVersionInVerifyRequired: Boolean = false
     def findable: FindableDependency[?]

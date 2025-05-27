@@ -14,6 +14,5 @@ trait NonJvmDelegate[T <: NonJvmTask[?]] extends BackendDelegate[T]:
   def testLinkTaskClass: Class[? <: T & NonJvmLinkTask.Test[?]]
   def runTaskClass     : Class[? <: T & NonJvmRunTask .Main[?]]
 
-  final override def usesTestScalaCompilerPluginsConfiguration: Boolean = true
   final override def pluginDependenciesConfigurationNameOpt: Option[String] = Some(pluginDependenciesConfigurationName)
   def pluginDependenciesConfigurationName: String

@@ -19,7 +19,7 @@ object JUnit4 extends FrameworkDescriptor(
   displayName = "JUnit4",
   group = "com.github.sbt",
   artifact = "junit-interface",
-  versionDefault = Version("0.13.3"),
+  versionDefault = Version.Simple("0.13.3"),
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
   tagOptionStyle = OptionStyle.ListWithEq, 

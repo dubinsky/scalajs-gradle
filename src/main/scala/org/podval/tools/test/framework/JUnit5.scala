@@ -9,7 +9,7 @@ object JUnit5 extends FrameworkDescriptor(
   displayName = "JUnit5",
   group = "com.github.sbt.junit",
   artifact = "jupiter-interface",
-  versionDefault = Version("0.13.3"),
+  versionDefault = Version.Simple("0.13.3"),
   className = "com.github.sbt.junit.jupiter.api.JupiterFramework",
   sharedPackages = List("com.github.sbt.junit.jupiter.api", "org.junit"),
   tagOptionStyle = OptionStyle.ListWithEq,

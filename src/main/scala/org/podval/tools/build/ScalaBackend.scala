@@ -22,7 +22,7 @@ trait ScalaBackend derives CanEqual:
   def sourceRoot: String
   def testsCanNotBeForked: Boolean
   def artifactSuffixOpt: Option[String]
-  def archiveAppendixOpt: Option[String]
+  def archiveAppendixOpt: Option[String] // TODO remove?
   
   def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String]
 

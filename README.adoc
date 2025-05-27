@@ -234,10 +234,7 @@ and if directory with the shared sources exists,
 shared sources are included for the backend-specific compilation
 _together_ with the backend-specific sources.
 
-This mode is triggered when:
-
-- property `{attribute-scalajsScalaBackendProperty}` is _not_ set for the project, and
-- at least one of the backend-specific directories `js`, `jvm`, `native` exists.
+This mode is triggered when at least one of the backend-specific directories `js`, `jvm`, `native` exists.
 
 Not all backends have to be used all the time;
 with only one backend used, this setup is equivalent to the <<single-backend>> one
@@ -348,31 +345,12 @@ and is normally brought in by the test frameworks themselves,
 but since `ScalaTest` does not bring it in,
 plugin adds it.
 
-In Gradle-speak:
 [source,groovy,subs="+attributes"]
 ----
-final String scalaVersion       = '{version-scala}' // <1>
-final String scalaVersionSuffix = '3' // <2>
-
-scala.scalaVersion = scalaVersion
-
 dependencies {
-  // Plugin adds:
   testRuntimeOnly 'org.scala-sbt:test-interface:{version-sbt-test-interface}'
-
-  // Test framework(s) you use:
-  testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
-  testImplementation "org.scalameta:munit_$scalaVersionSuffix:{version-framework-munit}"
-  testImplementation "org.scalacheck:scalacheck_$scalaVersionSuffix:{version-framework-scalacheck}"
-  testImplementation "org.scalatest:scalatest_$scalaVersionSuffix:{version-framework-scalatest}"
-  testImplementation "org.specs2:specs2-core_$scalaVersionSuffix:{version-framework-specs2}" // <3>
-  testImplementation "com.lihaoyi:utest_$scalaVersionSuffix:{version-framework-utest}"
-  testImplementation "dev.zio:zio-test-sbt_$scalaVersionSuffix:{version-framework-zio-test}"
 }
 ----
-<1> for Scala 2.13: `'{version-scala2}'`
-<2> for Scala 2.13: `'{version-scala213-suffix}'`
-<3> for Scala 2.13: `{version-framework-specs2-scala2}`
 
 == Scala.js
 
@@ -388,7 +366,7 @@ The table below lists what is added to what configurations.
 
 [%autowidth]
 |===
-|Name |goup:artifact |Backend |Configuration |Notes
+|Name |group:artifact |Backend |Configuration |Notes
 
 |Compiler Plugin
 |org.scala-js:scalajs-compiler
@@ -446,46 +424,35 @@ The table below lists what is added to what configurations.
 
 |===
 
-In Gradle-speak:
+The following Gradle build script fragment manually adds all Scala.js dependencies
+that the plugin adds automatically:
+
 [source,groovy,subs="+attributes"]
 ----
-final String scalaVersion        = '{version-scala}' // <1>
-final String scalaVersionSuffix  = '3' // <2>
-final String scala2versionSuffix = '{version-scala213-suffix}'
-final String scalaJsVersion      = '{version-scalajs}'
-
-scala.scalaVersion = scalaVersion
+import org.podval.tools.scalajsplugin.ScalaVersionData
+final ScalaVersionData scalaVersion = ScalaVersionData.get(project)
+final String scalaJsVersion = '{version-scalajs}'
 
 dependencies {
-  // Plugin adds:
-  scalajs "org.scala-js:scalajs-linker_$scala2versionSuffix:$scalaJsVersion"
-  scalajs "org.scala-js:scalajs-sbt-test-adapter_$scala2versionSuffix:$scalaJsVersion"
-  scalajs "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionSuffix:{version-scalajs-env-jsdom-nodejs}"
-
-  scalaCompilerPlugins "org.scala-js:scalajs-compiler_$scalaVersion:$scalaJsVersion" // <4>
-  testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_$scalaVersion:$scalaJsVersion" // <5>
-
-  implementation "org.scala-lang:scala3-library_sjs1_$scalaVersionSuffix:$scalaVersion" // <6>
-  implementation "org.scala-js:scalajs-library_$scala2versionSuffix:$scalaJsVersion"
-  implementation "org.scala-js:scalajs-dom_sjs1_$scalaVersionSuffix:{version-scalajs-dom}"
-
-  testRuntimeOnly "org.scala-js:scalajs-test-bridge_$scala2versionSuffix:$scalaJsVersion"
-
-  // Test framework(s) you use:
-  testImplementation "org.scala-js:scalajs-junit-test-runtime_$scala2versionSuffix:{version-framework-junit4-scalajs}"
-  testImplementation "org.scalameta:munit_sjs1_$scalaVersionSuffix:{version-framework-munit}"
-  testImplementation "org.scalacheck:scalacheck_sjs1_$scalaVersionSuffix:{version-framework-scalacheck}"
-  testImplementation "org.scalatest:scalatest_sjs1_$scalaVersionSuffix:{version-framework-scalatest}"
-  testImplementation "org.specs2:specs2-core_sjs1_$scalaVersionSuffix:{version-framework-specs2}" // <3>
-  testImplementation "com.lihaoyi:utest_sjs1_$scalaVersionSuffix:{version-framework-utest}"
+  implementation  "org.scala-js:scalajs-library_${scalaVersion.binary2}:$scalaJsVersion" // <1>
+  implementation  "org.scala-js:scalajs-dom_sjs1_${scalaVersion.binary}:{version-scalajs-dom}"
+  if (scalaVersion.scala3) {
+    implementation "org.scala-lang:scala3-library_sjs1_${scalaVersion.binary}:${scalaVersion.version}"
+  }
+  scalajs         "org.scala-js:scalajs-linker_${scalaVersion.binary2}:$scalaJsVersion"
+  scalajs         "org.scala-js:scalajs-sbt-test-adapter_${scalaVersion.binary2}:$scalaJsVersion"
+  scalajs         "org.scala-js:scalajs-env-jsdom-nodejs_${scalaVersion.binary2}:{version-scalajs-env-jsdom-nodejs}"
+  if (!scalaVersion.scala3) {
+    scalaCompilerPlugins "org.scala-js:scalajs-compiler_${scalaVersion.version}:$scalaJsVersion"
+  }
+  if (!scalaVersion.scala3) {
+    testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_${scalaVersion.version}:$scalaJsVersion" // <2>
+  }
+  testRuntimeOnly "org.scala-js:scalajs-test-bridge_${scalaVersion.binary2}:$scalaJsVersion"
 }
 ----
-<1> for Scala 2.13: `'{version-scala2}'`
-<2> for Scala 2.13: `'{version-scala213-suffix}'`
-<3> for Scala 2.13: `{version-framework-specs2-scala2}`
-<4> only for Scala 2
-<5> only for Scala 2 and only if JUnit4 for Scala.js is used
-<6> only for Scala 3
+<1> if added manually, sets `scalaJsVersion` used for other automatically added dependencies
+<2> only if JUnit4 for Scala.js is in the `testImplementation` configuration
 
 === Compiling
 To support Scala.js, Scala compiler needs to be configured to produce both the `class` _and_ `sjsir` files.
@@ -659,7 +626,7 @@ The table below lists what is added to what configurations.
 
 [%autowidth]
 |===
-|Name |goup:artifact |Backend |Configuration |Notes
+|Name |group:artifact |Backend |Configuration |Notes
 
 |Compiler Plugin
 |org.scala-native:nscplugin
@@ -741,47 +708,43 @@ The table below lists what is added to what configurations.
 
 |===
 
-In Gradle-speak:
+The following Gradle build script fragment manually adds all Scala Native dependencies
+that the plugin adds automatically:
+
 [source,groovy,subs="+attributes"]
 ----
-final String scalaVersion       = '{version-scala}' // <1>
-final String scalaVersionSuffix = '3' // <2>
+import org.podval.tools.scalajsplugin.ScalaVersionData
+final ScalaVersionData scalaVersion = ScalaVersionData.get(project)
 final String scalaNativeVersion = '{version-scalanative}'
 
-scala.scalaVersion = scalaVersion
-
 dependencies {
-  // Plugin adds:
-  scalanative "org.scala-native:tools_$scalaVersionSuffix:$scalaNativeVersion"
-  scalanative "org.scala-native:test-runner_$scalaVersionSuffix:$scalaNativeVersion"
+  if (scalaVersion.scala3) {
+    implementation "org.scala-native:scala3lib_native0.5_${scalaVersion.binary}:${scalaVersion.version}+$scalaNativeVersion" // <1>
+  } else {
+    implementation "org.scala-native:scalalib_native0.5_${scalaVersion.binary}:${scalaVersion.version}+$scalaNativeVersion" // <1>
+  }
+  implementation "org.scala-native:nativelib_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
+  implementation "org.scala-native:javalib_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
+  implementation "org.scala-native:clib_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
+  implementation "org.scala-native:posixlib_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
+  implementation "org.scala-native:windowslib_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
+  implementation "org.scala-native:auxlib_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
 
-  scalaCompilerPlugins "org.scala-native:nscplugin_$scalaVersion:$scalaNativeVersion"
-  testScalaCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:$scalaNativeVersion" // <3>
+  scalanative "org.scala-native:tools_${scalaVersion.binary}:$scalaNativeVersion"
+  scalanative "org.scala-native:test-runner_${scalaVersion.binary}:$scalaNativeVersion"
 
-  implementation "org.scala-native:scala3lib_native0.5_$scalaVersionSuffix:$scalaVersion+$scalaNativeVersion" // <4>
-  implementation "org.scala-native:scalalib_native0.5_$scalaVersionSuffix:$scalaVersion+$scalaNativeVersion" // <5>
-  implementation "org.scala-native:nativelib_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
-  implementation "org.scala-native:javaliblib_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
-  implementation "org.scala-native:clib_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
-  implementation "org.scala-native:posixlib_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
-  implementation "org.scala-native:windowslib_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
-  implementation "org.scala-native:auxlib_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
+  scalaCompilerPlugins "org.scala-native:nscplugin_${scalaVersion.version}:$scalaNativeVersion"
 
-  testRuntimeOnly "org.scala-native:test-interface_native0.5_$scalaVersionSuffix:$scalaNativeVersion"
+  testScalaCompilerPlugins "org.scala-native:junit-plugin_${scalaVersion.version}:$scalaNativeVersion" // <2>
 
-  // Test framework(s) you use:
-  testImplementation "org.scala-native:junit-runtime_native0.5_$scalaVersionSuffix:{version-framework-junit4-scalanative}"
-  testImplementation "org.scalameta:munit_native0.5_$scalaVersionSuffix:{version-framework-munit}"
-  testImplementation "org.scalacheck:scalacheck_native0.5_$scalaVersionSuffix:{version-framework-scalacheck}"
-  testImplementation "org.scalatest:scalatest_native0.5_$scalaVersionSuffix:{version-framework-scalatest}"
-  testImplementation "com.lihaoyi:utest_native0.5_$scalaVersionSuffix:{version-framework-utest}"
+  testRuntimeOnly "org.scala-native:test-interface_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
+
+  testImplementation "org.scala-native:junit-runtime_native0.5_${scalaVersion.binary}:$scalaNativeVersion"
 }
 ----
-<1> for Scala 2.13: `'{version-scala2}'`
-<2> for Scala 2.13: `'{version-scala213-suffix}'`
-<3> only if JUnit4 for Scala Native is used
-<4> only for Scala 3
-<5> only for Scala 2
+<1> if added manually, sets `scalaNativeVersion` used for other automatically added dependencies
+<2> only if JUnit4 for Scala Native is in the `testImplementation` configuration
+
 
 === Compiling
 To support Scala Native, Scala compiler needs to be configured to produce both the `class` _and_ `nir` files.
@@ -1032,6 +995,112 @@ there is not much the plugin can add anyway.
 
 Framework-specific information for the frameworks that _are_ supported follows.
 
+=== Dependencies
+
+[%autowidth]
+|===
+|Name |group:artifact |Backends |Version |Notes
+
+|JUnit4
+|com.github.sbt:junit-interface
+|jvm
+|{version-framework-junit4}
+|Java
+
+|JUnit4 for Scala.js
+|org.scala-js:scalajs-junit-test-runtime
+|js
+|{version-framework-junit4-scalajs}
+|Scala 2, no backend
+
+|JUni4 for Scala Native
+|org.scala-native:junit-runtime
+|native
+|{version-framework-junit4-scalanative}
+|
+
+|MUnit
+|org.scalameta:munit
+|jvm, js, native
+|{version-framework-munit}
+|
+
+|ScalaCheck
+|org.scalacheck:scalacheck
+|jvm, js, native
+|{version-framework-scalacheck}
+|
+
+|ScalaTest
+|org.scalatest:scalatest
+|jvm, js, native
+|{version-framework-scalatest}
+|
+
+|specs2
+|org.specs2:specs2-core
+|jvm, js
+|{version-framework-specs2}
+|latest for Scala 2: {version-framework-specs2-scala2}
+
+|uTest
+|com.lihaoyi:utest
+|jvm, js, native
+|{version-framework-utest}
+|
+
+|ZIO Test
+|dev.zio:zio-test-sbt
+|jvm
+|{version-framework-zio-test}
+|see https://github.com/dubinsky/scalajs-gradle/issues/37[issues/37]
+
+|===
+
+The following Gradle build script fragment adds all test framework dependencies
+that fit the Scala version and backend:
+
+[source,groovy,subs="+attributes"]
+----
+import org.podval.tools.scalajsplugin.ScalaVersionData
+final ScalaVersionData scalaVersion = ScalaVersionData.get(project)
+
+import org.podval.tools.scalajsplugin.ScalaBackendData
+final ScalaBackendData backend = ScalaBackendData.get(project)
+
+final String scalaJSVersion = '{version-scalajs}'
+final String scalaNativeVersion = '{version-scalanative}'
+
+dependencies {
+  if (backend.jvm) {
+    testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
+  }
+  if (backend.js) {
+    testImplementation "org.scala-js:scalajs-junit-test-runtime_${scalaVersion.binary2}:$scalaJSVersion"
+  }
+  if (backend.native) {
+    testImplementation "org.scala-native:junit-runtime${backend.suffix}_${scalaVersion.binary}:$scalaNativeVersion"
+  }
+
+  testImplementation "org.scalameta:munit${backend.suffix}_${scalaVersion.binary}:{version-framework-munit}"
+  testImplementation "org.scalacheck:scalacheck${backend.suffix}_${scalaVersion.binary}:{version-framework-scalacheck}"
+  testImplementation "org.scalatest:scalatest${backend.suffix}_${scalaVersion.binary}:{version-framework-utest}"
+  testImplementation "com.lihaoyi:utest${backend.suffix}_${scalaVersion.binary}:{version-framework-utest}"
+
+  if (backend.jvm) {
+    testImplementation "dev.zio:zio-test-sbt${backend.suffix}_${scalaVersion.binary}:{version-framework-zio-test}"
+  }
+
+  if (backend.jvm || backend.js) {
+    if (scalaVersion.scala3) {
+      testImplementation "org.specs2:specs2-core${backend.suffix}_${scalaVersion.binary}:{version-framework-specs2}"
+    } else {
+      testImplementation "org.specs2:specs2-core${backend.suffix}_${scalaVersion.binary}:{version-framework-specs2-scala2}"
+    }
+  }
+}
+----
+
 === Junit4
 JUnit4 SBT interface (com.github.sbt:junit-interface)
 is a separate project from JUnit4 itself;
@@ -1039,10 +1108,6 @@ SBT interface dependency brings in the underlying framework dependency
 `junit:junit` transitively;
 its version can be overridden in the Gradle build script.
 
-- coordinates: `com.github.sbt:junit-interface`;
-- current version: {version-framework-junit4};
-- JVM only, no Scala.js
-- Java dependency, no Scala version in the artifact
 - test filtering: works fine;
 - ignoring a test: not supported;
 - assumptions: if falsified, result in a test being skipped: `org.junit.Assume.assumeTrue(false)`;
@@ -1111,11 +1176,6 @@ JUnit4 for Scala.js is a framework distinct from JUnit4:
 it is a partial translation/re-implementation of JUnit4 circa 2015
 and has different capabilities.
 
-- coordinates: `org.scala-js:scalajs-junit-test-runtime`;
-- current version: {version-framework-junit4-scalajs};
-- Scala.js only, no JVM;
-- Scala dependency, no `sjs1` suffix in the artifact;
-- Scala 2 only;
 - test filtering: does not support test case selectors and runs all test cases in the class;
 - test tagging: not supported;
 - nested suites: not supported;
@@ -1128,11 +1188,6 @@ it is a port of the JUnit4 for Scala.js,
 which is a partial translation/re-implementation of JUnit4 circa 2015
 and has different capabilities.
 
-- backends supported: Scala Native only;
-- coordinates: `org.scala-native:junit-runtime`;
-- current version: {version-framework-junit4-scalanative};
-- Scala dependency, no `sjs1` suffix in the artifact;
-- Scala 2 only;
 - test filtering: does not support test case selectors and runs all test cases in the class;
 - test tagging: not supported;
 - nested suites: not supported;
@@ -1141,11 +1196,11 @@ and has different capabilities.
 
 === MUnit
 MUnit uses JUnit internally, and brings in the underlying framework dependency transitively:
-on JVM - `junit:junit`; on Scala.js - `org.scala-js:scalajs-junit-test-runtime`;
+on JVM - `junit:junit`;
+on Scala.js - `org.scala-js:scalajs-junit-test-runtime`;
+on Scala Native - `org.scala-native:junit-runtime`.
 its version can be overridden in the Gradle build script.
 
-- coordinates: `org.scalameta:munit`;
-- current version: {version-framework-munit};
 - test filtering: works fine on `JVM`; on `Scala.js`, does not support test case selectors and runs all test cases in the class.
 - nested suites: not supported;
 - assumptions: not supported;
@@ -1174,8 +1229,6 @@ When tagging classes used for inclusion/exclusion are not available,
 MUnit crashes with a `ClassNotFound`.
 
 === ScalaCheck
-- coordinates: `org.scalacheck:scalacheck`;
-- current version: {version-framework-scalacheck};
 - test filtering functionality is not available:
 https://github.com/dubinsky/scalajs-gradle/issues/43[issue];
 - test tagging: not supported, but if it is used via another test framework -
@@ -1206,8 +1259,6 @@ since ScalaCheck itself does not keep information about which class a property b
 see https://github.com/typelevel/scalacheck/pull/1107.
 
 === ScalaTest
-- coordinates: `org.scalatest:scalatest`;
-- current version:  {version-framework-scalatest};
 - test filtering: works fine;
 - assumptions: not supported;
 - ignoring a test: `ignore should "be ignored"`;
@@ -1234,9 +1285,6 @@ class ScalaTestNesting extends org.scalatest.Suites(
 ----
 
 === Specs2
-- coordinates: `org.specs2:specs2-core`;
-- current version: {version-framework-specs2};
-- latest version for Scala 2: 4.20.9;
 - test filtering: works fine;
 - nested suites: not supported;
 - assumptions: not supported;
@@ -1253,8 +1301,6 @@ exclude tests tagged for exclusion $excludedTest ${tag(
 ----
 
 === uTest
-- coordinates: `com.lihaoyi:utest`;
-- current version: {version-framework-utest};
 - test filtering: does not support test case selectors and runs all test cases in the class.
 - test tagging: not supported;
 
@@ -1281,11 +1327,9 @@ object UTestNesting extends TestSuite {
 
 Issues identified and fixed: https://github.com/dubinsky/scalajs-gradle/issues/45[bug].
 
-Currently, not supported on Scala.js because of a bug
+Currently, not supported on Scala.js nor Scala Native because of a bug
 https://github.com/dubinsky/scalajs-gradle/issues/37[issues/37].
 
-- coordinates: `dev.zio:zio-test-sbt`;
-- current version: {version-framework-zio-test};
 - test filtering: treats specific test case inclusions as wildcards,
 and instead of running just the named test cases runs all whose names contain
 the specified string, because the only test case name-based filtering that ZIO Test supports is "search terms", which
@@ -1708,13 +1752,12 @@ is based on annotations, and reflection on `Scala.js` and `Scala Native`
 is not powerful enough, so tests are pre-discovered _at compile time_,
 and JUnit4-specific bootstrappers generated for them.
 
-Without bootstrappers, we get:
+Without bootstrappers, we get errors like:
 [source]
 ----
 Error while loading test class ... failed:
 java.lang.ClassNotFoundException: Cannot find ...$scalajs$junit$bootstrapper$
 ----
-(and similar for `Scala Native`).
 
 For `Scala.js` on Scala 3, bootstrappers are generated by the `Scala.js` compiler;
 for `Scala.js` on Scala 2, and always for `Scala Native`,
@@ -1725,6 +1768,12 @@ for Scala Native - `org.scala-native:junit-plugin`.
 
 This compiler plugin can _only_ be added when `JUnit4`
 is actually on the classpath - or Scala compiler breaks ;)
+
+It thus be added only to the _test_ Scala compilation and not to the _main_ one;
+since plugins added to the `scalaCompilerPlugins` configuration affect both
+the _test_ and the _main_ Scala compilations,
+plugin creates a separate configuration `testScalaCompilerPlugins` just for this one plugin
+(even when the JVM backend, that does not need, is used) ;)
 
 see:
 

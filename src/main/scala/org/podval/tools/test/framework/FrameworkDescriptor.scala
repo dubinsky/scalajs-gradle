@@ -12,7 +12,7 @@ abstract class FrameworkDescriptor(
   final val displayName: String,
   final val group: String,
   final val artifact: String,
-  final val versionDefault: Version,
+  final val versionDefault: Version.Simple,
   final val className: String,
   final val sharedPackages: List[String],
   tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
@@ -36,7 +36,7 @@ abstract class FrameworkDescriptor(
 //    if forJS.isDefined then require(this.isInstanceOf[ScalaDependency.Maker])
     final override val group: String = FrameworkDescriptor.this.group
     final override val artifact: String = FrameworkDescriptor.this.artifact
-    final override val versionDefault: Version = FrameworkDescriptor.this.versionDefault
+    final override val versionDefault: Version.Simple = FrameworkDescriptor.this.versionDefault
     final override def description: String = displayName
   
   protected class ScalaMaker(override val scalaBackend: ScalaBackend) extends Maker with ScalaDependency.Maker

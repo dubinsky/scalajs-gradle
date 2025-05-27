@@ -15,5 +15,4 @@ object JvmDelegate extends BackendDelegate[JvmTask]:
   override def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
 
   override def pluginDependenciesConfigurationNameOpt: Option[String] = None
-  override def usesTestScalaCompilerPluginsConfiguration: Boolean = false
   override def createExtension: Option[CreateExtension[?]] = None
