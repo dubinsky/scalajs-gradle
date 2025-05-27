@@ -58,7 +58,7 @@ object ScalaTest extends FrameworkDescriptor(
   displayName = "ScalaTest",
   group = "org.scalatest",
   artifact = "scalatest",
-  versionDefault = Version("3.2.19"),
+  versionDefault = Version.Simple("3.2.19"),
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest"),
   tagOptionStyle = OptionStyle.OptionPerValue,

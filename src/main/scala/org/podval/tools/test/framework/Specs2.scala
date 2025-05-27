@@ -36,13 +36,13 @@ object Specs2 extends FrameworkDescriptor(
   displayName = "Specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.6.3"),
+  versionDefault = Version.Simple("5.6.3"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptionStyle = OptionStyle.ListWithoutEq,
   includeTagsOption = "include",
   excludeTagsOption = "exclude",
-  versionDefaultScala2 = Some(Version("4.20.9"))
+  versionDefaultScala2 = Some(Version.Simple("4.20.9"))
 ):
   // specs2 does not support Scala Native
   override def forNative: None.type = None

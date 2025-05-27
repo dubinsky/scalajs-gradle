@@ -15,7 +15,7 @@ sealed trait ScalaBinaryVersion derives CanEqual:
 
   private def scalaLibrary: JavaDependency.Maker = new JavaDependency.Maker:
     override def group: String = ScalaBinaryVersion.group
-    override def versionDefault: Version = ScalaBinaryVersion.this.versionDefault.version
+    override def versionDefault: Version.Simple = ScalaBinaryVersion.this.versionDefault.version
     override def artifact: String = ScalaBinaryVersion.this.artifact
     override def description: String = ScalaBinaryVersion.this.description
 
@@ -23,14 +23,14 @@ object ScalaBinaryVersion:
   val group: String = "org.scala-lang"
 
   def forScalaVersion(scalaVersion: ScalaVersion): ScalaBinaryVersion =
-    if scalaVersion.version.segmentInt(0) == Scala3.versionMajor
+    if scalaVersion.version.major == Scala3.versionMajor
     then Scala3
     else
-      if scalaVersion.version.segmentInt(1) == Scala213.versionMinor
+      if scalaVersion.version.minor == Scala213.versionMinor
       then 
         Scala213
       else
-        require(scalaVersion.version.segmentInt(1) == Scala212.versionMinor)
+        require(scalaVersion.version.minor == Scala212.versionMinor)
         Scala212
 
   def versionDefaults: Seq[ScalaVersion] = Seq(
@@ -48,7 +48,7 @@ object ScalaBinaryVersion:
 
     // There is no Scala 2 equivalent
     object ScalaLibraryJS extends ScalaDependency.Maker:
-      override def versionDefault: Version = Scala3.versionDefault.version
+      override def versionDefault: Version.Simple = Scala3.versionDefault.version
       override def group: String = ScalaBinaryVersion.group
       override def artifact: String = "scala3-library"
       override def description: String = "Scala 3 library in Scala.js."

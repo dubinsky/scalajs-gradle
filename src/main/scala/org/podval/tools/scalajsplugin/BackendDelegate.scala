@@ -14,6 +14,5 @@ trait BackendDelegate[T <: BackendTask]:
   def testTaskClass       :        Class[? <: T & BackendTask.Run .Test]
 
   def pluginDependenciesConfigurationNameOpt: Option[String]
-  def usesTestScalaCompilerPluginsConfiguration: Boolean
   
   def createExtension: Option[CreateExtension[?]]

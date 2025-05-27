@@ -6,7 +6,8 @@ final class ScalaDependency private(
   scalaBackend: ScalaBackend,
   override val group: String,
   override val artifact: String,
-  isScalaVersionFull: Boolean
+  isScalaVersionFull: Boolean,
+  override val isVersionCompound: Boolean
 ) extends FindableDependency[ScalaDependency.WithScalaVersion]:
   override def classifier(version: Version): Option[String] = None
   override def extension(version: Version): Option[String] = None
@@ -20,7 +21,7 @@ final class ScalaDependency private(
     val versionSuffix: Version =
       if isScalaVersionFull
       then scalaVersion.version
-      else scalaVersion.versionSuffix
+      else scalaVersion.binaryVersion.versionSuffix
 
     s"${scalaBackend.artifactSuffixString}_$versionSuffix"
 
@@ -55,12 +56,14 @@ object ScalaDependency:
   trait Maker extends Dependency.Maker:
     def scala2: Boolean = false
     def isScalaVersionFull: Boolean = false
+    def isVersionCompound: Boolean = false
 
     final override def findable: ScalaDependency = ScalaDependency(
       scalaBackend = scalaBackend,
       group = group,
       artifact = artifact,
-      isScalaVersionFull = isScalaVersionFull
+      isScalaVersionFull = isScalaVersionFull,
+      isVersionCompound = isVersionCompound
     )
 
     final override def dependency(scalaVersion: ScalaVersion): WithScalaVersion = findable.withScalaVersion(

@@ -10,7 +10,7 @@ case object ScalaJSBackend extends NonJvmBackend:
   override val name: String = "Scala.js"
   override val sourceRoot: String = "js"
   override val artifactSuffix: String = "sjs1"
-  override val versionDefault: Version = Version("1.19.0")
+  override val versionDefault: Version.Simple = Version.Simple("1.19.0")
 
   override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
     if scalaVersion.isScala3 
@@ -19,8 +19,12 @@ case object ScalaJSBackend extends NonJvmBackend:
     
   override def areCompilerPluginsBuiltIntoScala3: Boolean = true
   override def junit4: Dependency.Maker = JUnit4ScalaJS.forJS.get.maker
-  override def versionExtractor(version: Version): Version = version
-  override def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): Version = backendVersion.simple
+  override def versionExtractor(version: Version): Version.Simple = version.simple
+  
+  override def versionComposer(
+    projectScalaVersion: ScalaVersion,
+    backendVersion: Version.Simple
+  ): Version = backendVersion.simple
 
   private val group: String = "org.scala-js"
 
@@ -30,7 +34,7 @@ case object ScalaJSBackend extends NonJvmBackend:
     final override val isScalaVersionFull: Boolean = false
   ) extends ScalaDependency.Maker:
     final override def description: String = describe(what)
-    final override def versionDefault: Version = ScalaJSBackend.versionDefault
+    final override def versionDefault: Version.Simple = ScalaJSBackend.versionDefault
     final override def group: String = ScalaJSBackend.group
     final override def scalaBackend: JvmBackend.type = JvmBackend
     final override def scala2: Boolean = true
@@ -57,7 +61,7 @@ case object ScalaJSBackend extends NonJvmBackend:
   )
 
   object JSDomNodeJS extends ScalaDependency.Maker:
-    override val versionDefault: Version = Version("1.1.0")
+    override val versionDefault: Version.Simple = Version.Simple("1.1.0")
     override def group: String = ScalaJSBackend.group
     override val artifact: String = "scalajs-env-jsdom-nodejs"
     override val description: String = describe("Library for DOM manipulations on Node.js")
@@ -65,7 +69,7 @@ case object ScalaJSBackend extends NonJvmBackend:
     override def scala2: Boolean = true
 
   object DomSJS extends ScalaDependency.Maker:
-    override val versionDefault: Version = Version("2.8.0")
+    override val versionDefault: Version.Simple = Version.Simple("2.8.0")
     override def group: String = ScalaJSBackend.group
     override val artifact: String = "scalajs-dom"
     override val description: String = describe("Library for DOM manipulations")

@@ -10,7 +10,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
   override val name: String = "Scala Native"
   override val sourceRoot: String = "native"
   override val artifactSuffix: String = "native0.5"
-  override val versionDefault: Version = Version("0.5.7")
+  override val versionDefault: Version.Simple = Version.Simple("0.5.7")
 
   override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
     if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala213
@@ -19,10 +19,14 @@ case object ScalaNativeBackend extends NonJvmBackend:
     
   override def areCompilerPluginsBuiltIntoScala3: Boolean = false
   override def junit4: Dependency.Maker = JUnit4ScalaNative.forNative.get.maker
-  override def versionExtractor(version: Version): Version = version.compound.right
-  override def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): Version = Version.Compound(
+  override def versionExtractor(version: Version): Version.Simple = version.compound.right
+  
+  override def versionComposer(
+    projectScalaVersion: ScalaVersion,
+    backendVersion: Version.Simple
+  ): Version = new Version.Compound(
     projectScalaVersion.version,
-    backendVersion.simple
+    backendVersion
   )
 
   private val group: String = "org.scala-native"
@@ -34,7 +38,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
     final override val isScalaVersionFull: Boolean = false
   ) extends ScalaDependency.Maker:
     final override def description: String = describe(what)
-    final override def versionDefault: Version = ScalaNativeBackend.versionDefault
+    final override def versionDefault: Version.Simple = ScalaNativeBackend.versionDefault
     final override def group: String = ScalaNativeBackend.group
 
   private sealed class ScalaNativeMaker(
@@ -61,9 +65,11 @@ case object ScalaNativeBackend extends NonJvmBackend:
 
   override def library(isScala3: Boolean): ScalaDependency.Maker =
     if isScala3
-    then new ScalaNativeMaker("scala3lib", "Scala 3 Library")
+    then new ScalaNativeMaker("scala3lib", "Scala 3 Library"):
+      override def isVersionCompound: Boolean = true
     else new ScalaNativeMaker("scalalib" , "Scala 2 Library"):
-      final override def scala2: Boolean = true
+      override def isVersionCompound: Boolean = true
+      override def scala2: Boolean = true
 
   override def compiler: ScalaDependency.Maker = Maker(
     scalaBackend = JvmBackend,

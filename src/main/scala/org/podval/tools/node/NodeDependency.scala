@@ -12,7 +12,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
   artifact = "node"
 ) with InstallableDependency[NodeInstallation]:
 
-  override val versionDefault: Version = Version("22.15.1")
+  override val versionDefault: Version.Simple = Version.Simple("22.15.1")
 
   override def cacheDirectory: String = "nodejs"
 
@@ -50,14 +50,14 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
 
   //https://github.com/nodejs/node/pull/5995
   private def hasWindowsZip(version: Version): Boolean =
-    val majorVersion: Int = version.simple.segmentInt(0)
-    val minorVersion: Int = version.simple.segmentInt(1)
-    val microVersion: Int = version.simple.segmentInt(2)
+    val major: Int = version.simple.major
+    val minor: Int = version.simple.minor
+    val patch: Int = version.simple.patch
 
-    ((majorVersion == 4) && (minorVersion >= 5)) || // >= 4.5.0..6
-    ((majorVersion == 6) && ((minorVersion > 2) || ((minorVersion == 2) && (microVersion >= 1)))) || // >= 6.2.1..7
-     (majorVersion > 6) // 7..
-
+    ((major == 4) && (minor >= 5)) || // >= 4.5.0..6
+    ((major == 6) && ((minor > 2) || ((patch == 2) && (patch >= 1)))) || // >= 6.2.1..7
+     (major >  6) // 7..
+    
   override def classifier(version: Version): Option[String] =
     val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
     val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName

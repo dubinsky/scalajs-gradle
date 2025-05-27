@@ -7,18 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.8.1] - 2025-0
-- cleanup: test interface dependency goes to `testRuntimeOnly`, not `testImplementation` configuration;
-- cleanup: create `run` task only if one does not exist;
-- cleanup: `OutputPiper.start(BaseExecSpec)` implemented;
-- dependency updates;
-- cleanup: use `abort` for `ScalaNative` too;
-- cleanup: no `run` task on JVM;
+- feat: Scala version-specific sources;
+- feat (WIP): Scala version property;
+- feat (WIP): `ScalaVersionData`, `ScalaBackendData` and `ScalaBackendExtension`;
+- fix: test interface goes to `testRuntimeOnly`, not `testImplementation` configuration;
+- fix: `testScalaCompilerPlugins` configuration;
+- fix: no `run` task on JVM;
+- chore: dependency updates;
 - cleanup: `ScalaVersion` and `ScalaBinaryVersion`; removed `ScalaPlatform`;
 - cleanup: `Dependency.Maker` knows its `ScalaBackend`;
-- doc: dependencies documentation cleanup;
-- fix: `testScalaCompilerPlugins` configuration;
-- feat (WIP): Scala version property;
-- feat (WIP): `ScalaVersionData`;
+- cleanup: `OutputPiper.start(BaseExecSpec)` implemented;
+- cleanup: use `abort` for `ScalaNative` too;
+- doc: README dependencies documentation;
 
 ## [0.8.0] - 2025-05-23
 - cleanup: `TestProject` and `TestProjectWriter`;

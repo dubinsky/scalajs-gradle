@@ -16,8 +16,8 @@ trait NonJvmBackend extends ScalaBackend:
   def versionDefault: Version
 
   def areCompilerPluginsBuiltIntoScala3: Boolean
-  def versionExtractor(version: Version): Version
-  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): Version
+  def versionExtractor(version: Version): Version.Simple
+  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version.Simple): Version
   def implementation: Array[ScalaDependency.Maker]
   def library(isScala3: Boolean): ScalaDependency.Maker
   def compiler: ScalaDependency.Maker
@@ -40,7 +40,7 @@ trait NonJvmBackend extends ScalaBackend:
   ): BackendDependencyRequirements =
     val libraryDependency: ScalaDependency.Maker = library(scalaVersion.isScala3)
 
-    val backendVersion: Version = libraryDependency
+    val backendVersion: Version.Simple = libraryDependency
       .findInConfiguration(implementationConfiguration)
       .map(_.version)
       .map(versionExtractor)

@@ -18,8 +18,8 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.util.internal.GUtil
 import org.podval.tools.build.jvm.JvmBackend
-import org.podval.tools.build.{AddConfigurationToClassPath, BackendDependencyRequirements, GradleClassPath, 
-  ScalaBackend, ScalaLibrary, ScalaVersion}
+import org.podval.tools.build.{AddConfigurationToClassPath, BackendDependencyRequirements, GradleClassPath,
+  ScalaBackend, ScalaLibrary, ScalaVersion, Version}
 import org.podval.tools.build.ScalaBackend.sharedSourceRoot
 import org.podval.tools.platform.IntelliJIdea
 import org.podval.tools.scalajsplugin.jvm.JvmDelegate
@@ -42,88 +42,78 @@ final class ScalaJSPlugin @Inject(jvmPluginServices: JvmPluginServices) extends 
     // Apply Scala plugin to this project.
     project.getPluginManager.apply(classOf[ScalaPlugin])
 
+    // Create extension.
+    project.getExtensions.create("scalaBackend", classOf[ScalaBackendExtension])
+
+    val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
+    val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
+
     // If Scala version property is set, override Scala version and adjust build directory.
     Option(project.findProperty(ScalaJSPlugin.scalaVersionProperty)).map(_.toString).foreach: (scalaVersion: String) =>
       val extensionScalaVersion: Property[String] = ScalaJSPlugin.getScalaExtensionScalaVersionProperty(project)
-
-      // TODO not yet set?
-      if false /*!extensionScalaVersion.isPresent*/ then throw GradleException(ScalaJSPlugin.helpMessage(project,
-        s"""overriding Scala version with property `${ScalaJSPlugin.scalaVersionProperty}`
-           |is not supported when Scala version is inferred from the Scala library dependency;
-           |set Scala version on the Scala plugin's extension instead: `scala.scalaVersion=...`""".stripMargin
-      )) else
-        lifecycle(s"using Scala $scalaVersion; build directory adjusted")
-        // TODO it is to late to change the Scala version of the overall project it seems;
-        // its Scala-related tasks are disabled, so as long as we do not propagate the wrong version, we are ok...
-        extensionScalaVersion.set(scalaVersion)
-        val buildDirectory: DirectoryProperty = project.getLayout.getBuildDirectory
-        buildDirectory.set(buildDirectory.get.dir(s"scala-$scalaVersion"))
+      lifecycle(s"using Scala $scalaVersion; build directory adjusted")
+      // TODO it is to late to change the Scala version of the overall project it seems;
+      // its Scala-related tasks are disabled, so as long as we do not propagate the wrong version, we are ok...
+      extensionScalaVersion.set(scalaVersion)
+      val buildDirectory: DirectoryProperty = project.getLayout.getBuildDirectory
+      buildDirectory.set(buildDirectory.get.dir(s"scala-$scalaVersion"))
 
     def backendNames: String = ScalaBackend.all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
     def sourceRoots: String = ScalaBackend.all.map(_.sourceRoot).mkString(", ")
-
-    val delegateOpt: Option[BackendDelegate[?]] = Option(project.findProperty(ScalaJSPlugin.scalaBackendProperty))
-      .map(_.toString)
-      .map((name: String) => Set(JvmDelegate, ScalaJSDelegate, ScalaNativeDelegate)
-        .find(_.backend.is(name))
-        .getOrElse(throw GradleException(pluginMessage(s"unknown Scala backend '$name'; use one of $backendNames")))
-      )
-
     val backendCandidates: Set[ScalaBackend] = ScalaBackend.all.filter(backend => project.file(backend.sourceRoot).exists)
     val notSubprojects: Set[ScalaBackend] = backendCandidates.filterNot(ScalaJSPlugin.findBackendSubproject(project, _).isDefined)
     if notSubprojects.nonEmpty then project.getLogger.warn(pluginMessage(
-        s"subprojects ${notSubprojects.map(_.sourceRoot).map(n => s"'$n'").mkString(", ")} must be included in 'settings.gradle'"
+      s"subprojects ${notSubprojects.map(_.sourceRoot).map(n => s"'$n'").mkString(", ")} must be included in 'settings.gradle'"
     ))
 
-    if delegateOpt.isEmpty && backendCandidates.isEmpty then help(
-      s"""to choose Scala backend, set property '${ScalaJSPlugin.scalaBackendProperty}' to one of $backendNames;
-         |to share code between backends, create at least one of the subprojects $sourceRoots""".stripMargin
-    )
-
-    val isModeMixed: Boolean = delegateOpt.isEmpty && backendCandidates.nonEmpty
-
-    // Write `settings-includes.gradle`.
-    if isModeMixed then Files.write(
-      file = File(project.getProjectDir, "settings-includes.gradle"),
-      content = (Seq(sharedSourceRoot) ++ backendCandidates.map(_.sourceRoot))
-        .map(name => s"include '${project.getProjectDir.getName}:$name'")
-        .mkString("\n")
-    )
-
-    val sharedExists: Boolean =
-      val file: File = project.file(sharedSourceRoot)
-      file.exists && file.isDirectory
-
-    if sharedExists && !isModeMixed then help(
-      s"""to share code between backends, do not set property '${ScalaJSPlugin.scalaBackendProperty}'
-         |and create at least one of the subprojects $sourceRoots""".stripMargin
-    )
-    if !sharedExists &&isModeMixed then help(
-      s"to share code between backends, create directory '$sharedSourceRoot'"
-    )
-
-    val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
-    val sharedNotAvailable: Boolean = sharedExists && isRunningInIntelliJ && ScalaJSPlugin.findSharedSubproject(project).isEmpty
-
-    if sharedNotAvailable then help(
-      s"for shared sources to be visible in IntelliJ IDE, include subproject '$sharedSourceRoot' in 'settings.gradle'"
-    )
-
-    val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
+    val isModeMixed: Boolean = backendCandidates.nonEmpty
     if isModeMixed then
+      // Calculate `includeShared`.
+      val sharedExists: Boolean =
+        val file: File = project.file(sharedSourceRoot)
+        file.exists && file.isDirectory
+      if !sharedExists then
+        help(s"to share code between backends, create directory '$sharedSourceRoot'")
+      val sharedNotAvailable: Boolean = sharedExists && isRunningInIntelliJ && ScalaJSPlugin.findSharedSubproject(project).isEmpty
+      if sharedNotAvailable then
+        help(s"for shared sources to be visible in IntelliJ IDE, include subproject '$sharedSourceRoot' in 'settings.gradle'")
+      val includeShared: Boolean = sharedExists && !sharedNotAvailable
+
+      // Write `settings-includes.gradle`.
+      Files.write(
+        file = File(project.getProjectDir, "settings-includes.gradle"),
+        content = (Seq(sharedSourceRoot) ++ backendCandidates.map(_.sourceRoot))
+          .map(name => s"include '${project.getProjectDir.getName}:$name'")
+          .mkString("\n")
+      )
+      
       val backends: Set[ScalaBackend] = backendCandidates.filter(ScalaJSPlugin.findBackendSubproject(project, _).isDefined)
       lifecycle(s"using Scala backends ${backends.map(_.name).mkString(", ")}$ijString")
       ScalaJSPlugin.applyMixed(
         project,
         backends,
-        includeShared = sharedExists && !sharedNotAvailable
+        includeShared = includeShared
       )
     else
+      // TODO get from extension
+      val delegateOpt: Option[BackendDelegate[?]] = Option(project.findProperty(ScalaJSPlugin.scalaBackendProperty))
+        .map(_.toString)
+        .map((name: String) => Set(JvmDelegate, ScalaJSDelegate, ScalaNativeDelegate)
+          .find(_.backend.is(name))
+          .getOrElse(throw GradleException(pluginMessage(s"unknown Scala backend '$name'; use one of $backendNames")))
+        )
+
+      if delegateOpt.isEmpty && backendCandidates.isEmpty then help(
+        s"""to choose Scala backend, set property '${ScalaJSPlugin.scalaBackendProperty}' to one of $backendNames;
+           |to share code between backends, create at least one of the subprojects $sourceRoots""".stripMargin
+      )
+
+      val delegate: BackendDelegate[?] = delegateOpt.getOrElse(JvmDelegate)
+
       val includeShared: Boolean = Option(project.findProperty(ScalaJSPlugin.includeSharedProperty))
         .map(_.toString)
         .contains("true")
 
-      val delegate: BackendDelegate[?] = delegateOpt.getOrElse(JvmDelegate)
       val sharedString: String = if !includeShared then "" else s" (including '$sharedSourceRoot')"
       lifecycle(s"using Scala backend ${delegate.backend.name}$sharedString$ijString")
 
@@ -163,6 +153,11 @@ object ScalaJSPlugin:
     .getByType(classOf[ScalaPluginExtension])
     .getScalaVersion
 
+  private def getScalaBackendExtensionNameProperty(project: Project): Property[String] = project
+    .getExtensions
+    .getByType(classOf[ScalaBackendExtension])
+    .getName
+
   private def setExtProperty(project: Project, name: String, value: Object): Unit = project
     .getExtensions
     .getByType(classOf[ExtraPropertiesExtension])
@@ -194,6 +189,7 @@ object ScalaJSPlugin:
       setExtProperty(subproject, scalaBackendProperty, backend.name)
       if includeShared then setExtProperty(subproject, includeSharedProperty, "true")
       subproject.getPluginManager.apply(classOf[ScalaJSPlugin])
+      ScalaJSPlugin.getScalaBackendExtensionNameProperty(subproject).set(backend.name)
       // TODO do we need the early propagation?
       scalaVersionOpt.foreach(scalaVersion => getScalaExtensionScalaVersionProperty(subproject).set(scalaVersion.toString))
 
@@ -218,17 +214,50 @@ object ScalaJSPlugin:
     isRunningInIntelliJ: Boolean,
     jvmPluginServices: JvmPluginServices
   ): Unit =
-    delegate.backend.archiveAppendixOpt.foreach(configureArchiveAppendix(project, _))
+    createTestScalaCompilerPluginsConfiguration(project, jvmPluginServices)
     configureTestTask(project)
-    configureRuntimeAndClassesTasks(project, delegate)
+    configureHasRuntimeClassPathTasks(project)
+    configureDependsOnClassesTasks(project)
+
+    delegate.backend.archiveAppendixOpt.foreach(configureArchiveAppendix(project, _))
     delegate.createExtension.foreach(_.create(project))
     delegate.pluginDependenciesConfigurationNameOpt.foreach(createPluginDependenciesConfiguration(project, _, delegate.backend.name))
-    if delegate.usesTestScalaCompilerPluginsConfiguration then createTestScalaCompilerPluginsConfiguration(project, jvmPluginServices)
     registerTasks(project, delegate)
 
+    project.afterEvaluate: (project: Project) =>
+      addSources(project, includeShared = includeShared, isRunningInIntelliJ = isRunningInIntelliJ)
+      val projectScalaLibrary: ScalaLibrary = ScalaLibrary
+        .getFromConfiguration(project.getConfigurations.getByName(implementationConfigurationName))
+      // TODO verify that the library version is the same as the one in the extension (if it is set)
+      val pluginScalaVersion: ScalaVersion = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).scalaVersion
+      dependencyRequirements(
+        project,
+        delegate,
+        projectScalaLibrary.scalaVersion,
+        pluginScalaVersion
+      ).foreach(_.apply(project))
+      configureJarTask(project, delegate, projectScalaLibrary.scalaVersion)
+      configureScalaCompile(project, delegate, projectScalaLibrary.scalaVersion)
+      expandClassPath(project, delegate, projectScalaLibrary)
+
+  private def addSources(
+    project: Project,
+    includeShared: Boolean,
+    isRunningInIntelliJ: Boolean
+  ): Unit =
+    val scalaRootsForVersions: Seq[String] = Option(getScalaExtensionScalaVersionProperty(project).getOrNull)
+      .map(ScalaVersion(_))
+      .map(_.version)
+      .map(version => 1.to(version.length).map(version.take).map(version => s"scala-$version"))
+      .getOrElse(Seq.empty)
+
+    // Add non-shared version-specific Scala sources.
+    addScalaSources(project, scalaRootsForVersions, sourceRoot = None)
+
     if includeShared then
+      val scalaRoots: Seq[String] = Seq("scala") ++ scalaRootsForVersions
       if !isRunningInIntelliJ then
-        addSharedScalaSources(project)
+        addScalaSources(project, scalaRoots, sourceRoot = Some(ScalaBackend.sharedSourceRoot))
       else
         // Add dependency on the shared sibling.
         // TODO exclude this dependency from publications!
@@ -236,73 +265,81 @@ object ScalaJSPlugin:
         project.getDependencies.add(implementationConfigurationName, sharedSibling)
 
         // Add shared sources for the execution of the tasks that need them.
-        val addSharedScalaSourcesForTask: Action[Task] = ScalaJSPlugin.addSharedScalaSourcesForTask(project)
-        project.getTasks.withType(classOf[SourceTask         ]).configureEach(addSharedScalaSourcesForTask)
+        val addSharedScalaSourcesForTask: Action[Task] = ScalaJSPlugin.addSharedScalaSourcesForTask(project, scalaRoots)
+        project.getTasks.withType(classOf[SourceTask]).configureEach(addSharedScalaSourcesForTask)
         project.getTasks.withType(classOf[AbstractArchiveTask]).configureEach(addSharedScalaSourcesForTask)
-
-    project.afterEvaluate: (project: Project) =>
-      val projectScalaLibrary: ScalaLibrary = ScalaLibrary
-        .getFromConfiguration(project.getConfigurations.getByName(implementationConfigurationName))
-      // TODO verify that the library version is the same as the one in the extension (if it is set)
-      val pluginScalaLibrary: ScalaLibrary = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this))
-      dependencyRequirements(
-        project,
-        delegate,
-        projectScalaLibrary.scalaVersion,
-        pluginScalaLibrary.scalaVersion
-      ).foreach(_.apply(project))
-      configureJarTask(project, delegate, projectScalaLibrary.scalaVersion)
-      configureScalaCompile(project, delegate, projectScalaLibrary.scalaVersion)
-      expandClassPath(project, delegate, projectScalaLibrary)
 
   private def getScalaSourceDirectorySet(sourceSet: SourceSet): ScalaSourceDirectorySet = sourceSet
     .getExtensions
     .getByType(classOf[ScalaSourceDirectorySet])
 
-  private def addScalaSources(sourceSet: SourceSet, sourceDirectory: File): Unit =
-    getScalaSourceDirectorySet(sourceSet).srcDir(sourceDirectory)
+  private def addScalaSources(sourceSet: SourceSet, sourceDirectories: Seq[File]): Unit =
+    getScalaSourceDirectorySet(sourceSet).srcDirs(sourceDirectories*)
 
   private val defaultSourceDirectorySetSource: Field = classOf[DefaultSourceDirectorySet].getDeclaredField("source")
   defaultSourceDirectorySetSource.setAccessible(true)
 
-  private def removeScalaSources(sourceSet: SourceSet, sourceDirectory: File): Unit =
+  private def removeScalaSources(sourceSet: SourceSet, sourceDirectories: Seq[File]): Unit =
+    def toRemove(o: Object): Boolean = o.isInstanceOf[File] && {
+      val file: File = o.asInstanceOf[File]
+      sourceDirectories.exists(_.getAbsolutePath == file.getAbsolutePath)
+    }
+
     val scalaSourceDirectorySet: ScalaSourceDirectorySet = getScalaSourceDirectorySet(sourceSet)
-    val source: List[Object] = defaultSourceDirectorySetSource
+    scalaSourceDirectorySet.setSrcDirs(defaultSourceDirectorySetSource
       .get(scalaSourceDirectorySet)
-      .asInstanceOf[java.util.List[java.lang.Object]]
+      .asInstanceOf[java.util.List[Object]]
       .asScala
-      .toList
-    val sourceFiltered: List[Object] = source.filterNot(o =>
-      o.isInstanceOf[File] && o.asInstanceOf[File].getAbsolutePath == sourceDirectory.getAbsolutePath
+      .filterNot(toRemove)
+      .asJava
     )
-    scalaSourceDirectorySet.setSrcDirs(sourceFiltered.asJava)
 
-  private def sharedScalaSources(project: Project, isTest: Boolean) = Files.file(
-    project.getProjectDir.getParentFile, // mixed project
-    ScalaBackend.sharedSourceRoot,       // shared sibling directory
-    "src",
-    if isTest then "test" else "main",
-    "scala"
-  )
+  private def scalaSources(
+    project: Project,
+    scalaRoots: Seq[String],
+    isTest: Boolean,
+    sourceRoot: Option[String]
+  ): Seq[File] =
+    for scalaRoot: String <- scalaRoots yield Files.fileSeq(
+      (if sourceRoot.isEmpty then project else project.getParent).getProjectDir,
+      sourceRoot.toSeq ++ Seq(
+        "src",
+        if isTest then "test" else "main",
+        scalaRoot
+      )
+    )
 
-  private def addSharedScalaSources(project: Project): Unit =
+  private def addScalaSources(
+    project: Project,
+    scalaRoots: Seq[String],
+    sourceRoot: Option[String]
+  ): Unit =
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
-    addScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
-    addScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
+    addScalaSources(mainSourceSet, scalaSources(project, scalaRoots, isTest = false, sourceRoot))
+    addScalaSources(testSourceSet, scalaSources(project, scalaRoots, isTest = true , sourceRoot))
 
   // Add before compilation and remove after, so that IntelliJ does not
   // run into "duplicate content roots" issue during project import.
-  private def addSharedScalaSourcesForTask(project: Project): Action[Task] = (task: Task) =>
+  private def addSharedScalaSourcesForTask(
+    project: Project,
+    scalaRoots: Seq[String]
+  ): Action[Task] = (task: Task) =>
+    def sharedScalaSources(isTest: Boolean): Seq[File] = scalaSources(
+      project,
+      scalaRoots,
+      isTest,
+      sourceRoot = Some(ScalaBackend.sharedSourceRoot)
+    )
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
     task.doFirst(new Action[Task]:
       override def execute(t: Task): Unit =
-        addScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
-        addScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
+        addScalaSources(mainSourceSet, sharedScalaSources(isTest = false))
+        addScalaSources(testSourceSet, sharedScalaSources(isTest = true ))
     )
     task.doLast(new Action[Task]:
       override def execute(t: Task): Unit =
-        removeScalaSources(mainSourceSet, sharedScalaSources(project, isTest = false))
-        removeScalaSources(testSourceSet, sharedScalaSources(project, isTest = true ))
+        removeScalaSources(mainSourceSet, sharedScalaSources(isTest = false))
+        removeScalaSources(testSourceSet, sharedScalaSources(isTest = true ))
     )
 
   private def configureArchiveAppendix(
@@ -328,7 +365,7 @@ object ScalaJSPlugin:
       removeDashBeforeArchiveAppendix(project)
     )
 
-    val jarAppendix: String = s"${delegate.backend.artifactSuffixString}_${scalaVersion.versionSuffix}"
+    val jarAppendix: String = s"${delegate.backend.artifactSuffixString}_${scalaVersion.binaryVersion.versionSuffix}"
     project.getTasks.withType(classOf[Jar]).named(jarTaskName).configure((jar: Jar) =>
       jar.getArchiveAppendix.convention(jarAppendix)
     )
@@ -361,22 +398,21 @@ object ScalaJSPlugin:
       testTask.useSbt()
     )
 
-  // Set 'runtimeClassPath' and dependency on the 'classes' task.
-  private def configureRuntimeAndClassesTasks(
-    project: Project,
-    delegate: BackendDelegate[?]
-  ): Unit = project.getTasks.withType(delegate.taskClass).configureEach((task: BackendTask) =>
-    def sourceSet: SourceSet =
-      val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
-      if task.isTest
-      then testSourceSet
-      else mainSourceSet
+  private def getSourceSet(project: Project, isTest: Boolean): SourceSet =
+    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
+    if isTest
+    then testSourceSet
+    else mainSourceSet
 
-    if task.isInstanceOf[BackendTask.HasRuntimeClassPath] then
-      task.asInstanceOf[BackendTask.HasRuntimeClassPath].getRuntimeClassPath.setFrom(sourceSet.getRuntimeClasspath)
-    if task.isInstanceOf[BackendTask.DependsOnClasses] then
-      task.asInstanceOf[BackendTask.DependsOnClasses].dependsOn(getClassesTaskProvider(project, sourceSet))
-  )
+  private def configureHasRuntimeClassPathTasks(project: Project): Unit = project
+    .getTasks
+    .withType(classOf[BackendTask.HasRuntimeClassPath])
+    .configureEach(task => task.getRuntimeClassPath.setFrom(getSourceSet(project, task.isTest).getRuntimeClasspath))
+
+  private def configureDependsOnClassesTasks(project: Project): Unit = project
+    .getTasks
+    .withType(classOf[BackendTask.DependsOnClasses])
+    .configureEach(task => task.dependsOn(getClassesTaskProvider(project, getSourceSet(project, task.isTest))))
 
   private def createPluginDependenciesConfiguration(
     project: Project,
@@ -520,20 +556,23 @@ object ScalaJSPlugin:
     scalaVersion: ScalaVersion
   ): Unit =
     val scalaCompileParameters: Seq[String] = delegate.backend.scalaCompileParameters(scalaVersion)
-    def ensureParameters(scalaCompile: ScalaCompile): Unit = ScalaJSPlugin.ensureParameters(scalaCompile, scalaCompileParameters, project.getLogger)
-    val scalaCompilerPluginsConfiguration: Configuration = project.getConfigurations.getByName(scalaCompilerPluginsConfigurationName)
-    
+    def ensureParameters(scalaCompile: ScalaCompile): Unit =
+      ScalaJSPlugin.ensureParameters(scalaCompile, scalaCompileParameters, project.getLogger)
+
+    def addScalaCompilerPlugins(scalaCompile: ScalaCompile, configurationName: String): Unit =
+      ScalaJSPlugin.addScalaCompilerPlugins(project.getConfigurations.getByName(configurationName), scalaCompile, project.getLogger)
+
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
+
     val mainScalaCompile: ScalaCompile = ScalaJSPlugin.scalaCompile(project, mainSourceSet)
     ensureParameters(mainScalaCompile)
-    addScalaCompilerPlugins(scalaCompilerPluginsConfiguration, mainScalaCompile, project.getLogger)
+    addScalaCompilerPlugins(mainScalaCompile, scalaCompilerPluginsConfigurationName)
+
     val testScalaCompile: ScalaCompile = ScalaJSPlugin.scalaCompile(project, testSourceSet)
     ensureParameters(testScalaCompile)
-    addScalaCompilerPlugins(scalaCompilerPluginsConfiguration, testScalaCompile, project.getLogger)
-    if delegate.usesTestScalaCompilerPluginsConfiguration then
-      val testScalaCompilerPluginsConfiguration: Configuration = project.getConfigurations.getByName(testScalaCompilerPluginsConfigurationName)
-      addScalaCompilerPlugins(testScalaCompilerPluginsConfiguration, testScalaCompile, project.getLogger)
-  
+    addScalaCompilerPlugins(testScalaCompile, scalaCompilerPluginsConfigurationName)
+    addScalaCompilerPlugins(testScalaCompile, testScalaCompilerPluginsConfigurationName)
+
   private def ensureParameters(
     scalaCompile: ScalaCompile,
     toAdd: Seq[String],
