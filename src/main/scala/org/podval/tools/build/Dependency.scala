@@ -27,6 +27,8 @@ object Dependency:
   )
   
   trait Maker:
+    override def toString: String = s"$group:$artifact"
+
     def scalaBackend: ScalaBackend
     def group: String
     def artifact: String

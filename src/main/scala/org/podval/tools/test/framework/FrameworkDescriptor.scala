@@ -50,7 +50,8 @@ abstract class FrameworkDescriptor(
   ))
 
 object FrameworkDescriptor:
-  private val all: Array[FrameworkDescriptor] = Array(
+  // This is a `def` and not a `val` because of some initialization complications ;)
+  private def all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,
     JUnit4ScalaNative,

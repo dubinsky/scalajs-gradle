@@ -55,7 +55,7 @@ object ZioTest extends FrameworkDescriptor(
   displayName = "ZioTest",
   group = "dev.zio",
   artifact = "zio-test-sbt",
-  versionDefault = Version.Simple("2.1.18"),
+  versionDefault = Version.Simple("2.1.19"),
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt"),
   tagOptionStyle = OptionStyle.OptionPerValue,

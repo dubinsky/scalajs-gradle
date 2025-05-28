@@ -44,7 +44,7 @@ object ScalaBinaryVersion:
     override def versionSuffixLength: Int = 1
     override def artifact: String = "scala3-library_3"
     override def description: String =  "Scala 3 Library."
-    override def versionDefault: ScalaVersion = ScalaVersion("3.7.0")
+    override def versionDefault: ScalaVersion = ScalaVersion("3.7.1")
 
     // There is no Scala 2 equivalent
     object ScalaLibraryJS extends ScalaDependency.Maker:

@@ -40,7 +40,7 @@ case object ScalaJSBackend extends NonJvmBackend:
     final override def scala2: Boolean = true
 
   override def implementation: Array[ScalaDependency.Maker] = Array.empty
-  override def library(isScala3: Boolean): ScalaDependency.Maker = Maker("scalajs-library", "Library")
+  override def library(scalaVersion: ScalaVersion): ScalaDependency.Maker = Maker("scalajs-library", "Library")
   override def linker: ScalaDependency.Maker = Maker("scalajs-linker", "Linker")
   override def testAdapter: ScalaDependency.Maker = Maker("scalajs-sbt-test-adapter", "Test Adapter for Node.js")
   //  object TestInterface extends Maker("scalajs-test-interface")

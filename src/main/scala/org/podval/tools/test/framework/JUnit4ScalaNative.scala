@@ -13,6 +13,6 @@ object JUnit4ScalaNative extends FrameworkDescriptor(
   usesTestSelectorAsNestedTestSelector = true
 ):
   // This is a Scala Native-only test framework
-  override val forJVM   : None.type = None
-  override val forJS    : None.type = None
+  override val forJVM: None.type = None
+  override val forJS : None.type = None
     

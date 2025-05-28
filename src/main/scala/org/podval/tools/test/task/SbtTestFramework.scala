@@ -23,13 +23,14 @@ import java.net.URL
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class SbtTestFramework(
-  backend: ScalaBackend,
   logLevelEnabled: LogLevel,
   defaultTestFilter: DefaultTestFilter,
   options: SbtTestFrameworkOptions,
   moduleRegistry: ModuleRegistry,
   testTaskTemporaryDir: Factory[File],
   dryRun: Provider[java.lang.Boolean],
+  // delayed
+  backend: () => ScalaBackend,
   loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework]
 ) extends TestFramework:
 
@@ -39,13 +40,13 @@ class SbtTestFramework(
     val copiedOptions: SbtTestFrameworkOptions = SbtTestFrameworkOptions()
     copiedOptions.copyFrom(this.options)
     SbtTestFramework(
-      this.backend,
       this.logLevelEnabled,
       newTestFilters.asInstanceOf[DefaultTestFilter],
       copiedOptions,
       this.moduleRegistry,
       this.testTaskTemporaryDir,
       this.dryRun,
+      this.backend,
       this.loadedFrameworks
     )
   
@@ -147,8 +148,8 @@ class SbtTestFramework(
   // and this is used in the getWorkerConfigurationAction,
   // we do not yet know what frameworks were actually loaded,
   // so we have to take into account all that could load - depending on the back-end in use.
-  private val sharedPackages: List[String] =
-    FrameworkDescriptor.forBackend(backend).flatMap(_.sharedPackages) ++
+  private def sharedPackages: List[String] =
+    FrameworkDescriptor.forBackend(backend()).flatMap(_.sharedPackages) ++
     List(
       // Scala 3 and Scala 2 libraries;
       // when running on Scala 3, both jars themselves are already on the classpath;
