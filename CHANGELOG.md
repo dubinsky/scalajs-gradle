@@ -6,10 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.8.1] - 2025-0
+## [0.8.1] - 2025-05-28
 - feat: Scala version-specific sources;
-- feat (WIP): Scala version property;
-- feat (WIP): `ScalaVersionData`, `ScalaBackendData` and `ScalaBackendExtension`;
+- feat: Scala version property;
+- feat: `ScalaBackendExtension`;
 - fix: test interface goes to `testRuntimeOnly`, not `testImplementation` configuration;
 - fix: `testScalaCompilerPlugins` configuration;
 - fix: no `run` task on JVM;
@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: `Dependency.Maker` knows its `ScalaBackend`;
 - cleanup: `OutputPiper.start(BaseExecSpec)` implemented;
 - cleanup: use `abort` for `ScalaNative` too;
-- doc: README dependencies documentation;
+- cleanup: very few `Version`s can be `Compound`;
+- doc: README update;
 
 ## [0.8.0] - 2025-05-23
 - cleanup: `TestProject` and `TestProjectWriter`;

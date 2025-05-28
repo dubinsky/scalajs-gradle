@@ -15,7 +15,7 @@ import java.io.File
 object VersionsWriter:
   private val versions: Seq[(String, Version)] = Seq(
     "gradle" -> Version.Simple("8.14.1"),
-    "plugin" -> Version.Simple("0.8.0"),
+    "plugin" -> Version.Simple("0.8.1"),
     
     "scala" -> ScalaBinaryVersion.Scala3.versionDefault.version,
     "scala213-suffix" -> ScalaBinaryVersion.Scala213.versionSuffix,
@@ -47,9 +47,9 @@ object VersionsWriter:
   )
 
   val attributes: Seq[(String, String)] = Seq(
-    "scalajsScalaBackendProperty"  -> ScalaJSPlugin.scalaBackendProperty,
-    "scalajsIncludeSharedProperty" -> ScalaJSPlugin.includeSharedProperty,
-    "scalajsScalaVersionProperty"  -> ScalaJSPlugin.scalaVersionProperty
+    "pluginScalaBackendProperty"  -> ScalaJSPlugin.scalaBackendProperty,
+    "pluginIncludeSharedProperty" -> ScalaJSPlugin.includeSharedProperty,
+    "pluginScalaVersionProperty"  -> ScalaJSPlugin.scalaVersionProperty
   )
   
   def main(args: Array[String]): Unit =
