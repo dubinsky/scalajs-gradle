@@ -19,7 +19,7 @@ trait NonJvmBackend extends ScalaBackend:
   def versionExtractor(version: Version): Version.Simple
   def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version.Simple): Version
   def implementation: Array[ScalaDependency.Maker]
-  def library(isScala3: Boolean): ScalaDependency.Maker
+  def library(scalaVersion: ScalaVersion): ScalaDependency.Maker
   def compiler: ScalaDependency.Maker
   def linker: ScalaDependency.Maker
   def testAdapter: ScalaDependency.Maker
@@ -33,18 +33,31 @@ trait NonJvmBackend extends ScalaBackend:
     scalaVersion: ScalaVersion
   ): Array[DependencyRequirement]
 
+  final def backendVersion(
+    scalaVersion: ScalaVersion,
+    implementationConfiguration: Configuration
+  ): Version.Simple =
+    val libraryDependency: ScalaDependency.Maker = library(scalaVersion)
+    libraryDependency
+      .findInConfiguration(implementationConfiguration)
+      .map(_.version)
+      .map(versionExtractor)
+      .getOrElse(libraryDependency.versionDefault)
+
+  final def junit4present(
+    testImplementationConfiguration: Configuration
+  ): Boolean = junit4
+    .findInConfiguration(testImplementationConfiguration).isDefined
+    
   final override def dependencyRequirements(
     implementationConfiguration: Configuration,
     testImplementationConfiguration: Configuration,
     scalaVersion: ScalaVersion
   ): BackendDependencyRequirements =
-    val libraryDependency: ScalaDependency.Maker = library(scalaVersion.isScala3)
-
-    val backendVersion: Version.Simple = libraryDependency
-      .findInConfiguration(implementationConfiguration)
-      .map(_.version)
-      .map(versionExtractor)
-      .getOrElse(libraryDependency.versionDefault)
+    val backendVersion: Version.Simple = NonJvmBackend.this.backendVersion(
+      scalaVersion, 
+      implementationConfiguration
+    )
 
     val addScalaCompilerPlugins: Boolean = !areCompilerPluginsBuiltIntoScala3 || !scalaVersion.isScala3
     
@@ -56,7 +69,7 @@ trait NonJvmBackend extends ScalaBackend:
       implementation =
         arrayConcat(
           arrayConcat(
-            Array(libraryDependency.required(versionComposer(scalaVersion, backendVersion))),
+            Array(library(scalaVersion).required(versionComposer(scalaVersion, backendVersion))),
             arrayMap(implementation, _.required(backendVersion))
           ),
           additionalImplementationDependencyRequirements(backendVersion, scalaVersion)
@@ -73,7 +86,7 @@ trait NonJvmBackend extends ScalaBackend:
         then Array.empty
         else Array(compiler.required(backendVersion)),
       testScalaCompilerPlugins =
-        if !addScalaCompilerPlugins || junit4.findInConfiguration(testImplementationConfiguration).isEmpty 
+        if !addScalaCompilerPlugins || !junit4present(testImplementationConfiguration) 
         then Array.empty
         else Array(junit4Plugin.required(backendVersion))
     )

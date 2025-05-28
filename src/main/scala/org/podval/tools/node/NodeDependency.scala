@@ -12,7 +12,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
   artifact = "node"
 ) with InstallableDependency[NodeInstallation]:
 
-  override val versionDefault: Version.Simple = Version.Simple("22.15.1")
+  override val versionDefault: Version.Simple = Version.Simple("22.16.0")
 
   override def cacheDirectory: String = "nodejs"
 

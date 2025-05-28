@@ -1,9 +1,9 @@
 > Task :scalajs-gradle:compileJava NO-SOURCE
 
 > Task :scalajs-gradle:compileScala
-[Warn] /home/dub/Projects/scalajs/scalajs-gradle/src/main/scala/org/podval/tools/scalajsplugin/BackendDelegate.scala:116:40: [33mclass[0m [35mDefaultScalaSourceSet[0m in [33mpackage[0m [35morg.gradle.api.internal.tasks[0m is deprecated: see corresponding Javadoc for more information.
-[Warn] /home/dub/Projects/scalajs/scalajs-gradle/src/main/scala/org/podval/tools/scalajsplugin/BackendDelegate.scala:117:45: [33mclass[0m [35mDefaultScalaSourceSet[0m in [33mpackage[0m [35morg.gradle.api.internal.tasks[0m is deprecated: see corresponding Javadoc for more information.
-[Warn] /home/dub/Projects/scalajs/scalajs-gradle/src/main/scala/org/podval/tools/scalajsplugin/BackendDelegate.scala:122:28: [33mmethod[0m [35mgetConvention[0m in [33mclass[0m [35mDslObject[0m is deprecated: see corresponding Javadoc for more information.
+[Warn] /home/dub/Projects/scalajs/scalajs-gradle/src/main/scala/org/podval/tools/scalaplugin/BackendDelegate.scala:116:40: [33mclass[0m [35mDefaultScalaSourceSet[0m in [33mpackage[0m [35morg.gradle.api.internal.tasks[0m is deprecated: see corresponding Javadoc for more information.
+[Warn] /home/dub/Projects/scalajs/scalajs-gradle/src/main/scala/org/podval/tools/scalaplugin/BackendDelegate.scala:117:45: [33mclass[0m [35mDefaultScalaSourceSet[0m in [33mpackage[0m [35morg.gradle.api.internal.tasks[0m is deprecated: see corresponding Javadoc for more information.
+[Warn] /home/dub/Projects/scalajs/scalajs-gradle/src/main/scala/org/podval/tools/scalaplugin/BackendDelegate.scala:122:28: [33mmethod[0m [35mgetConvention[0m in [33mclass[0m [35mDslObject[0m is deprecated: see corresponding Javadoc for more information.
 three warnings found
 
 > Task :scalajs-gradle:pluginDescriptors UP-TO-DATE

@@ -4,9 +4,8 @@ import org.podval.tools.build.nonjvm.NonJvmTestAdapter
 import org.scalajs.linker.interface.LinkingException
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework
-import scala.concurrent.ExecutionContext
-import scala.scalanative.build.{Build, BuildException, Config, Discover, NativeConfig, GC as GCN, LTO as LTON,
-  Logger as LoggerN, Mode as ModeN}
+import scala.scalanative.build.{Build, BuildException, BuildTarget, Config, Discover, NativeConfig, GC as GCN,
+  LTO as LTON, Logger as LoggerN, Mode as ModeN}
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.scalanative.util.Scope
 import java.io.File
@@ -31,18 +30,22 @@ object ScalaNativeBuild:
     abort: String => Nothing
   ): ScalaNativeLinkConfig =
     val moduleName: String = s"$projectName-${mode.name}"
+    val buildTarget: BuildTarget = mainClass match
+      case Some(_) => BuildTarget.application
+      case None => BuildTarget.libraryDynamic
 
-  // TODO if the main class is not set, link with a different build type to avoid errors!!!
     val nativeConfig: NativeConfig = NativeConfig.empty
+      .withBuildTarget(buildTarget)
       .withClang(ScalaNativeBuild.interceptBuildException(Discover.clang(), abort))
       .withClangPP(ScalaNativeBuild.interceptBuildException(Discover.clangpp(), abort))
       .withCompileOptions(Discover.compileOptions())
       .withLinkingOptions(Discover.linkingOptions())
+// TODO     .withTargetTriple()
+//      .withSourceLevelDebuggingConfig()
       .withLTO(toNative(lto))
       .withGC(toNative(gc))
       .withOptimize(optimize)
       .withMode(toNative(mode))
-    // TODO .withTargetTriple()
 
     val config: Config = Config.empty
       .withClassPath(classpath)
@@ -60,30 +63,21 @@ object ScalaNativeBuild:
     logSource: String,
     abort: String => Nothing
   ): Path =
-    logger.info(s"ScalaNativeBuild.nativeLinkImpl($config)")
+    logger.info(s"ScalaNativeBuild.link($config)")
 
+    implicit val scope: Scope = Scope.forever
     interceptBuildException(
-      buildCachedSync(
-        config.withLogger(loggerN(logSource)),
-        (throwable: Throwable) => logger.warn(s"Trace: $throwable")
+      Build.buildCachedAwait(config
+        .withLogger(loggerN(logSource))
       ),
       abort
     )
-    
-  private def buildCachedSync(
-    config: Config,
-    trace: Throwable => Unit
-  ): Path =
-    implicit val scope: Scope = Scope.forever
-    ScalaNativeAwait.await(trace) { implicit ec: ExecutionContext =>
-      Build.buildCached(config)
-    }
 
   def createTestEnvironment(
     binaryTestFile: File,
     logSource: String
   ): ScalaNativeTestEnvironment = ScalaNativeTestEnvironment(
-    sourceMapper = None, // TODO
+    sourceMapper = None,
     testAdapter = new NonJvmTestAdapter:
       override def loadFrameworks(frameworkNames: List[List[String]]): List[Option[Framework]] =
         testAdapter.loadFrameworks(frameworkNames)
@@ -97,8 +91,7 @@ object ScalaNativeBuild:
 
   /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
   private def interceptBuildException[T](op: => T, abort: String => Nothing): T =
-    try op
-    catch
+    try op catch
       case ex: BuildException   => abort(ex.getMessage)
       case ex: LinkingException => abort(ex.getMessage)
 

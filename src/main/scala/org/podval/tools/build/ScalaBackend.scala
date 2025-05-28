@@ -8,6 +8,8 @@ import org.podval.tools.build.scalanative.ScalaNativeBackend
 object ScalaBackend:
   val sharedSourceRoot: String = "shared"
   def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
+  def names: String = all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
+  def sourceRoots: String = all.map(_.sourceRoot).mkString(", ")
 
 trait ScalaBackend derives CanEqual:
   final def is(name: String): Boolean =
@@ -22,7 +24,7 @@ trait ScalaBackend derives CanEqual:
   def sourceRoot: String
   def testsCanNotBeForked: Boolean
   def artifactSuffixOpt: Option[String]
-  def archiveAppendixOpt: Option[String] // TODO remove?
+  def archiveAppendixOpt: Option[String]
   
   def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String]
 

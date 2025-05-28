@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2025-06-11
+- doc: README update;
+- chore: dependency updates;
+- cleanup: `scalajsplugin` renamed to `scalaplugin`;
+- cleanup: `ScalaJSPlugin` renamed to `BackendPlugin`;
+- cleanup: `ScalaBackendExtension` renamed to `BackendExtension`;
+- cleanup: removed `TestTask.backend`;
+- feat: `BackendExtension` improvements;
+
 ## [0.8.1] - 2025-05-28
 - feat: Scala version-specific sources;
 - feat: Scala version property;

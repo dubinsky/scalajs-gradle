@@ -10,7 +10,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
   override val name: String = "Scala Native"
   override val sourceRoot: String = "native"
   override val artifactSuffix: String = "native0.5"
-  override val versionDefault: Version.Simple = Version.Simple("0.5.7")
+  override val versionDefault: Version.Simple = Version.Simple("0.5.8")
 
   override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
     if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala213
@@ -63,8 +63,8 @@ case object ScalaNativeBackend extends NonJvmBackend:
   override def testAdapter: ScalaDependency.Maker = Maker(JvmBackend, "test-runner", "Test Runner")
   override def testBridge: ScalaDependency.Maker = ScalaNativeMaker("test-interface", "SBT Test Interface")
 
-  override def library(isScala3: Boolean): ScalaDependency.Maker =
-    if isScala3
+  override def library(scalaVersion: ScalaVersion): ScalaDependency.Maker =
+    if scalaVersion.isScala3
     then new ScalaNativeMaker("scala3lib", "Scala 3 Library"):
       override def isVersionCompound: Boolean = true
     else new ScalaNativeMaker("scalalib" , "Scala 2 Library"):
@@ -92,7 +92,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
     scalaVersion: ScalaVersion
   ): Array[DependencyRequirement] = Array.empty
   
-// TODO exclusions are needed for Scala 2 (did not see problems with Scala 3 yet)!!!
+  // TODO if exclusions are needed - do it; if not - clean up in the Scala Native repository?
   // // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
   // // When using Scala 3 exclude Scala 2.13 standard native libraries,
   // // when using Scala 2.13 exclude Scala 3 standard native libraries
