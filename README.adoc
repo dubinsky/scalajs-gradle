@@ -5,7 +5,7 @@
 :icons: font
 // INCLUDED ATTRIBUTES
 :version-gradle: 8.14.1
-:version-plugin: 0.8.0
+:version-plugin: 0.8.1
 :version-scala: 3.7.0
 :version-scala213-suffix: 2.13
 :version-scala2: 2.13.16
@@ -27,9 +27,9 @@
 :version-framework-specs2-scala2: 4.20.9
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.18
-:attribute-scalajsScalaBackendProperty: org.podval.tools.scalajs.backend
-:attribute-scalajsIncludeSharedProperty: org.podval.tools.scalajs.includeShared
-:attribute-scalajsScalaVersionProperty: org.podval.tools.scalajs.scalaVersion
+:attribute-pluginScalaBackendProperty: org.podval.tools.scalajs.backend
+:attribute-pluginIncludeSharedProperty: org.podval.tools.scalajs.includeShared
+:attribute-pluginScalaVersionProperty: org.podval.tools.scalajs.scalaVersion
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -48,10 +48,13 @@ by adding support for:
 - testing with framework(s) that implement
 https://github.com/sbt/test-interface[sbt test interface]
 (https://github.com/sbt/test-interface/blob/master/src/main/java/sbt/testing/Framework.java[sbt.testing.Framework]);
+- including sources specific to a version of Scala used;
+- building for a specific version of Scala;
 - compiling, running and testing https://www.scala-lang.org/[Scala] code using
 https://www.scala-js.org/[Scala.js] and
 https://scala-native.org/[Scala Native] backends;
-- code sharing between backends.
+- code sharing between backends;
+- accessing data about the Scala backend and Scala version in the build script.
 
 Plugin integrates with:
 
@@ -68,16 +71,19 @@ Plugin works with:
 
 Plugin:
 
+- includes sources specific to a version of Scala used;
+- builds for a specific version of Scala;
 - adds necessary backend-specific dependencies;
-- adds necessary backend-specific `Scala` compiler plugins;
+- adds necessary backend-specific `Scala` compiler plugins (for main and test code);
 - adds necessary backend-specific `Scala` compiler parameters;
 - for `Scala.js` and `Scala Native`, adds `link` tasks;
-- for `Scala.js`, retrieves and installs configured version of https://nodejs.org/[Node.js];
-- for `Scala.js`, installs configured Node.js modules using `npm`;
+- for `Scala.js`, retrieves and installs the configured version of https://nodejs.org/[Node.js];
+- for `Scala.js`, installs the configured `Node.js` modules using `npm`;
+- exposes, via `scalaBackend` extension, data about the Scala backend and Scala version for use in the build script;
 - augments the `test` task to work with sbt-enabled test frameworks;
-- configures Scala compiler to process code shared between backends;
+- configures Scala compiler to include code shared between backends;
 - configures project artifacts to include shared code when needed;
-- sets project artifact names in accordance with the accepted conventions.
+- sets the project artifact appendices in accordance with the accepted conventions.
 
 Plugin is written in Scala 3,
 but the project that the plugin is _applied_ to can use Scala 3, 2.13 or 2.12;
@@ -119,15 +125,7 @@ and if you need `JUnit5` _that_ is probably the way to go,
 since my plugin does not support `JUnit5`
 (it does support `Scala.js` and `Scala Native` though :)).
 
-== Applying to a Gradle Project
-
-Plugin can be applied to:
-
-- Scala only project;
-- Scala.js or Scala Native project;
-- multi-backend project with code sharing between the backends.
-
-Those scenarios are described below, after requirements common to all of them are listed.
+== Configuration
 
 === Plugin Id
 Plugin is https://plugins.gradle.org/plugin/org.podval.tools.scalajs[published]
@@ -146,8 +144,10 @@ so there is no need to manually list `id 'scala'` in the `plugins` block -
 but there is no harm in it either.
 
 === Scala Version
-Project using the plugin has to to add a standard `Scala` library dependency.
-It can be done by listing it explicitly:
+Project using the plugin has to specify a version of `Scala` for the Scala Gradle plugin to use.
+
+One way to do it is to add `Scala` library dependency explicitly,
+and let the `Scala` plugin infer the Scala version from it:
 [source,groovy,subs="+attributes"]
 ----
 final String scalaVersion = '{version-scala}'
@@ -156,8 +156,8 @@ dependencies {
 }
 ----
 
-or by setting the Scala version on the Scala plugin's extension `scala`,
-and letting the Scala plugin add appropriate Scala library dependency automatically:
+Another way is to set the Scala version on the Scala plugin's extension `scala`,
+and let the Scala plugin add appropriate Scala library dependency automatically:
 [source,groovy,subs="+attributes"]
 ----
 final String scalaVersion = '{version-scala}'
@@ -166,7 +166,55 @@ dependencies {
 }
 ----
 
-In the examples below, the latter approach is used.
+In the examples below, the latter approach is used exclusively because:
+
+- it is cleaner;
+- it is the future: the old, inference-based approach is going away (slowly; deprecated in Gradle 9);
+- some of the plugin's functionality depends on the scala version being set on the `scala` extension.
+
+[#scala-version-specific-sources]
+=== Sources Specific to a Scala Version
+Alongside the usual Scala source root `scala`,
+as in `src/main/scala` and `src/test/scala`,
+plugin includes sources from Scala source roots specific to the Scala version in use:0;
+for Scala version `x.y.z`, additional Scala source roots are:
+
+- `scala-x.y.z`;
+- `scala-x.y`;
+- `scala-x`;
+
+This applies to Scala sources shared between the backends too.
+
+Additional source are included both in Scala compilation and archives that package Scala sources.
+
+[#scala-version-override]
+=== Scala Version Override
+When property {attribute-pluginScalaVersionProperty} is set, e.g.:
+[source,shell,subs="+attributes"]
+----
+$ ./gradlew -P{attribute-pluginScalaVersionProperty}={version-scala2}
+----
+plugin builds the project for the specified version of Scala
+and puts the build output under `build/scala-<scala version>`.
+
+[#scala-backend-extension]
+=== Scala Backend Extension
+
+Plugin exposes data about Scala version and Scala backend in use
+via the `scalaBackend` extension that it creates.
+
+This can be used to simplify writing build scripts, e.g.:
+
+[source,groovy,subs="+attributes"]
+----
+import org.podval.tools.scalajsplugin.ScalaBackendExtension
+final ScalaBackendExtension scalaVersion = scalaBackend
+final String scalaJsVersion = '{version-scalajs}'
+
+dependencies {
+  testImplementation "org.scala-js:scalajs-junit-test-runtime_${scalaVersion.binary2}:$scalaJsVersion"
+}
+----
 
 === Dependencies
 Plugin automatically adds certain dependencies to various Gradle configurations
@@ -183,8 +231,24 @@ for `Scala.js` - `_sjs1`, for `Scala Native` - `_native0.5`.
 
 In the examples below, the latest versions of all dependencies are used.
 
+=== Building for Multiple Scala Versions
+Plugin does not (yet?) support building for multiple Scala versions using only Gradle
+(unlike the https://github.com/ADTRAN/gradle-scala-multiversion-plugin[Scala Multi-Version Plugin]).
+
+Plugin _does_ provide enough functionality
+(<<scala-version-specific-sources>>, <<scala-version-override>>, <<scala-backend-extension>>)
+to help automate building for multiple Scala versions using a _script_.
+
+[#application-scenarios]
+== Scala Backends
+Plugin can be applied to:
+
+- JVM-only project (<<scala-only>>);
+- `Scala.js` or `Scala Native` project (<<single-backend>>);
+- mixed-backend project with some code shared between the backends (<<mixed-backends>>).
+
 [#scala-only]
-=== Scala Only
+=== JVM
 Plugin, its name notwithstanding, provides benefits even if applied to a project
 that uses only Scala, without Scala.js or Scala Native,
 namely - ability to use any test frameworks(s) that support sbt test interface.
@@ -202,9 +266,9 @@ plugin itself provides integration with test frameworks,
 in some cases - better than the dedicated test-framework-specific plugins ;)
 
 [#single-backend]
-=== Scala.js or Scala Native
+=== Scala.js / Scala Native
 Sources under `src` are processed with one specific backend;
-backend used is selected by the project property `{attribute-scalajsScalaBackendProperty}`.
+backend used is selected by the project property `{attribute-pluginScalaBackendProperty}`.
 
 The value of this property is treated as case-insensitive.
 
@@ -223,10 +287,11 @@ put the following into the `gradle.properties` file of the project:
 
 [source,properties,subs="+attributes"]
 ----
-{attribute-scalajsScalaBackendProperty}=js
+{attribute-pluginScalaBackendProperty}=js
 ----
 
-=== Multiple Backends
+[#mixed-backends]
+=== Mixed Backends
 Plugin supports using multiple backends in the same project with some source files shared between them.
 
 Backend-specific sources reside in backend-specific subprojects,
@@ -304,7 +369,7 @@ In this mode, plugin:
 - propagates the Scala version set in the overall project's `build.gradle` to each of the backend-specific subprojects
 (so there is no need to set it manually in the backend-specific `build.gradle`);
 - configures appropriate backend for each of the backend-specific subprojects
-(so there is no need to set property `{attribute-scalajsScalaBackendProperty}` manually in the backend-specific `gradle.properties`);
+(so there is no need to set property `{attribute-pluginScalaBackendProperty}` manually in the backend-specific `gradle.properties`);
 - disables all source tasks and unregisters all Scala sources in the overall subproject;
 - applies `scala` plugin to the `shared` subproject;
 - disables all tasks in the `shared` subproject.
@@ -429,8 +494,8 @@ that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalajsplugin.ScalaVersionData
-final ScalaVersionData scalaVersion = ScalaVersionData.get(project)
+import org.podval.tools.scalajsplugin.ScalaBackendExtension
+final ScalaBackendExtension scalaVersion = scalaBackend
 final String scalaJsVersion = '{version-scalajs}'
 
 dependencies {
@@ -713,8 +778,8 @@ that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalajsplugin.ScalaVersionData
-final ScalaVersionData scalaVersion = ScalaVersionData.get(project)
+import org.podval.tools.scalajsplugin.ScalaBackendExtension
+final ScalaBackendExtension scalaVersion = scalaBackend
 final String scalaNativeVersion = '{version-scalanative}'
 
 dependencies {
@@ -792,7 +857,7 @@ with the Scala Native Linker output, so that it can be copied where needed.
 Link tasks have a number of properties that can be used to configure linking.
 Configurable properties with their defaults are:
 
-// TODO verify optimize default value
+TODO verify optimize default value
 
 [source,groovy]
 ----
@@ -1062,11 +1127,9 @@ that fit the Scala version and backend:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalajsplugin.ScalaVersionData
-final ScalaVersionData scalaVersion = ScalaVersionData.get(project)
-
-import org.podval.tools.scalajsplugin.ScalaBackendData
-final ScalaBackendData backend = ScalaBackendData.get(project)
+import org.podval.tools.scalajsplugin.ScalaBackendExtension
+final ScalaBackendExtension backend = scalaBackend
+final ScalaBackendExtension scalaVersion = scalaBackend
 
 final String scalaJSVersion = '{version-scalajs}'
 final String scalaNativeVersion = '{version-scalanative}'
@@ -1489,7 +1552,7 @@ It is reasonably easy, if repetitive, to configure the Scala compiler and add ne
 what really pushed me to build this plugin is the difficulty and ugliness involved in
 manually setting up Scala.js linking in a Gradle build script.
 
-For Scala.js, I perused the code of:
+For Scala.js, I perused:
 
 - https://www.scala-js.org/doc/tutorial/basic[Scala.js Tutorial]
 - https://github.com/scala-js/scala-js/tree/main/linker-interface[Scala.js Linker]
@@ -1497,9 +1560,9 @@ For Scala.js, I perused the code of:
 - https://github.com/gtache/scalajs-gradle[Old Scala.js Gradle plugin] by https://github.com/gtache[gtache]
 - https://github.com/scala-js/scala-js-cli/tree/main/src/main/scala/org/scalajs/cli[Scala.js CLI]
 
-For Scala.Native, I perused the code of:
-- https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[Scala Native sbt plugin];
-- https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill] (a little).
+For Scala.Native, I perused:
+- https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[Scala Native sbt plugin]
+- https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill] (a little)
 
 === Testing
 
@@ -1525,11 +1588,11 @@ so I decided to look into proper integrations of things like
 `org.scala-js:scalajs-sbt-test-adapter` and
 https://github.com/sbt/test-interface[org.scala-sbt:test-interface].
 
-I perused code from:
+I perused:
 
-- https://github.com/gradle/gradle[Gradle];
-- https://github.com/JetBrains/intellij-community[IntelliJ Idea];
-- https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin].
+- https://github.com/gradle/gradle[Gradle]
+- https://github.com/JetBrains/intellij-community[IntelliJ Idea]
+- https://github.com/maiflai/gradle-scalatest[Gradle ScalaTest plugin]
 
 This took _by far_ the most of my time
 (and takes up more than 3/4 of the plugin code),
@@ -1880,8 +1943,14 @@ which recognizes only the test frameworks explicitly supported by Gradle (`JUnit
 `org.gradle.api.tasks.testing.junit.JUnitOptions` as `SbtTestFrameworkOptions`.
 
 === Mixing Backends
+My original approach was to use Gradle's _features_ to scope source sets and tasks
+belonging to different backends within the same project;
+this was implemented in the unpublished version `0.7.9`.
 
-TODO describe original approach
+This approach was deemed too complicated to use
+(and too fragile an implementation)
+and was replaced with the current approach
+where backend-specific entities are scoped by backend-specific subprojects.
 
 TODO describe the "duplicate content roots" issue and my solution;
 speculate about the approach of the IntelliJ Scala plugin:
@@ -1890,6 +1959,13 @@ https://youtrack.jetbrains.com/issue/IDEABKL-6745/Cannot-define-two-identical-co
 - https://github.com/JetBrains/intellij-scala[Scala Plugin for IntelliJ IDEA];
 - org.jetbrains.sbt.project.sources.SharedSourcesModuleType
 - its description: "During compilation, dependency to a shared sources module mixes in module sources rather than module output"
+
+=== Building for Multiple Scala Versions
+
+I perused:
+
+- https://github.com/ADTRAN/gradle-scala-multiversion-plugin[Scala Multi-Version Plugin]
+- https://www.scala-sbt.org/1.x/docs/Cross-Build.html[sbt Cross-building]
 
 === AsciiDoc
 GitHub stupidly disables AsciDoc includes in README;
@@ -1908,6 +1984,8 @@ I want to thank the maintainers of:
 - https://www.scala-js.org/[Scala.js];
 - https://scala-native.org/[Scala Native];
 - https://github.com/sbt/test-interface[sbt test interface];
+- https://github.com/ADTRAN/gradle-scala-multiversion-plugin[Scala Multi-Version Plugin];
+- https://www.scala-sbt.org/1.x/docs/Cross-Build.html[sbt Cross-building];
 - https://github.com/junit-team/junit4[JUnit4];
 - sbt test framework https://github.com/sbt/junit-interface[implementation] for JUnit4;
 - https://scalameta.org/munit[MUnit];

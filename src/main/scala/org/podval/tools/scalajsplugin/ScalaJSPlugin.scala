@@ -153,10 +153,10 @@ object ScalaJSPlugin:
     .getByType(classOf[ScalaPluginExtension])
     .getScalaVersion
 
-  private def getScalaBackendExtensionNameProperty(project: Project): Property[String] = project
-    .getExtensions
-    .getByType(classOf[ScalaBackendExtension])
-    .getName
+//  private def getScalaBackendExtensionNameProperty(project: Project): Property[String] = project
+//    .getExtensions
+//    .getByType(classOf[ScalaBackendExtension])
+//    .getName
 
   private def setExtProperty(project: Project, name: String, value: Object): Unit = project
     .getExtensions
@@ -189,7 +189,7 @@ object ScalaJSPlugin:
       setExtProperty(subproject, scalaBackendProperty, backend.name)
       if includeShared then setExtProperty(subproject, includeSharedProperty, "true")
       subproject.getPluginManager.apply(classOf[ScalaJSPlugin])
-      ScalaJSPlugin.getScalaBackendExtensionNameProperty(subproject).set(backend.name)
+//      ScalaJSPlugin.getScalaBackendExtensionNameProperty(subproject).set(backend.name)
       // TODO do we need the early propagation?
       scalaVersionOpt.foreach(scalaVersion => getScalaExtensionScalaVersionProperty(subproject).set(scalaVersion.toString))
 
