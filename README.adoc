@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.8.2
+:version-plugin: 0.8.3
 :version-gradle: 8.14.2
 :version-scala: 3.7.1
 :version-scala213-suffix: 2.13
@@ -14,8 +14,8 @@
 :version-scalajs-dom: 2.8.0
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-node: 22.16.0
-:version-scala-parallel-collections: 1.2.0
 :version-scalanative: 0.5.8
+:version-scala-parallel-collections: 1.2.0
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
 :version-framework-junit4-scalajs: 1.19.0
@@ -28,7 +28,7 @@
 :version-framework-utest: 0.8.5
 :version-framework-zio-test: 2.1.19
 :attribute-pluginScalaBackendProperty: org.podval.tools.scalajs.backend
-:attribute-pluginBuildPerScalaVersionProperty: org.podval.tools.scalaplugin.buildPerScalaVersion
+:attribute-pluginBuildPerScalaVersionProperty: org.podval.tools.backendplugin.buildPerScalaVersion
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -179,7 +179,7 @@ This can be used to simplify writing build scripts, e.g.:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalaplugin.BackendExtension
+import org.podval.tools.backendplugin.BackendExtension
 final BackendExtension backend = scalaBackend
 
 dependencies {
@@ -464,7 +464,7 @@ that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalaplugin.BackendExtension
+import org.podval.tools.backendplugin.BackendExtension
 final BackendExtension backend = scalaBackend
 
 dependencies {
@@ -538,11 +538,11 @@ There is no need to add `-Xplugin:` Scala compiler parameters for the compiler p
 === Linking
 
 For linking of the main code, plugin adds `link` task of type
-link:src/main/scala/org/podval/tools/scalaplugin/scalajs/ScalaJSLinkMainTask.scala[org.podval.tools.scalaplugin.scalajs.ScalaJSLinkMainTask];
+link:src/main/scala/org/podval/tools/backendplugin/scalajs/ScalaJSLinkMainTask.scala[org.podval.tools.backendplugin.scalajs.ScalaJSLinkMainTask];
 all tasks of this type automatically depend on the `classes` task.
 
 For linking of the test code, plugin adds `testLink` task of type
-link:src/main/scala/org/podval/tools/scalaplugin/scalajs/ScalaJSLinkTestTask.scala[org.podval.tools.scalaplugin.scalajs.ScalaJSLinkTestTask];
+link:src/main/scala/org/podval/tools/backendplugin/scalajs/ScalaJSLinkTestTask.scala[org.podval.tools.backendplugin.scalajs.ScalaJSLinkTestTask];
 all tasks of this type automatically depend on the `testClasses` task.
 
 Link tasks exposes a property `JSDirectory` that points to a directory
@@ -599,7 +599,7 @@ Plugin adds `run` task for running the main code
 this task automatically depends on the `link` task.
 
 Additional tasks of type
-link:src/main/scala/org/podval/tools/scalaplugin/scalajs/ScalaJSRunMainTask.scala[org.podval.tools.scalaplugin.scalajs.ScalaJSRunMainTask]
+link:src/main/scala/org/podval/tools/backendplugin/scalajs/ScalaJSRunMainTask.scala[org.podval.tools.backendplugin.scalajs.ScalaJSRunMainTask]
 can be added manually;
 their dependency on a corresponding `ScalaJSLinkMainTask` task must be set manually too.
 
@@ -747,7 +747,7 @@ that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalaplugin.BackendExtension
+import org.podval.tools.backendplugin.BackendExtension
 final BackendExtension backend = scalaBackend
 
 dependencies {
@@ -811,11 +811,11 @@ There is no need to add `-Xplugin:` Scala compiler parameters for the compiler p
 === Linking
 
 For linking of the main code, plugin adds `link` task of type
-link:src/main/scala/org/podval/tools/scalaplugin/scalanative/ScalaNativeLinkMainTask.scala[org.podval.tools.scalaplugin.scalanative.ScalaNativeLinkMainTask];
+link:src/main/scala/org/podval/tools/backendplugin/scalanative/ScalaNativeLinkMainTask.scala[org.podval.tools.backendplugin.scalanative.ScalaNativeLinkMainTask];
 all tasks of this type automatically depend on the `classes` task.
 
 For linking of the test code, plugin adds `testLink` task of type
-link:src/main/scala/org/podval/tools/scalaplugin/scalanative/ScalaNativeLinkTestTask.scala[org.podval.tools.scalaplugin.scalanative.ScalaNativeLinkTestTask];
+link:src/main/scala/org/podval/tools/backendplugin/scalanative/ScalaNativeLinkTestTask.scala[org.podval.tools.backendplugin.scalanative.ScalaNativeLinkTestTask];
 all tasks of this type automatically depend on the `testClasses` task.
 
 Link tasks exposes a property `NativeDirectory` that points to a directory
@@ -851,7 +851,7 @@ Plugin adds `run` task for running the main code
 this task automatically depends on the `link` task.
 
 Additional tasks of type
-link:src/main/scala/org/podval/tools/scalaplugin/scalanative/ScalaNativeRunMainTask.scala[org.podval.tools.scalaplugin.scalanative.ScalaNativeRunMainTask]
+link:src/main/scala/org/podval/tools/backendplugin/scalanative/ScalaNativeRunMainTask.scala[org.podval.tools.backendplugin.scalanative.ScalaNativeRunMainTask]
 can be added manually;
 their dependency on a corresponding `ScalaNativeLinkMainTask` task must be set manually too.
 
@@ -877,20 +877,20 @@ If there is a need to have test runs with different configurations,
 more testing tasks can be added manually.
 
 For JVM, the type of the test task is
-link:src/main/scala/org/podval/tools/scalaplugin/jvm/JvmTestTask.scala[org.podval.tools.scalaplugin.jvm.JvmTestTask].
+link:src/main/scala/org/podval/tools/backendplugin/jvm/JvmTestTask.scala[org.podval.tools.backendplugin.jvm.JvmTestTask].
 Any such task will automatically depend on the `testClasses` task (and `testRuntimeClassPath`).
 
 For Scala.js the type of the test task is
-link:src/main/scala/org/podval/tools/scalaplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.scalaplugin.scalajs.ScalaJSTestTask].
+link:src/main/scala/org/podval/tools/backendplugin/scalajs/ScalaJSTestTask.scala[org.podval.tools.backendplugin.scalajs.ScalaJSTestTask].
 Such test tasks have to depend on a
-`org.podval.tools.scalaplugin.scalajs.ScalaJSLinkTestTask task`.
+`org.podval.tools.backendplugin.scalajs.ScalaJSLinkTestTask task`.
 The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 
 For Scala Native the type of the test task is
-link:src/main/scala/org/podval/tools/scalaplugin/scalanative/ScalaNativeTestTask.scala[org.podval.tools.scalaplugin.scalanative.ScalaNativeTestTask].
+link:src/main/scala/org/podval/tools/backendplugin/scalanative/ScalaNativeTestTask.scala[org.podval.tools.backendplugin.scalanative.ScalaNativeTestTask].
 Such test tasks have to depend on a
-`org.podval.tools.scalaplugin.scalanative.ScalaNativeLinkTestTask task`.
+`org.podval.tools.backendplugin.scalanative.ScalaNativeLinkTestTask task`.
 The `test` task added by the plugin does it automatically;
 for manually added tasks this dependency has to be added manually.
 
@@ -1092,7 +1092,7 @@ that fit the Scala version and backend:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.scalaplugin.BackendExtension
+import org.podval.tools.backendplugin.BackendExtension
 final BackendExtension backend = scalaBackend
 
 final String scalaJSVersion = '{version-scalajs}'
@@ -2029,10 +2029,10 @@ since my plugin does not support `JUnit5`
 - test tagging for all the supported test frameworks;
 - nested test suites;
 - test dry-run;
-- Scala Native;
+- `Scala Native`;
 - mixed-backend projects with some code shared among the backends;
-- include sources specific to the Scala version used;
-- expose data about backedn and Scala version via an extension;
+- sources specific to the Scala version;
+- expose data about backend and Scala version via an extension;
 
 == Credits
 
@@ -2043,6 +2043,8 @@ I want to thank the maintainers of:
 - https://github.com/sbt/test-interface[sbt test interface];
 - https://github.com/ADTRAN/gradle-scala-multiversion-plugin[Scala Multi-Version Plugin];
 - https://www.scala-sbt.org/1.x/docs/Cross-Build.html[sbt Cross-building];
+- https://github.com/gradle/gradle[Gradle];
+- https://github.com/JetBrains/intellij-scala[Scala Plugin for IntelliJ IDEA];
 - https://github.com/junit-team/junit4[JUnit4];
 - sbt test framework https://github.com/sbt/junit-interface[implementation] for JUnit4;
 - https://scalameta.org/munit[MUnit];

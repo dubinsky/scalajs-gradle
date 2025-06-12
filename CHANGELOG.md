@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2025-06-12
+- cleanup: package `org.podval.tools.backend`;
+- cleanup: package `org.podval.tools.scalaplugin` renamed to `org.podval.tools.backendplugin`;
+- fix: project path in `settings-includes.gradle`;
+- cleanup: shared sources;
+- fix: shared resources;
+
 ## [0.8.2] - 2025-06-11
 - doc: README update;
 - chore: dependency updates;

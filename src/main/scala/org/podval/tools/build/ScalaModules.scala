@@ -1,6 +1,7 @@
 package org.podval.tools.build
 
-import org.podval.tools.build.jvm.JvmBackend
+import org.podval.tools.backend.ScalaBackend
+import org.podval.tools.backend.jvm.JvmBackend
 
 object ScalaModules:
   object ParallelCollections extends ScalaDependency.Maker:

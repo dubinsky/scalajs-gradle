@@ -2,8 +2,9 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.build.{Dependency, ScalaBackend, ScalaBinaryVersion, ScalaVersion}
-import org.podval.tools.scalaplugin.BackendPlugin
+import org.podval.tools.backend.ScalaBackend
+import org.podval.tools.backendplugin.BackendPlugin
+import org.podval.tools.build.{Dependency, ScalaBinaryVersion, ScalaVersion}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*

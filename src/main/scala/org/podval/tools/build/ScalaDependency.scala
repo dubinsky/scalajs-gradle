@@ -1,5 +1,6 @@
 package org.podval.tools.build
 
+import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(

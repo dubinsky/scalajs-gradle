@@ -1,9 +1,10 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.jvm.JvmBackend
-import org.podval.tools.build.scalajs.ScalaJSBackend
-import org.podval.tools.build.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{Dependency, ScalaBackend, ScalaDependency, ScalaVersion, Version}
+import org.podval.tools.backend.ScalaBackend
+import org.podval.tools.backend.jvm.JvmBackend
+import org.podval.tools.backend.scalajs.ScalaJSBackend
+import org.podval.tools.backend.scalanative.ScalaNativeBackend
+import org.podval.tools.build.{Dependency, ScalaDependency, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.

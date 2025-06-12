@@ -22,8 +22,7 @@ final class Node(
     arguments,
     // in local mode, npm puts packages into node_modules under the current working directory
     cwd = Some(nodeModulesParent),
-    // TODO do I need the system path here?
-    extraEnv = nodeEnv ++ Seq(("PATH", installation.bin.getAbsolutePath + ":" + System.getenv("PATH"))),
+    extraEnv = nodeEnv ++ Seq(("PATH", installation.bin.getAbsolutePath /*+ ":" + System.getenv("PATH")*/)),
     log
   )
 
