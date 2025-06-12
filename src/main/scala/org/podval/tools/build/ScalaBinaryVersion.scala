@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-import org.podval.tools.build.scalajs.ScalaJSBackend
+import org.podval.tools.backend.scalajs.ScalaJSBackend
 
 sealed trait ScalaBinaryVersion derives CanEqual:
   def versionMajor: Int

@@ -1,7 +1,7 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.jvm.JvmBackend
-import org.podval.tools.build.scalajs.ScalaJSBackend
+import org.podval.tools.backend.jvm.JvmBackend
+import org.podval.tools.backend.scalajs.ScalaJSBackend
 import org.podval.tools.build.ScalaDependency
 
 // https://github.com/scala-js/scala-js/tree/main/junit-runtime/src/main/scala
