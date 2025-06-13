@@ -1,9 +1,8 @@
 package org.podval.tools.backend.scalanative
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.nonjvm.NonJvmBackend
-import org.podval.tools.build.{Dependency, DependencyRequirement, ScalaBinaryVersion, ScalaDependency, 
+import org.podval.tools.build.{Dependency, DependencyRequirement, ScalaBackend, ScalaBinaryVersion, ScalaDependency,
   ScalaVersion, Version}
 import org.podval.tools.test.framework.JUnit4ScalaNative
 

@@ -6,6 +6,7 @@ import org.podval.tools.platform.{OutputHandler, OutputPiper}
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
+import org.scalajs.jsenv.nodejs.NodeJSEnv
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,
   ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS, ModuleSplitStyle as ModuleSplitStyleSJS}
@@ -37,22 +38,50 @@ object ScalaJSBuild:
         case LevelJS.Info  => logger.info (toLog)
         case LevelJS.Debug => logger.debug(toLog)
 
-  private def mkJsEnv(node: Node): JSEnv = JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
-    .withExecutable(node.installation.node.getAbsolutePath)
-    .withEnv(node.nodeEnv.toMap)
-  )
+  private def mkJsEnv(
+    node: Node,
+    useWebAssembly: Boolean,
+    in: Input
+  ): JSEnv =
+    val executable: String = node.installation.node.getAbsolutePath
+    val env: Map[String, String] = node.nodeEnv.toMap
+
+    //https://www.scala-js.org/doc/project/webassembly.html
+    val args: List[String] = if !useWebAssembly then List.empty else List(
+      "--experimental-wasm-exnref",           // always required
+      "--experimental-wasm-jspi",             // required for js.async/js.await
+      "--experimental-wasm-imported-strings", // optional (good for performance)
+    )
+
+    // JSDOMNodeJSEnv does not support ESModule: // TODO document
+    val useNodeJSEnv: Boolean = !in.isInstanceOf[Input.Script]
+
+    if useNodeJSEnv then NodeJSEnv(NodeJSEnv.Config()
+      .withExecutable(executable)
+      .withEnv(env)
+      .withArgs(args)
+    )
+    else JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()
+      .withExecutable(executable)
+      .withEnv(env)
+      .withArgs(args)
+    )
 
   def run(
     jsDirectory: File,
     reportBinFile: File,
     moduleKind: ModuleKind,
     node: Node,
+    useWebAssembly: Boolean,
     logSource: String,
     abort: String => Nothing,
     outputHandler: OutputHandler
   ): Unit =
-    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKind, abort)
-    val jsEnv: JSEnv = mkJsEnv(node)
+    // see https://www.scala-js.org/doc/project/webassembly.html
+    val moduleKindEffective: ModuleKind = if useWebAssembly then ModuleKind.ESModule else moduleKind
+    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKindEffective, abort)
+    val in: Input = input(jsDirectory, module, moduleKindEffective)
+    val jsEnv: JSEnv = mkJsEnv(node, useWebAssembly, in)
 
     OutputPiper.run(
       outputHandler,
@@ -65,7 +94,7 @@ object ScalaJSBuild:
      * server mode.
      */
       val jsRun: JSRun = jsEnv.start(
-        Seq(input(jsDirectory, module, moduleKind)),
+        Seq(in),
         RunConfig()
           .withInheritOut(false)
           .withInheritErr(false)
@@ -79,10 +108,15 @@ object ScalaJSBuild:
     reportBinFile: File,
     moduleKind: ModuleKind,
     node: Node,
+    useWebAssembly: Boolean,
     logSource: String,
     abort: String => Nothing
   ): ScalaJSTestEnvironment =
-    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKind, abort)
+    // see https://www.scala-js.org/doc/project/webassembly.html
+    val moduleKindEffective: ModuleKind = if useWebAssembly then ModuleKind.ESModule else moduleKind
+    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKindEffective, abort)
+    val in: Input = input(jsDirectory, module, moduleKindEffective)
+    val jsEnv: JSEnv = mkJsEnv(node, useWebAssembly, in)
 
     ScalaJSTestEnvironment(
       sourceMapper = module
@@ -94,8 +128,8 @@ object ScalaJSBuild:
           testAdapter.loadFrameworks(frameworkNames)
         override def close(): Unit = testAdapter.close()
         private lazy val testAdapter: TestAdapter = TestAdapter(
-          jsEnv = mkJsEnv(node),
-          input = Seq(input(jsDirectory, module, moduleKind)),
+          jsEnv = jsEnv,
+          input = Seq(in),
           config = TestAdapter.Config().withLogger(loggerJS(logSource))
         )
     )
@@ -108,21 +142,25 @@ object ScalaJSBuild:
     optimization: Optimization,
     moduleKind: ModuleKind,
     moduleSplitStyle: ModuleSplitStyle,
+    useWebAssembly: Boolean,
     moduleInitializers: Option[Seq[ModuleInitializer]],
     prettyPrint: Boolean,
     logSource: String,
     abort: String => Exception
   ): Unit =
     val fullOptimization: Boolean = optimization == Optimization.Full
-    val moduleKindSJS: ModuleKindSJS = toSJS(moduleKind)
+
+    // see https://www.scala-js.org/doc/project/webassembly.html
+    val moduleKindEffective: ModuleKind = if useWebAssembly then ModuleKind.ESModule else moduleKind
+    val moduleSplitStyleEffective: ModuleSplitStyle = if useWebAssembly then ModuleSplitStyle.FewestModules else moduleSplitStyle
+
     val linkerConfig: StandardConfig = StandardConfig()
       .withCheckIR(fullOptimization)
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
-      .withModuleKind(moduleKindSJS)
-      .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
-      .withModuleSplitStyle(toSJS(moduleSplitStyle))
-      // TODO .withESFeatures(org.scalajs.linker.interface.ESFeatures)
-      // TODO .withExperimentalUseWebAssembly(Boolean)
+      .withModuleKind(toSJS(moduleKindEffective))
+      .withClosureCompiler(fullOptimization && (moduleKindEffective == ModuleKind.ESModule))
+      .withModuleSplitStyle(toSJS(moduleSplitStyleEffective))
+      .withExperimentalUseWebAssembly(useWebAssembly)
       .withPrettyPrint(prettyPrint)
 
     // Tests use fixed entry point.
@@ -197,8 +235,8 @@ object ScalaJSBuild:
   ): Input =
     val modulePath: Path = ScalaJSBuild.modulePath(jsDirectory, module)
     moduleKind match
-      case ModuleKind.NoModule       => Input.Script(modulePath)
-      case ModuleKind.ESModule       => Input.ESModule(modulePath)
+      case ModuleKind.NoModule       => Input.Script        (modulePath)
+      case ModuleKind.ESModule       => Input.ESModule      (modulePath)
       case ModuleKind.CommonJSModule => Input.CommonJSModule(modulePath)
 
   private def toSJS(moduleKind: ModuleKind): ModuleKindSJS = moduleKind match
@@ -207,7 +245,7 @@ object ScalaJSBuild:
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
 
   private def toSJS(moduleSplitStyle: ModuleSplitStyle): ModuleSplitStyleSJS = moduleSplitStyle match
-    case ModuleSplitStyle.FewestModules => ModuleSplitStyleSJS.FewestModules
+    case ModuleSplitStyle.FewestModules   => ModuleSplitStyleSJS.FewestModules
     case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
 
   private def toSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =

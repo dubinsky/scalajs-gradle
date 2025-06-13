@@ -1,8 +1,7 @@
 package org.podval.tools.backend.jvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{BackendDependencyRequirements, JavaDependency, ScalaVersion, Version}
+import org.podval.tools.build.{BackendDependencyRequirements, JavaDependency, ScalaBackend, ScalaVersion, Version}
 
 case object JvmBackend extends ScalaBackend:
   override val name: String = "JVM"

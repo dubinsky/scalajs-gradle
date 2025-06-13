@@ -1,7 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{Dependency, ScalaVersion}
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaVersion}
 
 object Fragments:
   def settingsManagement: String =

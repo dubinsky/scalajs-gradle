@@ -4,12 +4,11 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.scala.ScalaPluginExtension
 import org.gradle.api.{GradleException, Project}
 import org.gradle.api.provider.Property
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.nonjvm.NonJvmBackend
 import org.podval.tools.backend.scalajs.ScalaJSBackend
 import org.podval.tools.backend.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{ScalaBinaryVersion, ScalaLibrary, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion, Version}
 import org.podval.tools.platform.IntelliJIdea
 import javax.inject.Inject
 
@@ -57,7 +56,9 @@ abstract class BackendExtension @Inject(project: Project):
   )
 
   final def getScalaLibrary: ScalaLibrary =
-    ScalaLibrary.getFromConfiguration(getImplementationConfiguration(isTest = false))
+    val result: ScalaLibrary = ScalaLibrary.getFromConfiguration(getImplementationConfiguration(isTest = false))
+    require(result.scalaVersion == getScalaVersion)
+    result
 
   final def getScalaExtensionScalaVersionProperty: Property[String] = project
     .getExtensions
