@@ -1,10 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.scalajs.ScalaJSBackend
 import org.podval.tools.backend.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{Dependency, ScalaDependency, ScalaVersion, Version}
+import org.podval.tools.build.{DependencyMaker, ScalaBackend, ScalaDependencyMaker, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.
@@ -13,7 +12,7 @@ abstract class FrameworkDescriptor(
   final val displayName: String,
   final val group: String,
   final val artifact: String,
-  final val versionDefault: Version.Simple,
+  final val versionDefault: Version,
   final val className: String,
   final val sharedPackages: List[String],
   tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
@@ -33,14 +32,14 @@ abstract class FrameworkDescriptor(
     case ScalaJSBackend     => forJS
     case ScalaNativeBackend => forNative
 
-  protected abstract class Maker extends Dependency.Maker:
-//    if forJS.isDefined then require(this.isInstanceOf[ScalaDependency.Maker])
+  protected abstract class Maker extends DependencyMaker:
+//    if forJS.isDefined then require(this.isInstanceOf[ScalaDependencyMaker])
     final override val group: String = FrameworkDescriptor.this.group
     final override val artifact: String = FrameworkDescriptor.this.artifact
-    final override val versionDefault: Version.Simple = FrameworkDescriptor.this.versionDefault
+    final override val versionDefault: Version = FrameworkDescriptor.this.versionDefault
     final override def description: String = displayName
   
-  protected class ScalaMaker(override val scalaBackend: ScalaBackend) extends Maker with ScalaDependency.Maker
+  protected class ScalaMaker(override val scalaBackend: ScalaBackend) extends Maker with ScalaDependencyMaker
     
   final def args(
     includeTags: Array[String],

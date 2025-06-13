@@ -2,9 +2,8 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backendplugin.BackendPlugin
-import org.podval.tools.build.{Dependency, ScalaBinaryVersion, ScalaVersion}
+import org.podval.tools.build.{DependencyWithVersion, ScalaBackend, ScalaBinaryVersion, ScalaVersion}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
@@ -22,6 +21,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def testByBackend: Boolean = false
   
   protected def groupByFeature: Boolean = true
+  protected def testTaskMore: Seq[String] = Seq.empty
   protected def buildGradleFragments: Seq[String] = Seq.empty
   protected def checkRun: Boolean = false
   protected def features: Seq[Feature]
@@ -153,7 +153,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     project: TestProject,
     scalaVersion: ScalaVersion,
     settingsFragments: Seq[String],
-    testImplementation: Seq[Dependency.WithVersion],
+    testImplementation: Seq[DependencyWithVersion],
     buildFragments: Seq[String]
   ): Unit =
     val writer: TestProjectWriter = project.writer(backend = None)
@@ -258,7 +258,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion,
     backend: ScalaBackend
-  ): Seq[Dependency.WithVersion] = fixtures
+  ): Seq[DependencyWithVersion] = fixtures
     .map(_.framework)
     .map((framework: FrameworkDescriptor) =>
       require(framework.forBackend(backend).isDefined)
@@ -278,6 +278,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     includeTags = feature.includeTags,
     excludeTags = feature.excludeTags,
     maxParallelForks = feature.maxParallelForks,
+    more = testTaskMore
   )  
 
   private def run(

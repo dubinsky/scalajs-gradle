@@ -4,20 +4,23 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{GradleException, Project}
 import org.slf4j.{Logger, LoggerFactory}
 
+object DependencyRequirement:
+  private val logger: Logger = LoggerFactory.getLogger(DependencyRequirement.getClass)
+
 final class DependencyRequirement(
-  maker: Dependency.Maker,
-  version: Version
+  maker: DependencyMaker,
+  version: PreVersion
 ):
   def applyToConfiguration(
     project: Project,
     configuration: Configuration,
     scalaVersion: ScalaVersion
-  ): Dependency.WithVersion =
-    val findable: FindableDependency[?] = maker.findable
+  ): DependencyWithVersion =
+    val findable: DependencyFindable[?] = maker.findable
     val dependency: Dependency = maker.dependency(scalaVersion)
 
-    val result: Dependency.WithVersion = findable.findInConfiguration(configuration).getOrElse:
-      val toAdd: Dependency.WithVersion = dependency.withVersion(version)
+    val result: DependencyWithVersion = findable.findInConfiguration(configuration).getOrElse:
+      val toAdd: DependencyWithVersion = dependency.withVersion(version)
       DependencyRequirement.logger.info(
         s"Adding dependency $toAdd to configuration '${project.getName}.${configuration.getName}': ${maker.description}"
       )
@@ -30,17 +33,5 @@ final class DependencyRequirement(
     
     if maker.useExactVersionInVerifyRequired && result.version != version then
       DependencyRequirement.logger.warn(s"Found $result, but the project uses version $version.")
-      
-    // TODO - implement? (using ScalaPlatform.artifactAndScalaVersion())
-    //    override protected def verifyRequiredMore(): Unit = ()
-    //    if dependency.isInstanceOf[Scala2Dependency] then
-    //      val scalaVersion: String = getScalaVersion(dependency.asInstanceOf[Scala2Dependency])
-    //      val version: Scala2Dependency.Version = result.version.asInstanceOf[Scala2Dependency.Version]
-    //      if version.scalaVersion != scalaVersion then project.getLogger.info(
-    //        s"Found $found, but the project uses Scala 2 version $scalaVersion", null, null, null
-    //      )
-
+    
     result
-
-object DependencyRequirement:
-  private val logger: Logger = LoggerFactory.getLogger(DependencyRequirement.getClass)

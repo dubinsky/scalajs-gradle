@@ -1,8 +1,8 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.Dependency
+import org.podval.tools.build.DependencyMaker
 
 final class ForBackend(
-  val maker: Dependency.Maker,
-  val underlying: Option[Dependency.Maker] = None
+  val maker: DependencyMaker,
+  val underlying: Option[DependencyMaker] = None
 )

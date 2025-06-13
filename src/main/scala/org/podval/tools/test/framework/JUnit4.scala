@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{JavaDependency, Version}
+import org.podval.tools.build.{JavaDependencyMaker, Version}
 
 // https://github.com/sbt/junit-interface
 // https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitFramework.java
@@ -19,7 +19,7 @@ object JUnit4 extends FrameworkDescriptor(
   displayName = "JUnit4",
   group = "com.github.sbt",
   artifact = "junit-interface",
-  versionDefault = Version.Simple("0.13.3"),
+  versionDefault = Version("0.13.3"),
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
@@ -30,7 +30,7 @@ object JUnit4 extends FrameworkDescriptor(
   usesTestSelectorAsNestedTestSelector = true
 ):
   override val forJVM   : Some[ForBackend] = Some(ForBackend(
-    maker = new Maker with JavaDependency.Maker, 
+    maker = new Maker with JavaDependencyMaker, 
     underlying = Some(JUnit4Underlying)
   ))
   // This is a JVM-only test framework

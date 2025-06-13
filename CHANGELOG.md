@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2025-06-
+- cleanup;
+- cleanup: `Version`;
+- feat: support WASM for Scala.js;
+- feat: select JS environment for Scala.js;
+- fix: add Scala Parallel Collections Module dynamically;
+- cleanup: `*Dependency*`;
+
 ## [0.8.3] - 2025-06-12
 - cleanup: package `org.podval.tools.backend`;
 - cleanup: package `org.podval.tools.scalaplugin` renamed to `org.podval.tools.backendplugin`;

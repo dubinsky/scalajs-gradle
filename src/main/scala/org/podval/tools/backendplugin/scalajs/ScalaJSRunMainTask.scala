@@ -12,6 +12,9 @@ abstract class ScalaJSRunMainTask extends NonJvmRunTask.Main[ScalaJSLinkTask] wi
     reportBinFile = linkTask.getReportBinFile,
     moduleKind = linkTask.moduleKind,
     node = linkTask.node,
+    useWebAssembly = linkTask.experimentalUseWebAssembly,
+    jsEnvKind = jsEnvKind,
+    browserName = browserName,
     logSource = getName,
     abort = abort,
     outputHandler = outputHandler

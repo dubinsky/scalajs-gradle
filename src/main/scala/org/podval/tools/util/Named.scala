@@ -5,15 +5,6 @@ import org.gradle.api.provider.Property
 open class Named(val name: String)
 
 object Named:
-  final def conventionBoolean(
-    property: Property[Boolean],
-    key: String
-  ): Unit = property.convention(discoverBoolean(key))
-
-  private final def discoverBoolean(key: String): Boolean =
-    Option(System.getenv.get(key))
-      .forall(_.toBoolean)
-
   abstract class Companion[N <: Named](what: String, key: Option[String] = None):
     def default: N
 

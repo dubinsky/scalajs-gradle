@@ -1,10 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.scalajs.ScalaJSBackend
 import org.podval.tools.backend.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{Dependency, Version}
+import org.podval.tools.build.{DependencyMaker, ScalaBackend, Version}
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala
@@ -35,7 +34,7 @@ object MUnit extends FrameworkDescriptor(
   displayName = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
-  versionDefault = Version.Simple("1.1.1"),
+  versionDefault = Version("1.1.1"),
   className = "munit.Framework",
   sharedPackages = List("munit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
@@ -45,7 +44,7 @@ object MUnit extends FrameworkDescriptor(
   additionalOptions = Array("--logger=sbt"),
   usesTestSelectorAsNestedTestSelector = true
 ):
-  private def forBackend(backend: ScalaBackend, underlying: Dependency.Maker): Some[ForBackend] = Some(ForBackend(
+  private def forBackend(backend: ScalaBackend, underlying: DependencyMaker): Some[ForBackend] = Some(ForBackend(
     maker = ScalaMaker(backend),
     underlying = Some(underlying)
   ))

@@ -1,7 +1,6 @@
 package org.podval.tools.test.environment
 
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.GradleClassPath
+import org.podval.tools.build.{GradleClassPath, ScalaBackend}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.Framework

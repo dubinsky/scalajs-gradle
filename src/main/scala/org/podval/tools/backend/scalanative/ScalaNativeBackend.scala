@@ -1,17 +1,16 @@
 package org.podval.tools.backend.scalanative
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.nonjvm.NonJvmBackend
-import org.podval.tools.build.{Dependency, DependencyRequirement, ScalaBinaryVersion, ScalaDependency, 
-  ScalaVersion, Version}
+import org.podval.tools.build.{CompoundVersion, DependencyMaker, DependencyRequirement, PreVersion, ScalaBackend, 
+  ScalaBinaryVersion, ScalaDependencyMaker, ScalaVersion, Version}
 import org.podval.tools.test.framework.JUnit4ScalaNative
 
 case object ScalaNativeBackend extends NonJvmBackend:
   override val name: String = "Scala Native"
   override val sourceRoot: String = "native"
   override val artifactSuffix: String = "native0.5"
-  override val versionDefault: Version.Simple = Version.Simple("0.5.8")
+  override val versionDefault: Version = Version("0.5.8")
 
   override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
     if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala213
@@ -19,13 +18,13 @@ case object ScalaNativeBackend extends NonJvmBackend:
     else Seq.empty
     
   override def areCompilerPluginsBuiltIntoScala3: Boolean = false
-  override def junit4: Dependency.Maker = JUnit4ScalaNative.forNative.get.maker
-  override def versionExtractor(version: Version): Version.Simple = version.compound.right
+  override def junit4: DependencyMaker = JUnit4ScalaNative.forNative.get.maker
+  override def versionExtractor(version: PreVersion): Version = version.compound.right
   
   override def versionComposer(
     projectScalaVersion: ScalaVersion,
-    backendVersion: Version.Simple
-  ): Version = new Version.Compound(
+    backendVersion: Version
+  ): PreVersion = new CompoundVersion(
     projectScalaVersion.version,
     backendVersion
   )
@@ -37,9 +36,9 @@ case object ScalaNativeBackend extends NonJvmBackend:
     final override val artifact: String,
     what: String,
     final override val isScalaVersionFull: Boolean = false
-  ) extends ScalaDependency.Maker:
+  ) extends ScalaDependencyMaker:
     final override def description: String = describe(what)
-    final override def versionDefault: Version.Simple = ScalaNativeBackend.versionDefault
+    final override def versionDefault: Version = ScalaNativeBackend.versionDefault
     final override def group: String = ScalaNativeBackend.group
 
   private sealed class ScalaNativeMaker(
@@ -51,7 +50,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
     what
   )
   
-  override def implementation: Array[ScalaDependency.Maker] = Array(
+  override def implementation: Array[ScalaDependencyMaker] = Array(
     ScalaNativeMaker("nativelib" , "Native Library" ),
     ScalaNativeMaker("clib"      , "C Library"      ),
     ScalaNativeMaker("posixlib"  , "Posix Library"  ),
@@ -60,26 +59,26 @@ case object ScalaNativeBackend extends NonJvmBackend:
     ScalaNativeMaker("auxlib"    , "Aux Library"    )
   )
 
-  override def linker: ScalaDependency.Maker = Maker(JvmBackend, "tools", "Build Tools, including Linker")
-  override def testAdapter: ScalaDependency.Maker = Maker(JvmBackend, "test-runner", "Test Runner")
-  override def testBridge: ScalaDependency.Maker = ScalaNativeMaker("test-interface", "SBT Test Interface")
+  override def linker: ScalaDependencyMaker = Maker(JvmBackend, "tools", "Build Tools, including Linker")
+  override def testAdapter: ScalaDependencyMaker = Maker(JvmBackend, "test-runner", "Test Runner")
+  override def testBridge: ScalaDependencyMaker = ScalaNativeMaker("test-interface", "SBT Test Interface")
 
-  override def library(scalaVersion: ScalaVersion): ScalaDependency.Maker =
+  override def library(scalaVersion: ScalaVersion): ScalaDependencyMaker =
     if scalaVersion.isScala3
     then new ScalaNativeMaker("scala3lib", "Scala 3 Library"):
       override def isVersionCompound: Boolean = true
     else new ScalaNativeMaker("scalalib" , "Scala 2 Library"):
       override def isVersionCompound: Boolean = true
-      override def scala2: Boolean = true
+      override def isPublishedForScala3: Boolean = false
 
-  override def compiler: ScalaDependency.Maker = Maker(
+  override def compiler: ScalaDependencyMaker = Maker(
     scalaBackend = JvmBackend,
     artifact = "nscplugin",
     what = "Compiler Plugin",
     isScalaVersionFull = true
   )
 
-  override def junit4Plugin: ScalaDependency.Maker = Maker(
+  override def junit4Plugin: ScalaDependencyMaker = Maker(
     scalaBackend = JvmBackend,
     artifact = "junit-plugin",
     what = "JUnit4 Compiler Plugin for generating bootstrappers",
@@ -89,7 +88,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
   override def additionalPluginDependencyRequirements: Array[DependencyRequirement] = Array.empty
 
   override def additionalImplementationDependencyRequirements(
-    backendVersion: Version,
+    backendVersion: PreVersion,
     scalaVersion: ScalaVersion
   ): Array[DependencyRequirement] = Array.empty
   

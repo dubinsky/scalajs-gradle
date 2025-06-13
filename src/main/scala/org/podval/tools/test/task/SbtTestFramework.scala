@@ -9,8 +9,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.GradleClassPath
+import org.podval.tools.build.{GradleClassPath, ScalaBackend}
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.framework.FrameworkDescriptor

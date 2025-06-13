@@ -4,21 +4,20 @@ import org.podval.tools.util.Files
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
-private object InstallableDependency:
-  private val logger: Logger = LoggerFactory.getLogger(InstallableDependency.getClass)
+private object DependencyInstallable:
+  private val logger: Logger = LoggerFactory.getLogger(DependencyInstallable.getClass)
 
-trait InstallableDependency[T] extends Dependency:
-  import InstallableDependency.logger
+trait DependencyInstallable[T] extends Dependency:
+  import DependencyInstallable.logger
   
   def repository: Option[Repository] = None
 
   // Where retrieved distributions are cached
-  def cacheDirectory: String = artifact
+  def cacheDirectory: String = maker.artifact
 
-  def archiveSubdirectoryPath(version: Version): Seq[String] = Seq.empty
+  def archiveSubdirectoryPath(version: PreVersion): Seq[String] = Seq.empty
 
-  // TODO use enumeration; determine from the file name
-  def isZip(version: Version): Boolean = false
+  def isZip(version: PreVersion): Boolean = false
 
   def installation(root: File): T
 
@@ -28,8 +27,6 @@ trait InstallableDependency[T] extends Dependency:
 
   def fromOs: Option[T] = None
 
-  def versionDefault: Version.Simple
-  
   final def getInstalled(version: Option[String], context: BuildContextCore): T = get(
     version = version,
     context = context,
@@ -45,10 +42,10 @@ trait InstallableDependency[T] extends Dependency:
   private def get(
     version: Option[String],
     context: BuildContextCore,
-    ifDoesNotExist: (Dependency.WithVersion, T) => Unit
+    ifDoesNotExist: (DependencyWithVersion, T) => Unit
   ): T =
-    def getInternal(version: Version.Simple) =      
-      val dependencyWithVersion: Dependency.WithVersion = withVersion(version)
+    def getInternal(version: Version) =
+      val dependencyWithVersion: DependencyWithVersion = withVersion(version)
       val result: T = installation(
         root = Files.fileSeq(
           installsInto(context, dependencyWithVersion),
@@ -62,17 +59,17 @@ trait InstallableDependency[T] extends Dependency:
       result
     
     version match
-      case Some(version) => getInternal(Version.Simple(version))
+      case Some(version) => getInternal(Version(version))
       case None => fromOs.getOrElse:
-        logger.info(s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $versionDefault")
-        getInternal(versionDefault)
+        logger.info(s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: ${maker.versionDefault}")
+        getInternal(maker.versionDefault)
   
-  private def installsInto(context: BuildContextCore, dependencyWithVersion: Dependency.WithVersion): File =
+  private def installsInto(context: BuildContextCore, dependencyWithVersion: DependencyWithVersion): File =
     Files.file(context.frameworks, cacheDirectory, dependencyWithVersion.fileName)
 
   private def install(
     context: BuildContext,
-    dependencyWithVersion: Dependency.WithVersion,
+    dependencyWithVersion: DependencyWithVersion,
     result: T
   ): Unit =
     logger.warn(s"Installing $dependencyWithVersion as $result")

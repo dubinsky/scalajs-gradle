@@ -2,7 +2,7 @@ package org.podval.tools.test.framework
 
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.scalajs.ScalaJSBackend
-import org.podval.tools.build.ScalaDependency
+import org.podval.tools.build.ScalaDependencyMaker
 
 // https://github.com/scala-js/scala-js/tree/main/junit-runtime/src/main/scala
 // https://github.com/scala-js/scala-js/blob/main/junit-runtime/src/main/scala/org/scalajs/junit/JUnitFramework.scala
@@ -18,9 +18,9 @@ object JUnit4ScalaJS extends FrameworkDescriptor(
   usesTestSelectorAsNestedTestSelector = true
 ):
   override val forJS    : Some[ForBackend] = Some(ForBackend(
-    new Maker with ScalaDependency.Maker:
+    new Maker with ScalaDependencyMaker:
       final override def scalaBackend: JvmBackend.type = JvmBackend
-      final override def scala2: Boolean = true
+      final override def isPublishedForScala3: Boolean = false
   ))
   // This is a Scala.js-only test framework
   override val forJVM   : None.type = None

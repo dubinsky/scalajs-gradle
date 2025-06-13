@@ -11,6 +11,9 @@ abstract class ScalaJSTestTask extends NonJvmRunTask.Test[ScalaJSLinkTask] with 
     reportBinFile = linkTask.getReportBinFile,
     moduleKind = linkTask.moduleKind,
     node = linkTask.node,
+    useWebAssembly = linkTask.experimentalUseWebAssembly,
+    jsEnvKind = jsEnvKind,
+    browserName = browserName,
     logSource = getName,
     abort = abort
   )
