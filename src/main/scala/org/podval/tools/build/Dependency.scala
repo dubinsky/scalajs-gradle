@@ -1,7 +1,6 @@
 package org.podval.tools.build
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
 
 abstract class Dependency(
   final override val group: String,

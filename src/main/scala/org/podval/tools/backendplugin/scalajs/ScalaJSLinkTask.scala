@@ -4,6 +4,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Optional, OutputDirectory, OutputFile, TaskAction}
 import org.podval.tools.backend.scalajs.{ModuleInitializer, ModuleKind, ModuleSplitStyle, Optimization, ScalaJSBuild}
 import org.podval.tools.backendplugin.nonjvm.NonJvmLinkTask
+import org.podval.tools.util.Named
 import java.io.File
 
 trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
@@ -21,6 +22,10 @@ trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
   @Input def getOptimization: Property[String]
   Optimization.convention(getOptimization)
   
+  @Input def getExperimentalUseWebAssembly: Property[Boolean]
+  Named.conventionBoolean(getExperimentalUseWebAssembly, "SCALAJS_EXPERIMENTAL_USE_WEBASSEMBLY")
+  def experimentalUseWebAssembly: Boolean = getExperimentalUseWebAssembly.get
+  
   @OutputDirectory final def getJSDirectory: File = outputFile("js")
   @OutputFile final def getReportTextFile: File = outputFile("linking-report.txt")
   @OutputFile final def getReportBinFile : File = outputFile("linking-report.bin")
@@ -32,6 +37,7 @@ trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
     optimization = Optimization(getOptimization),
     moduleKind = moduleKind,
     moduleSplitStyle = ModuleSplitStyle(getModuleSplitStyle),
+    useWebAssembly = experimentalUseWebAssembly,
     moduleInitializers = moduleInitializers,
     prettyPrint = getPrettyPrint.getOrElse(false),
     runtimeClassPath = runtimeClassPath,

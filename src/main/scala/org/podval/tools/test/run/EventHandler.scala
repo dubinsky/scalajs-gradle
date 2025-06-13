@@ -50,7 +50,7 @@ final private class EventHandler(runTestClass: RunTestClass):
             parentId = runTestClass.testId,
             testId = eventTestId,
             running = eventFor,
-            startTime = endTime - event.duration // TODO deal with negative durations?
+            startTime = endTime - event.duration
           )
 
           action(testResultProcessor, eventTestId)

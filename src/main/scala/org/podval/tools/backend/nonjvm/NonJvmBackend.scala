@@ -1,8 +1,7 @@
 package org.podval.tools.backend.nonjvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{BackendDependencyRequirements, Dependency, DependencyRequirement,
+import org.podval.tools.build.{BackendDependencyRequirements, Dependency, DependencyRequirement, ScalaBackend,
   ScalaDependency, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 

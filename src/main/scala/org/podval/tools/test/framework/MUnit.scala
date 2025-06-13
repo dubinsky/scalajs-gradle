@@ -1,10 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.scalajs.ScalaJSBackend
 import org.podval.tools.backend.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{Dependency, Version}
+import org.podval.tools.build.{Dependency, ScalaBackend, Version}
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala

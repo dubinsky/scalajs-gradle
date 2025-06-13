@@ -11,8 +11,7 @@ object Named:
   ): Unit = property.convention(discoverBoolean(key))
 
   private final def discoverBoolean(key: String): Boolean =
-    Option(System.getenv.get(key))
-      .forall(_.toBoolean)
+    Option(System.getenv.get(key)).exists(_.toBoolean)
 
   abstract class Companion[N <: Named](what: String, key: Option[String] = None):
     def default: N
