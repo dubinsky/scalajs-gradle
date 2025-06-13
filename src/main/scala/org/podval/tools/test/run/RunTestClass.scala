@@ -20,7 +20,7 @@ final private class RunTestClass(
 
   val logger: Logger = new Logger:
     private def log(logLevel: LogLevel, message: String): Unit = testResultProcessor.output(logLevel, testId, message)
-    override def ansiCodesSupported: Boolean = true // TODO !runningInIntelliJIdea?
+    override def ansiCodesSupported: Boolean = true
     override def error(message: String): Unit = log(LogLevel.ERROR, message)
     override def warn (message: String): Unit = log(LogLevel.WARN , message)
     override def info (message: String): Unit = log(LogLevel.INFO , message)

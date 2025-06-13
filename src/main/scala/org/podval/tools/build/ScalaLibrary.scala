@@ -51,8 +51,8 @@ object ScalaLibrary:
   private def apply(
     source: String,
     mustHaveScala2: Boolean,
-    scala3: Option[Dependency.WithVersion],
-    scala2: Option[Dependency.WithVersion]
+    scala3: Option[DependencyWithVersion],
+    scala2: Option[DependencyWithVersion]
   ): ScalaLibrary =
     require(scala3.nonEmpty || scala2.nonEmpty, s"No Scala library $source")
     if mustHaveScala2 then require(scala2.nonEmpty, s"No Scala 2 library $source")

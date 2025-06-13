@@ -34,7 +34,7 @@ object Sources:
     project: Project,
     scalaVersion: ScalaVersion
   ): Unit =
-    val version: Version.Simple = scalaVersion.version
+    val version: Version = scalaVersion.version
     val scalaRoots: Seq[String] = 1
       .to(version.length)
       .map(version.take)
@@ -78,8 +78,9 @@ object Sources:
       // add before and remove after, so that IntelliJ does not
       // run into "duplicate content roots" issue during project import.
       val sharedForTask: Action[Task] = (task: Task) =>
-        task.doFirst((_: Task) => addBoth   ())
-        task.doLast ((_: Task) => removeBoth())
+        // Note: task actions below *must* be Actions and not just lambdas:
+        task.doFirst(new Action[Task] { override def execute(task: Task): Unit = addBoth   () })
+        task.doLast (new Action[Task] { override def execute(task: Task): Unit = removeBoth() })
 
       project.getTasks.withType(classOf[SourceTask         ]).configureEach(sharedForTask) // compilation
       project.getTasks.withType(classOf[AbstractArchiveTask]).configureEach(sharedForTask) // archives

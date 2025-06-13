@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.8.3
+:version-plugin: 0.8.4
 :version-gradle: 8.14.2
 :version-scala: 3.7.1
 :version-scala213-suffix: 2.13
@@ -13,6 +13,7 @@
 :version-scalajs: 1.19.0
 :version-scalajs-dom: 2.8.0
 :version-scalajs-env-jsdom-nodejs: 1.1.0
+:version-scala-js-env-playwright: 0.1.18
 :version-node: 22.16.0
 :version-scalanative: 0.5.8
 :version-scala-parallel-collections: 1.2.0
@@ -421,9 +422,15 @@ The table below lists what is added to what configurations.
 |scalajs
 |
 
-|Node.js Environment
+|Node.js JavaScript environment with JSDOM
 |org.scala-js:scalajs-env-jsdom-nodejs
 |JVM Scala 2
+|scalajs
+|
+
+|Parallel Collections: Linker uses it but does not bring it in
+|org.scala-lang.modules:scala-parallel-collections
+|JVM
 |scalajs
 |
 
@@ -478,6 +485,7 @@ dependencies {
   scalajs         "org.scala-js:scalajs-linker_${backend.scala2BinaryVersion}:${backend.backendVersion}"
   scalajs         "org.scala-js:scalajs-sbt-test-adapter_${backend.scala2BinaryVersion}:${backend.backendVersion}"
   scalajs         "org.scala-js:scalajs-env-jsdom-nodejs_${backend.scala2BinaryVersion}:{version-scalajs-env-jsdom-nodejs}"
+  scalajs         "org.scala-lang.modules:scala-parallel-collections_${backend.scalaBinaryVersion}:{version-scala-parallel-collections}"
   if (!scalaVersion.scala3) {
     scalaCompilerPlugins "org.scala-js:scalajs-compiler_${backend.scalaVersion}:${backend.backendVersion}"
   }
@@ -568,6 +576,7 @@ link {
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
   prettyPrint      = false
+  experimentalUseWebAssembly = false
 }
 ----
 
@@ -602,6 +611,28 @@ Additional tasks of type
 link:src/main/scala/org/podval/tools/backendplugin/scalajs/ScalaJSRunMainTask.scala[org.podval.tools.backendplugin.scalajs.ScalaJSRunMainTask]
 can be added manually;
 their dependency on a corresponding `ScalaJSLinkMainTask` task must be set manually too.
+
+=== JavaScript Environment
+Both `run` and `test` tasks have a property `jsEnv`:
+
+[source,groovy]
+----
+run {
+  jsEnv = 'NodeJSEnv' // one of: 'Node.js+DOM', 'Node.js', 'Playwright'
+}
+----
+
+To use Playwright JavaScript environment, add the following dependency manually:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  scalajs 'io.github.gmkumar2005:scala-js-env-playwright_2.12:{version-scala-js-env-playwright}'
+}
+----
+
+For Playwright, property `browserName` chooses the browser:
+one of 'chromium', 'chrome', 'firefox', 'webkit'.
 
 === Node.js
 

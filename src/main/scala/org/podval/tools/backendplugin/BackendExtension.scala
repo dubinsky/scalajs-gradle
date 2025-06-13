@@ -4,12 +4,11 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.scala.ScalaPluginExtension
 import org.gradle.api.{GradleException, Project}
 import org.gradle.api.provider.Property
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.nonjvm.NonJvmBackend
 import org.podval.tools.backend.scalajs.ScalaJSBackend
 import org.podval.tools.backend.scalanative.ScalaNativeBackend
-import org.podval.tools.build.{ScalaBinaryVersion, ScalaLibrary, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion, Version}
 import org.podval.tools.platform.IntelliJIdea
 import javax.inject.Inject
 
@@ -47,7 +46,7 @@ abstract class BackendExtension @Inject(project: Project):
     case nonJvm: NonJvmBackend => nonJvm
     case backend => error(s"backend must be a non-JVM backend, not ${backend.name}")
 
-  final def getBackendVersion: Version.Simple = nonJvm.backendVersion(
+  final def getBackendVersion: Version = nonJvm.backendVersion(
     getScalaVersion,
     getImplementationConfiguration(isTest = false)
   )
@@ -57,7 +56,9 @@ abstract class BackendExtension @Inject(project: Project):
   )
 
   final def getScalaLibrary: ScalaLibrary =
-    ScalaLibrary.getFromConfiguration(getImplementationConfiguration(isTest = false))
+    val result: ScalaLibrary = ScalaLibrary.getFromConfiguration(getImplementationConfiguration(isTest = false))
+    require(result.scalaVersion == getScalaVersion)
+    result
 
   final def getScalaExtensionScalaVersionProperty: Property[String] = project
     .getExtensions
@@ -73,6 +74,6 @@ abstract class BackendExtension @Inject(project: Project):
   
   final def isScala3: Boolean = getScalaVersion.isScala3
   final def getMajor: Int = getScalaVersion.binaryVersion.versionMajor
-  final def getScalaBinaryVersion: Version.Simple = getScalaVersion.binaryVersion.versionSuffix
-  final def getScala2BinaryVersion: Version.Simple =
+  final def getScalaBinaryVersion: Version = getScalaVersion.binaryVersion.versionSuffix
+  final def getScala2BinaryVersion: Version =
     (if !isScala3 then getScalaVersion.binaryVersion else ScalaBinaryVersion.Scala213).versionSuffix

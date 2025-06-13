@@ -2,7 +2,7 @@ package org.podval.tools.backendplugin.scalanative
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, OutputDirectory, OutputFile, TaskAction}
-import org.podval.tools.backend.scalanative.{GC, LTO, Mode, ScalaNativeBuild, ScalaNativeLinkConfig}
+import org.podval.tools.backend.scalanative.{GC, LTO, Mode, Optimize, ScalaNativeBuild, ScalaNativeLinkConfig}
 import org.podval.tools.backendplugin.nonjvm.NonJvmLinkTask
 import org.podval.tools.util.Named
 import java.io.File
@@ -21,7 +21,7 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
   GC.convention(getGc)
 
   @Input def getOptimize: Property[Boolean]
-  Named.conventionBoolean(getOptimize, "SCALANATIVE_OPTIMIZE")
+  Optimize.convention(getOptimize)
 
   @OutputDirectory final def getNativeDirectory: File = outputDirectory
   
@@ -34,9 +34,9 @@ trait ScalaNativeLinkTask extends NonJvmLinkTask[ScalaNativeLinkTask] with Scala
     ScalaNativeBuild.linkConfig(
       lto = LTO(getLto),
       gc = GC(getGc),
-      optimize = getOptimize.get,
-      baseDir = getNativeDirectory.toPath,
+      optimize = Optimize(getOptimize),
       mode = Mode(getMode),
+      baseDir = getNativeDirectory.toPath,
       projectName = getProject.getName,
       mainClass = mainClass,
       testConfig = isTest,

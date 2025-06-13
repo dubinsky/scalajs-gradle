@@ -1,7 +1,7 @@
 package org.podval.tools.test.scalajstutorial
 
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.backend.scalajs.ScalaJSBackend
+import org.podval.tools.backend.scalajs.{JSEnvKind, ScalaJSBackend}
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, GroupingFunSpec, TestProject}
 
 class ScalaJSTutorialTest extends GroupingFunSpec:
@@ -12,14 +12,19 @@ class ScalaJSTutorialTest extends GroupingFunSpec:
   override protected def backends: Set[ScalaBackend] = Set(ScalaJSBackend)
   override protected def checkRun: Boolean = true
 
+  override protected def testTaskMore: Seq[String] = Seq(
+    s"jsEnv = '${JSEnvKind.JSDOMNodeJS.name}'"
+  )
+  
   override protected def buildGradleFragments: Seq[String] = Seq(
-    ScalaJSTutorialTest.linkJsTask(
+    ScalaJSTutorialTest.linkTask(
       ScalaJSTutorialScalaTestFixture.mainSources.headOption.map(_.name)
-    )
+    ),
+    ScalaJSTutorialTest.runTask(JSEnvKind.JSDOMNodeJS)
   )
 
 object ScalaJSTutorialTest:
-  private def linkJsTask(mainClassName: Option[String]): String =
+  private def linkTask(mainClassName: Option[String]): String =
     s"""link {
        |  optimization     = 'Full'          // one of: 'Fast', 'Full'
        |  moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
@@ -37,4 +42,10 @@ object ScalaJSTutorialTest:
        |      mainMethodHasArgs = true
        |    }
        |  }
+       |""".stripMargin
+
+  private def runTask(jsEnvKind: JSEnvKind) =
+    s"""run {
+       |  jsEnv = '${jsEnvKind.name}'
+       |}
        |""".stripMargin

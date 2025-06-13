@@ -1,9 +1,8 @@
 package org.podval.tools.backend.nonjvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{BackendDependencyRequirements, Dependency, DependencyRequirement,
-  ScalaDependency, ScalaVersion, Version}
+import org.podval.tools.build.{BackendDependencyRequirements, DependencyMaker, DependencyRequirement, PreVersion,
+  ScalaBackend, ScalaDependencyMaker, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 
 trait NonJvmBackend extends ScalaBackend:
@@ -14,32 +13,33 @@ trait NonJvmBackend extends ScalaBackend:
 
   def artifactSuffix: String
 
-  def versionDefault: Version
+  def versionDefault: PreVersion
 
   def areCompilerPluginsBuiltIntoScala3: Boolean
-  def versionExtractor(version: Version): Version.Simple
-  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version.Simple): Version
-  def implementation: Array[ScalaDependency.Maker]
-  def library(scalaVersion: ScalaVersion): ScalaDependency.Maker
-  def compiler: ScalaDependency.Maker
-  def linker: ScalaDependency.Maker
-  def testAdapter: ScalaDependency.Maker
-  def testBridge: ScalaDependency.Maker
-  def junit4Plugin: ScalaDependency.Maker
-  def junit4: Dependency.Maker
+  def versionExtractor(version: PreVersion): Version
+  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): PreVersion
+  def implementation: Array[ScalaDependencyMaker]
+  def library(scalaVersion: ScalaVersion): ScalaDependencyMaker
+  def compiler: ScalaDependencyMaker
+  def linker: ScalaDependencyMaker
+  def testAdapter: ScalaDependencyMaker
+  def testBridge: ScalaDependencyMaker
+  def junit4Plugin: ScalaDependencyMaker
+  def junit4: DependencyMaker
   def additionalPluginDependencyRequirements: Array[DependencyRequirement]
 
   def additionalImplementationDependencyRequirements(
-    backendVersion: Version,
+    backendVersion: PreVersion,
     scalaVersion: ScalaVersion
   ): Array[DependencyRequirement]
 
   final def backendVersion(
     scalaVersion: ScalaVersion,
     implementationConfiguration: Configuration
-  ): Version.Simple =
-    val libraryDependency: ScalaDependency.Maker = library(scalaVersion)
+  ): Version =
+    val libraryDependency: ScalaDependencyMaker = library(scalaVersion)
     libraryDependency
+      .findable
       .findInConfiguration(implementationConfiguration)
       .map(_.version)
       .map(versionExtractor)
@@ -48,6 +48,7 @@ trait NonJvmBackend extends ScalaBackend:
   final def junit4present(
     testImplementationConfiguration: Configuration
   ): Boolean = junit4
+    .findable
     .findInConfiguration(testImplementationConfiguration).isDefined
     
   final override def dependencyRequirements(
@@ -55,7 +56,7 @@ trait NonJvmBackend extends ScalaBackend:
     testImplementationConfiguration: Configuration,
     scalaVersion: ScalaVersion
   ): BackendDependencyRequirements =
-    val backendVersion: Version.Simple = NonJvmBackend.this.backendVersion(
+    val backendVersion: Version = NonJvmBackend.this.backendVersion(
       scalaVersion, 
       implementationConfiguration
     )

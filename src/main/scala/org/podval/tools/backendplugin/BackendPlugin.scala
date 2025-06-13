@@ -6,9 +6,8 @@ import org.gradle.api.plugins.scala.{ScalaPlugin, ScalaPluginExtension}
 import org.gradle.api.tasks.{SourceSet, SourceTask}
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.{Plugin, Project, Task}
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
-import org.podval.tools.build.ScalaVersion
+import org.podval.tools.build.{ScalaBackend, ScalaVersion}
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File

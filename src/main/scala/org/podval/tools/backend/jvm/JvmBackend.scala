@@ -1,8 +1,7 @@
 package org.podval.tools.backend.jvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{BackendDependencyRequirements, JavaDependency, ScalaVersion, Version}
+import org.podval.tools.build.{BackendDependencyRequirements, JavaDependencyMaker, ScalaBackend, ScalaVersion, Version}
 
 case object JvmBackend extends ScalaBackend:
   override val name: String = "JVM"
@@ -25,8 +24,8 @@ case object JvmBackend extends ScalaBackend:
     pluginDependencies = Array.empty
   )
   
-  object SbtTestInterface extends JavaDependency.Maker:
+  object SbtTestInterface extends JavaDependencyMaker:
     override def group: String = "org.scala-sbt"
     override def artifact: String = "test-interface"
-    override def versionDefault: Version.Simple = Version.Simple("1.0")
+    override def versionDefault: Version = Version("1.0")
     override def description: String = "SBT testing interface; some test frameworks (ScalaTest :)) do not bring it in in."

@@ -1,19 +1,29 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{InstallableDependency, Repository, SimpleDependency, Version}
+import org.podval.tools.build.{DependencyFindable, DependencyInstallable, PreVersion, Repository, ScalaBackend,
+  ScalaVersion, SimpleDependency, SimpleDependencyMaker, Version}
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
-object NodeDependency extends SimpleDependency[NodeDependency.type](
-  group = "org.nodejs",
-  artifact = "node"
-) with InstallableDependency[NodeInstallation]:
-
-  override val versionDefault: Version.Simple = Version.Simple("22.16.0")
-
+object NodeDependency extends SimpleDependency[NodeDependency.type] with DependencyInstallable[NodeInstallation]:
+  object Maker extends SimpleDependencyMaker[NodeDependency.type]:
+    override def findable: NodeDependency.type = NodeDependency
+    override def group: String = "org.nodejs"
+    override def artifact: String = "node"
+    override def versionDefault: Version = Version("22.16.0")
+    override def description: String = "Node.js"
+    override def extension(version: PreVersion): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
+    override def classifier(version: PreVersion): Option[String] =
+      val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
+      val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName
+      val dependencyOsArch: String = if fixUpOsAndArch then "x86"   else osArch
+      Some(s"$dependencyOsName-$dependencyOsArch")
+  
+  override def maker: SimpleDependencyMaker[NodeDependency.type] = Maker
+  
   override def cacheDirectory: String = "nodejs"
 
   override def repository: Option[Repository] = Some(Repository(
@@ -49,7 +59,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
     case Architecture.nacl    => "x86"
 
   //https://github.com/nodejs/node/pull/5995
-  private def hasWindowsZip(version: Version): Boolean =
+  private def hasWindowsZip(version: PreVersion): Boolean =
     val major: Int = version.simple.major
     val minor: Int = version.simple.minor
     val patch: Int = version.simple.patch
@@ -57,21 +67,13 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
     ((major == 4) && (minor >= 5)) || // >= 4.5.0..6
     ((major == 6) && ((minor > 2) || ((patch == 2) && (patch >= 1)))) || // >= 6.2.1..7
      (major >  6) // 7..
-    
-  override def classifier(version: Version): Option[String] =
-    val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
-    val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName
-    val dependencyOsArch: String = if fixUpOsAndArch then "x86"   else osArch
-    Some(s"$dependencyOsName-$dependencyOsArch")
-
-  override def isZip(version: Version): Boolean = isWindows && hasWindowsZip(version)
-
-  override def extension(version: Version): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
-
-  override def archiveSubdirectoryPath(version: Version): Seq[String] =
-    val classifierStr: String = Strings.prefix("-", classifier(version))
+  
+  override def isZip(version: PreVersion): Boolean = isWindows && hasWindowsZip(version)
+  
+  override def archiveSubdirectoryPath(version: PreVersion): Seq[String] =
+    val classifierStr: String = Strings.prefix("-", maker.classifier(version))
     Seq(
-      s"$artifact-v$version$classifierStr"
+      s"${maker.artifact}-v$version$classifierStr"
     )
 
   override def installation(root: File): NodeInstallation =

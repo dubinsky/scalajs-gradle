@@ -11,7 +11,6 @@ import java.io.File
 trait BackendTask extends Task:
   @Internal def isTest: Boolean
 
-  // TODO use more specific exception?
   protected final def abort: String => Nothing = (message: String) => throw GradleException(message)
 
 object BackendTask:

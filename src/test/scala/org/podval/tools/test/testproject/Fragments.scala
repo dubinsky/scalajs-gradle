@@ -1,7 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{Dependency, ScalaVersion}
+import org.podval.tools.build.{DependencyWithVersion, ScalaBackend, ScalaVersion}
 
 object Fragments:
   def settingsManagement: String =
@@ -47,12 +46,12 @@ object Fragments:
   
   private def dependenciesString(
     configurationName: String,
-    dependencies: Seq[Dependency.WithVersion]
+    dependencies: Seq[DependencyWithVersion]
   ): String = prefixedList(s"  $configurationName", dependencies.map(_.dependencyNotation))
   
   def dependencies(
-    implementation: Seq[Dependency.WithVersion],
-    testImplementation: Seq[Dependency.WithVersion]
+    implementation: Seq[DependencyWithVersion],
+    testImplementation: Seq[DependencyWithVersion]
   ): String =
     s"""dependencies {
        |${dependenciesString("implementation", implementation)}
@@ -65,7 +64,8 @@ object Fragments:
     excludeTestNames: Seq[String],
     includeTags: Seq[String],
     excludeTags: Seq[String],
-    maxParallelForks: Int
+    maxParallelForks: Int,
+    more: Seq[String]
   ): String =
     s"""test {
        |  filter {
@@ -80,6 +80,7 @@ object Fragments:
        |    excludeCategories = ${excludeTags.map(string => s"'$string'").mkString("[", ", ", "]")}
        |  }
        |  maxParallelForks = $maxParallelForks
+       |${more.mkString("\n")}  
        |}
        |""".stripMargin
 
