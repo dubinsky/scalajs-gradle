@@ -6,7 +6,7 @@ import java.io.File
 class DependencyData(
   val group: Option[String],
   val artifactName: String,
-  val version: Version,
+  val version: PreVersion,
   val classifier: Option[String],
   val extension: Option[String]
 ):
@@ -38,7 +38,7 @@ object DependencyData:
     isVersionCompound: Boolean
   ): Option[DependencyData] = dependency match
     case dependency: org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency =>
-      Option(dependency.getVersion).flatMap(Version(_, isVersionCompound).map(version =>
+      Option(dependency.getVersion).flatMap(PreVersion(_, isVersionCompound).map(version =>
         DependencyData(
           group = Some(dependency.getGroup),
           artifactName= dependency.getName,
@@ -55,7 +55,7 @@ object DependencyData:
   ): Option[DependencyData] =
     val (nameAndVersion: String, fileExtension: Option[String]) = Files.nameAndExtension(file.getName)
     val (name: String, versionOpt: Option[String]) = Strings.split(nameAndVersion, '-')
-    versionOpt.flatMap(Version(_, isVersionCompound).map(version =>
+    versionOpt.flatMap(PreVersion(_, isVersionCompound).map(version =>
       DependencyData(
         group = None,
         artifactName = name,

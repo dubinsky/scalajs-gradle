@@ -1,7 +1,7 @@
 package org.podval.tools.test.testproject
 
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.backend.ScalaBackend
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File

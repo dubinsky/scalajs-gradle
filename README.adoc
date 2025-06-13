@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.8.3
+:version-plugin: 0.8.4
 :version-gradle: 8.14.2
 :version-scala: 3.7.1
 :version-scala213-suffix: 2.13
@@ -568,6 +568,7 @@ link {
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
   prettyPrint      = false
+  experimentalUseWebAssembly = false
 }
 ----
 
@@ -602,6 +603,16 @@ Additional tasks of type
 link:src/main/scala/org/podval/tools/backendplugin/scalajs/ScalaJSRunMainTask.scala[org.podval.tools.backendplugin.scalajs.ScalaJSRunMainTask]
 can be added manually;
 their dependency on a corresponding `ScalaJSLinkMainTask` task must be set manually too.
+
+=== JS Environment
+Both `run` and `test` tasks have a property `jsEnv`:
+
+[source,groovy]
+----
+run {
+  jsEnv = 'NodeJSEnv' // one of: 'NodeJSEnv', 'JSDOMNodeJSEnv'
+}
+----
 
 === Node.js
 

@@ -1,6 +1,6 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{InstallableDependency, Repository, SimpleDependency, Version}
+import org.podval.tools.build.{InstallableDependency, PreVersion, Repository, SimpleDependency, Version}
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
 import java.io.File
@@ -12,7 +12,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
   artifact = "node"
 ) with InstallableDependency[NodeInstallation]:
 
-  override val versionDefault: Version.Simple = Version.Simple("22.16.0")
+  override val versionDefault: Version = Version("22.16.0")
 
   override def cacheDirectory: String = "nodejs"
 
@@ -49,7 +49,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
     case Architecture.nacl    => "x86"
 
   //https://github.com/nodejs/node/pull/5995
-  private def hasWindowsZip(version: Version): Boolean =
+  private def hasWindowsZip(version: PreVersion): Boolean =
     val major: Int = version.simple.major
     val minor: Int = version.simple.minor
     val patch: Int = version.simple.patch
@@ -58,17 +58,17 @@ object NodeDependency extends SimpleDependency[NodeDependency.type](
     ((major == 6) && ((minor > 2) || ((patch == 2) && (patch >= 1)))) || // >= 6.2.1..7
      (major >  6) // 7..
     
-  override def classifier(version: Version): Option[String] =
+  override def classifier(version: PreVersion): Option[String] =
     val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
     val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName
     val dependencyOsArch: String = if fixUpOsAndArch then "x86"   else osArch
     Some(s"$dependencyOsName-$dependencyOsArch")
 
-  override def isZip(version: Version): Boolean = isWindows && hasWindowsZip(version)
+  override def isZip(version: PreVersion): Boolean = isWindows && hasWindowsZip(version)
 
-  override def extension(version: Version): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
+  override def extension(version: PreVersion): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
 
-  override def archiveSubdirectoryPath(version: Version): Seq[String] =
+  override def archiveSubdirectoryPath(version: PreVersion): Seq[String] =
     val classifierStr: String = Strings.prefix("-", classifier(version))
     Seq(
       s"$artifact-v$version$classifierStr"

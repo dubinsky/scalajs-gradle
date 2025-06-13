@@ -1,6 +1,5 @@
 package org.podval.tools.build
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.util.Strings
 
 final class ScalaDependency private(
@@ -10,8 +9,8 @@ final class ScalaDependency private(
   isScalaVersionFull: Boolean,
   override val isVersionCompound: Boolean
 ) extends FindableDependency[ScalaDependency.WithScalaVersion]:
-  override def classifier(version: Version): Option[String] = None
-  override def extension(version: Version): Option[String] = None
+  override def classifier(version: PreVersion): Option[String] = None
+  override def extension(version: PreVersion): Option[String] = None
 
   def withScalaVersion(scalaVersion: ScalaVersion): ScalaDependency.WithScalaVersion = ScalaDependency.WithScalaVersion(
     findable = this,
@@ -19,7 +18,7 @@ final class ScalaDependency private(
   )
 
   def artifactNameSuffix(scalaVersion: ScalaVersion): String =
-    val versionSuffix: Version =
+    val versionSuffix: PreVersion =
       if isScalaVersionFull
       then scalaVersion.version
       else scalaVersion.binaryVersion.versionSuffix
@@ -50,8 +49,8 @@ object ScalaDependency:
     group = findable.group,
     artifact = findable.artifact
   ):
-    override def classifier(version: Version): Option[String] = findable.classifier(version)
-    override def extension(version: Version): Option[String] = findable.extension(version)
+    override def classifier(version: PreVersion): Option[String] = findable.classifier(version)
+    override def extension(version: PreVersion): Option[String] = findable.extension(version)
     override protected def artifactNameSuffix: String = findable.artifactNameSuffix(scalaVersion)
   
   trait Maker extends Dependency.Maker:

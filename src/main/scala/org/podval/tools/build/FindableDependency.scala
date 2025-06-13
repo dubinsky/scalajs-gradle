@@ -21,7 +21,7 @@ trait FindableDependency[D <: Dependency] extends DependencyCoordinates:
     iterable.flatMap(find).headOption
 
   private def find(dependencyData: DependencyData): Option[Dependency.WithVersion] =
-    val version: Version = dependencyData.version
+    val version: PreVersion = dependencyData.version
     val matches: Boolean =       
       dependencyData.groupMatches(group) &&
       dependencyData.classifierMatches(classifier(version)) &&

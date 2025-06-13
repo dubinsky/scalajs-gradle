@@ -23,7 +23,7 @@ object UTest extends FrameworkDescriptor(
   displayName = "UTest",
   group = "com.lihaoyi",
   artifact = "utest",
-  versionDefault = Version.Simple("0.8.5"),
+  versionDefault = Version("0.8.5"),
   // `utest.runner.Framework` logs using `println`; to force the use of the SBT logs:
   className = "utest.runner.MillFramework",
   sharedPackages = List("utest.runner")

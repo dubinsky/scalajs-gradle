@@ -13,12 +13,11 @@ import org.gradle.api.tasks.{SourceSet, TaskProvider}
 import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.util.internal.GUtil
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backendplugin.jvm.JvmDelegate
 import org.podval.tools.backendplugin.scalajs.ScalaJSDelegate
 import org.podval.tools.backendplugin.scalanative.ScalaNativeDelegate
 import org.podval.tools.build.{AddConfigurationToClassPath, ApplyDependencyRequirements, BackendDependencyRequirements,
-  GradleClassPath, ScalaLibrary, ScalaVersion}
+  ExpandClassPath, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaVersion}
 import org.podval.tools.test.task.TestTask
 import org.slf4j.Logger
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava}
@@ -64,29 +63,34 @@ final class WithBackend(
       extension.isRunningInIntelliJ
     ))
 
-    val projectScalaLibrary: ScalaLibrary = extension.getScalaLibrary
-    val scalaVersion: ScalaVersion = projectScalaLibrary.scalaVersion
-    // TODO verify that the library version is the same as the one in the extension (if it is set)
-    
+    val scalaVersion: ScalaVersion = extension.getScalaVersion
+
     configureJarTask(scalaVersion)
 
     // Adjust the build directory for the Scala version if requested.
     if extension.isBuildPerScalaVersion then
       val buildDirectory: DirectoryProperty = project.getLayout.getBuildDirectory
       buildDirectory.set(buildDirectory.get.dir(s"scala-$scalaVersion"))
-
-    val pluginScalaVersion: ScalaVersion = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).scalaVersion
+    
     dependencyRequirements(
       scalaVersion,
-      pluginScalaVersion,
+      pluginScalaVersion = ScalaLibrary.getFromClasspath(GradleClassPath.collect(this)).scalaVersion,
       pluginDependenciesConfigurationName
     ).foreach(_.apply(project))
 
     configureScalaCompile(scalaVersion)
 
-    val addToClassPath: Option[AddConfigurationToClassPath] = expandClassPath(pluginDependenciesConfigurationName)
-    addToClassPath.foreach(_.add())
-    addToClassPath.foreach(_.verify(projectScalaLibrary))
+    ExpandClassPath(pluginDependenciesConfigurationName
+      .toSeq
+      .map(AddConfigurationToClassPath(
+        _,
+        getSourceSet(isTest = false).getRuntimeClasspathConfigurationName
+      ))
+    )
+      .apply(
+        project,
+        extension.getScalaLibrary
+      )
 
   private def configureArchiveAppendix(archiveAppendix: String): Unit =
     val archiveAppendixConvention: Action[Jar] = (jar: Jar) => jar
@@ -257,17 +261,7 @@ final class WithBackend(
       ApplyDependencyRequirements(requirements.scalaCompilerPlugins    , projectScalaVersion, scalaCompilerPluginsConfigurationName    ),
       ApplyDependencyRequirements(requirements.testScalaCompilerPlugins, projectScalaVersion, testScalaCompilerPluginsConfigurationName)
     )
-
-  private def expandClassPath(
-    pluginDependenciesConfigurationName: Option[String]
-  ): Option[AddConfigurationToClassPath] = pluginDependenciesConfigurationName
-    .map((pluginDependenciesConfigurationName: String) =>
-      AddConfigurationToClassPath(
-        project.getConfigurations.getByName(pluginDependenciesConfigurationName),
-        project.getConfigurations.getByName(getSourceSet(isTest = false).getRuntimeClasspathConfigurationName)
-      )
-    )
-
+  
   private def configureScalaCompile(scalaVersion: ScalaVersion): Unit =
     val scalaCompileParameters: Seq[String] = backend.scalaCompileParameters(scalaVersion)
     def ensureParameters(scalaCompile: ScalaCompile): Unit =

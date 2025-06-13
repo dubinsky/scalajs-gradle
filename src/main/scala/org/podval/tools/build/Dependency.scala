@@ -1,14 +1,13 @@
 package org.podval.tools.build
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
 
 abstract class Dependency(
   final override val group: String,
   final override val artifact: String
 ) extends DependencyCoordinates:
   
-  final def withVersion(version: Version): Dependency.WithVersion =
+  final def withVersion(version: PreVersion): Dependency.WithVersion =
     Dependency.WithVersion(dependency = this, version)
 
   final def artifactName: String = s"$artifact$artifactNameSuffix"
@@ -18,7 +17,7 @@ abstract class Dependency(
 object Dependency:
   open class WithVersion(
     dependency: Dependency,
-    version: Version
+    version: PreVersion
   ) extends DependencyData(
     group = Some(dependency.group),
     artifactName = dependency.artifactName,
@@ -33,7 +32,7 @@ object Dependency:
     def scalaBackend: ScalaBackend
     def group: String
     def artifact: String
-    def versionDefault: Version.Simple
+    def versionDefault: Version
     def description: String
     def useExactVersionInVerifyRequired: Boolean = false
     def findable: FindableDependency[?]
@@ -42,7 +41,7 @@ object Dependency:
     final def findInConfiguration(configuration: Configuration): Option[Dependency.WithVersion] = findable
       .findInConfiguration(configuration)
 
-    final def required(version: Version = versionDefault): DependencyRequirement = DependencyRequirement(
+    final def required(version: PreVersion = versionDefault): DependencyRequirement = DependencyRequirement(
       this,
       version
     )

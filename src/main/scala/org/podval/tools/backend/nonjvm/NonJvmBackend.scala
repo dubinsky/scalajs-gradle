@@ -1,9 +1,8 @@
 package org.podval.tools.backend.nonjvm
 
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{BackendDependencyRequirements, Dependency, DependencyRequirement,
-  ScalaDependency, ScalaVersion, Version}
+import org.podval.tools.build.{BackendDependencyRequirements, Dependency, DependencyRequirement, PreVersion,
+  ScalaBackend, ScalaDependency, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 
 trait NonJvmBackend extends ScalaBackend:
@@ -14,11 +13,11 @@ trait NonJvmBackend extends ScalaBackend:
 
   def artifactSuffix: String
 
-  def versionDefault: Version
+  def versionDefault: PreVersion
 
   def areCompilerPluginsBuiltIntoScala3: Boolean
-  def versionExtractor(version: Version): Version.Simple
-  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version.Simple): Version
+  def versionExtractor(version: PreVersion): Version
+  def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): PreVersion
   def implementation: Array[ScalaDependency.Maker]
   def library(scalaVersion: ScalaVersion): ScalaDependency.Maker
   def compiler: ScalaDependency.Maker
@@ -30,14 +29,14 @@ trait NonJvmBackend extends ScalaBackend:
   def additionalPluginDependencyRequirements: Array[DependencyRequirement]
 
   def additionalImplementationDependencyRequirements(
-    backendVersion: Version,
+    backendVersion: PreVersion,
     scalaVersion: ScalaVersion
   ): Array[DependencyRequirement]
 
   final def backendVersion(
     scalaVersion: ScalaVersion,
     implementationConfiguration: Configuration
-  ): Version.Simple =
+  ): Version =
     val libraryDependency: ScalaDependency.Maker = library(scalaVersion)
     libraryDependency
       .findInConfiguration(implementationConfiguration)
@@ -55,7 +54,7 @@ trait NonJvmBackend extends ScalaBackend:
     testImplementationConfiguration: Configuration,
     scalaVersion: ScalaVersion
   ): BackendDependencyRequirements =
-    val backendVersion: Version.Simple = NonJvmBackend.this.backendVersion(
+    val backendVersion: Version = NonJvmBackend.this.backendVersion(
       scalaVersion, 
       implementationConfiguration
     )
