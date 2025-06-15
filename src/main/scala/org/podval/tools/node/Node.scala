@@ -22,7 +22,7 @@ final class Node(
     arguments,
     // in local mode, npm puts packages into node_modules under the current working directory
     cwd = Some(nodeModulesParent),
-    extraEnv = nodeEnv ++ Seq(("PATH", installation.bin.getAbsolutePath /*+ ":" + System.getenv("PATH")*/)),
+    extraEnv = nodeEnv ++ Seq(("PATH", installation.bin.getAbsolutePath + ":" + System.getenv("PATH"))),
     log
   )
 

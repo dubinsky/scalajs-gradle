@@ -1,7 +1,6 @@
 package org.podval.tools.backendplugin
 
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.CreateExtension
+import org.podval.tools.build.{CreateExtension, ScalaBackend}
 
 trait BackendDelegate[T <: BackendTask]:
   def backend: ScalaBackend

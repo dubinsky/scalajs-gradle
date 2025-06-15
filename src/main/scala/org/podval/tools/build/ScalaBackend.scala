@@ -1,4 +1,4 @@
-package org.podval.tools.backend
+package org.podval.tools.build
 
 import org.gradle.api.artifacts.Configuration
 import org.podval.tools.backend.jvm.JvmBackend

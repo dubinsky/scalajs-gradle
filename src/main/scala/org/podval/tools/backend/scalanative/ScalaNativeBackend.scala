@@ -1,17 +1,16 @@
 package org.podval.tools.backend.scalanative
 
-import org.podval.tools.backend.ScalaBackend
 import org.podval.tools.backend.jvm.JvmBackend
 import org.podval.tools.backend.nonjvm.NonJvmBackend
-import org.podval.tools.build.{Dependency, DependencyRequirement, ScalaBinaryVersion, ScalaDependency, 
-  ScalaVersion, Version}
+import org.podval.tools.build.{CompoundVersion, Dependency, DependencyRequirement, PreVersion, ScalaBackend,
+  ScalaBinaryVersion, ScalaDependency, ScalaVersion, Version}
 import org.podval.tools.test.framework.JUnit4ScalaNative
 
 case object ScalaNativeBackend extends NonJvmBackend:
   override val name: String = "Scala Native"
   override val sourceRoot: String = "native"
   override val artifactSuffix: String = "native0.5"
-  override val versionDefault: Version.Simple = Version.Simple("0.5.8")
+  override val versionDefault: Version = Version("0.5.8")
 
   override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
     if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala213
@@ -20,12 +19,12 @@ case object ScalaNativeBackend extends NonJvmBackend:
     
   override def areCompilerPluginsBuiltIntoScala3: Boolean = false
   override def junit4: Dependency.Maker = JUnit4ScalaNative.forNative.get.maker
-  override def versionExtractor(version: Version): Version.Simple = version.compound.right
+  override def versionExtractor(version: PreVersion): Version = version.compound.right
   
   override def versionComposer(
     projectScalaVersion: ScalaVersion,
-    backendVersion: Version.Simple
-  ): Version = new Version.Compound(
+    backendVersion: Version
+  ): PreVersion = new CompoundVersion(
     projectScalaVersion.version,
     backendVersion
   )
@@ -39,7 +38,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
     final override val isScalaVersionFull: Boolean = false
   ) extends ScalaDependency.Maker:
     final override def description: String = describe(what)
-    final override def versionDefault: Version.Simple = ScalaNativeBackend.versionDefault
+    final override def versionDefault: Version = ScalaNativeBackend.versionDefault
     final override def group: String = ScalaNativeBackend.group
 
   private sealed class ScalaNativeMaker(
@@ -89,7 +88,7 @@ case object ScalaNativeBackend extends NonJvmBackend:
   override def additionalPluginDependencyRequirements: Array[DependencyRequirement] = Array.empty
 
   override def additionalImplementationDependencyRequirements(
-    backendVersion: Version,
+    backendVersion: PreVersion,
     scalaVersion: ScalaVersion
   ): Array[DependencyRequirement] = Array.empty
   

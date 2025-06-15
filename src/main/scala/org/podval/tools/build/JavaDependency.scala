@@ -9,8 +9,8 @@ final class JavaDependency private(
   group = group,
   artifact = artifact
 ):
-  override def classifier(version: Version): Option[String] = None
-  override def extension (version: Version): Option[String] = None
+  override def classifier(version: PreVersion): Option[String] = None
+  override def extension (version: PreVersion): Option[String] = None
 
 object JavaDependency:
   trait Maker extends Dependency.Maker:

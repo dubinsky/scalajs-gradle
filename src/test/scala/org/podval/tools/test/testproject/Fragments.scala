@@ -1,7 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.backend.ScalaBackend
-import org.podval.tools.build.{Dependency, ScalaVersion}
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaVersion}
 
 object Fragments:
   def settingsManagement: String =
@@ -65,7 +64,8 @@ object Fragments:
     excludeTestNames: Seq[String],
     includeTags: Seq[String],
     excludeTags: Seq[String],
-    maxParallelForks: Int
+    maxParallelForks: Int,
+    more: Seq[String]
   ): String =
     s"""test {
        |  filter {
@@ -80,6 +80,7 @@ object Fragments:
        |    excludeCategories = ${excludeTags.map(string => s"'$string'").mkString("[", ", ", "]")}
        |  }
        |  maxParallelForks = $maxParallelForks
+       |${more.mkString("\n")}  
        |}
        |""".stripMargin
 

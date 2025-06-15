@@ -9,13 +9,13 @@ sealed trait ScalaBinaryVersion derives CanEqual:
   def artifact: String
   def description: String
   
-  final def versionSuffix: Version.Simple = versionDefault.version.take(versionSuffixLength)
+  final def versionSuffix: Version = versionDefault.version.take(versionSuffixLength)
 
   final def scalaLibraryDependency: JavaDependency = scalaLibrary.dependency
 
   private def scalaLibrary: JavaDependency.Maker = new JavaDependency.Maker:
     override def group: String = ScalaBinaryVersion.group
-    override def versionDefault: Version.Simple = ScalaBinaryVersion.this.versionDefault.version
+    override def versionDefault: Version = ScalaBinaryVersion.this.versionDefault.version
     override def artifact: String = ScalaBinaryVersion.this.artifact
     override def description: String = ScalaBinaryVersion.this.description
 
@@ -48,7 +48,7 @@ object ScalaBinaryVersion:
 
     // There is no Scala 2 equivalent
     object ScalaLibraryJS extends ScalaDependency.Maker:
-      override def versionDefault: Version.Simple = Scala3.versionDefault.version
+      override def versionDefault: Version = Scala3.versionDefault.version
       override def group: String = ScalaBinaryVersion.group
       override def artifact: String = "scala3-library"
       override def description: String = "Scala 3 library in Scala.js."
