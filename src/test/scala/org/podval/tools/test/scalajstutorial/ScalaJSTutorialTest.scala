@@ -13,10 +13,11 @@ class ScalaJSTutorialTest extends GroupingFunSpec:
   override protected def checkRun: Boolean = true
 
   override protected def testTaskMore: Seq[String] = Seq(
-    s"jsEnv = '${JSEnvKind.JSDOMNodeJS.name}'"
+    s"  jsEnv = '${JSEnvKind.JSDOMNodeJS.name}'"
   )
   
   override protected def buildGradleFragments: Seq[String] = Seq(
+    "node.modules=['jsdom']",
     ScalaJSTutorialTest.linkTask(
       ScalaJSTutorialScalaTestFixture.mainSources.headOption.map(_.name)
     ),

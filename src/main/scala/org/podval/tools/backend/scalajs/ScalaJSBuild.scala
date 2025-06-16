@@ -47,22 +47,25 @@ object ScalaJSBuild:
     optimization: Optimization,
     moduleKind: ModuleKind,
     moduleSplitStyle: ModuleSplitStyle,
+    smallModulesFor: List[String],
     useWebAssembly: Boolean,
     moduleInitializers: Option[Seq[ModuleInitializer]],
     prettyPrint: Boolean,
     logSource: String,
     abort: String => Exception
   ): Unit =
+    validateModuleKind(moduleKind, useWebAssembly, abort)
+    validateModuleSplitStyle(moduleSplitStyle, useWebAssembly, abort)
+    validateModuleSplitStyle(moduleSplitStyle, moduleKind, abort)
+
     val fullOptimization: Boolean = optimization == Optimization.Full
-    val moduleKindEffective: ModuleKind = adjustModuleKind(moduleKind, useWebAssembly)
-    val moduleSplitStyleEffective: ModuleSplitStyle = adjustModuleSplitStyle(moduleSplitStyle, useWebAssembly)
 
     val linkerConfig: StandardConfig = StandardConfig()
       .withCheckIR(fullOptimization)
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
-      .withModuleKind(toSJS(moduleKindEffective))
-      .withClosureCompiler(fullOptimization && (moduleKindEffective == ModuleKind.ESModule))
-      .withModuleSplitStyle(toSJS(moduleSplitStyleEffective))
+      .withModuleKind(toSJS(moduleKind))
+      .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
+      .withModuleSplitStyle(toSJS(moduleSplitStyle, smallModulesFor))
       .withExperimentalUseWebAssembly(useWebAssembly)
       .withPrettyPrint(prettyPrint)
 
@@ -115,8 +118,17 @@ object ScalaJSBuild:
     abort: String => Nothing,
     outputHandler: OutputHandler
   ): Unit =
-    val moduleKindEffective: ModuleKind = adjustModuleKind(adjustModuleKind(moduleKind, useWebAssembly), jsEnvKind)
-    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKindEffective, abort)
+    // done by link: validateModuleKind(moduleKind, useWebAssembly, abort)
+    validateModuleKind(moduleKind, jsEnvKind, abort)
+    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKind, abort)
+
+    val jsEnv: JSEnv = mkJsEnv(
+      node,
+      jsEnvKind,
+      useWebAssembly,
+      browserName,
+      logSource
+    )
 
     OutputPiper.run(
       outputHandler,
@@ -128,14 +140,8 @@ object ScalaJSBuild:
      * into account. sbt installs such alternative outputs when it runs in
      * server mode.
      */
-      val jsRun: JSRun = mkJsEnv(
-        node,
-        adjustJSEnvKind(jsEnvKind, moduleKindEffective),
-        useWebAssembly,
-        browserName,
-        logSource
-      ).start(
-        Seq(input(jsDirectory, module, moduleKindEffective)),
+      val jsRun: JSRun = jsEnv.start(
+        Seq(input(jsDirectory, module, moduleKind)),
         RunConfig()
           .withInheritOut(false)
           .withInheritErr(false)
@@ -155,9 +161,18 @@ object ScalaJSBuild:
     logSource: String,
     abort: String => Nothing
   ): ScalaJSTestEnvironment =
-    val moduleKindEffective: ModuleKind = adjustModuleKind(adjustModuleKind(moduleKind, useWebAssembly), jsEnvKind)
-    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKindEffective, abort)
+    // done by link: validateModuleKind(moduleKind, useWebAssembly, abort)
+    validateModuleKind(moduleKind, jsEnvKind, abort)
+    val module: Report.Module = ScalaJSBuild.module(reportBinFile, moduleKind, abort)
 
+    val jsEnv: JSEnv = mkJsEnv(
+      node,
+      jsEnvKind,
+      useWebAssembly,
+      browserName,
+      logSource
+    )
+    
     ScalaJSTestEnvironment(
       sourceMapper = module
         .sourceMapName
@@ -168,55 +183,47 @@ object ScalaJSBuild:
           testAdapter.loadFrameworks(frameworkNames)
         override def close(): Unit = testAdapter.close()
         private lazy val testAdapter: TestAdapter = TestAdapter(
-          jsEnv = mkJsEnv(
-            node,
-            adjustJSEnvKind(jsEnvKind, moduleKindEffective),
-            useWebAssembly,
-            browserName,
-            logSource
-          ),
-          input = Seq(input(jsDirectory, module, moduleKindEffective)),
+          jsEnv = jsEnv,
+          input = Seq(input(jsDirectory, module, moduleKind)),
           config = TestAdapter.Config().withLogger(loggerJS(logSource))
         )
     )
 
-  private def adjustModuleKind(
+  private def validateModuleKind(
     moduleKind: ModuleKind,
-    useWebAssembly: Boolean
-  ): ModuleKind =
+    useWebAssembly: Boolean,
+    abort: String => Exception
+  ): Unit =
     if useWebAssembly && moduleKind != ModuleKind.ESModule then
-      logger.warn(s"ModuleKind set to ESModule because useWebAssembly requires it; see https://www.scala-js.org/doc/project/webassembly.html")
-      ModuleKind.ESModule
-    else moduleKind
+      abort(s"`experimentalUseWebAssembly = true` requires `moduleKind = 'ESModule'`; see https://www.scala-js.org/doc/project/webassembly.html")
 
-  private def adjustModuleKind(
-    moduleKind: ModuleKind,
-    jsEnvKind: JSEnvKind
-  ): ModuleKind =
-    moduleKind
-//    if jsEnvKind == JSEnvKind.Playwright && moduleKind != ModuleKind.ESModule then
-//      logger.warn(s"ModuleKind set to ESModule because Playwright JavaScript environment requires it; see https://github.com/gmkumar2005/scala-js-env-playwright")
-//      ModuleKind.ESModule
-//    else moduleKind
-
-  private def adjustModuleSplitStyle(
+  private def validateModuleSplitStyle(
     moduleSplitStyle: ModuleSplitStyle,
-    useWebAssembly: Boolean
-  ): ModuleSplitStyle =
+    useWebAssembly: Boolean,
+    abort: String => Exception
+  ): Unit =
     if useWebAssembly && moduleSplitStyle != ModuleSplitStyle.FewestModules then
-      logger.warn(s"ModuleSplitStyle set to FewestModules because useWebAssembly requires it; see https://www.scala-js.org/doc/project/webassembly.html")
-      ModuleSplitStyle.FewestModules
-    else moduleSplitStyle
+      abort(s"`experimentalUseWebAssembly = true` requires `moduleSplitStyle = 'FewestModules'`; see https://www.scala-js.org/doc/project/webassembly.html")
 
-  private def adjustJSEnvKind(
+  private def validateModuleSplitStyle(
+    moduleSplitStyle: ModuleSplitStyle,
+    moduleKind: ModuleKind,
+    abort: String => Exception
+  ): Unit =
+    if moduleKind == ModuleKind.NoModule && moduleSplitStyle != ModuleSplitStyle.FewestModules then
+      abort(s"moduleKind = 'NoModule'` requires `moduleSplitStyle = 'FewestModules'`")
+
+  private def validateModuleKind(
+    moduleKind: ModuleKind,
     jsEnvKind: JSEnvKind,
-    moduleKind: ModuleKind
-  ): JSEnvKind =
+    abort: String => Exception
+  ): Unit =
     if jsEnvKind == JSEnvKind.JSDOMNodeJS && moduleKind != ModuleKind.NoModule then
-      logger.warn(s"JSEnv set to NodeJSEnv because JSDOMNodeJSEnv does not support ModuleKind $moduleKind")
-      JSEnvKind.NodeJS
-    else jsEnvKind
-
+      abort(s"`jsEnv = 'Node.js+DOM' requires `moduleKind = 'NoModule'`")
+  // TODO    
+  //    if jsEnvKind == JSEnvKind.Playwright && moduleKind != ModuleKind.ESModule then
+  //      abort(s"`jsEnv = 'Playwright'` requires `moduleKind = 'ESModule'`; see https://github.com/gmkumar2005/scala-js-env-playwright")
+  
   private def mkJsEnv(
     node: Node,
     jsEnvKind: JSEnvKind,
@@ -240,7 +247,15 @@ object ScalaJSBuild:
           .withExecutable(executable)
           .withEnv(env)
           .withArgs(args)
-        logger.info(s"$logSource: jsEnv=NodeJSEnv($config)")
+        logger.info(
+          s"""$logSource: jsEnv=NodeJSEnv(
+             |  executable=${config.executable},
+             |  env=${config.env},
+             |  args=${config.args},
+             |  sourceMap=${config.sourceMap}
+             |)
+             |""".stripMargin
+        )
         NodeJSEnv(config)
 
       case JSEnvKind.JSDOMNodeJS =>
@@ -248,7 +263,14 @@ object ScalaJSBuild:
           .withExecutable(executable)
           .withEnv(env)
           .withArgs(args)
-        logger.info(s"$logSource: jsEnv=JSDOMNodeJSEnv($config)")
+        logger.info(
+          s"""$logSource: jsEnv=JSDOMNodeJSEnv(
+             |  executable=${config.executable},
+             |  env=${config.env},
+             |  args=${config.args}
+             |)
+             |""".stripMargin
+        )
         JSDOMNodeJSEnv(config)
 
 //      case JSEnvKind.Playwright =>
@@ -275,7 +297,6 @@ object ScalaJSBuild:
       .getOrElse(abort(s"Linking report does not have a module named 'main'. See $reportBinFile."))
 
     given CanEqual[ModuleKindSJS, ModuleKindSJS] = CanEqual.derived
-
     require(
       ScalaJSBuild.toSJS(moduleKind) == result.moduleKind,
       s"moduleKind discrepancy: $moduleKind != ${result.moduleKind}"
@@ -306,9 +327,13 @@ object ScalaJSBuild:
     case ModuleKind.ESModule       => ModuleKindSJS.ESModule
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
 
-  private def toSJS(moduleSplitStyle: ModuleSplitStyle): ModuleSplitStyleSJS = moduleSplitStyle match
+  private def toSJS(
+    moduleSplitStyle: ModuleSplitStyle,
+    smallModulesFor: List[String]
+  ): ModuleSplitStyleSJS = moduleSplitStyle match
     case ModuleSplitStyle.FewestModules   => ModuleSplitStyleSJS.FewestModules
     case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
+    case ModuleSplitStyle.SmallModulesFor => ModuleSplitStyleSJS.SmallModulesFor(smallModulesFor)
 
   private def toSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
     val clazz: String = moduleInitializer.className

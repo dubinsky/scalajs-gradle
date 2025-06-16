@@ -8,5 +8,5 @@ enum JSEnvKind(name: String) extends Named(name) derives CanEqual:
 // TODO  case Playwright   extends JSEnvKind("Playwright")
 
 object JSEnvKind extends Named.Companion[JSEnvKind]("JSEnv"):
-  override def default: JSEnvKind = JSDOMNodeJS
+  override def default: JSEnvKind = NodeJS
   override def all: Seq[JSEnvKind] = values.toSeq

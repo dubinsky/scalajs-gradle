@@ -85,9 +85,9 @@ case object ScalaJSBackend extends NonJvmBackend:
     override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
 
   override def additionalPluginDependencyRequirements: Array[DependencyRequirement] = Array(
-    ScalaModules.ParallelCollections.required(),
+    // added in the plugin's build file: ScalaModules.ParallelCollections.required(),
     JSDomNodeJSEnv.required(),
-//    PlaywrightJSEnv.required()
+    //PlaywrightJSEnv.required()
   )
 
   override def additionalImplementationDependencyRequirements(

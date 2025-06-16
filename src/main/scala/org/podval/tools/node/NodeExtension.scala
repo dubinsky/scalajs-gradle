@@ -4,24 +4,24 @@ import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
 import org.podval.tools.build.{CreateExtension, GradleBuildContext}
-import scala.jdk.CollectionConverters.{ListHasAsScala, SetHasAsScala}
+import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 import java.io.File
 import javax.inject.Inject
 
 object NodeExtension:
   private def nodeModulesParent(project: Project): File = project.getProjectDir
 
-  def create(configure: NodeExtension => Unit): CreateExtension[NodeExtension] = CreateExtension[NodeExtension](
+  def create: CreateExtension[NodeExtension] = CreateExtension[NodeExtension](
     name = "node",
-    clazz = classOf[NodeExtension],
-    configure = configure
+    clazz = classOf[NodeExtension]
   )
 
 abstract class NodeExtension @Inject(project: Project):
   def getVersion: Property[String]
 
   def getModules: ListProperty[String]
-
+  getModules.convention(List.empty.asJava)
+  
   // Set properties needed to run Node on the `TaskWithNode`s.
   project.getTasks.withType(classOf[TaskWithNode]).configureEach: (taskWithNode: TaskWithNode) =>
     taskWithNode.getVersion.set(getVersion)

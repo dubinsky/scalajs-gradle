@@ -1,7 +1,7 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{DependencyFindable, DependencyInstallable, PreVersion, Repository, ScalaBackend,
-  ScalaVersion, SimpleDependency, SimpleDependencyMaker, Version}
+import org.podval.tools.build.{DependencyInstallable, PreVersion, Repository, ScalaVersion, SimpleDependency,
+  SimpleDependencyMaker, Version}
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
 import java.io.File

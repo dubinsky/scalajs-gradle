@@ -5,7 +5,7 @@ import org.podval.tools.test.testproject.{Feature, Fixture, GroupingFunSpec}
 
 class FrameworksTest extends GroupingFunSpec:
   groupTestByFixtureAndCombined()
-  
+
   override protected def features: Seq[Feature] = List(
     FrameworksTest.basicFunctionality,
     FrameworksTest.withTagInclusions

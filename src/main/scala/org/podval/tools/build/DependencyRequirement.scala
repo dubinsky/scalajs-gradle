@@ -11,7 +11,7 @@ final class DependencyRequirement(
   maker: DependencyMaker,
   version: PreVersion
 ):
-  def applyToConfiguration(
+  def apply(
     project: Project,
     configuration: Configuration,
     scalaVersion: ScalaVersion
