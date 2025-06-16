@@ -96,13 +96,13 @@ object ScalaNativeBuild:
       case ex: LinkingException => abort(ex.getMessage)
 
   private def loggerN(logSource: String): LoggerN = new LoggerN:
-    def toLog(message: String): String = s"$logSource: $message"
+    def toLog(level: Char, message: String): String = s"$logSource[$level]: $message"
 
     override def trace(throwable: Throwable): Unit = logger.error(s"$logSource Error", throwable)
-    override def debug(msg: String): Unit = logger.debug(toLog(msg))
-    override def info (msg: String): Unit = logger.info (toLog(msg))
-    override def warn (msg: String): Unit = logger.warn (toLog(msg))
-    override def error(msg: String): Unit = logger.error(toLog(msg))
+    override def debug(msg: String): Unit = logger.debug(toLog('d', msg))
+    override def info (msg: String): Unit = logger.info (toLog('i', msg))
+    override def warn (msg: String): Unit = logger.warn (toLog('w', msg))
+    override def error(msg: String): Unit = logger.error(toLog('e', msg))
   
   private def toNative(lto: LTO): LTON = lto match
     case LTO.None => LTON.none

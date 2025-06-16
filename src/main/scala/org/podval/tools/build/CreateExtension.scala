@@ -4,10 +4,11 @@ import org.gradle.api.Project
 
 final class CreateExtension[T](
   name: String,
-  clazz: Class[T],
-  configure: T => Unit
+  clazz: Class[T]
 ):
-  def create(project: Project): T = 
-    val extension: T = project.getExtensions.create(name, clazz)
-    configure(extension)
-    extension
+  def apply(project: Project): T = project
+    .getExtensions
+    .create(
+      name,
+      clazz
+    )

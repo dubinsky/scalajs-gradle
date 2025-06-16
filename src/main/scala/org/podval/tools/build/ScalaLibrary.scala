@@ -13,8 +13,6 @@ final class ScalaLibrary private(
 
   def scalaVersion: ScalaVersion = scala3.getOrElse(scala2.get)
   
-  def isScala3: Boolean = scalaVersion.isScala3
-  
   def verify(runtimeClasspathConfiguration: Configuration): Unit =
     val other: ScalaLibrary = ScalaLibrary.getFromClasspath(runtimeClasspathConfiguration.asScala)
     val configurationName: String = runtimeClasspathConfiguration.getName

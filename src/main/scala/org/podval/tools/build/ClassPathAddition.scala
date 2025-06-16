@@ -4,11 +4,11 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-final class AddConfigurationToClassPath(
+final class ClassPathAddition(
   val configurationName: String,
   val classPathConfigurationName: String
 ):
-  def add(
+  def apply(
     project: Project
   ): ClassLoader = GradleClassPath.addTo(
     this, project.getConfigurations.getByName(configurationName).asScala

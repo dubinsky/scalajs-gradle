@@ -90,8 +90,7 @@ object Sources:
     def add(getSourceDirectorySet: SourceSet => SourceDirectorySet): Unit =
       getSourceDirectorySet(to).srcDirs(getSrcDirs(getSourceDirectorySet(shared)) *)
 
-    add(getScalaSourceDirectorySet)
-    add(_.getResources)
+    both(add)
 
   private def remove(shared: SourceSet, from: SourceSet): Unit =
     def remove(getSourceDirectorySet: SourceSet => SourceDirectorySet): Unit =
@@ -102,9 +101,12 @@ object Sources:
         .asJava
       )
 
-    remove(getScalaSourceDirectorySet)
-    remove(_.getResources)
+    both(remove)
 
+  private def both(f: (SourceSet => SourceDirectorySet) => Unit): Unit =
+    f(getScalaSourceDirectorySet)
+    f(_.getResources)
+    
   private def getScalaSourceDirectorySet(sourceSet: SourceSet): ScalaSourceDirectorySet = sourceSet
     .getExtensions
     .getByType(classOf[ScalaSourceDirectorySet])

@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.8.4
+:version-plugin: 0.8.5
 :version-gradle: 8.14.2
 :version-scala: 3.7.1
 :version-scala213-suffix: 2.13
@@ -428,12 +428,6 @@ The table below lists what is added to what configurations.
 |scalajs
 |
 
-|Parallel Collections: Linker uses it but does not bring it in
-|org.scala-lang.modules:scala-parallel-collections
-|JVM
-|scalajs
-|
-
 |Test Adapter
 |org.scala-js:scalajs-sbt-test-adapter
 |JVM Scala 2
@@ -575,6 +569,7 @@ link {
   optimization     = 'Fast'          // one of: 'Fast', 'Full'
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
+  smallModulesFor  = []              // list of packages; relevant only when moduleSplitStyle = 'SmallModulesFor'
   prettyPrint      = false
   experimentalUseWebAssembly = false
 }
@@ -622,12 +617,14 @@ run {
 }
 ----
 
+Playwright support is disabled; see https://github.com/dubinsky/scalajs-gradle/issues/79.
+
 To use Playwright JavaScript environment, add the following dependency manually:
 
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  scalajs 'io.github.gmkumar2005:scala-js-env-playwright_2.12:{version-scala-js-env-playwright}'
+  scalajs 'io.github.gmkumar2005:scala-js-env-playwright_2.13:{version-scala-js-env-playwright}'
 }
 ----
 
@@ -645,7 +642,7 @@ This extension can be used to specify the version of Node.js to use and Node mod
 ----
 node {
   version = '{version-node}'
-  modules = ['jsdom']
+  modules = []
 }
 ----
 
@@ -656,8 +653,7 @@ If Node.js version is specified, plugin install the specified version.
 
 Node.js is installed under `~/.gradle/nodejs`.
 
-If no Node.js modules to install are listed, plugin installs the `jsdom` module,
-which is required for `org.scala-js:scalajs-env-jsdom-nodejs`.
+If you are using `Node.js+DOM` JavaScript environment (`org.scala-js:scalajs-env-jsdom-nodejs`), you need 'jsdom' module.
 
 To get better traces, one can add `source-map-support` module.
 
@@ -1989,7 +1985,8 @@ _https://github.com/scala-js/scala-js/pull/5134[5134]_;
 - ZIO:
 https://github.com/zio/zio/issues/9629[9629],
 _https://github.com/zio/zio/pull/9680[9680]_,
-_https://github.com/zio/zio/pull/9756[9756]_;
+_https://github.com/zio/zio/pull/9756[9756]_,
+_https://github.com/zio/zio/pull/9979[9979]_;
 
 - ScalaCheck:
 https://github.com/typelevel/scalacheck/issues/1105[1105],
@@ -2005,8 +2002,8 @@ _https://github.com/scalameta/munit/pull/918[918]_;
 _https://github.com/etorreborre/specs2/pull/1327[1327]_;
 
 - JUnit4 for Scala Native:
-_https://github.com/scala-native/scala-native/pull/4320[4320]_;
-_https://github.com/scala-native/scala-native/pull/4342[4342]_
+_https://github.com/scala-native/scala-native/pull/4320[4320]_,
+_https://github.com/scala-native/scala-native/pull/4342[4342]_;
 
 == History
 
@@ -2111,14 +2108,18 @@ https://github.com/dubinsky/scalajs-gradle/issues/18[bug report];
 https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
 - https://github.com/kyri-petrou[kyri-petrou] for helping me fix
 ZIO Test's treatment of https://github.com/zio/zio/pull/9680[test wildcards]
-and https://github.com/zio/zio/pull/9756[test name matching];
+and https://github.com/zio/zio/pull/9756[test name matching] and
+  for accepting my fix to https://github.com/zio/zio/pull/9979[emit sbt testing events on Scala.js and Scala Native];
 - https://github.com/hearnadam[hearnadam] for approving my fix to ZIO Test's
-https://github.com/zio/zio/pull/9756[test name matching];
+https://github.com/zio/zio/pull/9756[test name matching]
+and merging my fix https://github.com/zio/zio/pull/9756[match tests on both short and prefixed names];
 - https://github.com/sjrd[sjrd] for the helpful text
-https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3]
-and for working with me on fixing issues with JUnit4 for Scala.js reporting of
+https://www.scala-lang.org/2020/11/03/scalajs-for-scala-3.html[Implementing Scala.JS Support for Scala 3],
+for working with me on fixing issues with JUnit4 for Scala.js reporting of
 https://github.com/scala-js/scala-js/pull/5132[test failure throwable]
-and https://github.com/scala-js/scala-js/pull/5134[test duration];
+and https://github.com/scala-js/scala-js/pull/5134[test duration],
+and for https://github.com/scala-js/scala-js-website/pull/658[mentioning]
+my plugin on the Scala.js website;
 - https://github.com/cheeseng[cheeseng] for helping me understand
 the https://github.com/scalatest/scalatest/issues/2357[problem]
 with running nested ScalaTest suites using my plugin;

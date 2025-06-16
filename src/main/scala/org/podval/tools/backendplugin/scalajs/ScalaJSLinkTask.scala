@@ -1,11 +1,12 @@
 package org.podval.tools.backendplugin.scalajs
 
-import org.gradle.api.provider.Property
+import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.api.tasks.{Input, Optional, OutputDirectory, OutputFile, TaskAction}
-import org.podval.tools.backend.scalajs.{ExperimentalUseWebAssembly, ModuleInitializer, ModuleKind, ModuleSplitStyle, 
+import org.podval.tools.backend.scalajs.{ExperimentalUseWebAssembly, ModuleInitializer, ModuleKind, ModuleSplitStyle,
   Optimization, ScalaJSBuild}
 import org.podval.tools.backendplugin.nonjvm.NonJvmLinkTask
 import org.podval.tools.util.Named
+import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 
 trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
@@ -19,6 +20,9 @@ trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
 
   @Input def getModuleSplitStyle: Property[String]
   ModuleSplitStyle.convention(getModuleSplitStyle)
+
+  @Input def getSmallModulesFor: ListProperty[String]
+  getSmallModulesFor.convention(List.empty.asJava)
 
   @Input def getOptimization: Property[String]
   Optimization.convention(getOptimization)
@@ -38,6 +42,7 @@ trait ScalaJSLinkTask extends NonJvmLinkTask[ScalaJSLinkTask] with ScalaJSTask:
     optimization = Optimization(getOptimization),
     moduleKind = moduleKind,
     moduleSplitStyle = ModuleSplitStyle(getModuleSplitStyle),
+    smallModulesFor = getSmallModulesFor.get.asScala.toList,
     useWebAssembly = experimentalUseWebAssembly,
     moduleInitializers = moduleInitializers,
     prettyPrint = getPrettyPrint.getOrElse(false),

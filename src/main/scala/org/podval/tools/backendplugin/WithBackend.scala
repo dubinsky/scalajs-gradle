@@ -16,8 +16,8 @@ import org.gradle.util.internal.GUtil
 import org.podval.tools.backendplugin.jvm.JvmDelegate
 import org.podval.tools.backendplugin.scalajs.ScalaJSDelegate
 import org.podval.tools.backendplugin.scalanative.ScalaNativeDelegate
-import org.podval.tools.build.{AddConfigurationToClassPath, ApplyDependencyRequirements, BackendDependencyRequirements,
-  ExpandClassPath, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaVersion}
+import org.podval.tools.build.{ClassPathAddition, DependencyRequirements, BackendDependencyRequirements,
+  ClassPathAdditions, GradleClassPath, ScalaBackend, ScalaLibrary, ScalaVersion}
 import org.podval.tools.test.task.TestTask
 import org.slf4j.Logger
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava}
@@ -52,7 +52,7 @@ final class WithBackend(
     configureDependsOnClassesTasks()
 
     backend.archiveAppendixOpt.foreach(configureArchiveAppendix)
-    delegate.createExtension.foreach(_.create(project))
+    delegate.createExtension.foreach(_.apply(project))
     pluginDependenciesConfigurationName.foreach(createPluginDependenciesConfiguration(_, backend.name))
     registerTasks(delegate)
   
@@ -80,9 +80,9 @@ final class WithBackend(
 
     configureScalaCompile(scalaVersion)
 
-    ExpandClassPath(pluginDependenciesConfigurationName
+    ClassPathAdditions(pluginDependenciesConfigurationName
       .toSeq
-      .map(AddConfigurationToClassPath(
+      .map(ClassPathAddition(
         _,
         getSourceSet(isTest = false).getRuntimeClasspathConfigurationName
       ))
@@ -241,7 +241,7 @@ final class WithBackend(
     projectScalaVersion: ScalaVersion,
     pluginScalaVersion: ScalaVersion,
     pluginDependenciesConfigurationName: Option[String]
-  ): Seq[ApplyDependencyRequirements] =
+  ): Seq[DependencyRequirements] =
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Sources.getSourceSets(project)
     val implementationConfigurationName    : String = mainSourceSet.getImplementationConfigurationName
     val testImplementationConfigurationName: String = testSourceSet.getImplementationConfigurationName
@@ -254,12 +254,12 @@ final class WithBackend(
     )
 
     pluginDependenciesConfigurationName.toSeq.map(
-      ApplyDependencyRequirements(requirements.pluginDependencies      , pluginScalaVersion , _)
+      DependencyRequirements(requirements.pluginDependencies      , pluginScalaVersion , _)
     ) ++ Seq(
-      ApplyDependencyRequirements(requirements.implementation          , projectScalaVersion, implementationConfigurationName          ),
-      ApplyDependencyRequirements(requirements.testRuntimeOnly         , projectScalaVersion, testRuntimeOnlyConfigurationName         ),
-      ApplyDependencyRequirements(requirements.scalaCompilerPlugins    , projectScalaVersion, scalaCompilerPluginsConfigurationName    ),
-      ApplyDependencyRequirements(requirements.testScalaCompilerPlugins, projectScalaVersion, testScalaCompilerPluginsConfigurationName)
+      DependencyRequirements(requirements.implementation          , projectScalaVersion, implementationConfigurationName          ),
+      DependencyRequirements(requirements.testRuntimeOnly         , projectScalaVersion, testRuntimeOnlyConfigurationName         ),
+      DependencyRequirements(requirements.scalaCompilerPlugins    , projectScalaVersion, scalaCompilerPluginsConfigurationName    ),
+      DependencyRequirements(requirements.testScalaCompilerPlugins, projectScalaVersion, testScalaCompilerPluginsConfigurationName)
     )
   
   private def configureScalaCompile(scalaVersion: ScalaVersion): Unit =
