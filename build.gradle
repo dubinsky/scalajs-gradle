@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.44.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.8.4'
+  id 'org.podval.tools.scalajs' version '0.8.5'
   id 'com.gradle.plugin-publish' version '1.3.1'
 }
 
@@ -12,8 +12,8 @@ description = 'Gradle plugin for cross-compiling to JVM, Scala.js and Scala Nati
 
 scala.scalaVersion = version_scala
 
-final String scala2versionSuffix = version_scala213_suffix
-final String scalaJsVersion      = version_scalajs
+import org.podval.tools.backendplugin.BackendExtension
+final BackendExtension backend = scalaBackend
 
 dependencies {
   // for TestClassVisitor
@@ -21,15 +21,15 @@ dependencies {
 
   // Scala.js Linker uses it but somehow does not bring it onto the classpath;
   // adding this dynamically did not *quite* work - and that's ok :)
-  implementation "org.scala-lang.modules:scala-parallel-collections_$scala2versionSuffix:$version_scala_parallel_collections"
+  implementation "org.scala-lang.modules:scala-parallel-collections_${backend.scala2BinaryVersion}:$version_scala_parallel_collections"
 
   // for running tests
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
 
   // for Scala.js support
-  compileOnly "org.scala-js:scalajs-linker_$scala2versionSuffix:$scalaJsVersion"
-  compileOnly "org.scala-js:scalajs-sbt-test-adapter_$scala2versionSuffix:$scalaJsVersion"
-  compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_$scala2versionSuffix:$version_scalajs_env_jsdom_nodejs"
+  compileOnly "org.scala-js:scalajs-linker_${backend.scala2BinaryVersion}:$version_scalajs"
+  compileOnly "org.scala-js:scalajs-sbt-test-adapter_${backend.scala2BinaryVersion}:$version_scalajs"
+  compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_${backend.scala2BinaryVersion}:$version_scalajs_env_jsdom_nodejs"
 // TODO compileOnly "io.github.gmkumar2005:scala-js-env-playwright_2.12:$version_scala_js_env_playwright"
 
   // for Scala Native support

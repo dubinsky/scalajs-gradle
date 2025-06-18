@@ -155,19 +155,20 @@ final class WithBackend(
     configurationName: String,
     backendName: String
   ): Unit =
-    // TODO use new one-shot methods resolvable()/consumable() etc.
     val configuration: Configuration = project.getConfigurations.create(configurationName)
-    configuration.setVisible(false)
+    configuration.setTransitive(true)
+    configuration.setCanBeResolved(true) // TODO should be false
+    configuration.setCanBeDeclared(true)
     configuration.setCanBeConsumed(false)
-    configuration.setDescription(s"$backendName dependencies used by the ScalaJS plugin.")
+    configuration.setDescription(s"$backendName dependencies.")
 
   private def createTestScalaCompilerPluginsConfiguration(): Unit =
-    val testPlugins: Configuration = project
-      .asInstanceOf[ProjectInternal]
-      .getConfigurations
-      .resolvableDependencyScopeUnlocked(testScalaCompilerPluginsConfigurationName)
-    testPlugins.setTransitive(false)
-    jvmPluginServices.configureAsRuntimeClasspath(testPlugins)
+    val configuration: Configuration = project.getConfigurations.create(testScalaCompilerPluginsConfigurationName)
+    configuration.setTransitive(false)
+    configuration.setCanBeResolved(true) // TODO should be false
+    configuration.setCanBeDeclared(true)
+    configuration.setCanBeConsumed(false)
+    jvmPluginServices.configureAsRuntimeClasspath(configuration)
 
   private def registerTasks(delegate: BackendDelegate[?]): Unit =
     val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = Sources.getSourceSets(project)
