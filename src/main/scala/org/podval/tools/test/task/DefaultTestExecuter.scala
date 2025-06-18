@@ -49,9 +49,7 @@ class DefaultTestExecuter(
 
     val classpath: ForkedTestClasspath = testClasspathFactory.create(
       testExecutionSpec.getClasspath,
-      testExecutionSpec.getModulePath,
-      testFramework,
-      testExecutionSpec.getTestIsModule
+      testExecutionSpec.getModulePath
     )
 
     val forkingProcessorFactory: Factory[TestClassProcessor] = new Factory[TestClassProcessor]:
