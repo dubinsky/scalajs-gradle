@@ -167,8 +167,6 @@ class SbtTestFramework(
       // share only classes needed for the worker...
     )
 
-  override def getUseDistributionDependencies: Boolean = false
-
   override def getWorkerConfigurationAction: Action[WorkerProcessBuilder] = (builderInterface: WorkerProcessBuilder) =>
     val builder: DefaultWorkerProcessBuilder = builderInterface.asInstanceOf[DefaultWorkerProcessBuilder]
 
