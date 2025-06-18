@@ -14,14 +14,12 @@ import java.io.File
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
 object VersionsWriter:
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.8.5"),
+    "plugin" -> Version("0.8.6"),
 
     "gradle" -> Version("8.14.2"),
     
     "scala" -> ScalaBinaryVersion.Scala3.versionDefault.version,
-    "scala213-suffix" -> ScalaBinaryVersion.Scala213.versionSuffix,
-    "scala2" -> ScalaBinaryVersion.Scala213.versionDefault.version,
-    
+
     "sbt-test-interface" -> JvmBackend.SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaJSBackend.versionDefault,
@@ -34,7 +32,7 @@ object VersionsWriter:
     "scalanative" -> ScalaNativeBackend.versionDefault,
 
     "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
-    
+
     "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
