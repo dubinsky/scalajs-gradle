@@ -2,7 +2,7 @@ package org.podval.tools.test.run
 
 import org.gradle.api.internal.tasks.testing.{TestCompleteEvent, TestDescriptorInternal, TestResultProcessor, TestStartEvent}
 import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
-import org.podval.tools.test.environment.SourceMapper
+import org.podval.tools.build.SourceMapper
 
 final class SourceMappingTestResultProcessor(
   delegate: TestResultProcessor,

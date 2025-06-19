@@ -26,5 +26,4 @@ object ExceptionConverter:
       
     // Everything else
     case _ =>
-//      throw IllegalArgumentException(s"--- Unknown Throwable class name: $throwableClassName")
       DefaultExceptionConverter

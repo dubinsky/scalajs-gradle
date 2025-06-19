@@ -1,9 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.backend.jvm.JvmBackend
-import org.podval.tools.backend.scalajs.ScalaJSBackend
-import org.podval.tools.backend.scalanative.ScalaNativeBackend
 import org.podval.tools.build.{DependencyMaker, ScalaBackend, Version}
+import org.podval.tools.jvm.JvmBackend
+import org.podval.tools.scalajs.ScalaJSBackend
+import org.podval.tools.scalanative.ScalaNativeBackend
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala
@@ -50,7 +50,8 @@ object MUnit extends FrameworkDescriptor(
   ))
   
   // on JVM, uses underlying JUni4 - via its own internal interface
-  override val forJVM   : Some[ForBackend] = forBackend(JvmBackend, JUnit4Underlying)
+  // Note: `forJVM` this is a `val`, I run into Scala 2.12 incompatibilities on JVM
+  override def forJVM   : Some[ForBackend] = forBackend(JvmBackend, JUnit4Underlying)
   // on Scala.js, uses JUnit4 for Scala.js - with its own sbt.testing.Framework implementation
   override val forJS    : Some[ForBackend] = forBackend(ScalaJSBackend, JUnit4ScalaJS.forJS.get.maker)
   override val forNative: Some[ForBackend] = forBackend(ScalaNativeBackend, JUnit4ScalaNative.forNative.get.maker)

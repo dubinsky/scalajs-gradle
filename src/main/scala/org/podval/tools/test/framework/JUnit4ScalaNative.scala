@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.backend.scalanative.ScalaNativeBackend
+import org.podval.tools.scalanative.ScalaNativeBackend
 
 object JUnit4ScalaNative extends FrameworkDescriptor(
   name = "Scala Native JUnit test framework",

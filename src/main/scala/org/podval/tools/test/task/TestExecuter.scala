@@ -12,7 +12,7 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
-import org.podval.tools.test.environment.SourceMapper
+import org.podval.tools.build.SourceMapper
 import org.podval.tools.test.run.{FixRootTestSuiteOutputTestResultProcessor, RunTestClassProcessorFactory,
   SourceMappingTestResultProcessor, TracingTestResultProcessor, WriteTestClassProcessor}
 

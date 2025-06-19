@@ -12,7 +12,7 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.test.environment.TestEnvironment
+import org.podval.tools.build.ScalaBackend
 import java.io.File
 import java.lang.reflect.Method
 
@@ -25,7 +25,7 @@ object TestTask:
     useTestFramework.invoke(task, value)
 
 abstract class TestTask extends Test:
-  protected def createTestEnvironment: TestEnvironment
+  protected def createTestEnvironment: ScalaBackend#TestEnvironment
   
   final def useSbt(@DelegatesTo(classOf[SbtTestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
     useSbt(ConfigureUtil.configureUsing(testFrameworkConfigure))
@@ -36,9 +36,9 @@ abstract class TestTask extends Test:
 
   final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
   
-  private var testEnvironment: Option[TestEnvironment] = None
+  private var testEnvironment: Option[ScalaBackend#TestEnvironment] = None
 
-  private def getTestEnvironment: TestEnvironment =
+  private def getTestEnvironment: ScalaBackend#TestEnvironment =
     if testEnvironment.isEmpty then testEnvironment = Some(createTestEnvironment)
     testEnvironment.get
 

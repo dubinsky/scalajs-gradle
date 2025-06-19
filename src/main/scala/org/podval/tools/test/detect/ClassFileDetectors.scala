@@ -23,4 +23,3 @@ final class ClassFileDetectors private(private val detectors: List[FingerprintDe
 
 object ClassFileDetectors:
   val empty: ClassFileDetectors = ClassFileDetectors(List.empty)
-  

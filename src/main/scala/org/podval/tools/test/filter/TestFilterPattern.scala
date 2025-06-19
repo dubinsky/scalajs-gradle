@@ -1,79 +1,73 @@
 package org.podval.tools.test.filter
 
+import org.podval.tools.util.Strings
+import java.util.regex.Pattern
 import scala.annotation.tailrec
 
-// TODO [filter] turn into a sealed trait
+// Based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher.TestPattern;
+// see https://github.com/gradle/gradle/blob/master/platforms/software/testing-base-infrastructure/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java#L140
 final class TestFilterPattern(pattern: String):
   override def toString: String = pattern
 
-  private val (beforeWildcard: String, methodSuffix: String) =
-    val firstWildcardIndex: Int = pattern.indexOf('*')
-    if firstWildcardIndex == -1 then (pattern, "") else
-      val result: String = pattern.substring(firstWildcardIndex + 1)
-      (
-        pattern.substring(0, firstWildcardIndex),
-        if result.startsWith(".") then result.tail else "*" + result // TODO [filter] move down
-      )
+  private def isUpperCase(string: String) = string.nonEmpty && Character.isUpperCase(string.head)
+  
+  // TODO rework using map/zip
+  private val patternPrepared: Pattern =
+    val builder: StringBuilder = StringBuilder()
+    def appendWildcard(): Unit = builder.append(".*") // replace wildcard '*' with '.*'
+    for s: String <- pattern.split("\\*", -1) do
+      if s.isEmpty then appendWildcard() else
+        if builder.nonEmpty then appendWildcard()
+        builder.append(Pattern.quote(s)) //quote everything else
+    Pattern.compile(builder.toString)
 
-  private val segments: List[String] = StringUtils.splitPreserveAllTokens(beforeWildcard, '.').toList
-  private val patternStartsWithWildcard: Boolean = segments.isEmpty
-  private val patternStartsWithUpperCase: Boolean = pattern.nonEmpty && Character.isUpperCase(pattern.head)
-
+  private def forMethod: Option[TestFilterPatternMatch] =
+    val ss: Seq[String] = pattern.split("\\.", -1).toSeq
+    val hasMethod: Boolean =
+      ss.nonEmpty && 
+      ss.last.nonEmpty && 
+      !isUpperCase(ss.last) && 
+      (ss.init.exists(isUpperCase) || ss.init.exists(_.contains('*')))
+    TestFilterPatternMatch.forMethod(if !hasMethod then None else Some(ss.last))
+    
   def matchClass(classNameStr: String): Option[TestFilterPatternMatch] =
-    if patternStartsWithWildcard then Some(TestFilterPatternMatch.Suite) else
-      val className: List[String] = determineTargetClassName(classNameStr).split("\\.").toList
-      val classNameIsShorterThanPattern: Boolean = className.length < segments.length - 1 // TODO [filter] -1?!
-      if classNameIsShorterThanPattern then None else
-        TestFilterPattern.matches(
-          segments,
-          className,
-          methodSuffix
-        )
+    val targetClassName: String =
+      val withPackage: Boolean = !isUpperCase(pattern)
+      if withPackage then classNameStr else Strings
+        .split(classNameStr, '.')
+        ._2
+        .filterNot(_.isEmpty)
+        .getOrElse(classNameStr)
 
-  private def determineTargetClassName(className: String): String =
-    if !patternStartsWithUpperCase then className else // with package
-      val simpleName: String = StringUtils.substringAfterLast(className, ".") // without package
-      if simpleName.nonEmpty then simpleName else className
+    val patternMatches: Boolean = patternPrepared.matcher(targetClassName).matches()
+    // TODO [filter] patternPrepared does not take method into account?
+    // if !patternMatches then None else
+      val segments: Seq[String] = pattern.takeWhile(_ != '*').split("\\.", -1).toSeq
+      val patternStartsWithWildcard: Boolean = segments.isEmpty // TODO [filter] pattern.startsWith("*")
+      if patternStartsWithWildcard then Some(TestFilterPatternMatch.Suite) else
+        val className: Seq[String] = targetClassName.split("\\.").toSeq
+        val classNameIsShorterThanPattern: Boolean = className.length < segments.length - 1 // TODO [filter] -1?!
+        if classNameIsShorterThanPattern then None else matches(segments, className)
 
-object TestFilterPattern:
   @tailrec
-  def matches(
-    segments: List[String],
-    className: List[String],
-    methodSuffix: String
+  private def matches(
+    segments: Seq[String],
+    className: Seq[String]
   ): Option[TestFilterPatternMatch] = if segments.isEmpty then None else
+    val patternHasWildcards: Boolean = pattern.contains('*')
     val classElement: String = className.head
     val patternElement: String = segments.head
+    // Foo can match both Foo and Foo$NestedClass (https://github.com/gradle/gradle/issues/5763)
+    val classMatches: Boolean = classElement == patternElement.takeWhile(_ != '$')
 
-    // TODO [filter] detect nested suites/tests
-    // Foo can match both Foo and Foo$NestedClass
-    // https://github.com/gradle/gradle/issues/5763
-    val patternElementOuter: String =
-      val dollarIndex: Int = patternElement.indexOf('$')
-      if dollarIndex == -1
-      then patternElement
-      else patternElement.substring(0, dollarIndex)
+    val lastClassNameElementMatchesPenultimatePatternElement: Boolean = 
+      className.length == 1 && segments.length == 2 && classMatches
+    
+    val lastClassNameElementMatchesLastPatternElement: Boolean =
+      // TODO [filter] why does this condition break things if we are dealing with the last class name element?
+      //  className.length == 1 &&
+      segments.length == 1 && (classMatches || (patternHasWildcards && classElement.startsWith(patternElement)))
 
-    val lastClassNameElementMatchesPenultimatePatternElement: Boolean =
-      (segments.length == 2) &&
-      (className.length == 1) &&
-      (classElement == patternElementOuter)
-
-    if lastClassNameElementMatchesPenultimatePatternElement
-    then TestFilterPatternMatch.forMethod(segments.last + methodSuffix) else
-      val lastClassNameElementMatchesLastPatternElement: Boolean =
-        (segments.length == 1) &&
-        (
-          (classElement == patternElementOuter) ||
-          (methodSuffix.nonEmpty && classElement.startsWith(patternElement)) // TODO [filter]
-        )
-
-      if lastClassNameElementMatchesLastPatternElement
-      then TestFilterPatternMatch.forMethod(methodSuffix) else
-        if classElement != patternElement
-        then None
-        else matches(
-          segments.tail,
-          className.tail,
-          methodSuffix
-        )
+    if lastClassNameElementMatchesPenultimatePatternElement then forMethod else
+      if lastClassNameElementMatchesLastPatternElement then forMethod else
+        if classElement != patternElement then None else matches(segments.tail, className.tail)

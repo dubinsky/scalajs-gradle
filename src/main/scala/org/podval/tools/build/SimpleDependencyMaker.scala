@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-import org.podval.tools.backend.jvm.JvmBackend
+import org.podval.tools.jvm.JvmBackend
 
 trait SimpleDependencyMaker[F <: SimpleDependency[F]] extends DependencyMaker:
   override def findable: F

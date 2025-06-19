@@ -1,7 +1,5 @@
 package org.podval.tools.build
 
-import org.podval.tools.backend.jvm.JvmBackend
-
 abstract class SimpleDependency[F <: SimpleDependency[F]] extends Dependency with DependencyFindable[F]:
   self: F =>
 

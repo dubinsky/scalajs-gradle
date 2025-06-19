@@ -1,7 +1,5 @@
 package org.podval.tools.build
 
-import org.podval.tools.backend.scalajs.ScalaJSBackend
-
 sealed trait ScalaBinaryVersion derives CanEqual:
   def versionMajor: Int
   def versionSuffixLength: Int
@@ -45,15 +43,7 @@ object ScalaBinaryVersion:
     override def artifact: String = "scala3-library_3"
     override def description: String =  "Scala 3 Library."
     override def versionDefault: ScalaVersion = ScalaVersion("3.7.1")
-
-    // There is no Scala 2 equivalent
-    object ScalaLibraryJS extends ScalaDependencyMaker:
-      override def versionDefault: Version = Scala3.versionDefault.version
-      override def group: String = ScalaBinaryVersion.group
-      override def artifact: String = "scala3-library"
-      override def description: String = "Scala 3 library in Scala.js."
-      override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
-
+  
   sealed trait Scala2 extends ScalaBinaryVersion:
     final override def versionMajor: Int = 2
     final override def versionSuffixLength: Int = 2
