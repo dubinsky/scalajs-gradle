@@ -21,10 +21,6 @@ class TestFilterPatternTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matc
       ("some.package*", "some.package1.Foo", Some(Suite)),
       ("some.package*", "some.other.package.Foo", None),
 
-      // method in a package
-      ("some.package*.someMethod", "some.package.Foo", Some(TestName("someMethod"))),
-      ("some.package*.some*", "some.package.Foo", Some(TestWildcard("some"))),
-
       // all tests in some class
       ("SomeClass", "SomeClass", Some(Suite)),
       ("some.package.SomeClass", "some.package.SomeClass", Some(Suite)),
@@ -33,32 +29,27 @@ class TestFilterPatternTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matc
       ("SomeClass", "any.package.SomeClass", Some(Suite)),
       ("*.SomeClass", "any.package.SomeClass", Some(Suite)),
 
+      // include all integration tests
+      ("*IntegTest", "XIntegTest", Some(Suite)),
+
+      // method in a package
+      ("some.package*.someMethod", "some.package.Foo", Some(TestName("someMethod"))),
+      ("some.package*.some*", "some.package.Foo", Some(TestWildcard("some"))),
+
       // single specified test in some class
       ("SomeClass.someMethod", "SomeClass", Some(TestName("someMethod"))),
       ("some.package.SomeClass.someMethod", "some.package.SomeClass", Some(TestName("someMethod"))),
-      // TODO ("*SomeClass.someMethod", "SomeClass", Some(TestName("someMethod"))),
+      ("*SomeClass.someMethod", "SomeClass", Some(TestName("someMethod"))),
 
       // single specified test in some class in any package
       ("SomeClass.someMethod", "any.package.SomeClass", Some(TestName("someMethod"))),
-// TODO     ("*.SomeClass.someMethod", "any.package.SomeClass", Some(TestName("someMethod"))),
+      ("*.SomeClass.someMethod", "any.package.SomeClass", Some(TestName("someMethod"))),
 
       // specified tests in some class
       ("SomeClass.*someMethod*", "SomeClass", Some(TestWildcard("someMethod"))),
 
       // method name containing spaces
       ("org.gradle.SomeClass.some method containing spaces", "org.gradle.SomeClass", Some(TestName("some method containing spaces"))),
-
-      // include all integration tests
-      ("*IntegTest", "XIntegTest", Some(Suite)),
-      
-      // include specific method in any of the tests
-      // TODO     ("*UiCheck", "Foo", Some(Matches.Tests(true, Set.empty, Set("UiCheck")))) // TODO [filter]
-      //  //only ui tests from integration tests, by some naming convention
-      //  "*IntegTest*ui"
-      
-      //# the second iteration of a parameterized test
-      // '*ParameterizedTest.*[2]'
-      // '*ParameterizedTest.foo*'
     )
 
     forAll(data): (input, className, expected) =>

@@ -18,3 +18,12 @@ final class ClassPathAddition(
     project: Project,
     scalaLibrary: ScalaLibrary
   ): Unit = scalaLibrary.verify(project.getConfigurations.getByName(classPathConfigurationName))
+
+object ClassPathAddition:
+  final class Many(classPathAdditions: Seq[ClassPathAddition]):
+    def apply(
+      project: Project,
+      scalaLibrary: ScalaLibrary
+    ): Unit =
+      classPathAdditions.foreach(_.apply(project))
+      classPathAdditions.foreach(_.verify(project, scalaLibrary))

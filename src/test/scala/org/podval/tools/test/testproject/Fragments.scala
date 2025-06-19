@@ -1,6 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.build.{DependencyWithVersion, ScalaBackend, ScalaVersion}
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaVersion}
 
 object Fragments:
   def settingsManagement: String =
@@ -46,12 +46,12 @@ object Fragments:
   
   private def dependenciesString(
     configurationName: String,
-    dependencies: Seq[DependencyWithVersion]
+    dependencies: Seq[Dependency#WithVersion]
   ): String = prefixedList(s"  $configurationName", dependencies.map(_.dependencyNotation))
   
   def dependencies(
-    implementation: Seq[DependencyWithVersion],
-    testImplementation: Seq[DependencyWithVersion]
+    implementation: Seq[Dependency#WithVersion],
+    testImplementation: Seq[Dependency#WithVersion]
   ): String =
     s"""dependencies {
        |${dependenciesString("implementation", implementation)}

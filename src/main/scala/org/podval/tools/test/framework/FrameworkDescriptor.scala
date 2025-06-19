@@ -1,9 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.backend.jvm.JvmBackend
-import org.podval.tools.backend.scalajs.ScalaJSBackend
-import org.podval.tools.backend.scalanative.ScalaNativeBackend
 import org.podval.tools.build.{DependencyMaker, ScalaBackend, ScalaDependencyMaker, ScalaVersion, Version}
+import org.podval.tools.jvm.JvmBackend
+import org.podval.tools.scalajs.ScalaJSBackend
+import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.

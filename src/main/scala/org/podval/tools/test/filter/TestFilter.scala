@@ -1,7 +1,7 @@
 package org.podval.tools.test.filter
 
 // Based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher;
-// see https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java
+// see https://github.com/gradle/gradle/blob/master/platforms/software/testing-base-infrastructure/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java
 final class TestFilter(
   includes: TestFilterPatterns,
   excludes: TestFilterPatterns,
@@ -9,7 +9,7 @@ final class TestFilter(
 ):
   def matchClass(className: String): Option[TestFilterMatch] =
     // Any exclusion of even one method excludes the class
-    //   excludes.exists(pattern =>pattern.patternMatches(pattern.determineTargetClassName(className)))
+    //   excludes.exists(pattern => pattern.patternMatches(pattern.determineTargetClassName(className)))
     val excluded: Boolean = !excludes.isEmpty && excludes          .matchClass(className).isDefined
     if excluded then None else
       for

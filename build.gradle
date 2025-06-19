@@ -1,5 +1,5 @@
 plugins {
-  id 'com.github.ben-manes.versions' version '0.44.0'
+  id 'com.github.ben-manes.versions' version '0.52.0'
   id 'scala'
   id 'signing'
   id 'org.podval.tools.scalajs' version '0.8.7'
@@ -27,7 +27,7 @@ dependencies {
   compileOnly "org.scala-js:scalajs-linker_2.13:$version_scalajs"
   compileOnly "org.scala-js:scalajs-sbt-test-adapter_2.13:$version_scalajs"
   compileOnly "org.scala-js:scalajs-env-jsdom-nodejs_2.13:$version_scalajs_env_jsdom_nodejs"
-// TODO compileOnly "io.github.gmkumar2005:scala-js-env-playwright_2.12:$version_scala_js_env_playwright"
+  compileOnly "io.github.gmkumar2005:scala-js-env-playwright_2.12:$version_scala_js_env_playwright"
 
   // for Scala Native support
   compileOnly "org.scala-native:tools_native0.5_3:$version_scalanative"
@@ -168,10 +168,13 @@ gradlePlugin {
   plugins {
     scalajs {
       id = 'org.podval.tools.scalajs'
-      implementationClass = 'org.podval.tools.backendplugin.BackendPlugin'
+      implementationClass = 'org.podval.tools.backend.BackendPlugin'
       displayName = project.description
       description = project.description
-      tags.set(['Scala', 'Scala.js', 'Scala Native', 'crosscompile', 'sbt', 'testing', 'ScalaTest'])
+      tags.set([
+        'scala', 'scalajs', 'scalanative', 'crosscompile',
+        'sbt', 'testing',
+        'junit4', 'munit', 'scalatest', 'scalacheck', 'specs2', 'utest', 'ziotest'])
     }
   }
 }

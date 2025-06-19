@@ -1,7 +1,6 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{DependencyInstallable, PreVersion, Repository, ScalaVersion, SimpleDependency,
-  SimpleDependencyMaker, Version}
+import org.podval.tools.build.{DependencyInstallable, PreVersion, SimpleDependency, SimpleDependencyMaker, Version}
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
 import java.io.File
@@ -26,7 +25,7 @@ object NodeDependency extends SimpleDependency[NodeDependency.type] with Depende
   
   override def cacheDirectory: String = "nodejs"
 
-  override def repository: Option[Repository] = Some(Repository(
+  override def repository: Option[DependencyInstallable.Repository] = Some(DependencyInstallable.Repository(
     url = "https://nodejs.org/dist",
     artifactPattern = "v[revision]/[artifact](-v[revision]-[classifier]).[ext]",
     ivy = "v[revision]/ivy.xml"

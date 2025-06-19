@@ -4,9 +4,6 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{GradleException, Project}
 import org.slf4j.{Logger, LoggerFactory}
 
-object DependencyRequirement:
-  private val logger: Logger = LoggerFactory.getLogger(DependencyRequirement.getClass)
-
 final class DependencyRequirement(
   maker: DependencyMaker,
   version: PreVersion
@@ -15,12 +12,12 @@ final class DependencyRequirement(
     project: Project,
     configuration: Configuration,
     scalaVersion: ScalaVersion
-  ): DependencyWithVersion =
+  ): Dependency#WithVersion =
     val findable: DependencyFindable[?] = maker.findable
     val dependency: Dependency = maker.dependency(scalaVersion)
 
-    val result: DependencyWithVersion = findable.findInConfiguration(configuration).getOrElse:
-      val toAdd: DependencyWithVersion = dependency.withVersion(version)
+    val result: Dependency#WithVersion = findable.findInConfiguration(configuration).getOrElse:
+      val toAdd: Dependency#WithVersion = dependency.withVersion(version)
       DependencyRequirement.logger.info(
         s"Adding dependency $toAdd to configuration '${project.getName}.${configuration.getName}': ${maker.description}"
       )
@@ -35,3 +32,20 @@ final class DependencyRequirement(
       DependencyRequirement.logger.warn(s"Found $result, but the project uses version $version.")
     
     result
+
+object DependencyRequirement:
+  private val logger: Logger = LoggerFactory.getLogger(DependencyRequirement.getClass)
+
+  // Arrays are used all the way to here for Scala 2.12 compatibility :(
+  final class Many(
+    dependencyRequirements: Array[DependencyRequirement],
+    scalaVersion: ScalaVersion,
+    configurationName: String
+  ):
+    def apply(project: Project): Unit = if dependencyRequirements.length > 0 then
+      val configuration: Configuration = project.getConfigurations.getByName(configurationName)
+      dependencyRequirements.map(_.apply(
+        project = project,
+        scalaVersion = scalaVersion,
+        configuration = configuration
+      ))

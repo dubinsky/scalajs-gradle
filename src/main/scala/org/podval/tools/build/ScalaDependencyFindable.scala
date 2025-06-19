@@ -21,6 +21,6 @@ final class ScalaDependencyFindable(
     scalaVersionOpt.map(ScalaVersion(_)).flatMap: (scalaVersion: ScalaVersion) =>
       val matches: Boolean =
         (artifact == maker.artifact) &&
-        (backendSuffixOpt == maker.scalaBackend.artifactSuffixOpt)
+        (backendSuffixOpt == maker.scalaBackend.artifactSuffix)
 
       if !matches then None else Some(withScalaVersion(scalaVersion))

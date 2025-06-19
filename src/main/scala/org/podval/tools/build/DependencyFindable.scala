@@ -10,20 +10,20 @@ trait DependencyFindable[D <: Dependency]:
 
   protected def dependencyForArtifactName(artifactName: String): Option[D]
 
-  final def findInConfiguration(configuration: Configuration): Option[DependencyWithVersion] = find(configuration
+  final def findInConfiguration(configuration: Configuration): Option[Dependency#WithVersion] = find(configuration
     .getDependencies
     .asScala
     .flatMap(DependencyFindable.fromGradleDependency(_, maker.isVersionCompound))
   )
 
-  final def findInClassPath(classPath: Iterable[File]): Option[DependencyWithVersion] = find(classPath
+  final def findInClassPath(classPath: Iterable[File]): Option[Dependency#WithVersion] = find(classPath
     .flatMap(DependencyFindable.fromFile(_, maker.isVersionCompound))
   )
 
-  private def find(iterable: Iterable[DependencyFindable.DependencyData]): Option[DependencyWithVersion] =
+  private def find(iterable: Iterable[DependencyFindable.DependencyData]): Option[Dependency#WithVersion] =
     iterable.flatMap(find).headOption
 
-  private def find(dependencyData: DependencyFindable.DependencyData): Option[DependencyWithVersion] =
+  private def find(dependencyData: DependencyFindable.DependencyData): Option[Dependency#WithVersion] =
     val version: PreVersion = dependencyData.version
     val extension = maker.extension(version)
     val matches: Boolean =       

@@ -6,12 +6,14 @@ enum TestFilterPatternMatch derives CanEqual:
   case TestWildcard(testWildcard: String)
 
 object TestFilterPatternMatch:
-  def forMethod(method: String): Option[TestFilterPatternMatch] =
-    if method.isEmpty || method == "*" then Some(Suite) else
-    if method.head == '*' && method.last == '*' then forWildcard(method.tail.init) else
-    if method.head == '*' then forWildcard(method.tail) else
-    if method.last == '*' then forWildcard(method.init) else
-      Some(TestName(method))
+  def forMethod(method: Option[String]): Option[TestFilterPatternMatch] = method match
+    case None => Some(Suite)
+    case Some(method) =>
+      if method == "*" then Some(Suite) else
+      if method.head == '*' && method.last == '*' then forWildcard(method.tail.init) else
+      if method.head == '*' then forWildcard(method.tail) else
+      if method.last == '*' then forWildcard(method.init) else
+        Some(TestName(method))
 
   private def forWildcard(wildcard: String): Option[TestFilterPatternMatch] = Some:
     if wildcard.contains("*")

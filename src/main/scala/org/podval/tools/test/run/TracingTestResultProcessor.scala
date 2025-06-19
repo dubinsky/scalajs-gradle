@@ -11,7 +11,6 @@ class TracingTestResultProcessor(delegate: TestResultProcessor) extends TestResu
   
   override def output(testId: AnyRef, event: TestOutputEvent): Unit =
     // Not tracing the output: it already gets printed at level INFO by Gradle
-    //trace(s"output: id=$testId message=${event.getMessage}")
     delegate.output(testId, event)
 
   override def started(test: TestDescriptorInternal, event: TestStartEvent): Unit =

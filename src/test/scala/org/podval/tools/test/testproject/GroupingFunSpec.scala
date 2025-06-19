@@ -2,8 +2,8 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.backendplugin.BackendPlugin
-import org.podval.tools.build.{DependencyWithVersion, ScalaBackend, ScalaBinaryVersion, ScalaVersion}
+import org.podval.tools.backend.BackendPlugin
+import org.podval.tools.build.{Dependency, ScalaBackend, ScalaBinaryVersion, ScalaVersion}
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
@@ -28,9 +28,6 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def fixtures: Seq[Fixture]
   protected def scalaVersions: Seq[ScalaVersion] = ScalaBinaryVersion.versionDefaults
   protected def backends: Set[ScalaBackend] = ScalaBackend.all
-  
-  // TODO run it from the base class itself
-//  groupTestByFixtureAndCombined()
   
   final protected def groupTestByFixtureAndCombined(): Unit =
     if testByFixture || fixtures.size == 1 then
@@ -153,7 +150,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     project: TestProject,
     scalaVersion: ScalaVersion,
     settingsFragments: Seq[String],
-    testImplementation: Seq[DependencyWithVersion],
+    testImplementation: Seq[Dependency#WithVersion],
     buildFragments: Seq[String]
   ): Unit =
     val writer: TestProjectWriter = project.writer(backend = None)
@@ -258,7 +255,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion,
     backend: ScalaBackend
-  ): Seq[DependencyWithVersion] = fixtures
+  ): Seq[Dependency#WithVersion] = fixtures
     .map(_.framework)
     .map((framework: FrameworkDescriptor) =>
       require(framework.forBackend(backend).isDefined)

@@ -121,7 +121,7 @@ class SbtTestFramework(
     externalModules = List(),
     jars = List(
       "org.podval.tools.scalajs",
-      // Without this, when running framework tests on Scala 2,.13 I get:
+      // Without this, when running framework tests on Scala 2.13 I get:
       // java.lang.NoClassDefFoundError: scala/runtime/LazyVals$
       //	at org.podval.tools.test.framework.FrameworkDescriptor.<clinit>(FrameworkDescriptor.scala:36)
       //	at org.podval.tools.test.framework.FrameworkDescriptor$.<clinit>(FrameworkDescriptor.scala:37)
