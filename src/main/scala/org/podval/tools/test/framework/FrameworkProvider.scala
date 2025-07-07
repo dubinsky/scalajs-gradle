@@ -12,7 +12,8 @@ sealed abstract class FrameworkProvider:
     try Class
       .forName(frameworkDescriptor.className)
       .getDeclaredConstructor()
-      .newInstance() match
+      .newInstance()
+    match
       case framework: Framework => Some(framework)
       case other =>
         FrameworkProvider.logger.error(s"${other.getClass.getName} is not an SBT framework!")

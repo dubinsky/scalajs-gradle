@@ -81,30 +81,14 @@ class SbtTestFramework(
   )
 
   // I need to make sure that the plugin classes themselves are on the worker's classpath(s).
-  // If I add "org.podval.tools.scalajs" jar to the *implementation* classpath everything works,
-  // but feels unclean (and I have to use reflection to do it).
+  // If I add the jar to the *application* classpath, I start getting ClassNotFoundException and have to
+  // add many Gradle modules to the application classpath and share "org.gradle" with the implementation classpath -
+  // and I still get ClassNotFoundExceptions.
   //
-  // If I add the jar to the *application* classpath, I start getting ClassNotFoundException and have to:
-  // - add Gradle modules to the application classpath:
-  //   "gradle-base-services",    // Action
-  //   "gradle-testing-base",     // RemoteTestClassProcessor
-  //   "gradle-worker-processes", // WorkerProcessContext
-  //   "gradle-messaging",        // SerializerRegistry
-  //   "gradle-logging-api",      // LogLevel
-  //   "gradle-logging",          // OutputEventListener
-  //   "gradle-process-services", // JvmMemoryStatusListener
-  // - share "org.gradle" packages with the implementation classpath
-  // - add external modules to the application classpath:
-  //   "slf4j-api",               // org.slf4j.LoggerFactory
-  // and after all that I still get ClassNotFoundException for:
-  //   org.gradle.internal.logging.text.StyledTextOutput
-  //   org.gradle.internal.nativeintegration.console.ConsoleMetaData
-  // ... so this does not seem worth it :(
+  // If I add the plugin jar to the *implementation* classpath everything works (but feels unclean).
   //
-  // I really need only the classes that the worker uses,
-  // but I think the trouble starts once I add the jar to the application classpath,
-  // even if I share nothing; if not, I can just segregate those classes in a package and share it,
-  // but splitting the jar is a pain...
+  // If, to have the freedom to place the code where I want without trying to segregate forkable code from un-forkable,
+  // I still need to add some Gradle modules to the implementation classpath - it is a price worth paying ;)
   private def classPathAdditions(
     gradleModules: List[String],
     externalModules: List[String],
@@ -121,13 +105,14 @@ class SbtTestFramework(
     externalModules = List(),
     jars = List(
       "org.podval.tools.scalajs",
-      // Without this, when running framework tests on Scala 2.13 I get:
+
+      // Without this, when running framework tests on Scala 2.13 I get (on JVM only):
       // java.lang.NoClassDefFoundError: scala/runtime/LazyVals$
       //	at org.podval.tools.test.framework.FrameworkDescriptor.<clinit>(FrameworkDescriptor.scala:36)
       //	at org.podval.tools.test.framework.FrameworkDescriptor$.<clinit>(FrameworkDescriptor.scala:37)
       //	at org.podval.tools.test.TaskDefTestSpec$.makeRunner(TaskDefTestSpec.scala:48)
       //	at org.podval.tools.test.processor.WorkerTestClassProcessor.getRunner$$anonfun$1(WorkerTestClassProcessor.scala:115)
-      // when trying to look up FrameworkDescriptor by name when running forked (on JVM, not Scala.js);
+      // when trying to look up FrameworkDescriptor by name when running forked;
       // it does not seem to break anything even on Scala.js and even on Scala 2.12.
       "scala3-library_3"
     )
@@ -143,17 +128,17 @@ class SbtTestFramework(
     jars = List()
   )
 
-  // Since DefaultTestExecuter calls TestFramework.getWorkerConfigurationAction
-  // before calling TestFramework.getDetector and setting its classpath,
-  // and this is used in the getWorkerConfigurationAction,
-  // we do not yet know what frameworks were actually loaded,
-  // so we have to take into account all that could load - depending on the back-end in use.
   private def sharedPackages: List[String] =
+    // Since DefaultTestExecuter calls TestFramework.getWorkerConfigurationAction
+    // before calling TestFramework.getDetector and setting its classpath,
+    // and this is used in the getWorkerConfigurationAction,
+    // we do not yet know what frameworks were actually loaded,
+    // so we have to take into account all that could load - depending on the back-end in use.
     FrameworkDescriptor.forBackend(backend()).flatMap(_.sharedPackages) ++
     List(
       // Scala 3 and Scala 2 libraries;
       // when running on Scala 3, both jars themselves are already on the classpath;
-      // when running on Scala 2, Scala 2 library jar is already ion the classpath,
+      // when running on Scala 2, Scala 2 library jar is already on the classpath,
       // and Scala 3 library jar is added to the implementation classpath above.
       "scala",
 
@@ -161,10 +146,7 @@ class SbtTestFramework(
       "sbt.testing",
 
       // "groovy" external module added to the applicationClassPath
-      "org.codehaus.groovy",
-
-      // When plugin jar is added to the application classpath,
-      // share only classes needed for the worker...
+      "org.codehaus.groovy"
     )
 
   override def getWorkerConfigurationAction: Action[WorkerProcessBuilder] = (builderInterface: WorkerProcessBuilder) =>

@@ -1,40 +1,38 @@
 package org.podval.tools.jvm
 
-import org.gradle.api.artifacts.Configuration
-import org.podval.tools.build.{LinkTask, RunTask, ScalaBackend, ScalaVersion, SourceMapper, Version}
-import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider}
+import org.gradle.api.Project
+import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaVersion, SourceSets, TestEnvironment}
+import org.podval.tools.test.framework.FrameworkProvider
 import sbt.testing.Framework
 
-case object JvmBackend extends ScalaBackend(
+object JvmBackend extends ScalaBackend(
   name = "JVM",
   sourceRoot = "jvm",
   artifactSuffix = None,
-  archiveAppendix = None,
   testsCanNotBeForked = false,
-  pluginDependenciesConfigurationName = None,
-  createExtension = None
-):
-  override def linkTaskClassOpt    : Option[Class[? <: LinkTask.Main]] = None
-  override def testLinkTaskClassOpt: Option[Class[? <: LinkTask.Test]] = None
-  override def runTaskClassOpt     : Option[Class[? <: RunTask .Main]] = None
-  override def testTaskClass       :        Class[? <: RunTask .Test]  = classOf[JvmTestTask]
+  expandClassPathForTestEnvironment = true
+) with TestEnvironment.Creator[JvmBackend.type]:
 
-  override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] = Seq.empty
-
-  override def dependencyRequirements(
-    implementationConfiguration: Configuration,
-    testImplementationConfiguration: Configuration,
-    scalaVersion: ScalaVersion
-  ): ScalaBackend.DependencyRequirements = ScalaBackend.DependencyRequirements(
-    implementation = Array.empty,
-    testRuntimeOnly = Array(SbtTestInterface.required()),
-    scalaCompilerPlugins = Array.empty,
-    testScalaCompilerPlugins = Array.empty,
-    pluginDependencies = Array.empty
-  )
+  override protected def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
   
-  def createTestEnvironment: TestEnvironment = new TestEnvironment:
-    override def expandClassPath: Boolean = true
-    override def sourceMapper: Option[SourceMapper] = None
+  override def registerTasks(project: Project): Unit =
+    registerTestTask(project, dependsOn = None)
+
+  override protected def dependencyRequirements(
+    project: Project,
+    projectScalaVersion: ScalaVersion,
+    pluginScalaVersion: ScalaVersion
+  ): Seq[DependencyRequirement.Many] = Seq(
+    DependencyRequirement.Many(
+      configurationName = SourceSets.testRuntimeOnlyConfigurationName(project),
+      scalaVersion = projectScalaVersion,
+      dependencyRequirements = Array(SbtTestInterface.required())
+    )
+  )
+
+  override def testEnvironment: TestEnvironment[JvmBackend.type] = new TestEnvironment[JvmBackend.type](
+    backend = this,
+    sourceMapper = None
+  ):
     override def close(): Unit = ()
     override protected def loadFrameworks: List[Framework] = frameworksToLoad.flatMap(FrameworkProvider(_).frameworkOpt)

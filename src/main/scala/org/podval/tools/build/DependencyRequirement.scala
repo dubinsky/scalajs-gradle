@@ -43,7 +43,7 @@ object DependencyRequirement:
     configurationName: String
   ):
     def apply(project: Project): Unit = if dependencyRequirements.length > 0 then
-      val configuration: Configuration = project.getConfigurations.getByName(configurationName)
+      val configuration: Configuration = SourceSets.getConfiguration(project, configurationName)
       dependencyRequirements.map(_.apply(
         project = project,
         scalaVersion = scalaVersion,

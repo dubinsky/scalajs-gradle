@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{DependencyMaker, ScalaBackend, Version}
+import org.podval.tools.scalanative.ScalaNativeBackend
 
 // http://etorreborre.github.io/specs2/
 // https://github.com/etorreborre/specs2
@@ -9,7 +10,7 @@ import org.podval.tools.build.Version
 
 // Dependencies:
 // Scala:
-// org.specs2:specs2-core_3:5.5.8
+// org.specs2:specs2-core_3
 //   org.specs2:specs2-common_3
 //   org.specs2:specs2-matcher_3
 //   org.specs2:specs2-fp_3
@@ -20,7 +21,7 @@ import org.podval.tools.build.Version
 //   org.scala-lang:scala-library:2.13.x
 //
 // Scala.js:
-// org.specs2:specs2-core_sjs1_3:5.5.8
+// org.specs2:specs2-core_sjs1_3
 //   org.specs2:specs2-common_sjs1_3
 //   org.specs2:specs2-matcher_sjs1_3
 //   org.specs2:specs2-fp_sjs1_3
@@ -36,7 +37,6 @@ object Specs2 extends FrameworkDescriptor(
   displayName = "Specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.6.4"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptionStyle = OptionStyle.ListWithoutEq,
@@ -44,5 +44,9 @@ object Specs2 extends FrameworkDescriptor(
   excludeTagsOption = "exclude",
   versionDefaultScala2 = Some(Version("4.20.9"))
 ):
+  override val versionDefault: Version = Version("5.6.4")
+
   // specs2 does not support Scala Native
-  override def forNative: None.type = None
+  override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
+    case ScalaNativeBackend => None
+    case _ => super.maker(backend)

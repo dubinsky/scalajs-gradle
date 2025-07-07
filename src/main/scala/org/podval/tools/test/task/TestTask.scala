@@ -12,7 +12,7 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.ScalaBackend
+import org.podval.tools.build.{BackendTask, ScalaBackend, TestEnvironment}
 import java.io.File
 import java.lang.reflect.Method
 
@@ -24,9 +24,9 @@ object TestTask:
     useTestFramework.setAccessible(true)
     useTestFramework.invoke(task, value)
 
-abstract class TestTask extends Test:
-  protected def createTestEnvironment: ScalaBackend#TestEnvironment
-  
+abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
+  protected def testEnvironmentCreator: TestEnvironment.Creator[B]
+
   final def useSbt(@DelegatesTo(classOf[SbtTestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
     useSbt(ConfigureUtil.configureUsing(testFrameworkConfigure))
 
@@ -36,10 +36,10 @@ abstract class TestTask extends Test:
 
   final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
   
-  private var testEnvironment: Option[ScalaBackend#TestEnvironment] = None
+  private var testEnvironment: Option[TestEnvironment[B]] = None
 
-  private def getTestEnvironment: ScalaBackend#TestEnvironment =
-    if testEnvironment.isEmpty then testEnvironment = Some(createTestEnvironment)
+  private def getTestEnvironment: TestEnvironment[B] =
+    if testEnvironment.isEmpty then testEnvironment = Some(testEnvironmentCreator.testEnvironment)
     testEnvironment.get
 
   private def closeTestEnvironment(): Unit =

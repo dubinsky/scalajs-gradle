@@ -110,7 +110,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     backend: ScalaBackend
   ): Seq[Fixture] = fixtures
-    .filter(_.framework.forBackend(backend).isDefined)
+    .filter(_.framework.maker(backend).isDefined)
 
   private def forBackends(
     projectName: Seq[String],
@@ -258,8 +258,8 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   ): Seq[Dependency#WithVersion] = fixtures
     .map(_.framework)
     .map((framework: FrameworkDescriptor) =>
-      require(framework.forBackend(backend).isDefined)
-      framework.forBackend(backend).get.maker.dependency(scalaVersion).withVersion(
+      require(framework.maker(backend).isDefined)
+      framework.maker(backend).get.dependency(scalaVersion).withVersion(
         if scalaVersion.isScala3
         then framework.versionDefault
         else framework.versionDefaultScala2.getOrElse(framework.versionDefault)

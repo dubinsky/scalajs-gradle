@@ -12,7 +12,6 @@ abstract class FrameworkDescriptor(
   final val displayName: String,
   final val group: String,
   final val artifact: String,
-  final val versionDefault: Version,
   final val className: String,
   final val sharedPackages: List[String],
   tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
@@ -22,25 +21,23 @@ abstract class FrameworkDescriptor(
   final val usesTestSelectorAsNestedTestSelector: Boolean = false,
   final val versionDefaultScala2: Option[Version] = None
 ) derives CanEqual:
-  
-  def forJVM   : Option[ForBackend] = Some(ForBackend(ScalaMaker(JvmBackend        )))
-  def forJS    : Option[ForBackend] = Some(ForBackend(ScalaMaker(ScalaJSBackend    )))
-  def forNative: Option[ForBackend] = Some(ForBackend(ScalaMaker(ScalaNativeBackend)))
-  
-  final def forBackend(backend: ScalaBackend): Option[ForBackend] = backend match
-    case JvmBackend         => forJVM
-    case ScalaJSBackend     => forJS
-    case ScalaNativeBackend => forNative
+
+  // Note: this is not a parameter to avoid circular initialization with NonJvmBackend.junit4;
+  // alternative is to delay it there: `junit4: => FrameworkDescriptor`...
+  def versionDefault: Version
 
   protected abstract class Maker extends DependencyMaker:
-//    if forJS.isDefined then require(this.isInstanceOf[ScalaDependencyMaker])
-    final override val group: String = FrameworkDescriptor.this.group
-    final override val artifact: String = FrameworkDescriptor.this.artifact
-    final override val versionDefault: Version = FrameworkDescriptor.this.versionDefault
+    //    if forJS.isDefined then require(this.isInstanceOf[ScalaDependencyMaker])
+    final override def group: String = FrameworkDescriptor.this.group
+    final override def artifact: String = FrameworkDescriptor.this.artifact
+    final override def versionDefault: Version = FrameworkDescriptor.this.versionDefault
     final override def description: String = displayName
-  
+
   protected class ScalaMaker(override val scalaBackend: ScalaBackend) extends Maker with ScalaDependencyMaker
-    
+
+  def maker     (backend: ScalaBackend): Option[DependencyMaker] = Some(ScalaMaker(backend))
+  def underlying(backend: ScalaBackend): Option[DependencyMaker] = None
+
   final def args(
     includeTags: Array[String],
     excludeTags: Array[String]
@@ -50,12 +47,16 @@ abstract class FrameworkDescriptor(
   ))
 
 object FrameworkDescriptor:
+  def forBackend(backend: ScalaBackend): List[FrameworkDescriptor] = all.toList.filter(_.maker(backend).isDefined)
+
+  def forName(name: String): FrameworkDescriptor = arrayFind(all, _.name == name)
+    .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))
+
   // This is a `def` and not a `val` because of some initialization complications ;)
   private def all: Array[FrameworkDescriptor] = Array(
     JUnit4,
     JUnit4ScalaJS,
     JUnit4ScalaNative,
-    JUnit5,
     MUnit,
     ScalaTest,
     ScalaCheck,
@@ -63,8 +64,3 @@ object FrameworkDescriptor:
     UTest,
     ZioTest
   )
-
-  def forBackend(backend: ScalaBackend): List[FrameworkDescriptor] = all.toList.filter(_.forBackend(backend).isDefined)
-
-  def forName(name: String): FrameworkDescriptor = arrayFind(all, _.name == name)
-    .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))

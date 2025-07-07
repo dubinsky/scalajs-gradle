@@ -9,11 +9,11 @@ import org.podval.tools.build.Version
 
 // Dependencies:
 // Scala:
-// org.scalatest:scalatest_3:3.2.19
-//   org.scalatest:scalatest-core_3:3.2.19
-//     org.scalactic:scalactic_3:3.2.19
-//     org.scala-lang.modules:scala-xml_3:2.1.0
-//     org.scalatest:scalatest-compatible:3.2.19
+// org.scalatest:scalatest_3
+//   org.scalatest:scalatest-core_3
+//     org.scalactic:scalactic_3
+//     org.scala-lang.modules:scala-xml_3
+//     org.scalatest:scalatest-compatible
 //  and other ScalaTest modules:
 //    org.scalatest:scalatest-featurespec_3
 //    org.scalatest:scalatest-flatspec_3
@@ -28,10 +28,10 @@ import org.podval.tools.build.Version
 //    org.scalatest:scalatest-shouldmatchers_3
 //    org.scalatest:scalatest-mustmatchers_3
 // also:
-//   org.scala-lang:scala3-library_3:3.1.3 -> 3.6.3 (*)
+//   org.scala-lang:scala3-library_3
 //
 // Scala.js:
-// org.scalatest:scalatest_sjs1_3:3.2.19
+// org.scalatest:scalatest_sjs1_3
 //   org.scalatest:scalatest-core_sjs1_3
 //     org.scalactic:scalactic_sjs1_3
 //     org.scala-lang.modules:scala-xml_sjs1_3
@@ -58,10 +58,11 @@ object ScalaTest extends FrameworkDescriptor(
   displayName = "ScalaTest",
   group = "org.scalatest",
   artifact = "scalatest",
-  versionDefault = Version("3.2.19"),
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest"),
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-n",
   excludeTagsOption = "-l"
-)
+):
+  override val versionDefault: Version = Version("3.2.19")
+

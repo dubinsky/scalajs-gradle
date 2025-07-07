@@ -1,11 +1,13 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.nonjvm.NonJvmBuild
+import org.podval.tools.nonjvm.Build
 import org.scalajs.logging.{Level as LevelJS, Logger as LoggerJS}
 import org.slf4j.event.Level
 
-class ScalaJSBuild(logSource: String) extends NonJvmBuild(logSource):
-  final protected def loggerJS: LoggerJS = new LoggerJS:
+class ScalaJSBuild(logSource: String) extends Build[LoggerJS](logSource):
+  final override protected def interceptedExceptions: Set[Class[? <: Exception]] = Set.empty
+
+  final override protected def backendLogger: LoggerJS = new LoggerJS:
     override def trace(t: => Throwable): Unit = logThrowable(t)
 
     given CanEqual[LevelJS, LevelJS] = CanEqual.derived

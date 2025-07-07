@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-07-10
+- chore: dependency updates;
+- cleanup;
+
 ## [0.8.8] - 2025-07-07
 - chore: dependency updates;
 - cleanup;

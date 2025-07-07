@@ -1,6 +1,6 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.util.Named
+import org.podval.tools.build.Named
 
 enum Mode(name: String) extends Named(name) derives CanEqual:
   case Debug       extends Mode("debug")

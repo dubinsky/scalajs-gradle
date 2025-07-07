@@ -1,5 +1,6 @@
 package org.podval.tools.build
 
+import org.gradle.api.GradleException
 import org.gradle.internal.classloader.{ClassLoaderVisitor, ClasspathUtil, VisitableURLClassLoader}
 import org.podval.tools.util.Files
 import scala.collection.mutable
@@ -31,7 +32,7 @@ object GradleClassPath:
         .foreach((url: URL) => result = Some(url))
 
     visitor.visit(obj.getClass.getClassLoader)
-    result.getOrElse(throw IllegalArgumentException(s"Did not find artifact $name"))
+    result.getOrElse(throw GradleException(s"Did not find artifact $name on the classpath"))
 
   def collect(obj: AnyRef): Seq[File] =
     val result: mutable.ArrayBuffer[File] = mutable.ArrayBuffer.empty[File]

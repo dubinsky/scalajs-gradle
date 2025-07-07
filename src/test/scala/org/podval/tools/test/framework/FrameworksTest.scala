@@ -15,7 +15,6 @@ class FrameworksTest extends GroupingFunSpec:
     JUnit4Fixture,
     JUnit4ScalaJSFixture,
     JUnit4ScalaNativeFixture,
-    JUnit5Fixture,
     MUnitFixture,
     ScalaCheckFixture,
     ScalaTestFixture,
