@@ -1,9 +1,9 @@
 package org.podval.tools.backend
 
 import org.podval.tools.build.{ScalaBinaryVersion, Version}
-import org.podval.tools.jvm.{JvmBackend, SbtTestInterface, ScalaModules}
+import org.podval.tools.jvm.{JvmBackend, SbtTestInterface}
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.scalajs.{DomSJS, JSDomNodeJSEnv, PlaywrightJSEnv, ScalaJSBackend}
+import org.podval.tools.scalajs.{ScalaJSBackend, ScalaJSDependency}
 import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.test.framework
 import org.podval.tools.util.{Files, Strings}
@@ -14,7 +14,7 @@ import java.io.File
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
 object VersionsWriter:
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.8.8"),
+    "plugin" -> Version("0.9.0"),
 
     "gradle" -> Version("9.0.0-rc-1"),
     
@@ -23,16 +23,14 @@ object VersionsWriter:
     "sbt-test-interface" -> SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaJSBackend.versionDefault,
-    "scalajs-dom" -> DomSJS.versionDefault,
-    "scalajs-env-jsdom-nodejs" -> JSDomNodeJSEnv.versionDefault,
-    "scala-js-env-playwright" -> PlaywrightJSEnv.versionDefault,
+    "scalajs-dom" -> ScalaJSDependency.DomSJS.versionDefault,
+    "scalajs-env-jsdom-nodejs" -> ScalaJSDependency.JSDomNodeJSEnv.versionDefault,
+    "scala-js-env-playwright" -> ScalaJSDependency.PlaywrightJSEnv.versionDefault,
     
     "node" -> NodeDependency.maker.versionDefault,
 
     "scalanative" -> ScalaNativeBackend.versionDefault,
-
-    "scala-parallel-collections" -> ScalaModules.ParallelCollections.versionDefault,
-
+    
     "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,

@@ -2,31 +2,16 @@ package org.podval.tools.backend
 
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.file.DefaultSourceDirectorySet
-import org.gradle.api.internal.tasks.JvmConstants
-import org.gradle.api.plugins.{JavaPluginExtension, JvmTestSuitePlugin}
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.{Action, Project, Task}
-import org.gradle.api.tasks.{AbstractCopyTask, ScalaSourceDirectorySet, SourceSet, SourceSetContainer, SourceTask}
-import org.podval.tools.build.{ScalaVersion, Version}
+import org.gradle.api.tasks.{AbstractCopyTask, ScalaSourceDirectorySet, SourceSet, SourceTask}
+import org.podval.tools.build.{ScalaVersion, SourceSets, Version}
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 import java.lang.reflect.Field
 
 object Sources:
-  def getSourceSets(project: Project): (SourceSet, SourceSet) =
-    val sourceSets: SourceSetContainer = project.getExtensions.getByType(classOf[JavaPluginExtension]).getSourceSets
-    (
-      sourceSets.getByName(JvmConstants.JAVA_MAIN_FEATURE_NAME),
-      sourceSets.getByName(JvmTestSuitePlugin.DEFAULT_TEST_SUITE_NAME)
-    )
-
-  def getSourceSet(project: Project, isTest: Boolean): SourceSet =
-    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
-    if isTest
-    then testSourceSet
-    else mainSourceSet
-
   def clearSourceSet(sourceSet: SourceSet): SourceDirectorySet =
     getScalaSourceDirectorySet(sourceSet).setSrcDirs(List.empty.asJava)
 
@@ -49,17 +34,18 @@ object Sources:
       ))
       getScalaSourceDirectorySet(sourceSet).srcDirs(sourceDirectories *)
 
-    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
-    addScalaRoots(mainSourceSet)
-    addScalaRoots(testSourceSet)
+    addScalaRoots(SourceSets.mainSourceSet(project))
+    addScalaRoots(SourceSets.testSourceSet(project))
 
   def addSharedSources(
     project: Project,
     shared: Project,
     isRunningInIntelliJ: Boolean
   ): Unit =
-    val (mainSourceSet: SourceSet, testSourceSet: SourceSet) = getSourceSets(project)
-    val (sharedMainSourceSet: SourceSet, sharedTestSourceSet: SourceSet) = getSourceSets(shared)
+    val mainSourceSet: SourceSet = SourceSets.mainSourceSet(project)
+    val testSourceSet: SourceSet = SourceSets.testSourceSet(project)
+    val sharedMainSourceSet: SourceSet = SourceSets.mainSourceSet(shared)
+    val sharedTestSourceSet: SourceSet = SourceSets.testSourceSet(shared)
 
     def addBoth(): Unit =
       add(sharedMainSourceSet, mainSourceSet)

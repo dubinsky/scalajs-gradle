@@ -2,12 +2,12 @@ package org.podval.tools.scalajs
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.provider.{ListProperty, Property}
-import org.gradle.api.tasks.{Input, Nested, Optional, OutputDirectory, OutputFile, TaskAction}
-import org.podval.tools.build.LinkTask
+import org.gradle.api.tasks.{Input, Nested, Optional, OutputDirectory, OutputFile}
+import org.podval.tools.nonjvm.LinkTask
 import java.io.File
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
-trait ScalaJSLinkTask extends LinkTask:
+trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
   def moduleInitializers: Option[Seq[ModuleInitializer]]
 
   @Input @Optional def getPrettyPrint: Property[Boolean]
@@ -31,29 +31,27 @@ trait ScalaJSLinkTask extends LinkTask:
   @OutputFile final def getReportTextFile: File = outputFile("linking-report.txt")
   @OutputFile final def getReportBinFile : File = outputFile("linking-report.bin")
 
-  final def link: ScalaJSLink = ScalaJSLink(
+  final override def link: ScalaJSLink = ScalaJSLink(
     jsDirectory = getJSDirectory,
     reportBinFile = getReportBinFile,
+    reportTextFile = getReportTextFile,
     moduleKind = ModuleKind(getModuleKind),
     useWebAssembly = ExperimentalUseWebAssembly(getExperimentalUseWebAssembly),
-    logSource = getName
-  )
-  
-  @TaskAction final def execute(): Unit = link.link(
-    reportTextFile = getReportTextFile,
     optimization = Optimization(getOptimization),
     moduleSplitStyle = ModuleSplitStyle(getModuleSplitStyle),
     smallModulesFor = getSmallModulesFor.get.asScala.toList,
     moduleInitializers = moduleInitializers,
+    isTest = isTest,
     prettyPrint = getPrettyPrint.getOrElse(false),
-    runtimeClassPath = runtimeClassPath
+    runtimeClassPath = runtimeClassPath,
+    logSource = getName
   )
 
 object ScalaJSLinkTask:
-  abstract class Main extends LinkTask.Main with ScalaJSLinkTask:
+  abstract class Main extends LinkTask.Main[ScalaJSBackend.type] with ScalaJSLinkTask:
     @Nested def getModuleInitializers: NamedDomainObjectContainer[ModuleInitializerProperties]
     final override def moduleInitializers: Option[Seq[ModuleInitializer]] =
       Some(getModuleInitializers.asScala.toSeq.map(_.toModuleInitializer))
 
-  abstract class Test extends LinkTask.Test with ScalaJSLinkTask:
+  abstract class Test extends LinkTask.Test[ScalaJSBackend.type] with ScalaJSLinkTask:
     final override def moduleInitializers: Option[Seq[ModuleInitializer]] = None

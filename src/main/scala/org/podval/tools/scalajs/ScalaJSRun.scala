@@ -1,7 +1,10 @@
 package org.podval.tools.scalajs
 
 //import jsenv.playwright.PWEnv
+import org.gradle.process.ExecOperations
+import org.podval.tools.build.TestEnvironment
 import org.podval.tools.node.Node
+import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
 import org.podval.tools.platform.OutputPiper
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
@@ -22,8 +25,11 @@ final class ScalaJSRun(
   logSource: String
 ) extends ScalaJSBuild(
   logSource
-):
-  def run(outputPiper: OutputPiper): Unit =
+) with Run[ScalaJSBackend.type]:
+  override def run(
+    execOperations: ExecOperations,
+    outputPiper: OutputPiper
+  ): Unit =
     val (_: Report.Module, modulePath: Path, input: Input) = link.module(jsEnvKind)
 
     outputPiper.run(modulePath.toString):
@@ -39,23 +45,24 @@ final class ScalaJSRun(
           .withInheritOut(false)
           .withInheritErr(false)
           .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => outputPiper.start(out, err))
-          .withLogger(loggerJS)
+          .withLogger(backendLogger)
       )
       Await.result(awaitable = jsRun.future, atMost = Duration.Inf)
       jsRun.close()
 
-  def createTestEnvironment: ScalaJSBackend.TestEnvironment =
+  def testEnvironment: TestEnvironment[ScalaJSBackend.type] =
     val (module: Report.Module, _: Path, input: Input) = link.module(jsEnvKind)
 
-    ScalaJSBackend.createTestEnvironment[TestAdapter](
+    NonJvmTestEnvironment[ScalaJSBackend.type, TestAdapter](
+      backend = ScalaJSBackend,
       testAdapter = TestAdapter(
         jsEnv = jsEnv,
         input = Seq(input),
-        config = TestAdapter.Config().withLogger(loggerJS)
+        config = TestAdapter.Config().withLogger(backendLogger)
       ),
       loadFrameworksFromTestAdapter = _.loadFrameworks(_),
       closeTestAdapter = _.close(),
-      sourceMapperOpt = module
+      sourceMapper = module
         .sourceMapName
         .map((name: String) => Files.file(link.jsDirectory, name))
         .map(ClosureCompilerSourceMapper(_))

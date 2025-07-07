@@ -1,5 +1,8 @@
 package org.podval.tools.test.detect
 
+object ClassFileDetectors:
+  val empty: ClassFileDetectors = ClassFileDetectors(List.empty)
+
 final class ClassFileDetectors private(private val detectors: List[FingerprintDetectors]):
   def add(detector: FingerprintDetector): ClassFileDetectors = ClassFileDetectors(
     if detectors.isEmpty
@@ -20,6 +23,3 @@ final class ClassFileDetectors private(private val detectors: List[FingerprintDe
     .map(_.filter(_.isModule == isModule))
     .find(_.nonEmpty)
     .getOrElse(Set.empty)
-
-object ClassFileDetectors:
-  val empty: ClassFileDetectors = ClassFileDetectors(List.empty)

@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.util.Named
+import org.podval.tools.build.Named
 
 enum Optimization(name: String) extends Named(name) derives CanEqual:
   case Fast extends Optimization("Fast")

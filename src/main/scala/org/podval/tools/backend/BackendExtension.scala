@@ -4,7 +4,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.scala.ScalaPluginExtension
 import org.gradle.api.{GradleException, Project}
 import org.gradle.api.provider.Property
-import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion, SourceSets, Version}
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.platform.IntelliJIdea
@@ -25,7 +25,7 @@ abstract class BackendExtension @Inject(project: Project):
   final def isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
 
   private def getImplementationConfiguration(isTest: Boolean): Configuration =
-    project.getConfigurations.getByName(Sources.getSourceSet(project, isTest).getImplementationConfigurationName)
+    SourceSets.getConfiguration(project, SourceSets.get(project, isTest).getImplementationConfigurationName)
 
   final def isBuildPerScalaVersion: Boolean =
     Option(project.findProperty(BackendPlugin.buildPerScalaVersionProperty)).contains("true")
@@ -55,25 +55,29 @@ abstract class BackendExtension @Inject(project: Project):
     getImplementationConfiguration(isTest = true)
   )
 
-  final def getScalaLibrary: ScalaLibrary =
+  final def getScalaLibrary: ScalaLibrary = scalaLibrary
+  final def getScalaVersion: ScalaVersion = getScalaLibrary.scalaVersion
+  final def isScala3: Boolean = getScalaVersion.isScala3
+  final def getMajor: Int = getScalaVersion.binaryVersion.versionMajor
+  final def getScalaBinaryVersion: Version = getScalaVersion.binaryVersion.versionSuffix
+  final def getScala2BinaryVersion: Version =
+    (if !isScala3 then getScalaVersion.binaryVersion else ScalaBinaryVersion.Scala213).versionSuffix
+
+  private lazy val scalaLibrary: ScalaLibrary =
     val result: ScalaLibrary = ScalaLibrary.getFromConfiguration(getImplementationConfiguration(isTest = false))
-    require(result.scalaVersion == getScalaVersion)
+
+    val scalaVersion: ScalaVersion = Option(getScalaExtensionScalaVersionProperty.getOrNull)
+      .map(ScalaVersion(_))
+      .getOrElse(error(
+        s"""Scala version data is not supported when Scala version is inferred from the Scala library dependency;
+           |set Scala version on the Scala plugin's extension instead: `scala.scalaVersion=...`""".stripMargin
+      ))
+
+    require(result.scalaVersion == scalaVersion)
     result
 
   final def getScalaExtensionScalaVersionProperty: Property[String] = project
     .getExtensions
     .getByType(classOf[ScalaPluginExtension])
     .getScalaVersion
-
-  final def getScalaVersion: ScalaVersion = Option(getScalaExtensionScalaVersionProperty.getOrNull)
-    .map(ScalaVersion(_))
-    .getOrElse(error(
-      s"""Scala version data is not supported when Scala version is inferred from the Scala library dependency;
-         |set Scala version on the Scala plugin's extension instead: `scala.scalaVersion=...`""".stripMargin
-    ))
   
-  final def isScala3: Boolean = getScalaVersion.isScala3
-  final def getMajor: Int = getScalaVersion.binaryVersion.versionMajor
-  final def getScalaBinaryVersion: Version = getScalaVersion.binaryVersion.versionSuffix
-  final def getScala2BinaryVersion: Version =
-    (if !isScala3 then getScalaVersion.binaryVersion else ScalaBinaryVersion.Scala213).versionSuffix

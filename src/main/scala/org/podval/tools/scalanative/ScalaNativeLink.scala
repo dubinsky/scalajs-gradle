@@ -1,8 +1,9 @@
 package org.podval.tools.scalanative
 
-import java.nio.file.Path
+import org.podval.tools.nonjvm.Link
 import scala.scalanative.build.{Build, BuildTarget, Config, Discover, NativeConfig, GC as GCN, LTO as LTON, Mode as ModeN}
 import scala.scalanative.util.Scope
+import java.nio.file.Path
 
 final class ScalaNativeLink(
   lto: LTO,
@@ -12,23 +13,27 @@ final class ScalaNativeLink(
   projectName: String,
   mode: Mode,
   mainClass: Option[String],
-  testConfig: Boolean,
+  isTest: Boolean,
   classpath: Seq[Path],
   sourcesClassPath: Seq[Path],
   logSource: String
 ) extends ScalaNativeBuild(
   logSource
-):
+) with Link[ScalaNativeBackend.type]:
   private val config: Config =
     val moduleName: String = s"$projectName-${mode.name}"
-    val buildTarget: BuildTarget = mainClass match
+
+    val mainClassEffective: Option[String] = mainClass.orElse:
+      if !isTest then None else Some("scala.scalanative.testinterface.TestMain")
+
+    val buildTarget: BuildTarget = mainClassEffective match
       case Some(_) => BuildTarget.application
       case None => BuildTarget.libraryDynamic
 
     val nativeConfig: NativeConfig = NativeConfig.empty
       .withBuildTarget(buildTarget)
-      .withClang(interceptBuildException(Discover.clang()))
-      .withClangPP(interceptBuildException(Discover.clangpp()))
+      .withClang(interceptException(Discover.clang()))
+      .withClangPP(interceptException(Discover.clangpp()))
       .withCompileOptions(Discover.compileOptions())
       .withLinkingOptions(Discover.linkingOptions())
       .withLTO(ScalaNativeLink.toNative(lto))
@@ -41,20 +46,20 @@ final class ScalaNativeLink(
       .withSourcesClassPath(sourcesClassPath)
       .withBaseDir(baseDir)
       .withModuleName(moduleName)
-      .withMainClass(mainClass)
-      .withTestConfig(testConfig)
+      .withMainClass(mainClassEffective)
+      .withTestConfig(isTest)
       .withCompilerConfig(nativeConfig)
 
   def artifactName: String = config.artifactName
   def artifactPath: Path   = config.artifactPath
   
-  def link: Path =
+  override def link(): Unit =
     logger.info(s"ScalaNativeLink.link($config)")
 
     implicit val scope: Scope = Scope.forever
-    interceptBuildException(
+    interceptException(
       Build.buildCachedAwait(config
-        .withLogger(loggerN)
+        .withLogger(backendLogger)
       )
     )
 

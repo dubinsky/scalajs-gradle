@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.ScalaDependencyMaker
+import org.podval.tools.build.{DependencyMaker, ScalaBackend, Version}
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.scalajs.ScalaJSBackend
 
@@ -10,18 +10,18 @@ import org.podval.tools.scalajs.ScalaJSBackend
 object JUnit4ScalaJS extends FrameworkDescriptor(
   name = "Scala.js JUnit test framework",
   displayName = "JUnit4 Scala.js",
-  group = "org.scala-js",
+  group = "org.scala-js", 
   artifact = "scalajs-junit-test-runtime",
-  versionDefault = ScalaJSBackend.versionDefault,
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
   usesTestSelectorAsNestedTestSelector = true
 ):
-  override val forJS    : Some[ForBackend] = Some(ForBackend(
-    new Maker with ScalaDependencyMaker:
-      final override def scalaBackend: JvmBackend.type = JvmBackend
-      final override def isPublishedForScala3: Boolean = false
-  ))
+  override def versionDefault: Version = ScalaJSBackend.versionDefault
+
   // This is a Scala.js-only test framework
-  override val forJVM   : None.type = None
-  override val forNative: Option[Nothing] = None
+  override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
+    case ScalaJSBackend => Some(
+      new ScalaMaker(JvmBackend):
+        override def isPublishedForScala3: Boolean = false
+    )
+    case _ => None

@@ -1,8 +1,9 @@
 package org.podval.tools.scalanative
 
 import org.gradle.process.{ExecOperations, ExecSpec}
+import org.podval.tools.build.TestEnvironment
+import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
 import org.podval.tools.platform.OutputPiper
-
 import java.io.File
 import scala.scalanative.testinterface.adapter.TestAdapter
 
@@ -11,8 +12,8 @@ final class ScalaNativeRun(
   logSource: String
 ) extends ScalaNativeBuild(
   logSource
-):
-  def run(
+) with Run[ScalaNativeBackend.type]:
+  override def run(
     execOperations: ExecOperations,
     outputPiper: OutputPiper
   ): Unit =
@@ -21,14 +22,15 @@ final class ScalaNativeRun(
       exec.setCommandLine(running)
       outputPiper.run(running)(outputPiper.start(exec))
 
-  def createTestEnvironment: ScalaNativeBackend.TestEnvironment =
-    ScalaNativeBackend.createTestEnvironment[TestAdapter](
+  def testEnvironment: TestEnvironment[ScalaNativeBackend.type] =
+    NonJvmTestEnvironment[ScalaNativeBackend.type, TestAdapter](
+      backend = ScalaNativeBackend,
       testAdapter = TestAdapter(TestAdapter
         .Config()
-        .withLogger(loggerN)
+        .withLogger(backendLogger)
         .withBinaryFile(binaryTestFile)
       ),
       loadFrameworksFromTestAdapter = _.loadFrameworks(_),
       closeTestAdapter = _.close(),
-      sourceMapperOpt = None
+      sourceMapper = None
     )

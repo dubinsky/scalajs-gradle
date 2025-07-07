@@ -3,18 +3,12 @@ package org.podval.tools.node
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
-import org.podval.tools.build.CreateExtension
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 import java.io.File
 import javax.inject.Inject
 
 object NodeExtension:
   private def nodeModulesParent(project: Project): File = project.getProjectDir
-
-  def create: CreateExtension[NodeExtension] = CreateExtension[NodeExtension](
-    name = "node",
-    clazz = classOf[NodeExtension]
-  )
 
 abstract class NodeExtension @Inject(project: Project):
   def getVersion: Property[String]

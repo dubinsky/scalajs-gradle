@@ -12,17 +12,17 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 
 // Dependencies:
 // Scala:
-// org.scalameta:munit_3:1.1.0
-//   org.scalameta:munit-diff_3:1.1.0
-//   org.scalameta:junit-interface:1.1.0
+// org.scalameta:munit_3
+//   org.scalameta:munit-diff_3
+//   org.scalameta:junit-interface
 //   junit:junit:4.13.2
 //   org.scala-sbt:test-interface:1.0
 // also:
 //   org.scala-lang:scala3-library_3
 //
 // Scala.js:
-// org.scalameta:munit_sjs1_3:1.0.4
-//   org.scalameta:munit-diff_sjs1_3:1.0.4
+// org.scalameta:munit_sjs1_3
+//   org.scalameta:munit-diff_sjs1_3
 //   org.scala-js:scalajs-junit-test-runtime_2.13
 //   org.scala-js:scalajs-test-interface_2.13
 // also:
@@ -34,7 +34,6 @@ object MUnit extends FrameworkDescriptor(
   displayName = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
-  versionDefault = Version("1.1.1"),
   className = "munit.Framework",
   sharedPackages = List("munit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
@@ -44,14 +43,9 @@ object MUnit extends FrameworkDescriptor(
   additionalOptions = Array("--logger=sbt"),
   usesTestSelectorAsNestedTestSelector = true
 ):
-  private def forBackend(backend: ScalaBackend, underlying: DependencyMaker): Some[ForBackend] = Some(ForBackend(
-    maker = ScalaMaker(backend),
-    underlying = Some(underlying)
-  ))
+  override val versionDefault: Version = Version("1.1.1")
   
-  // on JVM, uses underlying JUni4 - via its own internal interface
-  // Note: `forJVM` this is a `val`, I run into Scala 2.12 incompatibilities on JVM
-  override def forJVM   : Some[ForBackend] = forBackend(JvmBackend, JUnit4Underlying)
-  // on Scala.js, uses JUnit4 for Scala.js - with its own sbt.testing.Framework implementation
-  override val forJS    : Some[ForBackend] = forBackend(ScalaJSBackend, JUnit4ScalaJS.forJS.get.maker)
-  override val forNative: Some[ForBackend] = forBackend(ScalaNativeBackend, JUnit4ScalaNative.forNative.get.maker)
+  override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match
+    case JvmBackend         => JUnit4           .underlying(backend)
+    case ScalaJSBackend     => JUnit4ScalaJS    .maker     (backend)
+    case ScalaNativeBackend => JUnit4ScalaNative.maker     (backend)

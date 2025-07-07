@@ -1,83 +1,53 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.build.{BackendTask, DependencyMaker, DependencyRequirement, PreVersion, ScalaDependencyMaker, 
-  ScalaVersion, Version}
-import org.podval.tools.jvm.JvmBackend
+import org.gradle.api.Project
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
+import org.podval.tools.build.{DependencyRequirement, PreVersion, ScalaVersion, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaJS
 
-case object ScalaJSBackend extends NonJvmBackend(
+object ScalaJSBackend extends NonJvmBackend(
   name = "Scala.js",
   sourceRoot = "js",
   artifactSuffix = "sjs1",
   pluginDependenciesConfigurationName = "scalajs",
-  createExtension = Some(NodeExtension.create)
+  areCompilerPluginsBuiltIntoScala3 = true,
+  junit4 = JUnit4ScalaJS,
+  versionDefault = Version("1.19.0"),
+  libraryScala3 = ScalaJSDependency.Library,
+  libraryScala2 = ScalaJSDependency.Library,
+  compiler      = ScalaJSDependency.Compiler,
+  linker        = ScalaJSDependency.Linker,
+  testAdapter   = ScalaJSDependency.TestAdapter,
+  testBridge    = ScalaJSDependency.TestBridge,
+  junit4Plugin  = ScalaJSDependency.JUnit4Plugin,
+  pluginDependencies = Array(ScalaJSDependency.JSDomNodeJSEnv),
+  implementation = Array.empty
 ):
-  override val versionDefault: Version = Version("1.19.0")
+  override protected def linkTaskClass    : Class[ScalaJSLinkTask.Main] = classOf[ScalaJSLinkTask.Main]
+  override protected def testLinkTaskClass: Class[ScalaJSLinkTask.Test] = classOf[ScalaJSLinkTask.Test]
+  override protected def runTaskClass     : Class[ScalaJSRunTask .Main] = classOf[ScalaJSRunTask .Main]
+  override protected def testTaskClass    : Class[ScalaJSRunTask .Test] = classOf[ScalaJSRunTask .Test]
 
-  override def linkTaskClass    : Class[ScalaJSLinkTask.Main] = classOf[ScalaJSLinkTask.Main]
-  override def testLinkTaskClass: Class[ScalaJSLinkTask.Test] = classOf[ScalaJSLinkTask.Test]
-  override def runTaskClass     : Class[ScalaJSRunTask .Main] = classOf[ScalaJSRunTask .Main]
-  override def testTaskClass    : Class[ScalaJSRunTask .Test] = classOf[ScalaJSRunTask .Test]
-
-  override def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
+  override protected def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
     if scalaVersion.isScala3 
     then Seq("-scalajs")
     else Seq.empty
     
-  override def areCompilerPluginsBuiltIntoScala3: Boolean = true
-  override def junit4: DependencyMaker = JUnit4ScalaJS.forJS.get.maker
-  override def versionExtractor(version: PreVersion): Version = version.simple
+  override protected def versionExtractor(version: PreVersion): Version = version.simple
   
-  override def versionComposer(
+  override protected def versionComposer(
     projectScalaVersion: ScalaVersion,
     backendVersion: Version
   ): Version = backendVersion
-
-  val group: String = "org.scala-js"
-
-  private sealed class Maker(
-    final override val artifact: String,
-    what: String,
-    final override val isScalaVersionFull: Boolean = false
-  ) extends ScalaDependencyMaker:
-    final override def description: String = describe(what)
-    final override def versionDefault: Version = ScalaJSBackend.versionDefault
-    final override def group: String = ScalaJSBackend.group
-    final override def scalaBackend: JvmBackend.type = JvmBackend
-    final override def isPublishedForScala3: Boolean = false
-
-  override def implementation: Array[ScalaDependencyMaker] = Array.empty
-  override def library(scalaVersion: ScalaVersion): ScalaDependencyMaker = Maker("scalajs-library", "Library")
-  override def linker: ScalaDependencyMaker = Maker("scalajs-linker", "Linker")
-  override def testAdapter: ScalaDependencyMaker = Maker("scalajs-sbt-test-adapter", "Test Adapter for Node.js")
-  //  object TestInterface extends Maker("scalajs-test-interface")
-  override def testBridge: ScalaDependencyMaker = new Maker("scalajs-test-bridge", "Test Bridge for Node.js"):
-    override def useExactVersionInVerifyRequired: Boolean = true
-
-  // compiler plugins for Scala 2
-  override def compiler: ScalaDependencyMaker = Maker(
-    "scalajs-compiler",
-    "Compiler Plugin for Scala 2",
-    isScalaVersionFull = true
-  )
-
-  override def junit4Plugin: ScalaDependencyMaker = Maker(
-    "scalajs-junit-test-plugin",
-    "JUnit4 Compiler Plugin for generating bootstrappers for Scala 2",
-    isScalaVersionFull = true
-  )
   
-  override def additionalPluginDependencyRequirements: Array[DependencyRequirement] = Array(
-    JSDomNodeJSEnv.required(),
-    //PlaywrightJSEnv.required()
-  )
-
-  override def additionalImplementationDependencyRequirements(
-    backendVersion: Version,
-    scalaVersion: ScalaVersion
-  ): Array[DependencyRequirement] =
+  override protected def implementationDependencyRequirements(scalaVersion: ScalaVersion): Array[DependencyRequirement] =
     if !scalaVersion.isScala3 // ++ is from IterableOnce and thus is not available on Scala 2.12...
-    then Array(DomSJS.required()) 
-    else Array(DomSJS.required(), Scala3LibraryJS.required(scalaVersion.version)) // only for Scala 3
+    then Array(ScalaJSDependency.DomSJS.required())
+    else Array(ScalaJSDependency.DomSJS.required(), ScalaJSDependency.Scala3LibraryJS.required(scalaVersion.version))
+
+  override def apply(project: Project, jvmPluginServices: JvmPluginServices): Unit =
+    super.apply(project, jvmPluginServices)
+
+    project.getExtensions.create("node", classOf[NodeExtension])

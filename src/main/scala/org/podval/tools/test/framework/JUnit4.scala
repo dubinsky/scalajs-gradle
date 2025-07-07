@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{JavaDependencyMaker, Version}
+import org.podval.tools.build.{DependencyMaker, JavaDependencyMaker, ScalaBackend, Version}
+import org.podval.tools.jvm.JvmBackend
 
 // https://github.com/sbt/junit-interface
 // https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitFramework.java
@@ -10,7 +11,7 @@ import org.podval.tools.build.{JavaDependencyMaker, Version}
 // No nested tasks.
 // Dependencies:
 // Scala:
-// com.github.sbt:junit-interface:0.13.3
+// com.github.sbt:junit-interface
 //   junit:junit:4.13.2
 //   org.hamcrest:hamcrest-core
 //   org.scala-sbt:test-interface:1.0
@@ -19,7 +20,6 @@ object JUnit4 extends FrameworkDescriptor(
   displayName = "JUnit4",
   group = "com.github.sbt",
   artifact = "junit-interface",
-  versionDefault = Version("0.13.3"),
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
   tagOptionStyle = OptionStyle.ListWithEq, 
@@ -29,11 +29,13 @@ object JUnit4 extends FrameworkDescriptor(
   additionalOptions = Array("--ignore-runners=none"),
   usesTestSelectorAsNestedTestSelector = true
 ):
-  override val forJVM   : Some[ForBackend] = Some(ForBackend(
-    maker = new Maker with JavaDependencyMaker, 
-    underlying = Some(JUnit4Underlying)
-  ))
-  // This is a JVM-only test framework
-  override val forJS    : None.type = None
-  override val forNative: None.type = None
+  override val versionDefault: Version = Version("0.13.3")
 
+  // This is a JVM-only test framework
+  override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
+    case JvmBackend => Some(new Maker with JavaDependencyMaker)
+    case _ => None
+
+  override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match
+    case JvmBackend => Some(JUnit4Underlying)
+    case _ => None

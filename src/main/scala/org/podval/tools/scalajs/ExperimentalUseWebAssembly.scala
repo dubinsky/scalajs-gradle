@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.util.BooleanCompanion
+import org.podval.tools.build.Named.BooleanCompanion
 
 object ExperimentalUseWebAssembly extends BooleanCompanion(
   "ExperimentalUseWebAssembly",

@@ -1,9 +1,10 @@
 package org.podval.tools.scalajs
 
+import org.podval.tools.nonjvm.Link
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.Input
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
-import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,
+import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig, 
   ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS, ModuleSplitStyle as ModuleSplitStyleSJS}
 import org.scalajs.testing.adapter.TestAdapterInitializer
 import scala.concurrent.Await
@@ -15,12 +16,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 final class ScalaJSLink(
   val jsDirectory: File,
   reportBinFile: File,
+  reportTextFile: File,
   moduleKind: ModuleKind,
   val useWebAssembly: Boolean,
+  runtimeClassPath: Seq[File],
+  optimization: Optimization,
+  moduleSplitStyle: ModuleSplitStyle,
+  smallModulesFor: List[String],
+  moduleInitializers: Option[Seq[ModuleInitializer]],
+  isTest: Boolean,
+  prettyPrint: Boolean,
   logSource: String
 ) extends ScalaJSBuild(
   logSource
-):
+) with Link[ScalaJSBackend.type]:
   def module(jsEnvKind: JSEnvKind): (Report.Module, Path, Input) =
     if jsEnvKind == JSEnvKind.JSDOMNodeJS && moduleKind != ModuleKind.NoModule then
       abort(s"`jsEnv = 'Node.js+DOM' requires `moduleKind = 'NoModule'`")
@@ -57,15 +66,7 @@ final class ScalaJSLink(
     case ModuleKind.ESModule => ModuleKindSJS.ESModule
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
 
-  def link(
-    reportTextFile: File,
-    runtimeClassPath: Seq[File],
-    optimization: Optimization,
-    moduleSplitStyle: ModuleSplitStyle,
-    smallModulesFor: List[String],
-    moduleInitializers: Option[Seq[ModuleInitializer]],
-    prettyPrint: Boolean
-  ): Unit =
+  override def link(): Unit =
     validateLink(moduleSplitStyle)
 
     val fullOptimization: Boolean = optimization == Optimization.Full
@@ -84,13 +85,15 @@ final class ScalaJSLink(
       .withExperimentalUseWebAssembly(useWebAssembly)
       .withPrettyPrint(prettyPrint)
 
-    // Tests use fixed entry point.
     val moduleInitializersSJS: Seq[ModuleInitializerSJS] = moduleInitializers
       .map(_.map(ScalaJSLink.toSJS))
-      .getOrElse(Seq(ModuleInitializerSJS.mainMethod(
-        TestAdapterInitializer.ModuleClassName,
-        TestAdapterInitializer.MainMethodName
-      )))
+      .orElse:
+        // Tests use fixed entry point.
+        if !isTest then None else Some(Seq(ModuleInitializerSJS.mainMethod(
+            TestAdapterInitializer.ModuleClassName,
+            TestAdapterInitializer.MainMethodName
+        )))
+      .getOrElse(Seq.empty) 
 
     logger.info(
       s"""$logSource:
@@ -112,7 +115,7 @@ final class ScalaJSLink(
           irFiles = irFiles,
           moduleInitializers = moduleInitializersSJS,
           output = PathOutputDirectory(jsDirectory.toPath),
-          logger = loggerJS
+          logger = backendLogger
         ))
       )
 
