@@ -2,11 +2,11 @@ package org.podval.tools.scalajs
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.podval.tools.node.TaskWithNode
+import org.podval.tools.node.TaskWithNodeProject
 import org.podval.tools.nonjvm.RunTask
 import scala.reflect.ClassTag
 
-trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBackend.type, L] with TaskWithNode:
+trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBackend.type, L] with TaskWithNodeProject:
   @Input def getJsEnv: Property[String]
   JSEnvKind.convention(getJsEnv)
 
@@ -15,7 +15,7 @@ trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBac
 
   final override protected def run: ScalaJSRun = ScalaJSRun(
     jsEnvKind = JSEnvKind(getJsEnv),
-    node = node,
+    nodeProject = nodeProject,
     browserName = BrowserName(getBrowserName),
     link = linkTask.link,
     logSource = getName

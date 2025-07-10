@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2025-07-11
+- chore: Gradle 9.0.0-rc-2;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.0] - 2025-07-10
 - chore: dependency updates;
 - cleanup;
@@ -15,10 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup;
 
 ## [0.8.7] - 2025-06-18
-- chore: Gradle 9.x;
+- chore: Gradle 9.0.0-rc-1;
 
 ## [0.8.6] - 2025-06-18
-- cleanup: prepare for Gradle 9.x;
+- cleanup: prepare for Gradle 9.0.0-rc-1;
 
 ## [0.8.5] - 2025-06-18
 - cleanup;

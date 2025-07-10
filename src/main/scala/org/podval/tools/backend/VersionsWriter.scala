@@ -1,7 +1,7 @@
 package org.podval.tools.backend
 
 import org.podval.tools.build.{ScalaBinaryVersion, Version}
-import org.podval.tools.jvm.{JvmBackend, SbtTestInterface}
+import org.podval.tools.jvm.{JvmBackend, JvmDependency}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.scalajs.{ScalaJSBackend, ScalaJSDependency}
 import org.podval.tools.scalanative.ScalaNativeBackend
@@ -13,14 +13,16 @@ import java.io.File
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 // I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
 object VersionsWriter:
-  private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.0"),
+  private val gradleVersion: Version = Version("9.0.0-rc-2")
 
-    "gradle" -> Version("9.0.0-rc-1"),
+  private val versions: Seq[(String, Version)] = Seq(
+    "plugin" -> Version("0.9.1"),
+
+    "gradle" -> gradleVersion,
     
     "scala" -> ScalaBinaryVersion.Scala3.versionDefault.version,
 
-    "sbt-test-interface" -> SbtTestInterface.versionDefault,
+    "sbt-test-interface" -> JvmDependency.SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaJSBackend.versionDefault,
     "scalajs-dom" -> ScalaJSDependency.DomSJS.versionDefault,
@@ -46,7 +48,8 @@ object VersionsWriter:
 
   val attributes: Seq[(String, String)] = Seq(
     "pluginScalaBackendProperty"  -> BackendPlugin.scalaBackendProperty,
-    "pluginBuildPerScalaVersionProperty" -> BackendPlugin.buildPerScalaVersionProperty
+    "pluginBuildPerScalaVersionProperty" -> BackendPlugin.buildPerScalaVersionProperty,
+    "gradleVersionForBadge" -> gradleVersion.toString.replace("-", "--")
   )
   
   def main(args: Array[String]): Unit =

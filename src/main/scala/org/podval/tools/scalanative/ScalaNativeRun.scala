@@ -1,9 +1,8 @@
 package org.podval.tools.scalanative
 
-import org.gradle.process.{ExecOperations, ExecSpec}
 import org.podval.tools.build.TestEnvironment
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
-import org.podval.tools.platform.OutputPiper
+import org.podval.tools.platform.Runner
 import java.io.File
 import scala.scalanative.testinterface.adapter.TestAdapter
 
@@ -13,16 +12,10 @@ final class ScalaNativeRun(
 ) extends ScalaNativeBuild(
   logSource
 ) with Run[ScalaNativeBackend.type]:
-  override def run(
-    execOperations: ExecOperations,
-    outputPiper: OutputPiper
-  ): Unit =
-    val running: String = binaryTestFile.getAbsolutePath
-    execOperations.exec: (exec: ExecSpec) =>
-      exec.setCommandLine(running)
-      outputPiper.run(running)(outputPiper.start(exec))
 
-  def testEnvironment: TestEnvironment[ScalaNativeBackend.type] =
+  override def run(runner: Runner): Unit = runner.exec(_.setCommandLine(binaryTestFile.getAbsolutePath))
+
+  override def testEnvironment: TestEnvironment[ScalaNativeBackend.type] =
     NonJvmTestEnvironment[ScalaNativeBackend.type, TestAdapter](
       backend = ScalaNativeBackend,
       testAdapter = TestAdapter(TestAdapter

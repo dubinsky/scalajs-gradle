@@ -7,7 +7,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
-object NodeDependency extends SimpleDependency[NodeDependency.type] with DependencyInstallable[NodeInstallation]:
+object NodeDependency extends SimpleDependency[NodeDependency.type] with DependencyInstallable[Node]:
   object Maker extends SimpleDependencyMaker[NodeDependency.type]:
     override def findable: NodeDependency.type = NodeDependency
     override def group: String = "org.nodejs"
@@ -75,32 +75,32 @@ object NodeDependency extends SimpleDependency[NodeDependency.type] with Depende
       s"${maker.artifact}-v$version$classifierStr"
     )
 
-  override def installation(root: File): NodeInstallation =
+  override def installation(root: File): Node =
     val bin: File = if !isWindows then File(root, "bin") else root
 
-    NodeInstallation(
+    Node(
       node = File(bin, if isWindows then "node.exe" else "node"),
       npm  = File(bin, if isWindows then "npm.cmd"  else "npm" )
     )
 
-  override def exists(installation: NodeInstallation): Boolean =
-    installation.node.exists && installation.npm.exists
+  override def exists(node: Node): Boolean =
+    node.node.exists && node.npm.exists
 
-  override def fixup(installation: NodeInstallation): Unit = if !isWindows then
-    val npm: Path = installation.npm.toPath
+  override def fixup(node: Node): Unit = if !isWindows then
+    val npm: Path = node.npm.toPath
     val deleted: Boolean = Files.deleteIfExists(npm)
     if deleted then
-      val npmCliJs: String = File(installation.root, s"lib/node_modules/npm/bin/npm-cli.js").getAbsolutePath
+      val npmCliJs: String = File(node.root, s"lib/node_modules/npm/bin/npm-cli.js").getAbsolutePath
       Files.createSymbolicLink(
         npm,
         npm.getParent.relativize(Paths.get(npmCliJs))
       )
 
-  override def fromOs: Option[NodeInstallation] = if Os.get == Os.Windows then None else
+  override def fromOs: Option[Node] = if Os.get == Os.Windows then None else
     for
       node <- Exec.which("node")
-      npm <- Exec.which("npm")
-    yield NodeInstallation(
+      npm  <- Exec.which("npm")
+    yield Node(
       node,
       npm
     )

@@ -105,23 +105,31 @@ abstract class NonJvmBackend(
     )
 
   private def createPluginDependenciesConfiguration(project: Project): Unit =
-    val configuration: Configuration = project.getConfigurations.create(pluginDependenciesConfigurationName)
-    configuration.setTransitive(true)
-    configuration.setCanBeResolved(true) // TODO should be false
-    configuration.setCanBeDeclared(true)
-    configuration.setCanBeConsumed(false)
-    configuration.setDescription(s"$name dependencies.")
+    val configuration: Configuration = project.getConfigurations.create(
+      pluginDependenciesConfigurationName,
+      new Action[Configuration]:
+        override def execute(configuration: Configuration): Unit =
+          configuration.setTransitive   (true )
+          configuration.setCanBeResolved(true ) // TODO should be false
+          configuration.setCanBeDeclared(true )
+          configuration.setCanBeConsumed(false)
+          configuration.setDescription(s"$name dependencies.")
+    )
 
   private def scalaCompilerPluginsConfigurationName: String = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
   private def testScalaCompilerPluginsConfigurationName: String = GUtil.toLowerCamelCase(s"test $scalaCompilerPluginsConfigurationName")
 
   private def createTestScalaCompilerPluginsConfiguration(project: Project, jvmPluginServices: JvmPluginServices): Unit =
-    val configuration: Configuration = project.getConfigurations.create(testScalaCompilerPluginsConfigurationName)
-    configuration.setTransitive(false)
-    configuration.setCanBeResolved(true) // TODO should be false; when (and if) ScalaBasePlugin is cleaned up, copy it here.
-    configuration.setCanBeDeclared(true)
-    configuration.setCanBeConsumed(false)
-    jvmPluginServices.configureAsRuntimeClasspath(configuration)
+    val configuration: Configuration = project.getConfigurations.create(
+      testScalaCompilerPluginsConfigurationName,
+      new Action[Configuration]:
+        override def execute(configuration: Configuration): Unit =
+          configuration.setTransitive   (false)
+          configuration.setCanBeResolved(true ) // TODO should be false; when (and if) ScalaBasePlugin is cleaned up, copy it here.
+          configuration.setCanBeDeclared(true )
+          configuration.setCanBeConsumed(false)
+          jvmPluginServices.configureAsRuntimeClasspath(configuration)
+    )
 
   override def afterEvaluate(project: Project, scalaLibrary: ScalaLibrary): Unit =
     super.afterEvaluate(project, scalaLibrary)

@@ -1,7 +1,6 @@
 package org.podval.tools.test.task
 
 import org.gradle.api.file.FileTree
-import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestClassProcessor, TestExecuter, TestFramework,
   TestResultProcessor, WorkerTestClassProcessorFactory}
@@ -33,7 +32,6 @@ class DefaultTestExecuter(
   workerLeaseService: WorkerLeaseService,
   maxWorkerCount: Int,
   clock: Clock,
-  documentationRegistry: DocumentationRegistry,
   testFilter: DefaultTestFilter
 ) extends TestExecuter[JvmTestExecutionSpec]:
   private val logger: Logger = Logging.getLogger(classOf[DefaultTestExecuter])
@@ -60,8 +58,7 @@ class DefaultTestExecuter(
           testInstanceFactory,
           testExecutionSpec.getJavaForkOptions,
           classpath,
-          testFramework.getWorkerConfigurationAction,
-          documentationRegistry
+          testFramework.getWorkerConfigurationAction
         )
 
     val reforkingProcessorFactory: Factory[TestClassProcessor] = new Factory[TestClassProcessor]:
@@ -107,16 +104,14 @@ class DefaultTestExecuter(
     workerTestClassProcessorFactory: WorkerTestClassProcessorFactory,
     javaForkOptions: JavaForkOptions,
     classpath: ForkedTestClasspath,
-    workerConfigurationAction: Action[WorkerProcessBuilder],
-    documentationRegistry: DocumentationRegistry
+    workerConfigurationAction: Action[WorkerProcessBuilder]
   ): TestClassProcessor = ForkingTestClassProcessor(
     workerLeaseService,
     workerProcessFactory,
     workerTestClassProcessorFactory,
     javaForkOptions,
     classpath,
-    workerConfigurationAction,
-    documentationRegistry
+    workerConfigurationAction
   )
 
   private def getMaxParallelForks(testExecutionSpec: JvmTestExecutionSpec): Int =

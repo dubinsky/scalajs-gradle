@@ -3,11 +3,9 @@ package org.podval.tools.nonjvm
 import org.gradle.api.{DefaultTask, GradleException, Task}
 import org.gradle.api.internal.provider.ProviderInternal
 import org.gradle.api.tasks.{TaskAction, TaskProvider}
-import org.gradle.process.ExecOperations
 import org.podval.tools.build.{BackendTask, TestEnvironment}
-import org.podval.tools.platform.OutputPiper
+import org.podval.tools.platform.TaskWithRunner
 import org.podval.tools.test.task.TestTask
-import javax.inject.Inject
 import scala.reflect.ClassTag
 import scala.jdk.CollectionConverters.SetHasAsScala
 
@@ -42,15 +40,8 @@ trait RunTask[B <: NonJvmBackend, L <: LinkTask[B] : ClassTag] extends BackendTa
     .map(_.asInstanceOf[T])
 
 object RunTask:
-  abstract class Main[B <: NonJvmBackend, L <: LinkTask.Main[B] : ClassTag] extends DefaultTask with RunTask[B, L]:
-    @Inject def getExecOperations: ExecOperations
+  abstract class Main[B <: NonJvmBackend, L <: LinkTask.Main[B] : ClassTag] extends DefaultTask with RunTask[B, L] with TaskWithRunner:
+    @TaskAction final def execute(): Unit = run.run(runner)
 
-    @TaskAction final def execute(): Unit =
-      val outputPiper: OutputPiper = OutputPiper(
-        out = getLogger.lifecycle,
-        err = message => getLogger.error(s"err: $message")
-      )
-      run.run(getExecOperations, outputPiper)
-  
   abstract class Test[B <: NonJvmBackend, L <: LinkTask.Test[B] : ClassTag] extends TestTask[B] with RunTask[B, L]:
     protected def testEnvironmentCreator: TestEnvironment.Creator[B] = run

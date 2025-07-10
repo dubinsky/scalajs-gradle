@@ -7,6 +7,12 @@ import org.gradle.api.plugins.{JavaPluginExtension, JvmTestSuitePlugin}
 import org.gradle.api.tasks.SourceSet
 
 object SourceSets:
+  def getConfiguration(project: Project, configurationName: String): Configuration =
+    project.getConfigurations.getByName(configurationName)
+
+  def getImplementationConfiguration(project: Project, isTest: Boolean): Configuration =
+    getConfiguration(project, get(project, isTest).getImplementationConfigurationName)
+
   private def get(project: Project, sourceSetName: String): SourceSet = project
     .getExtensions
     .getByType(classOf[JavaPluginExtension])
@@ -32,6 +38,3 @@ object SourceSets:
     
   def testRuntimeOnlyConfigurationName(project: Project): String =
     testSourceSet(project).getRuntimeOnlyConfigurationName
-  
-  def getConfiguration(project: Project, configurationName: String): Configuration =
-    project.getConfigurations.getByName(configurationName)

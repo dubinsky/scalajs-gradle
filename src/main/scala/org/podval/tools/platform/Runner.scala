@@ -1,27 +1,33 @@
 package org.podval.tools.platform
 
-import org.gradle.process.BaseExecSpec
-import org.slf4j.{Logger, LoggerFactory}
+import org.gradle.api.logging.Logger
+import org.gradle.process.{ExecOperations, ExecSpec}
+import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.{InputStream, OutputStream}
 
-object OutputPiper:
-  private val logger: Logger = LoggerFactory.getLogger(classOf[OutputPiper])
-
-final class OutputPiper(
-  out: String => Unit,
-  err: String => Unit
+final class Runner(
+  execOperations: ExecOperations,
+  logger: Logger
 ):
+  private val out: String => Unit = logger.lifecycle
+  private val err: String => Unit = message => logger.error(s"[err]: $message")
+  
+  // TODO add a switch for lifecycle/info logging...
   def run(running: String)(body: => Unit): Unit =
-    OutputPiper.logger.info(s"Running $running.")
+    logger.lifecycle(s"Running [$running].")
     try body finally
       close()
-      OutputPiper.logger.info(s"Done running $running.")
+      // TODO for Native this prints before the output!
+      logger.lifecycle(s"Done running [$running].")
 
-  // this one is for Scala Native
-  def start(exec: BaseExecSpec): Unit =
-    exec.setStandardOutput(CallbackOutputStream(out))
-    exec.setErrorOutput   (CallbackOutputStream(err))
-  
+  // this one is for Scala Native and NodeProject
+  def exec(configure: ExecSpec => Unit): Unit =
+    execOperations.exec: (execSpec: ExecSpec) =>
+      configure(execSpec)
+      run(execSpec.getCommandLine.asScala.mkString(" ")):
+        execSpec.setStandardOutput(CallbackOutputStream(out))
+        execSpec.setErrorOutput   (CallbackOutputStream(err))
+
   /* The list of threads that are piping output to System.out and
    * System.err. This is not an AtomicReference or any other thread-safe
    * structure because:

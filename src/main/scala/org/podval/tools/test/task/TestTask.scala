@@ -3,7 +3,6 @@ package org.podval.tools.test.task
 import groovy.lang.{Closure, DelegatesTo}
 import org.gradle.StartParameter
 import org.gradle.api.Action
-import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.tasks.testing.Test
@@ -82,8 +81,7 @@ abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
     workerProcessFactory = getProcessBuilderFactory,
     actorFactory = getActorFactory,
     workerLeaseService = getServices.get(classOf[WorkerLeaseService]),
-    moduleRegistry = getModuleRegistry,
-    documentationRegistry = getServices.get(classOf[DocumentationRegistry])
+    moduleRegistry = getModuleRegistry
   )
 
   final override def getMaxParallelForks: Int = 
