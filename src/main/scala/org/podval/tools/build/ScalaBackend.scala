@@ -9,6 +9,7 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.util.internal.GUtil
 import org.podval.tools.jvm.JvmBackend
+import org.podval.tools.platform.TaskWithGradleUserHomeDir
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.test.task.TestTask
@@ -30,6 +31,7 @@ abstract class ScalaBackend(
   protected def testTaskClass: Class[? <: TestTask[this.type]]
 
   def apply(project: Project, jvmPluginServices: JvmPluginServices): Unit =
+    TaskWithGradleUserHomeDir.configureTasks(project)
     configureTestTasks(project)
   
   def afterEvaluate(project: Project, scalaLibrary: ScalaLibrary): Unit =

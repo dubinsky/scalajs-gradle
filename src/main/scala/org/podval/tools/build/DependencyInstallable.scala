@@ -4,12 +4,15 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.repositories.{ArtifactRepository, IvyArtifactRepository, IvyPatternRepositoryLayout}
 import org.gradle.api.file.FileTree
 import org.gradle.api.{GradleException, Project}
+import org.podval.tools.platform.TaskWithGradleUserHomeDir
 import org.podval.tools.util.Files
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
 object DependencyInstallable:
   private val logger: Logger = LoggerFactory.getLogger(DependencyInstallable.getClass)
+
+  def getGradleUserHomeDir(project: Project): File = project.getGradle.getGradleUserHomeDir
 
   final class Repository(
     val url: String,
@@ -46,7 +49,7 @@ trait DependencyInstallable[T] extends Dependency:
   )
 
   final def getInstalledOrInstall(version: Option[String], project: Project): T =
-    val gradleUserHomeDir: File = project.getGradle.getGradleUserHomeDir
+    val gradleUserHomeDir: File = DependencyInstallable.getGradleUserHomeDir(project)
     get(
       version = version,
       gradleUserHomeDir = gradleUserHomeDir,

@@ -26,7 +26,9 @@ object JvmBackend extends ScalaBackend(
     DependencyRequirement.Many(
       configurationName = SourceSets.testRuntimeOnlyConfigurationName(project),
       scalaVersion = projectScalaVersion,
-      dependencyRequirements = Array(SbtTestInterface.required())
+      dependencyRequirements = Array(
+        JvmDependency.SbtTestInterface.required()
+      )
     )
   )
 

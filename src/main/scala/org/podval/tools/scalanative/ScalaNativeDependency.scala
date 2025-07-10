@@ -3,13 +3,13 @@ package org.podval.tools.scalanative
 import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, Version}
 import org.podval.tools.jvm.JvmBackend
 
-abstract class ScalaNativeDependency(
+sealed abstract class ScalaNativeDependency(
   final override val artifact: String,
   what: String
 ) extends ScalaDependencyMaker:
   final override def description: String = ScalaNativeBackend.describe(what)
-  final override def versionDefault: Version = ScalaNativeBackend.versionDefault
   final override def group: String = "org.scala-native"
+  final override def versionDefault: Version = ScalaNativeBackend.versionDefault
 
 object ScalaNativeDependency:
   sealed class Jvm(artifact: String, what: String) extends ScalaNativeDependency(artifact, what):

@@ -1,6 +1,5 @@
 package org.podval.tools.backend
 
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.scala.ScalaPluginExtension
 import org.gradle.api.{GradleException, Project}
 import org.gradle.api.provider.Property
@@ -23,10 +22,7 @@ abstract class BackendExtension @Inject(project: Project):
     s"Plugin 'org.podval.tools.scalajs' in $project: $message."
 
   final def isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
-
-  private def getImplementationConfiguration(isTest: Boolean): Configuration =
-    SourceSets.getConfiguration(project, SourceSets.get(project, isTest).getImplementationConfigurationName)
-
+  
   final def isBuildPerScalaVersion: Boolean =
     Option(project.findProperty(BackendPlugin.buildPerScalaVersionProperty)).contains("true")
   
@@ -48,11 +44,11 @@ abstract class BackendExtension @Inject(project: Project):
 
   final def getBackendVersion: Version = nonJvm.backendVersion(
     getScalaVersion,
-    getImplementationConfiguration(isTest = false)
+    SourceSets.getImplementationConfiguration(project, isTest = false)
   )
 
   final def isNonJvmJUnit4present: Boolean = nonJvm.junit4present(
-    getImplementationConfiguration(isTest = true)
+    SourceSets.getImplementationConfiguration(project, isTest = true)
   )
 
   final def getScalaLibrary: ScalaLibrary = scalaLibrary
@@ -64,7 +60,9 @@ abstract class BackendExtension @Inject(project: Project):
     (if !isScala3 then getScalaVersion.binaryVersion else ScalaBinaryVersion.Scala213).versionSuffix
 
   private lazy val scalaLibrary: ScalaLibrary =
-    val result: ScalaLibrary = ScalaLibrary.getFromConfiguration(getImplementationConfiguration(isTest = false))
+    val result: ScalaLibrary = ScalaLibrary.getFromConfiguration(
+      SourceSets.getImplementationConfiguration(project, isTest = false)
+    )
 
     val scalaVersion: ScalaVersion = Option(getScalaExtensionScalaVersionProperty.getOrNull)
       .map(ScalaVersion(_))

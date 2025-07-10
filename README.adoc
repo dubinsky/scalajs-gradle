@@ -4,8 +4,8 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.0
-:version-gradle: 9.0.0
+:version-plugin: 0.9.1
+:version-gradle: 9.0.0-rc-2
 :version-scala: 3.7.1
 :version-sbt-test-interface: 1.0
 :version-scalajs: 1.19.0
@@ -27,11 +27,12 @@
 :version-framework-zio-test: 2.1.19
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
 :attribute-pluginBuildPerScalaVersionProperty: org.podval.tools.backend.buildPerScalaVersion
+:attribute-gradleVersionForBadge: 9.0.0--rc--2
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
 image:https://img.shields.io/badge/Version-{version-plugin}-black[]
-image:https://img.shields.io/badge/Gradle-{version-gradle}-blue?logo=gradle[]
+image:https://img.shields.io/badge/Gradle-{attribute-gradleVersionForBadge}-blue?logo=gradle[]
 image:https://img.shields.io/badge/Scala.js-{version-scalajs}-blue[]
 image:https://img.shields.io/badge/Scala_Native-{version-scalanative}-blue[]
 image:https://img.shields.io/badge/Node-{version-node}-blue?logo=nodedotjs[]

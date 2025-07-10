@@ -3,9 +3,9 @@ package org.podval.tools.scalajs
 //import jsenv.playwright.PWEnv
 import org.gradle.process.ExecOperations
 import org.podval.tools.build.TestEnvironment
-import org.podval.tools.node.Node
+import org.podval.tools.node.NodeProject
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
-import org.podval.tools.platform.OutputPiper
+import org.podval.tools.platform.Runner
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
@@ -19,20 +19,18 @@ import scala.concurrent.duration.Duration
 
 final class ScalaJSRun(
   val jsEnvKind: JSEnvKind,
-  node: Node,
+  nodeProject: NodeProject,
   browserName: BrowserName,
   link: ScalaJSLink,
   logSource: String
 ) extends ScalaJSBuild(
   logSource
 ) with Run[ScalaJSBackend.type]:
-  override def run(
-    execOperations: ExecOperations,
-    outputPiper: OutputPiper
-  ): Unit =
+
+  override def run(runner: Runner): Unit =
     val (_: Report.Module, modulePath: Path, input: Input) = link.module(jsEnvKind)
 
-    outputPiper.run(modulePath.toString):
+    runner.run(modulePath.toString):
       /* #4560 Explicitly redirect out/err to System.out/System.err, instead
        * of relying on `inheritOut` and `inheritErr`, so that streams
        * installed with `System.setOut` and `System.setErr` are always taken
@@ -44,13 +42,13 @@ final class ScalaJSRun(
         config = RunConfig()
           .withInheritOut(false)
           .withInheritErr(false)
-          .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => outputPiper.start(out, err))
+          .withOnOutputStream((out: Option[InputStream], err: Option[InputStream]) => runner.start(out, err))
           .withLogger(backendLogger)
       )
       Await.result(awaitable = jsRun.future, atMost = Duration.Inf)
       jsRun.close()
 
-  def testEnvironment: TestEnvironment[ScalaJSBackend.type] =
+  override def testEnvironment: TestEnvironment[ScalaJSBackend.type] =
     val (module: Report.Module, _: Path, input: Input) = link.module(jsEnvKind)
 
     NonJvmTestEnvironment[ScalaJSBackend.type, TestAdapter](
@@ -69,8 +67,8 @@ final class ScalaJSRun(
     )
 
   private def jsEnv: JSEnv =
-    val executable: String = node.installation.node.getAbsolutePath
-    val env: Map[String, String] = node.nodeEnv.toMap
+    val executable: String = nodeProject.node.node.getAbsolutePath
+    val env: Map[String, String] = nodeProject.nodeEnv.toMap
 
     // see https://www.scala-js.org/doc/project/webassembly.html
     def args: List[String] = if !link.useWebAssembly then List.empty else List(

@@ -1,7 +1,6 @@
 package org.podval.tools.test.task
 
 import org.gradle.api.Action
-import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestClassProcessor, TestResultProcessor,
   WorkerTestClassProcessorFactory}
@@ -25,8 +24,7 @@ class TestExecuter(
   workerProcessFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,
   workerLeaseService: WorkerLeaseService,
-  moduleRegistry: ModuleRegistry,
-  documentationRegistry: DocumentationRegistry
+  moduleRegistry: ModuleRegistry
 ) extends DefaultTestExecuter(
   workerProcessFactory,
   actorFactory,
@@ -34,7 +32,6 @@ class TestExecuter(
   workerLeaseService,
   maxWorkerCount,
   clock,
-  documentationRegistry,
   testFilter
 ):
   override def execute(
@@ -60,8 +57,7 @@ class TestExecuter(
     workerTestClassProcessorFactory: WorkerTestClassProcessorFactory,
     javaForkOptions: JavaForkOptions,
     classpath: ForkedTestClasspath,
-    workerConfigurationAction: Action[WorkerProcessBuilder],
-    documentationRegistry: DocumentationRegistry
+    workerConfigurationAction: Action[WorkerProcessBuilder]
   ): TestClassProcessor = 
     if testsCanNotBeForked then
       workerTestClassProcessorFactory.asInstanceOf[RunTestClassProcessorFactory].createNonForking(clock)
@@ -76,7 +72,6 @@ class TestExecuter(
           workerTestClassProcessorFactory,
           javaForkOptions,
           classpath,
-          workerConfigurationAction,
-          documentationRegistry
+          workerConfigurationAction
         )
       )
