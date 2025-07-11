@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{DependencyMaker, ScalaBackend, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, Version}
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
 
@@ -54,7 +54,7 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 object ZioTest extends FrameworkDescriptor(
   // This must be exactly as reported by the framework!
   name = s"${io.AnsiColor.UNDERLINED}ZIO Test${io.AnsiColor.RESET}",
-  displayName = "ZioTest",
+  description = "ZioTest",
   group = "dev.zio",
   artifact = "zio-test-sbt",
   className = "zio.test.sbt.ZTestFramework",
@@ -62,11 +62,11 @@ object ZioTest extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-tags",
   excludeTagsOption = "-ignore-tags"
-):
+) with ScalaFrameworkDescriptor:
   override val versionDefault: Version = Version("2.1.19")
 
   // TODO ZioTest does not report events on Scala.js and Scala Native
-  override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
+  override def maker(backend: ScalaBackend): Option[ScalaDependencyMaker] = backend match
     case ScalaJSBackend     => None
     case ScalaNativeBackend => None
     case _ => super.maker(backend)

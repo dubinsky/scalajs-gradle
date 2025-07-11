@@ -13,7 +13,7 @@ final class ScalaNativeRun(
   logSource
 ) with Run[ScalaNativeBackend.type]:
 
-  override def run(runner: Runner): Unit = runner.exec(_.setCommandLine(binaryTestFile.getAbsolutePath))
+  override def run(runner: Runner): Unit = runner.exec(log = true, _.setCommandLine(binaryTestFile.getAbsolutePath))
 
   override def testEnvironment: TestEnvironment[ScalaNativeBackend.type] =
     NonJvmTestEnvironment[ScalaNativeBackend.type, TestAdapter](

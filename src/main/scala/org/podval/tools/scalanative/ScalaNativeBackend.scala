@@ -12,7 +12,6 @@ object ScalaNativeBackend extends NonJvmBackend(
   pluginDependenciesConfigurationName = "scalanative",
   areCompilerPluginsBuiltIntoScala3 = false,
   junit4 = JUnit4ScalaNative,
-  versionDefault = Version("0.5.8"),
   libraryScala3 = ScalaNativeDependency.Scala3Lib,
   libraryScala2 = ScalaNativeDependency.ScalaLib,
   compiler      = ScalaNativeDependency.Compiler,
@@ -36,7 +35,7 @@ object ScalaNativeBackend extends NonJvmBackend(
   override protected def testTaskClass    : Class[ScalaNativeRunTask .Test] = classOf[ScalaNativeRunTask .Test]
 
   override protected def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
-    if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala213
+    if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala2.P13
     then Seq("-Ytasty-reader")
     else Seq.empty
     

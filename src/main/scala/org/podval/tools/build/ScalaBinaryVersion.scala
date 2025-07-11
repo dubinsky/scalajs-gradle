@@ -1,60 +1,52 @@
 package org.podval.tools.build
 
-sealed trait ScalaBinaryVersion derives CanEqual:
+sealed trait ScalaBinaryVersion extends JavaDependencyMaker derives CanEqual:
+  final override def group: String = ScalaBinaryVersion.group
+  final override def versionDefault: Version = scalaVersionDefault.version
+  final def versionSuffix: Version = versionDefault.take(versionSuffixLength)
+
   def versionMajor: Int
   def versionSuffixLength: Int
-  def versionDefault: ScalaVersion
-  def artifact: String
-  def description: String
-  
-  final def versionSuffix: Version = versionDefault.version.take(versionSuffixLength)
-
-  final def scalaLibraryDependency: JavaDependency = scalaLibrary.dependency
-
-  private def scalaLibrary: JavaDependencyMaker = new JavaDependencyMaker:
-    override def group: String = ScalaBinaryVersion.group
-    override def versionDefault: Version = ScalaBinaryVersion.this.versionDefault.version
-    override def artifact: String = ScalaBinaryVersion.this.artifact
-    override def description: String = ScalaBinaryVersion.this.description
+  def scalaVersionDefault: ScalaVersion
 
 object ScalaBinaryVersion:
   val group: String = "org.scala-lang"
 
-  def forScalaVersion(scalaVersion: ScalaVersion): ScalaBinaryVersion =
-    if scalaVersion.version.major == Scala3.versionMajor
+  def forVersion(version: Version): ScalaBinaryVersion =
+    if version.major == Scala3.versionMajor
     then Scala3
     else
-      if scalaVersion.version.minor == Scala213.versionMinor
+      require(version.major == Scala2.versionMajor)
+      if version.minor == Scala2.P13.versionMinor
       then 
-        Scala213
+        Scala2.P13
       else
-        require(scalaVersion.version.minor == Scala212.versionMinor)
-        Scala212
+        require(version.minor == Scala2.P12.versionMinor)
+        Scala2.P12
 
-  def versionDefaults: Seq[ScalaVersion] = Seq(
-    Scala3  .versionDefault,
-    Scala213.versionDefault,
-    Scala212.versionDefault
-  )
+  def all: Seq[ScalaBinaryVersion] = Seq(Scala3, Scala2.P13, Scala2.P12)
   
   object Scala3 extends ScalaBinaryVersion:
     override def versionMajor: Int = 3
     override def versionSuffixLength: Int = 1
     override def artifact: String = "scala3-library_3"
-    override def description: String =  "Scala 3 Library."
-    override def versionDefault: ScalaVersion = ScalaVersion("3.7.1")
+    override def description: String = "Scala 3 Library."
+    override def scalaVersionDefault: ScalaVersion = Version("3.7.1").toScalaVersion
   
   sealed trait Scala2 extends ScalaBinaryVersion:
-    final override def versionMajor: Int = 2
+    final override def versionMajor: Int = Scala2.versionMajor
     final override def versionSuffixLength: Int = 2
     override def artifact: String = "scala-library"
     override def description: String = "Scala 2 Library."
     def versionMinor: Int
-  
-  object Scala213 extends Scala2:
-    override def versionMinor: Int = 13
-    val versionDefault: ScalaVersion = ScalaVersion("2.13.16")
 
-  object Scala212 extends Scala2:
-    override def versionMinor: Int = 12
-    val versionDefault: ScalaVersion = ScalaVersion("2.12.20")
+  object Scala2:
+    def versionMajor: Int = 2
+
+    object P13 extends Scala2:
+      override def versionMinor: Int = 13
+      val scalaVersionDefault: ScalaVersion = Version("2.13.16").toScalaVersion
+  
+    object P12 extends Scala2:
+      override def versionMinor: Int = 12
+      val scalaVersionDefault: ScalaVersion = Version("2.12.20").toScalaVersion

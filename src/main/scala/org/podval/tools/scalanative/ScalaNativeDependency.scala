@@ -1,6 +1,6 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaDependencyMaker, Version}
 import org.podval.tools.jvm.JvmBackend
 
 sealed abstract class ScalaNativeDependency(
@@ -8,10 +8,13 @@ sealed abstract class ScalaNativeDependency(
   what: String
 ) extends ScalaDependencyMaker:
   final override def description: String = ScalaNativeBackend.describe(what)
-  final override def group: String = "org.scala-native"
-  final override def versionDefault: Version = ScalaNativeBackend.versionDefault
+  final override def group: String = ScalaNativeDependency.group
+  final override def versionDefault: Version = ScalaNativeDependency.versionDefault
 
 object ScalaNativeDependency:
+  val group: String = "org.scala-native"
+  val versionDefault: Version = Version("0.5.8")
+
   sealed class Jvm(artifact: String, what: String) extends ScalaNativeDependency(artifact, what):
     final override def scalaBackend: ScalaBackend = JvmBackend
 
@@ -32,7 +35,9 @@ object ScalaNativeDependency:
   
   object ScalaLib   extends ScalaNative("scalalib", "Scala 2 Library"):
     override def isVersionCompound: Boolean = true
-    override def isPublishedForScala3: Boolean = false
+    override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = binaryVersion match
+      case ScalaBinaryVersion.Scala3 => false
+      case _ => true
 
   object TestBridge extends ScalaNative("test-interface", "SBT Test Interface")
 

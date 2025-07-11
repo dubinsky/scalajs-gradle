@@ -80,12 +80,12 @@ class DefaultTestExecuter(
       if !testExecutionSpec.isScanForTestClasses || testFramework.getDetector == null then None else Some:
         val result: TestFrameworkDetector = testFramework.getDetector
         result.setTestClasses(java.util.ArrayList[File](testExecutionSpec.getTestClassesDirs.getFiles))
-        val applicationClassPath: java.util.List[File] = classpath
+        val applicationClasspath: java.util.List[File] = classpath
           .getClass
           .getMethod("getApplicationClasspath")
           .invoke(classpath)
           .asInstanceOf[java.util.List[File]]
-        result.setTestClasspath(applicationClassPath)
+        result.setTestClasspath(applicationClasspath)
         result
 
     TestMainAction(

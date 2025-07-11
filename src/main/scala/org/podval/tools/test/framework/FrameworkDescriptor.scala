@@ -1,41 +1,31 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{DependencyMaker, ScalaBackend, ScalaDependencyMaker, ScalaVersion, Version}
-import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.scalajs.ScalaJSBackend
-import org.podval.tools.scalanative.ScalaNativeBackend
+import org.gradle.api.GradleException
+import org.podval.tools.build.{Dependency, DependencyMaker, ScalaBackend, ScalaVersion, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.
 abstract class FrameworkDescriptor(
-  final val name: String,
-  final val displayName: String,
   final val group: String,
   final val artifact: String,
+  // Note: versionDefault is not a parameter to avoid circular initialization with NonJvmBackend.junit4;
+  // alternative is to delay it there: `junit4: => FrameworkDescriptor`...
+  final val description: String,
+
+  final val name: String,
   final val className: String,
   final val sharedPackages: List[String],
   tagOptionStyle: OptionStyle = OptionStyle.NotSupported,
   includeTagsOption: String = "",
   excludeTagsOption: String = "",
   additionalOptions: Array[String] = Array.empty,
-  final val usesTestSelectorAsNestedTestSelector: Boolean = false,
-  final val versionDefaultScala2: Option[Version] = None
-) derives CanEqual:
+  final val usesTestSelectorAsNestedTestSelector: Boolean = false
+) extends DependencyMaker derives CanEqual:
 
-  // Note: this is not a parameter to avoid circular initialization with NonJvmBackend.junit4;
-  // alternative is to delay it there: `junit4: => FrameworkDescriptor`...
-  def versionDefault: Version
+  final override def toString: String = description
 
-  protected abstract class Maker extends DependencyMaker:
-    //    if forJS.isDefined then require(this.isInstanceOf[ScalaDependencyMaker])
-    final override def group: String = FrameworkDescriptor.this.group
-    final override def artifact: String = FrameworkDescriptor.this.artifact
-    final override def versionDefault: Version = FrameworkDescriptor.this.versionDefault
-    final override def description: String = displayName
+  def maker(backend: ScalaBackend): Option[DependencyMaker] = None
 
-  protected class ScalaMaker(override val scalaBackend: ScalaBackend) extends Maker with ScalaDependencyMaker
-
-  def maker     (backend: ScalaBackend): Option[DependencyMaker] = Some(ScalaMaker(backend))
   def underlying(backend: ScalaBackend): Option[DependencyMaker] = None
 
   final def args(
@@ -47,10 +37,16 @@ abstract class FrameworkDescriptor(
   ))
 
 object FrameworkDescriptor:
-  def forBackend(backend: ScalaBackend): List[FrameworkDescriptor] = all.toList.filter(_.maker(backend).isDefined)
+  def forBackend(backend: ScalaBackend): List[FrameworkDescriptor] =
+    all.toList.filter(_.maker(backend).isDefined)
 
-  def forName(name: String): FrameworkDescriptor = arrayFind(all, _.name == name)
-    .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))
+  def forName(name: String): FrameworkDescriptor =
+    arrayFind(all, _.name == name)
+      .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$name' not found"))
+
+  def forClass(clazz: Class[? <: FrameworkDescriptor]): FrameworkDescriptor =
+    arrayFind(all, _.getClass.getName.startsWith(clazz.getName))
+      .getOrElse(throw IllegalArgumentException(s"Test framework descriptor for '$clazz' not found"))
 
   // This is a `def` and not a `val` because of some initialization complications ;)
   private def all: Array[FrameworkDescriptor] = Array(
@@ -64,3 +60,16 @@ object FrameworkDescriptor:
     UTest,
     ZioTest
   )
+
+  def dependency(
+    framework: FrameworkDescriptor,
+    backend: ScalaBackend,
+    scalaVersion: ScalaVersion,
+    version: Option[Version]
+  ): Dependency#WithVersion =
+    val maker: DependencyMaker = framework
+      .maker(backend)
+      .getOrElse(throw GradleException(s"Test framework $framework does not support $backend."))
+    maker
+      .dependency(scalaVersion)
+      .withVersion(version.getOrElse(maker.versionDefaultFor(scalaVersion)))

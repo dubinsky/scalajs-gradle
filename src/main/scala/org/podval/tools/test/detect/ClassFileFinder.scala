@@ -13,7 +13,9 @@ final class ClassFileFinder(
   testClassesDirectories: List[File],
   testTaskTemporaryDir: Factory[File]
 ):
-  ClassFileFinder.logger.debug(s"ClassFileFinder(testClasspath=$testClasspath, testClassesDirectories=$testClassesDirectories)")
+  import ClassFileFinder.logger
+  
+  logger.debug(s"ClassFileFinder(testClasspath=$testClasspath, testClassesDirectories=$testClassesDirectories)")
 
   private val testClassDirectories: List[File] = testClassesDirectories ++ testClasspath.filter(_.isDirectory)
 
@@ -22,7 +24,7 @@ final class ClassFileFinder(
   testClasspath
     .filter((file: File) => file.isFile && file.getPath.endsWith(".jar"))
     .foreach((libraryJar: File) =>
-      ClassFileFinder.logger.debug(s"ClassFileFinder: libraryJar $libraryJar")
+      logger.debug(s"ClassFileFinder: libraryJar $libraryJar")
       classFileExtractionManager.addLibraryJar(libraryJar)
     )
 
@@ -31,5 +33,5 @@ final class ClassFileFinder(
     .find(_.exists)
     .orElse(Option(classFileExtractionManager.getLibraryClassFile(typeName)))
     .orElse:
-      ClassFileFinder.logger.info(s"ClassFileFinder: could not find $typeName file to scan.")
+      logger.info(s"ClassFileFinder: could not find $typeName file to scan.")
       None

@@ -5,6 +5,7 @@ import org.gradle.StartParameter
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.time.Clock
@@ -55,12 +56,12 @@ abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
     dryRun = getDryRun,
     // delayed: not available at the time of the TestFramework construction (task creation)
     backend = () => getTestEnvironment.backend,
-    loadedFrameworks = (testClassPath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClassPath)
+    loadedFrameworks = (testClasspath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClasspath)
   )
   
   // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
   // best be done with this here, before `super.createTestExecuter()` is called.
-  @TaskAction override def executeTests(): Unit =
+  @TaskAction final override def executeTests(): Unit =
     require(getTestFramework.isInstanceOf[SbtTestFramework],
       s"Only `useSbt` Gradle test framework is supported by this plugin - not $testFramework!")
     require(isScanForTestClasses,

@@ -9,7 +9,8 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.podval.tools.build.{GradleClassPath, ScalaBackend}
+import org.podval.tools.build.ScalaBackend
+import org.podval.tools.gradle.GradleClasspath
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.framework.FrameworkDescriptor
@@ -31,7 +32,7 @@ class SbtTestFramework(
   dryRun: Provider[java.lang.Boolean],
   // delayed
   backend: () => ScalaBackend,
-  loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework]
+  loadedFrameworks: (testClasspath: Iterable[File]) => List[Framework]
 ) extends TestFramework:
 
   override def getOptions: SbtTestFrameworkOptions = options
@@ -94,13 +95,13 @@ class SbtTestFramework(
     externalModules: List[String],
     jars: List[String]
   ): List[URL] =
-    jars.map(GradleClassPath.findOn(SbtTestFramework, _)) ++
+    jars.map(GradleClasspath.findOn(SbtTestFramework, _)) ++
     (
       gradleModules.map(moduleRegistry.getModule) ++
       externalModules.map(moduleRegistry.getExternalModule)
     ).flatMap(_.getImplementationClasspath.getAsURLs.asScala)
 
-  private val implementationClassPathAdditions: List[URL] = classPathAdditions(
+  private val implementationClasspathAdditions: List[URL] = classPathAdditions(
     gradleModules = List(),
     externalModules = List(),
     jars = List(
@@ -118,11 +119,11 @@ class SbtTestFramework(
     )
   )
 
-  private val applicationClassPathAdditions: List[URL] = classPathAdditions(
+  private val applicationClasspathAdditions: List[URL] = classPathAdditions(
     gradleModules = List(),
     externalModules = List(
       // Without this, starting with Gradle 7.6 I get:
-      //   java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
+      // java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
       "groovy"
     ),
     jars = List()
@@ -145,7 +146,7 @@ class SbtTestFramework(
       // "test-interface"; jar itself is already on the classpath
       "sbt.testing",
 
-      // "groovy" external module added to the applicationClassPath
+      // "groovy" external module added to the applicationClasspath
       "org.codehaus.groovy"
     )
 
@@ -153,12 +154,12 @@ class SbtTestFramework(
     val builder: DefaultWorkerProcessBuilder = builderInterface.asInstanceOf[DefaultWorkerProcessBuilder]
 
     builder.setImplementationClasspath((
-      SbtTestFramework.getImplementationClassPath(builder).asScala.toList ++
-      implementationClassPathAdditions
+      SbtTestFramework.getImplementationClasspath(builder).asScala.toList ++
+      implementationClasspathAdditions
     ).asJava)
 
     builder.applicationClasspath(
-      applicationClassPathAdditions.map(Files.url2file).asJava
+      applicationClasspathAdditions.map(Files.url2file).asJava
     )
 
     builder.sharedPackages(sharedPackages.asJava)
@@ -168,9 +169,9 @@ class SbtTestFramework(
 object SbtTestFramework:
   private val logger: Logger = LoggerFactory.getLogger(classOf[SbtTestFramework])
 
-  private def getImplementationClassPath(builder: DefaultWorkerProcessBuilder): java.util.List[URL] =
-    val implementationClassPath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
-    implementationClassPath.setAccessible(true)
-    implementationClassPath
+  private def getImplementationClasspath(builder: DefaultWorkerProcessBuilder): java.util.List[URL] =
+    val implementationClasspath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
+    implementationClasspath.setAccessible(true)
+    implementationClasspath
       .get(builder)
       .asInstanceOf[java.util.List[URL]]

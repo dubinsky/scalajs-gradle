@@ -25,33 +25,36 @@ final class NodeProject(
     // Initialize Node project
     if !isSetUp then
       NodeProject.logger.warn(s"Setting up $this")
-      npm(List("init", "private"))
+      npm(List("init", "private"), log = !isSetUp)
 
     // Install Node modules
     nodeModules.mkdirs()
-    npm(List("install") ++ installModules)
+    npm(List("install") ++ installModules, log = !isSetUp)
 
-  def node(arguments: List[String]): Unit = run(
+  def node(arguments: List[String], log: Boolean): Unit = run(
     command = node.node,
     environment = nodeEnv,
     cwd = None,
-    arguments
+    arguments,
+    log
   )
 
-  def npm(arguments: List[String]): Unit = run(
+  def npm(arguments: List[String], log: Boolean): Unit = run(
     command = node.npm,
     environment = npmEnv,
     // in local mode, npm puts packages into node_modules under the current working directory
     cwd = Some(root),
-    arguments
+    arguments,
+    log
   )
 
   private def run(
     command: File,
     environment: Seq[(String, String)],
     cwd: Option[File],
-    arguments: List[String]
-  ): Unit = runner.exec((execSpec: ExecSpec) =>
+    arguments: List[String],
+    log: Boolean
+  ): Unit = runner.exec(log, (execSpec: ExecSpec) =>
     execSpec.setCommandLine((List(command.getAbsolutePath) ++ arguments).asJava)
     environment.foreach((name, value) => execSpec.environment(name, value))
     cwd.foreach(execSpec.setWorkingDir)

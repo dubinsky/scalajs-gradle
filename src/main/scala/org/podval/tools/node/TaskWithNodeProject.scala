@@ -2,7 +2,7 @@ package org.podval.tools.node
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Internal, Optional}
-import org.podval.tools.platform.{TaskWithGradleUserHomeDir, TaskWithRunner}
+import org.podval.tools.gradle.{TaskWithGradleUserHomeDir, TaskWithRunner}
 import java.io.File
 
 trait TaskWithNodeProject extends TaskWithRunner with TaskWithGradleUserHomeDir:

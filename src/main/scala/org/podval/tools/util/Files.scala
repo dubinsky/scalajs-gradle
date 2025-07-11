@@ -9,8 +9,6 @@ import scala.io.Source
 object Files:
   private val logger: Logger = LoggerFactory.getLogger(Files.getClass)
   
-  def nameAndExtension(fullName: String): (String, Option[String]) = Strings.split(fullName, '.')
-  
   def write(file: File, content: String): Unit =
     logger.debug(s"Writing $file")
     file.getParentFile.mkdirs()

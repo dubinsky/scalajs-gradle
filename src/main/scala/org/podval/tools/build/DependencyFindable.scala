@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.{Configuration, Dependency as DependencyG}
 import org.podval.tools.util.{Files, Strings}
 import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
@@ -10,14 +10,35 @@ trait DependencyFindable[D <: Dependency]:
 
   protected def dependencyForArtifactName(artifactName: String): Option[D]
 
+  import DependencyFindable.DependencyData
+
+  private def forVersion(version: Option[String], mk: PreVersion => DependencyData): Option[DependencyData] = 
+    version.flatMap(PreVersion(_, maker.isVersionCompound)).map(mk)
+  
   final def findInConfiguration(configuration: Configuration): Option[Dependency#WithVersion] = find(configuration
     .getDependencies
     .asScala
-    .flatMap(DependencyFindable.fromGradleDependency(_, maker.isVersionCompound))
+    .flatMap((dependency: DependencyG) => 
+      forVersion(Option(dependency.getVersion), DependencyData(_)(
+        group = Option(dependency.getGroup),
+        artifactName = dependency.getName,
+        classifier = None,
+        extension = Some("jar")
+      ))
+    )
   )
-
-  final def findInClassPath(classPath: Iterable[File]): Option[Dependency#WithVersion] = find(classPath
-    .flatMap(DependencyFindable.fromFile(_, maker.isVersionCompound))
+  
+  final def findInClasspath(classpath: Iterable[File]): Option[Dependency#WithVersion] = find(classpath
+    .flatMap((file: File) =>
+      val (nameAndVersion: String, extension: Option[String]) = Strings.split(file.getName  , '.')
+      val (name          : String, version  : Option[String]) = Strings.split(nameAndVersion, '-')
+      forVersion(version, DependencyData(_)(
+        group = None,
+        artifactName = name,
+        classifier = None,
+        extension = extension
+      ))
+    )
   )
 
   private def find(iterable: Iterable[DependencyFindable.DependencyData]): Option[Dependency#WithVersion] =
@@ -25,7 +46,7 @@ trait DependencyFindable[D <: Dependency]:
 
   private def find(dependencyData: DependencyFindable.DependencyData): Option[Dependency#WithVersion] =
     val version: PreVersion = dependencyData.version
-    val extension = maker.extension(version)
+    val extension: Option[String] = maker.extension(version)
     val matches: Boolean =       
       (dependencyData.group.isEmpty || dependencyData.group.contains(maker.group)) &&
       (dependencyData.classifier == maker.classifier(version)) &&
@@ -35,42 +56,9 @@ trait DependencyFindable[D <: Dependency]:
     else dependencyForArtifactName(dependencyData.artifactName).map(_.withVersion(version))
 
 object DependencyFindable:
-  private final class DependencyData(
+  private final class DependencyData(val version: PreVersion)(
     val group: Option[String],
     val artifactName: String,
-    val version: PreVersion,
     val classifier: Option[String],
     val extension: Option[String]
   )
-
-  private def fromGradleDependency(
-    dependency: org.gradle.api.artifacts.Dependency,
-    isVersionCompound: Boolean
-  ): Option[DependencyData] = dependency match
-    case dependency: org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency =>
-      Option(dependency.getVersion).flatMap(PreVersion(_, isVersionCompound).map(version =>
-        DependencyData(
-          group = Some(dependency.getGroup),
-          artifactName = dependency.getName,
-          version = version,
-          classifier = None,
-          extension = Some("jar")
-        )
-      ))
-    case _ => None
-
-  private def fromFile(
-    file: File,
-    isVersionCompound: Boolean
-  ): Option[DependencyData] =
-    val (nameAndVersion: String, fileExtension: Option[String]) = Files.nameAndExtension(file.getName)
-    val (name: String, versionOpt: Option[String]) = Strings.split(nameAndVersion, '-')
-    versionOpt.flatMap(PreVersion(_, isVersionCompound).map(version =>
-      DependencyData(
-        group = None,
-        artifactName = name,
-        version = version,
-        classifier = None,
-        extension = fileExtension
-      )
-    ))

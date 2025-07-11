@@ -30,7 +30,7 @@ final class ScalaJSRun(
   override def run(runner: Runner): Unit =
     val (_: Report.Module, modulePath: Path, input: Input) = link.module(jsEnvKind)
 
-    runner.run(modulePath.toString):
+    runner.run(modulePath.toString, log = true):
       /* #4560 Explicitly redirect out/err to System.out/System.err, instead
        * of relying on `inheritOut` and `inheritErr`, so that streams
        * installed with `System.setOut` and `System.setErr` are always taken

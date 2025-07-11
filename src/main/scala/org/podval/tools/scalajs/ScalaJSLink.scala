@@ -19,7 +19,7 @@ final class ScalaJSLink(
   reportTextFile: File,
   moduleKind: ModuleKind,
   val useWebAssembly: Boolean,
-  runtimeClassPath: Seq[File],
+  runtimeClasspath: Seq[File],
   optimization: Optimization,
   moduleSplitStyle: ModuleSplitStyle,
   smallModulesFor: List[String],
@@ -108,7 +108,7 @@ final class ScalaJSLink(
 
     try
       val report: Report = Await.result(atMost = Duration.Inf, awaitable = PathIRContainer
-        .fromClasspath(runtimeClassPath.map(_.toPath))
+        .fromClasspath(runtimeClasspath.map(_.toPath))
         .map(_._1)
         .flatMap((irContainers: Seq[IRContainer]) => StandardImpl.irFileCache.newCache.cached(irContainers))
         .flatMap((irFiles: Seq[IRFile]) => StandardImpl.linker(linkerConfig).link(

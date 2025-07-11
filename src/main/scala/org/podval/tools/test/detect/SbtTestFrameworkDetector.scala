@@ -14,7 +14,7 @@ import java.io.File
 
 // Inspired by org.gradle.api.internal.tasks.testing.detection.AbstractTestFrameworkDetector.
 final class SbtTestFrameworkDetector(
-  loadedFrameworks: (testClassPath: Iterable[File]) => List[Framework],
+  loadedFrameworks: (testClasspath: Iterable[File]) => List[Framework],
   testFilter: TestFilter,
   testTaskTemporaryDir: Factory[File]
 ) extends TestFrameworkDetector:
@@ -80,7 +80,7 @@ final class SbtTestFrameworkDetector(
   
   private def filter(
     className: String,
-    detectors: FingerprintDetectors
+    detectors: FingerprintDetector.Many
   ): Option[TestClassRun] =
     if detectors.isEmpty then None else
       if detectors.size > 1 then

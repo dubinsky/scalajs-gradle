@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{DependencyMaker, ScalaBackend, Version}
+import org.podval.tools.build.{DependencyMaker, ScalaBackend, ScalaVersion, Version}
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
@@ -31,7 +31,7 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 //   org.scala-lang:scala-library:2.13.x
 object MUnit extends FrameworkDescriptor(
   name = "munit",
-  displayName = "MUnit",
+  description = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
   className = "munit.Framework",
@@ -42,7 +42,7 @@ object MUnit extends FrameworkDescriptor(
   // use SBT loggers
   additionalOptions = Array("--logger=sbt"),
   usesTestSelectorAsNestedTestSelector = true
-):
+) with ScalaFrameworkDescriptor:
   override val versionDefault: Version = Version("1.1.1")
   
   override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match

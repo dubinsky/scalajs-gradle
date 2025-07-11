@@ -1,7 +1,9 @@
 package org.podval.tools.build
 
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.internal.tasks.JvmConstants
+import org.podval.tools.gradle.{Configurations, GradleClasspath}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
@@ -13,7 +15,8 @@ final class ScalaLibrary private(
 
   def scalaVersion: ScalaVersion = scala3.getOrElse(scala2.get)
   
-  def verify(runtimeClasspathConfiguration: Configuration): Unit =
+  def verify(project: Project): Unit =
+    val runtimeClasspathConfiguration: Configuration = Configurations.runtimeClasspath(project)
     val other: ScalaLibrary = ScalaLibrary.getFromClasspath(runtimeClasspathConfiguration.asScala)
     val configurationName: String = runtimeClasspathConfiguration.getName
     
@@ -32,31 +35,38 @@ final class ScalaLibrary private(
     )
 
 object ScalaLibrary:
-  def getFromConfiguration(configuration: Configuration): ScalaLibrary = ScalaLibrary(
-    source = s"in configuration '${configuration.getName}'",
-    mustHaveScala2 = false,
-    scala3 = ScalaBinaryVersion.Scala3  .scalaLibraryDependency.findInConfiguration(configuration),
-    scala2 = ScalaBinaryVersion.Scala213.scalaLibraryDependency.findInConfiguration(configuration)
-  )
+  def getFromImplementationConfiguration(project: Project): ScalaLibrary =
+    val implementation: Configuration = Configurations.implementation(project)
+    ScalaLibrary(
+      source = s"in configuration '${implementation.getName}'",
+      mustHaveScala2 = false,
+      find = _.findInConfiguration(implementation)
+    )
 
-  def getFromClasspath(classPath: Iterable[File]): ScalaLibrary = ScalaLibrary(
-    source = "on classpath " + classPath.mkString(", "),
+  def getFromClasspath: ScalaLibrary = getFromClasspath(GradleClasspath.collect(this))
+  
+  private def getFromClasspath(classPath: Iterable[File]): ScalaLibrary = ScalaLibrary(
+    source = s"on classpath ${classPath.mkString(", ")}",
     mustHaveScala2 = true,
-    scala3 = ScalaBinaryVersion.Scala3  .scalaLibraryDependency.findInClassPath(classPath),
-    scala2 = ScalaBinaryVersion.Scala213.scalaLibraryDependency.findInClassPath(classPath)
+    find = _.findInClasspath(classPath)
   )
 
   private def apply(
     source: String,
     mustHaveScala2: Boolean,
-    scala3: Option[Dependency#WithVersion],
-    scala2: Option[Dependency#WithVersion]
+    find: JavaDependency => Option[Dependency#WithVersion]
   ): ScalaLibrary =
-    require(scala3.nonEmpty || scala2.nonEmpty, s"No Scala library $source")
-    if mustHaveScala2 then require(scala2.nonEmpty, s"No Scala 2 library $source")
+    val scala3: Option[Dependency#WithVersion] = find(ScalaBinaryVersion.Scala3    .dependency)
+    val scala2: Option[Dependency#WithVersion] = find(ScalaBinaryVersion.Scala2.P13.dependency)
+
+    require(scala3.nonEmpty || scala2.nonEmpty, s"No Scala library $source.")
+    if mustHaveScala2 then require(scala2.nonEmpty, s"No Scala 2 library $source.")
+
+    def scalaVersion(dependencyWithVersion: Dependency#WithVersion): ScalaVersion =
+      dependencyWithVersion.version.simple.toScalaVersion
 
     new ScalaLibrary(
-      scala3.map(dependency => ScalaVersion(dependency.version.simple)), 
-      scala2.map(dependency => ScalaVersion(dependency.version.simple))
+      scala3.map(scalaVersion),
+      scala2.map(scalaVersion)
     )
     
