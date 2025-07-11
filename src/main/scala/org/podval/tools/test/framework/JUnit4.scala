@@ -17,7 +17,7 @@ import org.podval.tools.jvm.JvmBackend
 //   org.scala-sbt:test-interface:1.0
 object JUnit4 extends FrameworkDescriptor(
   name = "JUnit",
-  displayName = "JUnit4",
+  description = "JUnit4",
   group = "com.github.sbt",
   artifact = "junit-interface",
   className = "com.novocode.junit.JUnitFramework",
@@ -28,12 +28,12 @@ object JUnit4 extends FrameworkDescriptor(
   // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
   additionalOptions = Array("--ignore-runners=none"),
   usesTestSelectorAsNestedTestSelector = true
-):
+) with JavaDependencyMaker:
   override val versionDefault: Version = Version("0.13.3")
 
   // This is a JVM-only test framework
   override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
-    case JvmBackend => Some(new Maker with JavaDependencyMaker)
+    case JvmBackend => Some(this)
     case _ => None
 
   override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match

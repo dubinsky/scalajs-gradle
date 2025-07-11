@@ -26,7 +26,7 @@ trait ScalaNativeLinkTask extends LinkTask[ScalaNativeBackend.type]:
   @OutputFile final def getOutputFile: File = link.artifactPath.toFile
 
   override lazy val link: ScalaNativeLink =
-    val sourcesClassPath: Seq[Path] = Seq.empty // TODO
+    val sourcesClasspath: Seq[Path] = Seq.empty // TODO
     ScalaNativeLink(
       lto = LTO(getLto),
       gc = GC(getGc),
@@ -36,8 +36,8 @@ trait ScalaNativeLinkTask extends LinkTask[ScalaNativeBackend.type]:
       projectName = getProject.getName,
       mainClass = mainClass,
       isTest = isTest,
-      classpath = runtimeClassPath.map(_.toPath),
-      sourcesClassPath = sourcesClassPath,
+      classpath = runtimeClasspath.map(_.toPath),
+      sourcesClasspath = sourcesClasspath,
       logSource = getName
     )
 

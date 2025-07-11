@@ -3,6 +3,9 @@ package org.podval.tools.test.detect
 import org.podval.tools.test.taskdef.Fingerprints
 import sbt.testing.{Fingerprint, Framework}
 
+object FingerprintDetector:
+  type Many = Set[FingerprintDetector]
+
 abstract class FingerprintDetector(
   val fingerprint: Fingerprint,
   val framework: Framework

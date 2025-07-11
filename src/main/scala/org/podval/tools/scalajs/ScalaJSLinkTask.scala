@@ -43,7 +43,7 @@ trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
     moduleInitializers = moduleInitializers,
     isTest = isTest,
     prettyPrint = getPrettyPrint.getOrElse(false),
-    runtimeClassPath = runtimeClassPath,
+    runtimeClasspath = runtimeClasspath,
     logSource = getName
   )
 

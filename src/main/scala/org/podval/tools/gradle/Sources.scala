@@ -1,21 +1,21 @@
-package org.podval.tools.backend
+package org.podval.tools.gradle
 
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.file.DefaultSourceDirectorySet
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.api.{Action, Project, Task}
 import org.gradle.api.tasks.{AbstractCopyTask, ScalaSourceDirectorySet, SourceSet, SourceTask}
-import org.podval.tools.build.{ScalaVersion, SourceSets, Version}
+import org.gradle.api.{Action, Project, Task}
+import org.podval.tools.build.{ScalaVersion, Version}
 import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 import java.lang.reflect.Field
 
 object Sources:
-  def clearSourceSet(sourceSet: SourceSet): SourceDirectorySet =
+  def removeAll(sourceSet: SourceSet): SourceDirectorySet =
     getScalaSourceDirectorySet(sourceSet).setSrcDirs(List.empty.asJava)
 
-  def addVersionSpecificScalaSources(
+  def addVersionSpecific(
     project: Project,
     scalaVersion: ScalaVersion
   ): Unit =
@@ -27,25 +27,25 @@ object Sources:
     
     def addScalaRoots(sourceSet: SourceSet): Unit =
       val sourceDirectories: Seq[File] = scalaRoots.map(scalaRoot => Files.file(
-        project.getProjectDir,
+        Projects.projectDir(project),
         "src",
         sourceSet.getName,
         scalaRoot
       ))
       getScalaSourceDirectorySet(sourceSet).srcDirs(sourceDirectories *)
 
-    addScalaRoots(SourceSets.mainSourceSet(project))
-    addScalaRoots(SourceSets.testSourceSet(project))
+    addScalaRoots(Configurations.mainSourceSet(project))
+    addScalaRoots(Configurations.testSourceSet(project))
 
-  def addSharedSources(
+  def addShared(
     project: Project,
     shared: Project,
     isRunningInIntelliJ: Boolean
   ): Unit =
-    val mainSourceSet: SourceSet = SourceSets.mainSourceSet(project)
-    val testSourceSet: SourceSet = SourceSets.testSourceSet(project)
-    val sharedMainSourceSet: SourceSet = SourceSets.mainSourceSet(shared)
-    val sharedTestSourceSet: SourceSet = SourceSets.testSourceSet(shared)
+    val mainSourceSet: SourceSet = Configurations.mainSourceSet(project)
+    val testSourceSet: SourceSet = Configurations.testSourceSet(project)
+    val sharedMainSourceSet: SourceSet = Configurations.mainSourceSet(shared)
+    val sharedTestSourceSet: SourceSet = Configurations.testSourceSet(shared)
 
     def addBoth(): Unit =
       add(sharedMainSourceSet, mainSourceSet)
@@ -58,19 +58,19 @@ object Sources:
     if !isRunningInIntelliJ then addBoth() else
       // Add dependency on the shared sibling.
       // TODO exclude this dependency from publications!
-      project.getDependencies.add(mainSourceSet.getImplementationConfigurationName, shared)
-      
+      Configurations.addDependency(project, Configurations.implementationName(project), shared)
+
       // Add shared sources for the execution of the tasks that need them:
       // add before and remove after, so that IntelliJ does not
       // run into "duplicate content roots" issue during project import.
-      val sharedForTask: Action[Task] = (task: Task) =>
+      def sharedForTask(task: Task): Unit =
         // Note: task actions below *must* be Actions and not just lambdas:
         task.doFirst(new Action[Task] { override def execute(task: Task): Unit = addBoth   () }) //noinspection ConvertExpressionToSAM
         task.doLast (new Action[Task] { override def execute(task: Task): Unit = removeBoth() }) //noinspection ConvertExpressionToSAM
 
-      project.getTasks.withType(classOf[SourceTask         ]).configureEach(sharedForTask) // compilation
-      project.getTasks.withType(classOf[AbstractArchiveTask]).configureEach(sharedForTask) // archives
-      project.getTasks.withType(classOf[AbstractCopyTask   ]).configureEach(sharedForTask) // resources
+      Tasks.configureEach(project, classOf[SourceTask         ], sharedForTask(_)) // compilation
+      Tasks.configureEach(project, classOf[AbstractArchiveTask], sharedForTask(_)) // archives
+      Tasks.configureEach(project, classOf[AbstractCopyTask   ], sharedForTask(_)) // resources
 
   private def add(shared: SourceSet, to: SourceSet): Unit =
     def add(getSourceDirectorySet: SourceSet => SourceDirectorySet): Unit =

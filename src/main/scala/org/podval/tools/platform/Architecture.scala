@@ -17,7 +17,7 @@ object Architecture:
   // Gradle Node plugin's code claims that Java returns "arm" on all ARM variants.
   private def getNameFromEnvironment: String = System.getProperty("os.arch")
 
-  private def getNameFromSystem: String = Exec.unameM
+  private def getNameFromSystem: String = Exec("uname -m")
 
   def getName: String = if Os.get.hasUname then getNameFromSystem else getNameFromEnvironment
 

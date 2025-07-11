@@ -12,20 +12,23 @@ sealed abstract class ScalaJSDependency(
 
 object ScalaJSDependency:
   val group: String = "org.scala-js"
+  val versionDefault: Version = Version("1.19.0")
 
   object DomSJS extends ScalaJSDependency("scalajs-dom", "Library for DOM manipulations"):
-    override val versionDefault: Version = Version("2.8.0")
     override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
+    override val versionDefault: Version = Version("2.8.0")
 
-  object JSDomNodeJSEnv extends ScalaJSDependency("scalajs-env-jsdom-nodejs", "Node.js JavaScript environment with JSDOM"):
-    override val versionDefault: Version = Version("1.1.0")
+  object JSDomNodeJSEnv 
+    extends ScalaJSDependency("scalajs-env-jsdom-nodejs", "Node.js JavaScript environment with JSDOM")
+    with ScalaDependencyMaker.NotPublishedForScala3:
     override def scalaBackend: JvmBackend.type = JvmBackend
-    override def isPublishedForScala3: Boolean = false
+    override val versionDefault: Version = Version("1.1.0")
 
-  sealed class Jvm(artifact: String, what: String) extends ScalaJSDependency(artifact, what):
+  sealed class Jvm(artifact: String, what: String)
+    extends ScalaJSDependency(artifact, what)
+    with ScalaDependencyMaker.NotPublishedForScala3:
     final override def scalaBackend: JvmBackend.type = JvmBackend
-    final override def versionDefault: Version = ScalaJSBackend.versionDefault
-    final override def isPublishedForScala3: Boolean = false
+    final override def versionDefault: Version = ScalaJSDependency.versionDefault
 
   object Library      extends Jvm("scalajs-library", "Library")
   object Linker       extends Jvm("scalajs-linker", "Linker")
@@ -34,7 +37,7 @@ object ScalaJSDependency:
   // object TestInterface extends Jvm("scalajs-test-interface")
   
   object TestBridge   extends Jvm("scalajs-test-bridge", "Test Bridge for Node.js"):
-    override def useExactVersionInVerifyRequired: Boolean = true
+    override def isDependencyRequirementVersionExact: Boolean = true
 
   // compiler plugins for Scala 2
   object Compiler     extends Jvm(
@@ -49,19 +52,21 @@ object ScalaJSDependency:
   ):
     override def isScalaVersionFull: Boolean = true
 
-  // There is no Scala 2 equivalent
   object Scala3LibraryJS extends ScalaDependencyMaker:
-    override def versionDefault: Version = ScalaBinaryVersion.Scala3.versionDefault.version
+    override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
+    override def versionDefault: Version = ScalaBinaryVersion.Scala3.versionDefault
     override def group: String = ScalaBinaryVersion.group
     override def artifact: String = "scala3-library"
     override def description: String = "Scala 3 library in Scala.js."
-    override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
 
-  object PlaywrightJSEnv extends ScalaDependencyMaker:
+    // There is no Scala 2 equivalent
+    override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = binaryVersion match
+      case ScalaBinaryVersion.Scala3 => true
+      case _ => false
+  
+  object PlaywrightJSEnv extends ScalaDependencyMaker.NotPublishedForScala3:
+    override def scalaBackend: JvmBackend.type = JvmBackend
     override def group: String = "io.github.gmkumar2005"
     override def artifact: String = "scala-js-env-playwright"
     override def versionDefault: Version = Version("0.1.18")
     override val description: String = ScalaJSBackend.describe("Playwright JavaScript environment")
-    override def scalaBackend: JvmBackend.type = JvmBackend
-    override def isPublishedForScala3: Boolean = false
-    override def isPublishedForScala213: Boolean = false

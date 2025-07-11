@@ -4,15 +4,15 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.1
-:version-gradle: 9.0.0-rc-2
+:version-plugin: 0.9.2
+:version-gradle: 9.0.0-rc-3
 :version-scala: 3.7.1
 :version-sbt-test-interface: 1.0
 :version-scalajs: 1.19.0
 :version-scalajs-dom: 2.8.0
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 22.16.0
+:version-node: 24.4.0
 :version-scalanative: 0.5.8
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
@@ -22,12 +22,12 @@
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.6.4
-:version-framework-specs2-scala2: 4.20.9
+:version-framework-specs2-scala2: 4.21.0
 :version-framework-utest: 0.8.9
 :version-framework-zio-test: 2.1.19
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
 :attribute-pluginBuildPerScalaVersionProperty: org.podval.tools.backend.buildPerScalaVersion
-:attribute-gradleVersionForBadge: 9.0.0--rc--2
+:attribute-gradleVersionForBadge: 9.0.0--rc--3
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -176,11 +176,8 @@ This can be used to simplify writing build scripts, e.g.:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.backend.BackendExtension
-final BackendExtension backend = scalaBackend
-
 dependencies {
-  testImplementation "org.scala-js:scalajs-junit-test-runtime_${backend.scala2BinaryVersion}:{version-scalajs}"
+  testImplementation "org.scala-js:scalajs-junit-test-runtime_${scalaBackend.scala2BinaryVersion}:{version-scalajs}"
 }
 ----
 
@@ -461,28 +458,25 @@ that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.backend.BackendExtension
-final BackendExtension backend = scalaBackend
-
 dependencies {
-  // if version of `scalajs-library` is specified explicitly, ${backend.backendVersion} is set to that value;
+  // if version of `scalajs-library` is specified explicitly, ${scalaBackend.backendVersion} is set to that value;
   // if not, plugin uses default version:
-  implementation  "org.scala-js:scalajs-library_${backend.scala2BinaryVersion}:{version-scalajs}"
-  implementation  "org.scala-js:scalajs-dom_sjs1_${backend.scalaBinaryVersion}:{version-scalajs-dom}"
-  if (backend.scala3) {
-    implementation "org.scala-lang:scala3-library_sjs1_${backend.scalaBinaryVersion}:${backend.scalaVersion}"
+  implementation  "org.scala-js:scalajs-library_${scalaBackend.scala2BinaryVersion}:{version-scalajs}"
+  implementation  "org.scala-js:scalajs-dom_sjs1_${scalaBackend.scalaBinaryVersion}:{version-scalajs-dom}"
+  if (scalaBackend.scala3) {
+    implementation "org.scala-lang:scala3-library_sjs1_${scalaBackend.scalaBinaryVersion}:${scalaBackend.scalaVersion}"
   }
-  scalajs         "org.scala-js:scalajs-linker_${backend.scala2BinaryVersion}:${backend.backendVersion}"
-  scalajs         "org.scala-js:scalajs-sbt-test-adapter_${backend.scala2BinaryVersion}:${backend.backendVersion}"
-  scalajs         "org.scala-js:scalajs-env-jsdom-nodejs_${backend.scala2BinaryVersion}:{version-scalajs-env-jsdom-nodejs}"
-  scalajs         "org.scala-lang.modules:scala-parallel-collections_${backend.scalaBinaryVersion}:{version-scala-parallel-collections}"
-  if (!scalaVersion.scala3) {
-    scalaCompilerPlugins "org.scala-js:scalajs-compiler_${backend.scalaVersion}:${backend.backendVersion}"
+  scalajs         "org.scala-js:scalajs-linker_${scalaBackend.scala2BinaryVersion}:${scalaBackend.backendVersion}"
+  scalajs         "org.scala-js:scalajs-sbt-test-adapter_${scalaBackend.scala2BinaryVersion}:${scalaBackend.backendVersion}"
+  scalajs         "org.scala-js:scalajs-env-jsdom-nodejs_${scalaBackend.scala2BinaryVersion}:{version-scalajs-env-jsdom-nodejs}"
+  scalajs         "org.scala-lang.modules:scala-parallel-collections_${scalaBackend.scalaBinaryVersion}:{version-scala-parallel-collections}"
+  if (!scalaBackend.scala3) {
+    scalaCompilerPlugins "org.scala-js:scalajs-compiler_${scalaBackend.scalaVersion}:${scalaBackend.backendVersion}"
   }
-  if (!scalaVersion.scala3 && backend.nonJvmJUnit4present) {
-    testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_${backend.scalaVersion}:${backend.backendVersion}"
+  if (!scalaBackend.scala3 && scalaBackend.nonJvmJUnit4present) {
+    testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_${scalaBackend.scalaVersion}:${backend.backendVersion}"
   }
-  testRuntimeOnly "org.scala-js:scalajs-test-bridge_${backend.scala2BinaryVersion}:${backend.backendVersion}"
+  testRuntimeOnly "org.scala-js:scalajs-test-bridge_${scalaBackend.scala2BinaryVersion}:${scalaBackend.backendVersion}"
 }
 ----
 
@@ -772,13 +766,10 @@ that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.backend.BackendExtension
-final BackendExtension backend = scalaBackend
-
 dependencies {
   // if version of `scala3lib`/`scalalib` is specified explicitly, ${backend.backendVersion} is set to that value;
   // if not, plugin uses default version:
-  if (scalaVersion.scala3) {
+  if (scalaBackend.scala3) {
     implementation "org.scala-native:scala3lib_native0.5_${backend.scalaBinaryVersion}:${backend.version}+{version-scalanative}"
   } else {
     implementation "org.scala-native:scalalib_native0.5_${backend.scalaBinaryVersion}:${backend.version}+{version-scalanative}"
@@ -795,7 +786,7 @@ dependencies {
 
   scalaCompilerPlugins "org.scala-native:nscplugin_${backend.scalaVersion}:${backend.backendVersion}"
 
-  if (backend.nonJvmJUnit4present) {
+  if (scalaBackend.nonJvmJUnit4present) {
     testScalaCompilerPlugins "org.scala-native:junit-plugin_${backend.scalaVersion}:${backend.backendVersion}"
   }
 
@@ -977,14 +968,14 @@ The following patterns specify test classes to run:
 - `"*IntegrationTest"`: classes whose named end with "IntegrationTest";
 - `"Scala*"`: classes whose name starts with "Scala";
 - `"org.podval.tools.test.Scala*"`: classes in specified package whose name starts with "Scala";
-- `"org.podval.tools.test.*"`: tests in specified package (used by IntelliJ Idea, see <<intellij-idea-integration>>);
-- `"org.podval.tools.test.ScalaTest"`: tests in specified class (used by IntelliJ Idea, see <<intellij-idea-integration>>).
+- `"org.podval.tools.test.*"`: tests in specified package (used by IntelliJ Idea, see <<testing-in-intellij>>);
+- `"org.podval.tools.test.ScalaTest"`: tests in specified class (used by IntelliJ Idea, see <<testing-in-intellij>>).
 
 All these patterns work as intended.
 
 The following patterns specify test cases to run:
 
-- `"org.podval.tools.test.SomeTestClass.success"`: specified test case in specified class (used by IntelliJ Idea, see <<intellij-idea-integration>>);
+- `"org.podval.tools.test.SomeTestClass.success"`: specified test case in specified class (used by IntelliJ Idea, see <<testing-in-intellij>>);
 - `"org.podval.tools.test.SomeTestClass.succ*"`: test cases whose names start with "succ" in specified class.
 
 With these patterns, what actually happens depends on the
@@ -1034,6 +1025,100 @@ when test framework involved provides sufficient information about the tests run
 attributes test cases from the nested suites to them:
 test report will have no test cases for the nesting class;
 instead, test cases will be reported for the nested classes they belong to.
+
+[#testing-in-intellij]
+=== Testing in IntelliJ
+
+In the following, it is assumed that the IDE is configured to use Grade to run tests etc.
+
+On JVM, whatever you can run from Idea you can also debug;
+Scala.js code runs on Node.js, so there is no debugging it - breakpoints have no effect;
+nor do they on Scala Native.
+
+As with any other Gradle project imported into Idea, you can run Gradle tasks.
+
+IntelliJ lets you run objects with main methods using either:
+
+- object node in the project tree or
+- gutter icon in the object's file
+
+On Scala.js or Scala Native, objects can not be run this way:
+the code needs to be compiled and linked for the appropriate backend.
+This is what the `run` task added by the plugin is for.
+
+As usual, when you run tests:
+
+- results are displayed in tree form
+- test counts are displayed.
+
+As usual, you can run all tests from the project tree using any of the nodes:
+
+[source]
+----
+<root>
+  src
+    test
+      scala
+----
+
+As usual, you can run all tests from a package using the package's node in the project tree.
+Idea supplies Gradle test filter "selected.package.*".
+
+As usual, you can run individual test class for _the frameworks Idea recognizes_ using either:
+
+- test's node in the project tree or
+- gutter icon in the test's file
+
+Idea supplies Gradle test filter "fully.qualified.TestClass".
+
+As usual, you can run individual test in a test class for _the frameworks Idea recognizes_ using:
+
+- gutter icon in the test's file
+
+Idea supplies Gradle test filter "fully.qualified.TestClass.test".
+
+There are some https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[inconsistencies]
+in the way IntelliJ handles test classes and individual tests
+that might one day be fixed in the IntelliJ code
+(in the vicinity of `org.jetbrains.plugins.scala.testingSupport.test.structureView.TestNodeProvider`).
+
+From the test frameworks this plugin supports, Idea recognizes:
+
+- JUnit4
+- JUnit4 for Scala.js
+- JUnit4 for Native
+
+Scala plugin for Idea recognizes:
+
+- MUnit
+- ScalaTest
+- Specs2
+- uTest
+
+ScalaCheck is not recognized by the Scala Plugin:
+no gutter icon for the test class nor individual tests in it are available,
+Run and Debug commands are not available in the context menu
+of the test classes node in the Project tree
+and of the gutter icon of the test class.
+
+Total lack of activity on the 13 years old issue
+https://youtrack.jetbrains.com/issue/SCL-4398/ScalaCheck-support[ScalaCheck support]
+means that there is no intention for the Scala plugin to support ScalaCheck :(
+
+ZIO Test is not recognized by the Scala Plugin:
+no gutter icon for the test class nor individual tests in it are available,
+Run and Debug commands are not available in the context menu
+of the test classes node in the Project tree
+and of the gutter icon of the test class.
+
+Existence of the separate (now semi-abandoned)
+https://github.com/zio/zio-intellij[ZIO companion plugin for IntelliJ IDEA]
+means that there is no intention for the Scala plugin to support ZIO Test :(
+
+Since `ZIO Test` tests are  objects with main method,
+they can be run from Idea (on JVM),
+but there is no test result tree nor test counts displayed,
+and since Gradle is not involved, no test reports.
 
 [#test-frameworks]
 == Test Frameworks
@@ -1118,38 +1203,107 @@ that fit the Scala version and backend:
 
 [source,groovy,subs="+attributes"]
 ----
-import org.podval.tools.backend.BackendExtension
-final BackendExtension backend = scalaBackend
-
 final String scalaJSVersion = '{version-scalajs}'
 final String scalaNativeVersion = '{version-scalanative}'
 
 dependencies {
-  if (backend.jvm) {
+  if (scalaBackend.jvm) {
     testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
   }
-  if (backend.js) {
-    testImplementation "org.scala-js:scalajs-junit-test-runtime_${backend.scala2BinaryVersion}:$scalaJSVersion"
+  if (scalaBackend.js) {
+    testImplementation "org.scala-js:scalajs-junit-test-runtime_${scalaBackend.scala2BinaryVersion}:$scalaJSVersion"
   }
-  if (backend.native) {
-    testImplementation "org.scala-native:junit-runtime${backend.suffix}_${backend.scalaBinaryVersion}:$scalaNativeVersion"
-  }
-
-  testImplementation "org.scalameta:munit${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-munit}"
-  testImplementation "org.scalacheck:scalacheck${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-scalacheck}"
-  testImplementation "org.scalatest:scalatest${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-utest}"
-  testImplementation "com.lihaoyi:utest${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-utest}"
-
-  if (backend.jvm) {
-    testImplementation "dev.zio:zio-test-sbt${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-zio-test}"
+  if (scalaBackend.native) {
+    testImplementation "org.scala-native:junit-runtime${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:$scalaNativeVersion"
   }
 
-  if (backend.jvm || backend.js) {
-    if (scalaVersion.scala3) {
-      testImplementation "org.specs2:specs2-core${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-specs2}"
+  testImplementation "org.scalameta:munit${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-munit}"
+  testImplementation "org.scalacheck:scalacheck${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-scalacheck}"
+  testImplementation "org.scalatest:scalatest${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-scalatest}"
+  testImplementation "com.lihaoyi:utest${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-utest}"
+
+  if (scalaBackend.jvm) {
+    testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-zio-test}"
+  }
+
+  if (scalaBackend.jvm || scalaBackend.js) {
+    if (scalaBackend.scala3) {
+      testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2}"
     } else {
-      testImplementation "org.specs2:specs2-core${backend.suffix}_${backend.scalaBinaryVersion}:{version-framework-specs2-scala2}"
+      testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2-scala2}"
     }
+  }
+}
+----
+
+Plugin provides a method for adding test framework dependencies easier.
+The following Gradle build script fragment adds all test framework dependencies
+that fit the Scala version and backend using this method:
+
+[source,groovy,subs="+attributes"]
+----
+import org.podval.tools.test.framework.*
+
+dependencies {
+  if (scalaBackend.jvm) {
+    testImplementation scalaBackend.testFramework(JUnit4, '{version-framework-junit4}')
+  }
+  if (scalaBackend.js) {
+    testImplementation scalaBackend.testFramework(JUnit4ScalaJS, '{version-scalajs}')
+  }
+  if (scalaBackend.native) {
+    testImplementation scalaBackend.testFramework(JUnit4ScalaNative, '{version-scalanative}')
+  }
+
+  testImplementation scalaBackend.testFramework(MUnit, '{version-framework-munit}')
+  testImplementation scalaBackend.testFramework(ScalaCheck, '{version-framework-scalacheck}')
+  testImplementation scalaBackend.testFramework(ScalaTest, '{version-framework-scalatest}')
+  testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
+
+  if (scalaBackend.jvm) {
+    testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-zio-test}')
+  }
+
+  if (scalaBackend.jvm || scalaBackend.js) {
+    if (scalaBackend.scala3) {
+      testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
+    } else {
+      testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2-scala2}')
+    }
+  }
+}
+----
+
+You do not have to specify test framework versions explicitly;
+to use the latest versions available at the time the version of the plugin
+you are using was released, above can be simplified further:
+
+[source,groovy,subs="+attributes"]
+----
+import org.podval.tools.test.framework.*
+
+dependencies {
+  if (scalaBackend.jvm) {
+    testImplementation scalaBackend.testFramework(JUnit4)
+  }
+  if (scalaBackend.js) {
+    testImplementation scalaBackend.testFramework(JUnit4ScalaJS)
+  }
+  if (scalaBackend.native) {
+    testImplementation scalaBackend.testFramework(JUnit4ScalaNative)
+  }
+
+  testImplementation scalaBackend.testFramework(MUnit)
+  testImplementation scalaBackend.testFramework(ScalaCheck)
+  testImplementation scalaBackend.testFramework(ScalaTest)
+  testImplementation scalaBackend.testFramework(UTest)
+
+  if (scalaBackend.jvm) {
+    testImplementation scalaBackend.testFramework(ZioTest)
+  }
+
+  if (scalaBackend.jvm || scalaBackend.js) {
+    testImplementation scalaBackend.testFramework(Specs2)
   }
 }
 ----
@@ -1420,91 +1574,6 @@ object ZIOTestNested extends ZIOSpecDefault {
 }
 ----
 
-[#intellij-idea-integration]
-== IntelliJ Idea Integration
-
-In the following, it is assumed that the IDE is configured to use Grade to run tests etc.
-
-On JVM, whatever you can run from Idea you can also debug;
-Scala.js code runs on Node.js, so there is no debugging it - breakpoints have no effect;
-nor do they on Scala Native.
-
-As with any other Gradle project imported into Idea, you can run Gradle tasks.
-
-IntelliJ lets you run objects with main methods using either:
-
-- object node in the project tree or
-- gutter icon in the object's file
-
-On Scala.js or Scala Native, objects can not be run this way:
-the code needs to be compiled and linked for the appropriate backend.
-This is what the `run` task added by the plugin is for.
-
-As usual, when you run tests:
-
-- results are displayed in tree form
-- test counts are displayed.
-
-As usual, you can run all tests from the project tree using any of the nodes:
-
-[source]
-----
-<root>
-  src
-    test
-      scala
-----
-
-As usual, you can run all tests from a package using the package's node in the project tree.
-Idea supplies Gradle test filter "selected.package.*".
-
-As usual, you can run individual test for _the frameworks Idea recognizes_ using either:
-
-- test's node in the project tree or
-- gutter icon in the test's file
-
-Idea supplies Gradle test filter "fully.qualified.TestClass".
-
-From the test frameworks this plugin supports,
-Idea recognizes:
-
-- JUnit4 (for some reason, tests cannot be run from the project tree)
-- JUnit4 for Scala.js
-- JUnit4 for Native
-- MUnit
-
-Scala plugin for Idea recognizes
-(but does nor reflect the results of the previous run in the gutter icon of the test):
-
-- ScalaTest
-- Specs2
-- uTest
-
-Not recognized are:
-
-- ScalaCheck
-- ZIO Test
-
-Since `ZIO Test` tests are  objects with main method,
-they can be run from Idea (on JVM),
-but there is no test result tree nor test counts displayed,
-and since Gradle is not involved, no test reports.
-
-For `JUnit4`, `JUnit4 for Scala.js`, and `JUnit4 for Scala Native`
-Idea also recognizes individual test methods within a test class;
-they can be run using their gutter icons.
-Idea supplies Gradle test filter "fully.qualified.TestClass.testMethod".
-
-For `MUnit`, only the first test method gets a gutter icon,
-but Idea supplies test filter "fully.qualified.TestClass",
-so that icon runs the whole class, not the test method it is for.
-
-For `ScalaTest`, every test method gets a gutter icon,
-but Idea supplies test filter "fully.qualified.TestClass",
-so that icon runs the whole class, not the test method it is for.
-
-For `specs2` and `uTest`, there are no gutter icons for individual test methods.
-
 == Implementation Notes
 
 === Linking and Running Scala.js and Scala Native
@@ -1540,7 +1609,7 @@ For Gradle to treat shared sources correctly, they just need to be added to the
 appropriate source sets of the backend-specific subprojects.
 
 Unfortunately, when such a project is imported into IntelliJ Idea
-it triggers an infamous
+it triggers an infamous (12 years old)
 https://youtrack.jetbrains.com/issue/IDEABKL-6745/Cannot-define-two-identical-content-roots-in-different-module-within-a-single-project[issue]
 of "Duplicate Content Roots".
 
@@ -1565,19 +1634,16 @@ This parasitic dependency is somewhat problematic:
 it creeps into the POMs of the artifacts published from within the IDE...
 
 Interestingly, https://github.com/JetBrains/intellij-scala[Scala Plugin for IntelliJ IDEA]
-_does_ support shared sources for `sbt` projects - but not for the `Gradle` ones!
-During a cursory reading of the code, I saw some interesting things:
-
-- `org.jetbrains.sbt.project.sources.SharedSourcesModuleType`, which seems to represent shared sources;
-- its description: "During compilation, dependency to a shared sources module mixes in module sources rather than module output";
-- `org.jetbrains.sbt.project.ExternalSourceRootResolution`;
-- `org.jetbrains.sbt.project.ExternalSourceRootResolution.SharedSourcesGroup`;
-- `org.jetbrains.sbt.project.data.service.ExternalSystemDataDsl.sharedSourcesModule`;
-- `org.jetbrains.sbt.project.data.service.SbtProjectDataService`;
-- `org.jetbrains.plugins.scala.project.gradle.ScalaGradleDataService`.
-
-Of course, I'd prefer the Idea Scala plugin to dance around the Idea's "duplicate content roots" issue,
-but since it does not do it for Gradle...
+_does_ support shared sources for `sbt` projects
+(see `org.jetbrains.sbt.project.sources.SharedSourcesModuleType`);
+an https://youtrack.jetbrains.com/issue/SCL-24128/Support-shared-sources-for-Gradle-not-just-sbt[issue]
+asking for support for shared sources for Gradle in the
+IntelliJ Scala Plugin will not be addressed,
+but there turns out to be an
+https://youtrack.jetbrains.com/issue/IJPL-339/Multi-context-resolve-support-in-IJ-platform[effort] to provide such support in the IntelliJ Platform,
+where the bulk of the Gradle support resides.
+If this effort ever delivers something that is useful to clean up
+my workarounds - I will :)
 
 === Building for Multiple Scala Versions
 
@@ -1852,7 +1918,7 @@ the output and error events and
 - https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L29[adds]
 its own test and output listener
 https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
-that does no batching, indenting or adding.
+that does not batch, indent nor adds the test name.
 
 === Test Tagging
 Although it is tempting to help the test frameworks out by
@@ -2058,6 +2124,11 @@ is ever addressed,
 plugin will add support for it.
 Judging by the absence of any reaction of the maintainers it won't happen though :(
 
+If the https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[issue]
+concerning inconsistencies in test frameworks support in IntelliJ IDEA
+is ever addressed, user experience will improve for all users of the frameworks
+involved in IntelliJ - with or without my Gradle plugin.
+
 Of course, I plan to address bug reports and feature requests from the
 users of the plugin,
 and periodically update plugin's dependencies (including Gradle).
@@ -2121,6 +2192,12 @@ looking into the issue.
 https://github.com/gradle/gradle/issues/32666[issues/32666]
 _Allow alternatives to ForkingTestClassProcessor._
 
+- https://github.com/JetBrains/intellij-scala[IntelliJ IDEA Scala Plugin]:
+* https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[24127]
+_Scala Test Inconsistencies_
+* https://youtrack.jetbrains.com/issue/SCL-24128/Support-shared-sources-for-Gradle-not-just-sbt[24128]
+_Support shared sources for Gradle, not just sbt_
+
 - https://zio.dev/[ZIO]:
 * https://github.com/zio/zio/issues/9629[issues/9629]
 _zio-test: Scala.js: no test events._
@@ -2166,6 +2243,10 @@ for accepting my contribution.
 _Treat sbt.testing.TestWildcardSelectors correctly._
 Thank you to https://github.com/etorreborre[etorreborre]
 for accepting my contribution.
+
+- https://github.com/com-lihaoyi/utest[uTest]:
+* _https://github.com/com-lihaoyi/utest/pull/383[pull/383]_
+_Honour useSbtLoggers for startHeader_
 
 == Credits
 

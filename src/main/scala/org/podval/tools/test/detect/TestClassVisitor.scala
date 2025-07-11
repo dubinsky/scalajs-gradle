@@ -56,7 +56,7 @@ final class TestClassVisitor private(
 
   def getDetectors: ClassFileDetectors = detectors
 
-  def getApplicableDetectors: FingerprintDetectors =
+  def getApplicableDetectors: FingerprintDetector.Many =
     if isAbstract
     then Set.empty
     else detectors.getApplicable(isModule)
@@ -91,7 +91,7 @@ final class TestClassVisitor private(
       .foreach(addDetector)
     null
   
-  private def detect(detectors: Seq[FingerprintDetector], name: String): FingerprintDetectors =
+  private def detect(detectors: Seq[FingerprintDetector], name: String): FingerprintDetector.Many =
     detectors.toSet.filter(_.name == name)
 
   override def visitInnerClass(

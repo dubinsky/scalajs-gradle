@@ -19,7 +19,7 @@ final private class RunTestClass(
   private val eventHandler: EventHandler = EventHandler(this)
 
   val logger: Logger = new Logger:
-    private def log(logLevel: LogLevel, message: String): Unit = testResultProcessor.output(logLevel, testId, message)
+    private def log(logLevel: LogLevel, message: String): Unit = testResultProcessor.output(logLevel, testId, s"sbt $logLevel: $message")
     override def ansiCodesSupported: Boolean = true
     override def error(message: String): Unit = log(LogLevel.ERROR, message)
     override def warn (message: String): Unit = log(LogLevel.WARN , message)

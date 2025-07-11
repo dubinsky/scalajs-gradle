@@ -1,31 +1,36 @@
 package org.podval.tools.node
 
 import org.podval.tools.build.{DependencyInstallable, PreVersion, SimpleDependency, SimpleDependencyMaker, Version}
+import org.podval.tools.gradle.Artifact
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
-object NodeDependency extends SimpleDependency[NodeDependency.type] with DependencyInstallable[Node]:
-  object Maker extends SimpleDependencyMaker[NodeDependency.type]:
-    override def findable: NodeDependency.type = NodeDependency
-    override def group: String = "org.nodejs"
-    override def artifact: String = "node"
-    override def versionDefault: Version = Version("22.16.0")
-    override def description: String = "Node.js"
-    override def extension(version: PreVersion): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
-    override def classifier(version: PreVersion): Option[String] =
-      val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
-      val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName
-      val dependencyOsArch: String = if fixUpOsAndArch then "x86"   else osArch
-      Some(s"$dependencyOsName-$dependencyOsArch")
+object NodeDependency 
+  extends SimpleDependency[NodeDependency.type]
+    with SimpleDependencyMaker[NodeDependency.type]
+    with DependencyInstallable[Node]:
+
+  override def maker: SimpleDependencyMaker[NodeDependency.type] = NodeDependency
+  override def findable: NodeDependency.type = NodeDependency
+
+  override def versionDefault: Version = Version("24.4.0")
+  override def group: String = "org.nodejs"
+  override def artifact: String = "node"
+  override def description: String = "Node.js"
+  override def extension(version: PreVersion): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
   
-  override def maker: SimpleDependencyMaker[NodeDependency.type] = Maker
+  override def classifier(version: PreVersion): Option[String] =
+    val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
+    val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName
+    val dependencyOsArch: String = if fixUpOsAndArch then "x86"   else osArch
+    Some(s"$dependencyOsName-$dependencyOsArch")
   
   override def cacheDirectory: String = "nodejs"
 
-  override def repository: Option[DependencyInstallable.Repository] = Some(DependencyInstallable.Repository(
+  override def repository: Option[Artifact.Repository] = Some(Artifact.Repository(
     url = "https://nodejs.org/dist",
     artifactPattern = "v[revision]/[artifact](-v[revision]-[classifier]).[ext]",
     ivy = "v[revision]/ivy.xml"

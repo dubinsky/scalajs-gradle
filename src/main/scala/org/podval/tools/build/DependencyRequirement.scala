@@ -2,6 +2,7 @@ package org.podval.tools.build
 
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.{GradleException, Project}
+import org.podval.tools.gradle.Configurations
 import org.slf4j.{Logger, LoggerFactory}
 
 final class DependencyRequirement(
@@ -18,17 +19,14 @@ final class DependencyRequirement(
 
     val result: Dependency#WithVersion = findable.findInConfiguration(configuration).getOrElse:
       val toAdd: Dependency#WithVersion = dependency.withVersion(version)
-      DependencyRequirement.logger.info(
-        s"Adding dependency $toAdd to configuration '${project.getName}.${configuration.getName}': ${maker.description}"
-      )
-      configuration
-        .getDependencies
-        .add(project.getDependencies.create(toAdd.dependencyNotation))
+      val display: String = s"dependency $toAdd to configuration '${project.getName}.${configuration.getName}': ${maker.description}."
+      DependencyRequirement.logger.info(s"Adding $display")
+      Configurations.addDependency(project, configuration.getName, toAdd.dependencyNotation)
       findable
         .findInConfiguration(configuration)
-        .getOrElse(throw GradleException(s"Failed to add dependency $toAdd to configuration ${configuration.getName}."))
+        .getOrElse(throw GradleException(s"Failed to add $display"))
     
-    if maker.useExactVersionInVerifyRequired && result.version != version then
+    if maker.isDependencyRequirementVersionExact && result.version != version then
       DependencyRequirement.logger.warn(s"Found $result, but the project uses version $version.")
     
     result
@@ -43,7 +41,7 @@ object DependencyRequirement:
     configurationName: String
   ):
     def apply(project: Project): Unit = if dependencyRequirements.length > 0 then
-      val configuration: Configuration = SourceSets.getConfiguration(project, configurationName)
+      val configuration: Configuration = Configurations.configuration(project, configurationName)
       dependencyRequirements.map(_.apply(
         project = project,
         scalaVersion = scalaVersion,

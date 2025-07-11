@@ -3,10 +3,7 @@ package org.podval.tools.node
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.{Input, TaskAction}
 
-abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNodeProject:
-  setGroup("other")
-  setDescription(s"Runs command supplied with the command line option '--$commandName-arguments' using '$commandName'.")
-
+abstract class NodeTask extends DefaultTask with TaskWithNodeProject:
   // setArguments() can not be declared here, and is instead declared in subclasses,
   // since it is annotated - and annotation arguments must be constant...
   private var arguments: String = ""
@@ -15,8 +12,8 @@ abstract class NodeTask(commandName: String) extends DefaultTask with TaskWithNo
   final protected def argumentsList: List[String] = arguments.split(" ").toList
 
 object NodeTask:
-  abstract class NodeRunTask extends NodeTask("node"):
-    @TaskAction final def execute(): Unit = nodeProject.node(argumentsList)
+  abstract class NodeRunTask extends NodeTask:
+    @TaskAction final def execute(): Unit = nodeProject.node(argumentsList, log = true)
 
     @org.gradle.api.tasks.options.Option(
       option = "node-arguments",
@@ -24,8 +21,8 @@ object NodeTask:
     )
     def setArguments(arguments: String): Unit = argumentsInternal(arguments)
 
-  abstract class NpmRunTask extends NodeTask("npm"):
-    @TaskAction final def execute(): Unit = nodeProject.npm(argumentsList)
+  abstract class NpmRunTask extends NodeTask:
+    @TaskAction final def execute(): Unit = nodeProject.npm(argumentsList, log = true)
 
     @org.gradle.api.tasks.options.Option(
       option = "npm-arguments",

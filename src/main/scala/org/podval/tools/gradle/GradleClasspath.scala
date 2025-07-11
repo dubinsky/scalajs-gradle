@@ -1,4 +1,4 @@
-package org.podval.tools.build
+package org.podval.tools.gradle
 
 import org.gradle.api.GradleException
 import org.gradle.internal.classloader.{ClassLoaderVisitor, ClasspathUtil, VisitableURLClassLoader}
@@ -8,10 +8,10 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
-object GradleClassPath:
-  def addTo(obj: AnyRef, files: Iterable[File]): ClassLoader =
-    val result: ClassLoader = obj.getClass.getClassLoader
-    val urls: Iterable[URL] = files.map(_.toURI.toURL)
+object GradleClasspath:
+  def addTo(filesToAdd: Iterable[File]): ClassLoader =
+    val urls: Iterable[URL] = filesToAdd.map(_.toURI.toURL)
+    val result: ClassLoader = getClass.getClassLoader
 
     result match
       case visitable: VisitableURLClassLoader =>

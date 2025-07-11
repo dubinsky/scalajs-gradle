@@ -16,10 +16,10 @@ final class ClosureCompilerSourceMapper(sourceMapFile: File) extends SourceMappe
       consumer = Some(result)
 
     Option(consumer.get.getMappingForLine(line, column))
-      .map(ClosureCompilerSourceMapper.repackage)
+      .map(ClosureCompilerSourceMapper.toSourceLocation)
 
 object ClosureCompilerSourceMapper:
-  private def repackage(result: OriginalMapping): SourceMapper.SourceLocation = SourceMapper.SourceLocation(
+  private def toSourceLocation(result: OriginalMapping): SourceMapper.SourceLocation = SourceMapper.SourceLocation(
     file = result.getOriginalFile,
     line = result.getLineNumber,
     column = result.getColumnPosition

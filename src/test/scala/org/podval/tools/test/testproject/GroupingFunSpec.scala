@@ -26,7 +26,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def checkRun: Boolean = false
   protected def features: Seq[Feature]
   protected def fixtures: Seq[Fixture]
-  protected def scalaVersions: Seq[ScalaVersion] = ScalaBinaryVersion.versionDefaults
+  protected def scalaVersions: Seq[ScalaVersion] = ScalaBinaryVersion.all.map(_.scalaVersionDefault)
   protected def backends: Set[ScalaBackend] = ScalaBackend.all
   
   final protected def groupTestByFixtureAndCombined(): Unit =
@@ -42,23 +42,23 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         for feature: Feature <- features do
           describe(feature.name):
             for fixture: Fixture <- fixtures do
-              describe(fixture.framework.displayName):
+              describe(fixture.framework.description):
                 forScalaVersions(
                   projectName = Seq(
                     feature.name,
-                    fixture.framework.displayName
+                    fixture.framework.description
                   ),
                   feature,
                   Seq(fixture),
                 )
       else
         for fixture: Fixture <- fixtures do
-          describe(fixture.framework.displayName):
+          describe(fixture.framework.description):
             for feature: Feature <- features do
               describe(feature.name):
                 forScalaVersions(
                   projectName = Seq(
-                    fixture.framework.displayName,
+                    fixture.framework.description,
                     feature.name
                   ),
                   feature,
@@ -257,14 +257,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     backend: ScalaBackend
   ): Seq[Dependency#WithVersion] = fixtures
     .map(_.framework)
-    .map((framework: FrameworkDescriptor) =>
-      require(framework.maker(backend).isDefined)
-      framework.maker(backend).get.dependency(scalaVersion).withVersion(
-        if scalaVersion.isScala3
-        then framework.versionDefault
-        else framework.versionDefaultScala2.getOrElse(framework.versionDefault)
-      )
-    )
+    .map(FrameworkDescriptor.dependency(_, backend, scalaVersion, None))
   
   private def testTask(
     feature: Feature,

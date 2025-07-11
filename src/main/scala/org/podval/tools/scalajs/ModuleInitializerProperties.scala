@@ -8,10 +8,11 @@ abstract class ModuleInitializerProperties:
   @Input def getClassName: Property[String]
   @Input @Optional def getMainMethodName: Property[String]
   @Input @Optional def getMainMethodHasArgs: Property[Boolean]
+  MainMethodHasArgs.convention(getMainMethodHasArgs)
 
   final def toModuleInitializer: ModuleInitializer = ModuleInitializer(
     moduleId = getName,
     className = getClassName.get,
     mainMethodName = Option(getMainMethodName.getOrNull),
-    mainMethodHasArgs = getMainMethodHasArgs.getOrElse(false)
+    mainMethodHasArgs = MainMethodHasArgs(getMainMethodHasArgs)
   )

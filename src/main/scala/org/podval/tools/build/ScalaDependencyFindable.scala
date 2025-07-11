@@ -18,9 +18,12 @@ final class ScalaDependencyFindable(
   ): Option[ScalaDependency] =
     val (artifactAndBackend: String, scalaVersionOpt: Option[String]) = Strings.split(artifactName, '_')
     val (artifact: String, backendSuffixOpt: Option[String]) = Strings.split(artifactAndBackend, '_')
-    scalaVersionOpt.map(ScalaVersion(_)).flatMap: (scalaVersion: ScalaVersion) =>
-      val matches: Boolean =
-        (artifact == maker.artifact) &&
-        (backendSuffixOpt == maker.scalaBackend.artifactSuffix)
-
-      if !matches then None else Some(withScalaVersion(scalaVersion))
+    scalaVersionOpt
+      .map(Version(_))
+      .map(_.toScalaVersion)
+      .flatMap: (scalaVersion: ScalaVersion) =>
+        val matches: Boolean =
+          (artifact == maker.artifact) &&
+          (backendSuffixOpt == maker.scalaBackend.artifactSuffix)
+  
+        if !matches then None else Some(withScalaVersion(scalaVersion))

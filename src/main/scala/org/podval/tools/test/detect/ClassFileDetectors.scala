@@ -3,7 +3,7 @@ package org.podval.tools.test.detect
 object ClassFileDetectors:
   val empty: ClassFileDetectors = ClassFileDetectors(List.empty)
 
-final class ClassFileDetectors private(private val detectors: List[FingerprintDetectors]):
+final class ClassFileDetectors private(private val detectors: List[FingerprintDetector.Many]):
   def add(detector: FingerprintDetector): ClassFileDetectors = ClassFileDetectors(
     if detectors.isEmpty
     then List(Set(detector))
@@ -19,7 +19,7 @@ final class ClassFileDetectors private(private val detectors: List[FingerprintDe
   )
   
   // Returns detectors closest to the class in the hierarchy.
-  def getApplicable(isModule: Boolean): FingerprintDetectors = detectors
+  def getApplicable(isModule: Boolean): FingerprintDetector.Many = detectors
     .map(_.filter(_.isModule == isModule))
     .find(_.nonEmpty)
     .getOrElse(Set.empty)

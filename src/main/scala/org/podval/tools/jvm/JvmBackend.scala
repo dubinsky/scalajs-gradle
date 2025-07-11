@@ -1,7 +1,8 @@
 package org.podval.tools.jvm
 
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaVersion, SourceSets, TestEnvironment}
+import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaVersion, TestEnvironment}
+import org.podval.tools.gradle.Configurations
 import org.podval.tools.test.framework.FrameworkProvider
 import sbt.testing.Framework
 
@@ -10,7 +11,7 @@ object JvmBackend extends ScalaBackend(
   sourceRoot = "jvm",
   artifactSuffix = None,
   testsCanNotBeForked = false,
-  expandClassPathForTestEnvironment = true
+  expandClasspathForTestEnvironment = true
 ) with TestEnvironment.Creator[JvmBackend.type]:
 
   override protected def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
@@ -24,7 +25,7 @@ object JvmBackend extends ScalaBackend(
     pluginScalaVersion: ScalaVersion
   ): Seq[DependencyRequirement.Many] = Seq(
     DependencyRequirement.Many(
-      configurationName = SourceSets.testRuntimeOnlyConfigurationName(project),
+      configurationName = Configurations.testRuntimeOnlyName(project),
       scalaVersion = projectScalaVersion,
       dependencyRequirements = Array(
         JvmDependency.SbtTestInterface.required()
@@ -37,4 +38,6 @@ object JvmBackend extends ScalaBackend(
     sourceMapper = None
   ):
     override def close(): Unit = ()
-    override protected def loadFrameworks: List[Framework] = frameworksToLoad.flatMap(FrameworkProvider(_).frameworkOpt)
+
+    override protected def loadFrameworks: List[Framework] =
+      frameworksToLoad(FrameworkProvider(_).frameworkOpt).flatten

@@ -14,7 +14,6 @@ object ScalaJSBackend extends NonJvmBackend(
   pluginDependenciesConfigurationName = "scalajs",
   areCompilerPluginsBuiltIntoScala3 = true,
   junit4 = JUnit4ScalaJS,
-  versionDefault = Version("1.19.0"),
   libraryScala3 = ScalaJSDependency.Library,
   libraryScala2 = ScalaJSDependency.Library,
   compiler      = ScalaJSDependency.Compiler,

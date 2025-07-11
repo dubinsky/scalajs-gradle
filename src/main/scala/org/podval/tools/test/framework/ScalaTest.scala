@@ -55,7 +55,7 @@ import org.podval.tools.build.Version
 
 object ScalaTest extends FrameworkDescriptor(
   name = "ScalaTest",
-  displayName = "ScalaTest",
+  description = "ScalaTest",
   group = "org.scalatest",
   artifact = "scalatest",
   className = "org.scalatest.tools.Framework",
@@ -63,6 +63,6 @@ object ScalaTest extends FrameworkDescriptor(
   tagOptionStyle = OptionStyle.OptionPerValue,
   includeTagsOption = "-n",
   excludeTagsOption = "-l"
-):
+) with ScalaFrameworkDescriptor:
   override val versionDefault: Version = Version("3.2.19")
 

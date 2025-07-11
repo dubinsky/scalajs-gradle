@@ -1,32 +1,40 @@
 package org.podval.tools.platform
 
-import org.gradle.api.logging.Logger
 import org.gradle.process.{ExecOperations, ExecSpec}
+import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.{InputStream, OutputStream}
 
-final class Runner(
-  execOperations: ExecOperations,
-  logger: Logger
-):
-  private val out: String => Unit = logger.lifecycle
-  private val err: String => Unit = message => logger.error(s"[err]: $message")
-  
-  // TODO add a switch for lifecycle/info logging...
-  def run(running: String)(body: => Unit): Unit =
-    logger.lifecycle(s"Running [$running].")
+object Runner:
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
+
+  private def out(log: Boolean)(message: String): Unit =
+    if log
+    then logger.warn(s"[out]: $message")
+    else logger.info(s"[out]: $message")
+
+  private def err(message: String): Unit = logger.error(s"[err]: $message")
+
+final class Runner(execOperations: ExecOperations):
+  def run(running: String, log: Boolean)(body: => Unit): Unit =
+    Runner.out(log)(s"Running [$running].")
     try body finally
       close()
       // TODO for Native this prints before the output!
-      logger.lifecycle(s"Done running [$running].")
+      // Runner.out(log)(s"Done running [$running].")
 
+  @volatile private var outputStreams: List[OutputStream] = Nil
+  
   // this one is for Scala Native and NodeProject
-  def exec(configure: ExecSpec => Unit): Unit =
+  def exec(log: Boolean, configure: ExecSpec => Unit): Unit =
     execOperations.exec: (execSpec: ExecSpec) =>
       configure(execSpec)
-      run(execSpec.getCommandLine.asScala.mkString(" ")):
-        execSpec.setStandardOutput(CallbackOutputStream(out))
-        execSpec.setErrorOutput   (CallbackOutputStream(err))
+      run(execSpec.getCommandLine.asScala.mkString(" "), log):
+        val out: OutputStream = CallbackOutputStream(Runner.out(log))
+        val err: OutputStream = CallbackOutputStream(Runner.err)
+        outputStreams = List(out, err)
+        execSpec.setStandardOutput(out) // TODO for Scala Native, println() output seems to get lost...
+        execSpec.setErrorOutput   (err)
 
   /* The list of threads that are piping output to System.out and
    * System.err. This is not an AtomicReference or any other thread-safe
@@ -45,12 +53,11 @@ final class Runner(
   def start(
     outOpt: Option[InputStream],
     errOpt: Option[InputStream]
-  ): Unit =
-    pipeOutputThreads =
-      PipeOutputThread.pipe(outOpt, out) :::
-      PipeOutputThread.pipe(errOpt, err)
+  ): Unit = pipeOutputThreads =
+    PipeOutputThread.pipe(outOpt, Runner.out(log = true)) ::: 
+    PipeOutputThread.pipe(errOpt, Runner.err)
 
-  def close(): Unit =
+  private def close(): Unit =
     /* Wait for the pipe output threads to be done, to make sure that we
      * do not finish the `run` task before *all* output has been
      * transferred to System.out and System.err.
@@ -61,3 +68,5 @@ final class Runner(
      * the interrupted exception will shadow any error from the run).
      */
     pipeOutputThreads.foreach(_.join)
+    
+    outputStreams.foreach(_.flush())

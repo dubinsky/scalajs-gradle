@@ -1,26 +1,24 @@
 package org.podval.tools.build
 
 import org.gradle.api.Project
+import org.podval.tools.gradle.{Configurations, GradleClasspath}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-final class ClassPathAddition(
-  configurationName: String,
-  classPathConfigurationName: String
-):
+final class ClasspathAddition(configurationName: String):
   def apply(
     project: Project
-  ): ClassLoader = GradleClassPath.addTo(
-    obj = this, 
-    files = SourceSets.getConfiguration(project, configurationName).asScala
+  ): ClassLoader = GradleClasspath.addTo(
+    filesToAdd = Configurations.configuration(project, configurationName).asScala
   )
   
   def verify(
     project: Project,
     scalaLibrary: ScalaLibrary
-  ): Unit = scalaLibrary.verify(SourceSets.getConfiguration(project, classPathConfigurationName))
+  ): Unit =
+    scalaLibrary.verify(project)
 
-object ClassPathAddition:
-  final class Many(classPathAdditions: Seq[ClassPathAddition]):
+object ClasspathAddition:
+  final class Many(classPathAdditions: Seq[ClasspathAddition]):
     def apply(
       project: Project,
       scalaLibrary: ScalaLibrary

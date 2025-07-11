@@ -15,7 +15,7 @@ final class ScalaNativeLink(
   mainClass: Option[String],
   isTest: Boolean,
   classpath: Seq[Path],
-  sourcesClassPath: Seq[Path],
+  sourcesClasspath: Seq[Path],
   logSource: String
 ) extends ScalaNativeBuild(
   logSource
@@ -43,7 +43,7 @@ final class ScalaNativeLink(
 
     Config.empty
       .withClassPath(classpath)
-      .withSourcesClassPath(sourcesClassPath)
+      .withSourcesClassPath(sourcesClasspath)
       .withBaseDir(baseDir)
       .withModuleName(moduleName)
       .withMainClass(mainClassEffective)
