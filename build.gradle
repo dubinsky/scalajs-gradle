@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.52.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.9.1'
+  id 'org.podval.tools.scalajs' version '0.9.2'
   id 'com.gradle.plugin-publish' version '1.3.1'
 }
 
@@ -10,7 +10,9 @@ group = 'org.podval.tools'
 version = version_plugin
 description = 'Gradle plugin for cross-compiling to JVM, Scala.js and Scala Native'
 
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 scala.scalaVersion = version_scala
+project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
 dependencies {
   // for TestClassVisitor
@@ -34,22 +36,29 @@ dependencies {
   compileOnly "org.scala-native:test-runner_3:$version_scalanative"
 
   // for framework-specific exceptions
-  compileOnly "junit:junit:$version_junit" // runner: "com.github.sbt:junit-interface:$version_framework_junit4"
+  compileOnly "junit:junit:$version_junit"
   compileOnly "org.scalatest:scalatest_3:$version_framework_scalatest"
   compileOnly "org.scalacheck:scalacheck_3:$version_framework_scalacheck"
   compileOnly "com.lihaoyi:utest_3:$version_framework_utest"
   compileOnly "org.specs2:specs2-core_3:$version_framework_specs2"
   compileOnly "org.scalameta:munit_3:$version_framework_munit"
-  compileOnly "dev.zio:zio-test_3:$version_framework_zio_test" // runner: "dev.zio:zio-test-sbt:$version_framework_zio_test""
+  compileOnly "dev.zio:zio-test-sbt_3:$version_framework_zio_test"
 
   // test framework used to test this project
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+def isNonStable = { String version ->
+  boolean stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+  String regex = /^[0-9,.v-]+(-r)?$/
+  return !stableKeyword && !(version ==~ regex)
+}
 
-dependencyUpdates {
-  revision="release"
+// dependencyUpdates.revision = 'release'
+tasks.named("dependencyUpdates").configure {
+  rejectVersionIf {
+    isNonStable(it.candidate.version)
+  }
 }
 
 tasks.withType(ScalaCompile).configureEach {
@@ -72,120 +81,19 @@ jar {
   }
 }
 
-tasks.register('sourcesJar', Jar) {
-  from sourceSets.main.allSource
-  archiveClassifier.set('sources')
-}
-
-tasks.register('scaladocJar', Jar) {
-  from scaladoc.destinationDir
-  archiveClassifier.set('scaladoc')
-}
-scaladocJar.dependsOn scaladoc
-
-// There is no Java in the project :)
-project.gradle.startParameter.excludedTaskNames.add('compileJava')
-// but Maven Central requires javadoc JAR...
-tasks.register('javadocJar', Jar) {
-  from javadoc.destinationDir
-  archiveClassifier.set('javadoc')
-}
-javadocJar.dependsOn(javadoc)
-
-final String gitHubRepository = "dubinsky/scalajs-gradle"
-final String gitHubRepositoryUrl = "https://github.com/$gitHubRepository"
-final String orgName = 'Podval Group'
-final String orgUrl = 'https://www.podval.org'
-
-publishing {
-  repositories {
-    maven {
-      name = 'mavenCentral'
-      url = version.endsWith('SNAPSHOT') ?
-        'https://oss.sonatype.org/content/repositories/snapshots' :
-        'https://oss.sonatype.org/service/local/staging/deploy/maven2'
-
-      // This will use mavenCentralUsername and mavenCentralPassword properties - if they are available.
-      credentials(PasswordCredentials)
-    }
-  }
-
-  publications {
-    library(MavenPublication) {
-      from components.java
-      artifact sourcesJar
-      artifact scaladocJar
-      artifact javadocJar
-
-      pom {
-        name = project.name
-        description = project.description
-        url = gitHubRepositoryUrl
-        scm {
-          url = gitHubRepositoryUrl
-          connection = "scm:git:git://github.com/${gitHubRepository}.git"
-          developerConnection = "scm:git:ssh://github.com/${gitHubRepository}.git"
-        }
-        licenses {
-          license {
-            name = 'The Apache Software License, Version 2.0'
-            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-            distribution = 'repo'
-            comments = 'A business-friendly OSS license'
-          }
-        }
-        organization {
-          name = orgName
-          url = orgUrl
-        }
-        developers {
-          developer {
-            id = 'dub'
-            name = 'Leonid Dubinsky'
-            email = 'dub@podval.org'
-            url = 'https://dub.podval.org'
-            organization = orgName
-            organizationUrl = orgUrl
-            timezone = '-5'
-          }
-        }
-      }
-    }
-  }
-}
-
-signing {
-  sign publishing.publications.library
-  useInMemoryPgpKeys(
-    findProperty('gnupg.dub-podval-org.key').toString(),
-    findProperty('gnupg.dub-podval-org.password').toString()
-  )
-}
-
 gradlePlugin {
-  website = gitHubRepositoryUrl
-  vcsUrl  = gitHubRepositoryUrl //.git' ?
+  website = 'https://github.com/dubinsky/scalajs-gradle'
+  vcsUrl  = 'git@github.com:dubinsky/scalajs-gradle.git'
   plugins {
     scalajs {
       id = 'org.podval.tools.scalajs'
       implementationClass = 'org.podval.tools.backend.BackendPlugin'
       displayName = project.description
       description = project.description
-      tags.set([
+      tags = [
         'scala', 'scalajs', 'scalanative', 'crosscompile',
         'sbt', 'testing',
-        'junit4', 'munit', 'scalatest', 'scalacheck', 'specs2', 'utest', 'ziotest'])
+        'junit4', 'munit', 'scalatest', 'scalacheck', 'specs2', 'utest', 'ziotest']
     }
   }
 }
-
-tasks.register('uploadLibrary')
-uploadLibrary.description = 'Upload artifacts'
-uploadLibrary.group = 'publishing'
-uploadLibrary.dependsOn(publishLibraryPublicationToMavenCentralRepository)
-
-tasks.register('upload')
-upload.description = 'Upload artifacts and plugins'
-upload.group = 'publishing'
-upload.dependsOn(uploadLibrary)
-upload.dependsOn(publishPlugins)

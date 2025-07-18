@@ -4,7 +4,6 @@ import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, Test
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.podval.tools.backend.BackendPlugin
 import org.podval.tools.build.{Dependency, ScalaBackend, ScalaBinaryVersion, ScalaVersion}
-import org.podval.tools.test.framework.FrameworkDescriptor
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
 import ForClass.{ClassExpectation, MethodExpectation}
@@ -255,9 +254,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion,
     backend: ScalaBackend
-  ): Seq[Dependency#WithVersion] = fixtures
-    .map(_.framework)
-    .map(FrameworkDescriptor.dependency(_, backend, scalaVersion, None))
+  ): Seq[Dependency#WithVersion] = fixtures.map(_.framework.dependencyWithVersion(backend, scalaVersion, version = None))
   
   private def testTask(
     feature: Feature,

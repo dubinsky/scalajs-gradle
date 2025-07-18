@@ -19,17 +19,26 @@ final class TestProject(projectName: Seq[String]):
     case None => projectDir
     case Some(backend) => File(projectDir, backend.sourceRoot)
   )
-  
-  private def gradleRunner: GradleRunner = GradleRunner.create.withProjectDir(projectDir)
+
+  private def gradleRunner: GradleRunner = GradleRunner
+    .create
+    .withProjectDir(projectDir)
 
   def test(commandLineIncludeTestNames: Seq[String]): TestResultsRetriever =
+    // With ZIO Test on Scala.js and Scala Native, I get:
+    //  The Daemon will expire immediately since the JVM garbage collector is thrashing.
+    //  The currently configured max heap space is '512 MiB' and the configured max metaspace is '384 MiB'.
+    // Settings from ~/.gradle/gradle.properties do not have effect when using GradleRunner,
+    // and anyway, I need to bump the memory for running on the GitHub CI...
+    val javaArgument: Seq[String] = List("-Dorg.gradle.jvmargs='-Xmx16g'") // "-XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
+
     val testsArgument: List[String] =
       if commandLineIncludeTestNames.isEmpty
       then List.empty
       else List("--tests", commandLineIncludeTestNames.mkString("\"", ", ", "\""))
-    
+
     val testOutput: String = gradleRunner
-      .withArguments((List("clean", "test", "-i") ++ testsArgument).asJava)
+      .withArguments((javaArgument ++ List("clean", "test", "-i") ++ testsArgument).asJava)
       .forwardOutput
       .buildAndFail
       .getOutput

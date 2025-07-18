@@ -4,17 +4,18 @@ import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector
 import org.gradle.internal.Factory
+import org.podval.tools.build.TestEnvironment
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
 import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider, JUnit4ScalaJS, JUnit4ScalaNative}
 import org.podval.tools.test.taskdef.TestClassRun
 import org.slf4j.{Logger, LoggerFactory}
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint, TaskDef}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint}
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 // Inspired by org.gradle.api.internal.tasks.testing.detection.AbstractTestFrameworkDetector.
 final class SbtTestFrameworkDetector(
-  loadedFrameworks: (testClasspath: Iterable[File]) => List[Framework],
+  testEnvironment: TestEnvironment[?],
   testFilter: TestFilter,
   testTaskTemporaryDir: Factory[File]
 ) extends TestFrameworkDetector:
@@ -32,7 +33,7 @@ final class SbtTestFrameworkDetector(
 
   private lazy val detectors: Seq[FingerprintDetector] =
     for
-      framework: Framework <- loadedFrameworks(testClasspath.get)
+      framework: Framework <- testEnvironment.loadFrameworks(testClasspath.get)
       fingerprint: Fingerprint <- framework.fingerprints
     yield fingerprint match
       case subclassFingerprint : SubclassFingerprint  => SubclassFingerprintDetector (subclassFingerprint , framework)

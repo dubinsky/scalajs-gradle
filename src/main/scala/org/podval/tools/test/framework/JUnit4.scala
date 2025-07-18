@@ -15,22 +15,22 @@ import org.podval.tools.jvm.JvmBackend
 //   junit:junit:4.13.2
 //   org.hamcrest:hamcrest-core
 //   org.scala-sbt:test-interface:1.0
-object JUnit4 extends FrameworkDescriptor(
-  name = "JUnit",
-  description = "JUnit4",
-  group = "com.github.sbt",
-  artifact = "junit-interface",
-  className = "com.novocode.junit.JUnitFramework",
-  sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit"),
-  tagOptionStyle = OptionStyle.ListWithEq, 
-  includeTagsOption = "--include-categories", 
-  excludeTagsOption = "--exclude-categories",
-  // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
-  additionalOptions = Array("--ignore-runners=none"),
-  usesTestSelectorAsNestedTestSelector = true
-) with JavaDependencyMaker:
+object JUnit4 extends FrameworkDescriptor with JavaDependencyMaker:
+  override val group: String = "com.github.sbt"
+  override val artifact: String = "junit-interface"
   override val versionDefault: Version = Version("0.13.3")
+  override val description: String = "JUnit4"
+  override val name: String = "JUnit"
+  override val className: String = "com.novocode.junit.JUnitFramework"
+  override val sharedPackages: List[String] = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
+  override val tagOptions: Some[TagOptions] = TagOptions.ListWithEq("--include-categories", "--exclude-categories")
+  override val usesTestSelectorAsNestedTestSelector: Boolean = true
 
+  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array(
+    // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
+    "--ignore-runners=none"
+  )
+  
   // This is a JVM-only test framework
   override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
     case JvmBackend => Some(this)

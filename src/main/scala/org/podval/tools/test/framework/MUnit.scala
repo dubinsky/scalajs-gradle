@@ -29,22 +29,22 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
 //   org.scala-lang:scala-library:2.13.x
-object MUnit extends FrameworkDescriptor(
+object MUnit extends ScalaFrameworkDescriptor(
   name = "munit",
   description = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
+  versionDefault = Version("1.1.1"),
   className = "munit.Framework",
   sharedPackages = List("munit"),
-  tagOptionStyle = OptionStyle.ListWithEq, 
-  includeTagsOption = "--include-tags", 
-  excludeTagsOption = "--exclude-tags",
-  // use SBT loggers
-  additionalOptions = Array("--logger=sbt"),
+  tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),
   usesTestSelectorAsNestedTestSelector = true
-) with ScalaFrameworkDescriptor:
-  override val versionDefault: Version = Version("1.1.1")
-  
+):
+  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array(
+    // use SBT loggers
+    "--logger=sbt"
+  )
+
   override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match
     case JvmBackend         => JUnit4           .underlying(backend)
     case ScalaJSBackend     => JUnit4ScalaJS    .maker     (backend)

@@ -1,8 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, Version}
-import org.podval.tools.scalajs.ScalaJSBackend
-import org.podval.tools.scalanative.ScalaNativeBackend
+import org.podval.tools.build.Version
 
 // https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestFramework.scala
 // https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala
@@ -51,22 +49,18 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 //   org.scala-lang:scala-library:2.13.x
 //   org.scala-js:scalajs-library_2.13
 
-object ZioTest extends FrameworkDescriptor(
+object ZioTest extends ScalaFrameworkDescriptor(
   // This must be exactly as reported by the framework!
   name = s"${io.AnsiColor.UNDERLINED}ZIO Test${io.AnsiColor.RESET}",
   description = "ZioTest",
   group = "dev.zio",
   artifact = "zio-test-sbt",
+  versionDefault = Version("2.1.20"),
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt"),
-  tagOptionStyle = OptionStyle.OptionPerValue,
-  includeTagsOption = "-tags",
-  excludeTagsOption = "-ignore-tags"
-) with ScalaFrameworkDescriptor:
-  override val versionDefault: Version = Version("2.1.19")
-
-  // TODO ZioTest does not report events on Scala.js and Scala Native
-  override def maker(backend: ScalaBackend): Option[ScalaDependencyMaker] = backend match
-    case ScalaJSBackend     => None
-    case ScalaNativeBackend => None
-    case _ => super.maker(backend)
+  tagOptions = TagOptions.OptionPerValue("-tags", "-ignore-tags")
+):
+  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] =
+    if !isRunningInIntelliJ then Array.empty else Array(
+      "-renderer", "intellij"
+    )

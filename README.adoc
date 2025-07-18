@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.2
+:version-plugin: 0.9.3
 :version-gradle: 9.0.0-rc-3
 :version-scala: 3.7.1
 :version-sbt-test-interface: 1.0
@@ -24,7 +24,7 @@
 :version-framework-specs2: 5.6.4
 :version-framework-specs2-scala2: 4.21.0
 :version-framework-utest: 0.8.9
-:version-framework-zio-test: 2.1.19
+:version-framework-zio-test: 2.1.20
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
 :attribute-pluginBuildPerScalaVersionProperty: org.podval.tools.backend.buildPerScalaVersion
 :attribute-gradleVersionForBadge: 9.0.0--rc--3
@@ -1180,9 +1180,9 @@ Framework-specific information for the frameworks that _are_ supported follows.
 
 |specs2
 |org.specs2:specs2-core
-|jvm, js
+|jvm, js, native
 |{version-framework-specs2}
-|latest for Scala 2: {version-framework-specs2-scala2}
+|latest that supports Scala 2 or Scala Native: {version-framework-specs2-scala2}
 
 |uTest
 |com.lihaoyi:utest
@@ -1192,9 +1192,9 @@ Framework-specific information for the frameworks that _are_ supported follows.
 
 |ZIO Test
 |dev.zio:zio-test-sbt
-|jvm
+|jvm, js, native
 |{version-framework-zio-test}
-|see https://github.com/dubinsky/scalajs-gradle/issues/37[issues/37]
+|
 
 |===
 
@@ -1221,17 +1221,13 @@ dependencies {
   testImplementation "org.scalacheck:scalacheck${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-scalacheck}"
   testImplementation "org.scalatest:scalatest${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-scalatest}"
   testImplementation "com.lihaoyi:utest${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-utest}"
+  testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-zio-test}"
 
-  if (scalaBackend.jvm) {
-    testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-zio-test}"
-  }
 
-  if (scalaBackend.jvm || scalaBackend.js) {
-    if (scalaBackend.scala3) {
-      testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2}"
-    } else {
-      testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2-scala2}"
-    }
+  if (!scalaBackend.scala3 || scalaBackend.native) {
+    testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2-scala2}"
+  } else {
+    testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2}"
   }
 }
 ----
@@ -1259,17 +1255,12 @@ dependencies {
   testImplementation scalaBackend.testFramework(ScalaCheck, '{version-framework-scalacheck}')
   testImplementation scalaBackend.testFramework(ScalaTest, '{version-framework-scalatest}')
   testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
+  testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-zio-test}')
 
-  if (scalaBackend.jvm) {
-    testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-zio-test}')
-  }
-
-  if (scalaBackend.jvm || scalaBackend.js) {
-    if (scalaBackend.scala3) {
-      testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
-    } else {
-      testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2-scala2}')
-    }
+  if (!scalaBackend.scala3 || scalaBackend.native) {
+    testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2-scala2}')
+  } else {
+    testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
   }
 }
 ----
@@ -1296,15 +1287,9 @@ dependencies {
   testImplementation scalaBackend.testFramework(MUnit)
   testImplementation scalaBackend.testFramework(ScalaCheck)
   testImplementation scalaBackend.testFramework(ScalaTest)
+  testImplementation scalaBackend.testFramework(Specs2)
   testImplementation scalaBackend.testFramework(UTest)
-
-  if (scalaBackend.jvm) {
-    testImplementation scalaBackend.testFramework(ZioTest)
-  }
-
-  if (scalaBackend.jvm || scalaBackend.js) {
-    testImplementation scalaBackend.testFramework(Specs2)
-  }
+  testImplementation scalaBackend.testFramework(ZioTest)
 }
 ----
 
@@ -1534,9 +1519,6 @@ object UTestNesting extends TestSuite {
 ----
 
 === ZIO Test
-
-Currently, not supported on Scala.js nor Scala Native because of a bug
-https://github.com/dubinsky/scalajs-gradle/issues/37[issues/37].
 
 - test filtering: treats specific test case inclusions as wildcards,
 and instead of running just the named test cases runs all whose names contain
@@ -2102,13 +2084,8 @@ I lost my day job in January 2025 and spent half a year working on the plugin ;)
 
 === The Future
 
-Once ZIO gets released with my https://github.com/zio/zio/pull/9979[fix]
-(that has been merged)
-for emitting sbt events on Scala.js and Scala Native,
-plugin will add support for ZIO Test on those platforms -
-and my original plan will be complete:
-all I wanted is an ability to cross-compile my code for JVM and Scala.js
-and test it with Scala Test and ZIO Test.
+All I wanted was to cross-compile my code for JVM and Scala.js
+and test it with Scala Test and ZIO Test. All of that works ;)
 
 If my https://github.com/typelevel/scalacheck/pull/1107[fix]
 increasing fidelity of ScalaCheck's handling of test selectors
@@ -2219,6 +2196,8 @@ Thank you to https://github.com/kyri-petrou[kyri-petrou]
 for working with me on this
 and to https://github.com/hearnadam[hearnadam]
 for accepting my contribution.
+* https://github.com/zio/zio/issues/10037[issues/10037]
+_[zio-test] Relocate/suppress output.json._
 
 - https://scalacheck.org[ScalaCheck]:
 * https://github.com/typelevel/scalacheck/issues/1105[issues/1105]
@@ -2243,6 +2222,8 @@ for accepting my contribution.
 _Treat sbt.testing.TestWildcardSelectors correctly._
 Thank you to https://github.com/etorreborre[etorreborre]
 for accepting my contribution.
+* https://github.com/etorreborre/specs2/issues/1352[issues/1352]
+_Scala Native in v5 and website issues_
 
 - https://github.com/com-lihaoyi/utest[uTest]:
 * _https://github.com/com-lihaoyi/utest/pull/383[pull/383]_

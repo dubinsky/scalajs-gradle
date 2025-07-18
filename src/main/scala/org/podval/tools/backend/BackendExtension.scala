@@ -86,8 +86,8 @@ abstract class BackendExtension @Inject(project: Project):
     frameworkClass: Class[? <: FrameworkDescriptor],
     version: Option[Version]
   ): String = FrameworkDescriptor
-    .dependency(
-      FrameworkDescriptor.forClass(frameworkClass),
+    .forClass(frameworkClass)
+    .dependencyWithVersion(
       getBackend,
       getScalaVersion,
       version

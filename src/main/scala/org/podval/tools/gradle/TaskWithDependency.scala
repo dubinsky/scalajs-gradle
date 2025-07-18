@@ -1,8 +1,8 @@
 package org.podval.tools.gradle
 
-import org.gradle.api.{DefaultTask, GradleException, Task}
+import org.gradle.api.{GradleException, Task}
 import org.gradle.api.internal.provider.ProviderInternal
-import org.gradle.api.tasks.{TaskAction, TaskProvider}
+import org.gradle.api.tasks.TaskProvider
 import scala.reflect.ClassTag
 import scala.jdk.CollectionConverters.SetHasAsScala
 

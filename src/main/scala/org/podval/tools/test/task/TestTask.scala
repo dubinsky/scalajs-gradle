@@ -2,29 +2,26 @@ package org.podval.tools.test.task
 
 import groovy.lang.{Closure, DelegatesTo}
 import org.gradle.StartParameter
-import org.gradle.api.Action
+import org.gradle.api.{Action, Project}
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.{Internal, TaskAction}
 import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.{BackendTask, ScalaBackend, TestEnvironment}
-import java.io.File
+import org.podval.tools.gradle.Tasks
+
 import java.lang.reflect.Method
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
-object TestTask:
-  private def useTestFramework(task: Test, value: TestFramework): Unit =
-    val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[TestFramework])
-    useTestFramework.setAccessible(true)
-    useTestFramework.invoke(task, value)
-
 abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
+  @Internal def getRunningInIntelliJ: Property[Boolean]
+
   protected def testEnvironmentCreator: TestEnvironment.Creator[B]
 
   final def useSbt(@DelegatesTo(classOf[SbtTestFrameworkOptions]) testFrameworkConfigure: Closure[?]): Unit =
@@ -55,8 +52,8 @@ abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
     testTaskTemporaryDir = getTemporaryDirFactory,
     dryRun = getDryRun,
     // delayed: not available at the time of the TestFramework construction (task creation)
-    backend = () => getTestEnvironment.backend,
-    loadedFrameworks = (testClasspath: Iterable[File]) => getTestEnvironment.loadedFrameworks(testClasspath)
+    isRunningInIntelliJ = () => getRunningInIntelliJ.get,
+    testEnvironment = () => getTestEnvironment
   )
   
   // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
@@ -89,3 +86,20 @@ abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
     if getTestEnvironment.backend.testsCanNotBeForked
     then 1
     else super.getMaxParallelForks
+
+object TestTask:
+  private def useTestFramework(task: Test, value: TestFramework): Unit =
+    val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[TestFramework])
+    useTestFramework.setAccessible(true)
+    useTestFramework.invoke(task, value)
+
+  def configureTasks[T <: TestTask[?]](
+    project: Project,
+    testTaskClass: Class[T],
+    isRunningInIntelliJ: Boolean
+  ): Unit =
+    Tasks.configureEach(project, testTaskClass, (testTask: T) =>
+      testTask.setGroup(Tasks.verificationGroup)
+      testTask.useSbt()
+      testTask.getRunningInIntelliJ.set(isRunningInIntelliJ)
+    )

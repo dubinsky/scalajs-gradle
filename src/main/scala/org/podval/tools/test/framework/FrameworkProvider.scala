@@ -22,10 +22,12 @@ sealed abstract class FrameworkProvider:
       case _: ClassNotFoundException => None
 
   final def runner(
+    isRunningInIntelliJ: Boolean,
     includeTags: Array[String],
     excludeTags: Array[String]
   ): Runner = framework.runner(
     frameworkDescriptor.args(
+      isRunningInIntelliJ = isRunningInIntelliJ,
       includeTags = includeTags,
       excludeTags = excludeTags
     ),

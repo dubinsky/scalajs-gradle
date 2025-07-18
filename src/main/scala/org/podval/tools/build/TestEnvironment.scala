@@ -25,7 +25,7 @@ abstract class TestEnvironment[B <: ScalaBackend](
     .forBackend(backend)
     .map(f)
 
-  final def loadedFrameworks(testClasspath: Iterable[File]): List[Framework] =
+  final def loadFrameworks(testClasspath: Iterable[File]): List[Framework] =
     // This is the only way I know to:
     // - instantiate test frameworks from a classloader that has them and
     // - return sbt.testing.Framework used elsewhere, instead of something loaded from a different classloader

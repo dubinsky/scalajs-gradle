@@ -158,7 +158,7 @@ object BackendPlugin:
   ): Unit =
     setScalaVersionFromParentAndAddVersionSpecificScalaSources(project, extension)
     extension.setBackend(backend)
-    backend.apply(project, jvmPluginServices)
+    backend.apply(project, jvmPluginServices, extension.isRunningInIntelliJ)
     backend.registerTasks(project)
 
   private def afterEvaluateSingle(

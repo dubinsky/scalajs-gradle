@@ -15,6 +15,7 @@ final class RunTestClassProcessorFactory(
   includeTags: Array[String],
   excludeTags: Array[String],
   logLevelEnabled: LogLevel,
+  isRunningInIntelliJ: Boolean,
   dryRun: Boolean
 ) extends WorkerTestClassProcessorFactory with Serializable:
 
@@ -25,6 +26,7 @@ final class RunTestClassProcessorFactory(
     includeTags = includeTags,
     excludeTags = excludeTags,
     logLevelEnabled = logLevelEnabled,
+    isRunningInIntelliJ = isRunningInIntelliJ,
     dryRun = dryRun,
     idGenerator = idGenerator,
     clock = clock
