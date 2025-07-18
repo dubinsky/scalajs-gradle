@@ -53,16 +53,13 @@ import org.podval.tools.build.Version
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
 
-object ScalaTest extends FrameworkDescriptor(
+object ScalaTest extends ScalaFrameworkDescriptor(
   name = "ScalaTest",
   description = "ScalaTest",
   group = "org.scalatest",
   artifact = "scalatest",
+  versionDefault = Version("3.2.19"),
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest"),
-  tagOptionStyle = OptionStyle.OptionPerValue,
-  includeTagsOption = "-n",
-  excludeTagsOption = "-l"
-) with ScalaFrameworkDescriptor:
-  override val versionDefault: Version = Version("3.2.19")
-
+  tagOptions = TagOptions.OptionPerValue("-n", "-l")
+)

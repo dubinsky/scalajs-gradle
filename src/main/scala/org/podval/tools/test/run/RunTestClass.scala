@@ -1,6 +1,7 @@
 package org.podval.tools.test.run
 
 import org.gradle.api.logging.LogLevel
+import org.podval.tools.platform.Output
 import org.podval.tools.test.taskdef.{Running, TaskDefs}
 import org.podval.tools.util.Scala212Collections.arrayForEach
 import sbt.testing.{Logger, Task}
@@ -19,7 +20,9 @@ final private class RunTestClass(
   private val eventHandler: EventHandler = EventHandler(this)
 
   val logger: Logger = new Logger:
-    private def log(logLevel: LogLevel, message: String): Unit = testResultProcessor.output(logLevel, testId, s"sbt $logLevel: $message")
+    private def log(logLevel: LogLevel, message: String): Unit =
+      val toLog: String = if !Output.annotateWithSource then message else s"sbt $logLevel: $message"
+      testResultProcessor.output(logLevel, testId, toLog)
     override def ansiCodesSupported: Boolean = true
     override def error(message: String): Unit = log(LogLevel.ERROR, message)
     override def warn (message: String): Unit = log(LogLevel.WARN , message)

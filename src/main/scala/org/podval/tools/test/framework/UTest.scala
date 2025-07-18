@@ -18,14 +18,14 @@ import org.podval.tools.build.Version
 // also:
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
-object UTest extends FrameworkDescriptor(
+object UTest extends ScalaFrameworkDescriptor(
   name = "utest",
   description = "UTest",
   group = "com.lihaoyi",
   artifact = "utest",
+  versionDefault = Version("0.8.9"),
   // `utest.runner.Framework` logs using `println`; to force the use of the SBT logs:
   className = "utest.runner.MillFramework",
-  sharedPackages = List("utest.runner")
-) with ScalaFrameworkDescriptor:
-  override val versionDefault: Version = Version("0.8.9")
-
+  sharedPackages = List("utest.runner"),
+  tagOptions = None
+)

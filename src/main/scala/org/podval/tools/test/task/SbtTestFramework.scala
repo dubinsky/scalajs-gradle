@@ -9,7 +9,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.podval.tools.build.ScalaBackend
+import org.podval.tools.build.TestEnvironment
 import org.podval.tools.gradle.GradleClasspath
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
@@ -17,7 +17,6 @@ import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.test.run.RunTestClassProcessorFactory
 import org.podval.tools.util.Files
 import org.slf4j.{Logger, LoggerFactory}
-import sbt.testing.Framework
 import java.io.File
 import java.lang.reflect.Field
 import java.net.URL
@@ -31,8 +30,8 @@ class SbtTestFramework(
   testTaskTemporaryDir: Factory[File],
   dryRun: Provider[java.lang.Boolean],
   // delayed
-  backend: () => ScalaBackend,
-  loadedFrameworks: (testClasspath: Iterable[File]) => List[Framework]
+  isRunningInIntelliJ: () => Boolean,
+  testEnvironment: () => TestEnvironment[?]
 ) extends TestFramework:
 
   override def getOptions: SbtTestFrameworkOptions = options
@@ -47,8 +46,8 @@ class SbtTestFramework(
       this.moduleRegistry,
       this.testTaskTemporaryDir,
       this.dryRun,
-      this.backend,
-      this.loadedFrameworks
+      this.isRunningInIntelliJ,
+      this.testEnvironment
     )
   
   private var detector: Option[SbtTestFrameworkDetector] = None
@@ -62,22 +61,21 @@ class SbtTestFramework(
   private def createDetector: SbtTestFrameworkDetector =  
     SbtTestFramework.logger.info(s"SbtTestFramework: --tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}")
 
-    val testFilter: TestFilter = TestFilter(
-      includes = defaultTestFilter.getIncludePatterns.asScala.toSet,
-      excludes = defaultTestFilter.getExcludePatterns.asScala.toSet,
-      commandLineIncludes = defaultTestFilter.getCommandLineIncludePatterns.asScala.toSet
-    )
-
     SbtTestFrameworkDetector(
-      loadedFrameworks,
-      testFilter,
-      testTaskTemporaryDir
+      testEnvironment = testEnvironment(),
+      testTaskTemporaryDir = testTaskTemporaryDir,
+      testFilter = TestFilter(
+        includes = defaultTestFilter.getIncludePatterns.asScala.toSet,
+        excludes = defaultTestFilter.getExcludePatterns.asScala.toSet,
+        commandLineIncludes = defaultTestFilter.getCommandLineIncludePatterns.asScala.toSet
+      )
     )
 
   override def getProcessorFactory: RunTestClassProcessorFactory = RunTestClassProcessorFactory(
     includeTags = options.getIncludeCategories.asScala.toArray,
     excludeTags = options.getExcludeCategories.asScala.toArray,
     logLevelEnabled = logLevelEnabled,
+    isRunningInIntelliJ = isRunningInIntelliJ(),
     dryRun = dryRun.get
   )
 
@@ -87,9 +85,6 @@ class SbtTestFramework(
   // and I still get ClassNotFoundExceptions.
   //
   // If I add the plugin jar to the *implementation* classpath everything works (but feels unclean).
-  //
-  // If, to have the freedom to place the code where I want without trying to segregate forkable code from un-forkable,
-  // I still need to add some Gradle modules to the implementation classpath - it is a price worth paying ;)
   private def classPathAdditions(
     gradleModules: List[String],
     externalModules: List[String],
@@ -103,7 +98,11 @@ class SbtTestFramework(
 
   private val implementationClasspathAdditions: List[URL] = classPathAdditions(
     gradleModules = List(),
-    externalModules = List(),
+    // To have the freedom to place the code where I want without trying to segregate forkable code from un-forkable
+    // and avoid initialization issues, I need to add some Gradle modules.
+    externalModules = List(
+      //"gradle-core-api"
+    ),
     jars = List(
       "org.podval.tools.scalajs",
 
@@ -135,7 +134,7 @@ class SbtTestFramework(
     // and this is used in the getWorkerConfigurationAction,
     // we do not yet know what frameworks were actually loaded,
     // so we have to take into account all that could load - depending on the back-end in use.
-    FrameworkDescriptor.forBackend(backend()).flatMap(_.sharedPackages) ++
+    FrameworkDescriptor.forBackend(testEnvironment().backend).flatMap(_.sharedPackages) ++
     List(
       // Scala 3 and Scala 2 libraries;
       // when running on Scala 3, both jars themselves are already on the classpath;

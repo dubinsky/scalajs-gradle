@@ -9,12 +9,16 @@ object Runner:
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   private def out(log: Boolean)(message: String): Unit =
+    val toLog: String = if !Output.annotateWithSource then message else s"[out]: $message"
     if log
-    then logger.warn(s"[out]: $message")
-    else logger.info(s"[out]: $message")
+    then logger.warn(toLog)
+    else logger.info(toLog)
 
   private def err(message: String): Unit = logger.error(s"[err]: $message")
 
+// running on JVM is handled by the Application Plugin, and thus the output is not intercepted by the Runner;
+// tests are not handled by the Runner either;
+// as a result, println() output gets lost on Scala Native...
 final class Runner(execOperations: ExecOperations):
   def run(running: String, log: Boolean)(body: => Unit): Unit =
     Runner.out(log)(s"Running [$running].")
@@ -25,7 +29,7 @@ final class Runner(execOperations: ExecOperations):
 
   @volatile private var outputStreams: List[OutputStream] = Nil
   
-  // this one is for Scala Native and NodeProject
+  // this one is for Scala Native and NodeProject;
   def exec(log: Boolean, configure: ExecSpec => Unit): Unit =
     execOperations.exec: (execSpec: ExecSpec) =>
       configure(execSpec)
@@ -33,7 +37,7 @@ final class Runner(execOperations: ExecOperations):
         val out: OutputStream = CallbackOutputStream(Runner.out(log))
         val err: OutputStream = CallbackOutputStream(Runner.err)
         outputStreams = List(out, err)
-        execSpec.setStandardOutput(out) // TODO for Scala Native, println() output seems to get lost...
+        execSpec.setStandardOutput(out)
         execSpec.setErrorOutput   (err)
 
   /* The list of threads that are piping output to System.out and

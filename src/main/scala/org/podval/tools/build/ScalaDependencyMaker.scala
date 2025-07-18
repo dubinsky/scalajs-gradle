@@ -26,14 +26,10 @@ trait ScalaDependencyMaker extends DependencyMaker:
       .getOrElse(throw GradleException(s"Dependency $this is not published for ${scalaVersion.binaryVersion}"))
 
 object ScalaDependencyMaker:
-  abstract class Delegating(delegate: ScalaDependencyMaker)
-    extends DependencyMaker.Delegating(delegate) with ScalaDependencyMaker:
+  trait Scala3 extends ScalaDependencyMaker:
+    final override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = binaryVersion == ScalaBinaryVersion.Scala3
 
-    override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = delegate.isPublishedFor(binaryVersion)
-    override def isScalaVersionFull: Boolean = delegate.isScalaVersionFull
+  trait Scala2 extends ScalaDependencyMaker:
+    final override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = binaryVersion != ScalaBinaryVersion.Scala3
 
-  trait NotPublishedForScala3 extends ScalaDependencyMaker:
-    final override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = binaryVersion match
-      case ScalaBinaryVersion.Scala3 => false
-      case _ => true
-      
+  trait JvmScala2 extends Scala2 with DependencyMaker.Jvm

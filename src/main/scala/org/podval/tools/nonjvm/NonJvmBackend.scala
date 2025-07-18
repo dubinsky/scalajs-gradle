@@ -3,29 +3,20 @@ package org.podval.tools.nonjvm
 import org.gradle.api.Project
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.jvm.tasks.Jar
-import org.podval.tools.build.{ClasspathAddition, DependencyRequirement, PreVersion, ScalaBackend, ScalaDependencyMaker,
-  ScalaLibrary, ScalaVersion, Version}
+import org.podval.tools.build.{ClasspathAddition, DependencyMaker, DependencyRequirement, PreVersion, ScalaBackend,
+  ScalaDependencyMaker, ScalaLibrary, ScalaVersion, Version}
 import org.podval.tools.gradle.{Archive, Configurations, ScalaCompiles, TaskWithSourceSet, Tasks}
-import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.test.framework.NonJvmJUnit4FrameworkDescriptor
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 
 abstract class NonJvmBackend(
   name: String,
+  val group: String,
+  val versionDefault: Version,
   sourceRoot: String,
   artifactSuffix: String,
   pluginDependenciesConfigurationName: String,
-  areCompilerPluginsBuiltIntoScala3: Boolean,
-  junit4: FrameworkDescriptor,
-  libraryScala3: ScalaDependencyMaker,
-  libraryScala2: ScalaDependencyMaker,
-  compiler     : ScalaDependencyMaker,
-  linker       : ScalaDependencyMaker,
-  testAdapter  : ScalaDependencyMaker,
-  testBridge   : ScalaDependencyMaker,
-  junit4Plugin : ScalaDependencyMaker,
-  pluginDependencies: Array[ScalaDependencyMaker],
-  implementation: Array[ScalaDependencyMaker]
+  areCompilerPluginsBuiltIntoScala3: Boolean
 ) extends ScalaBackend(
   name = name,
   sourceRoot = sourceRoot,
@@ -33,6 +24,20 @@ abstract class NonJvmBackend(
   testsCanNotBeForked = true,
   expandClasspathForTestEnvironment = false
 ):
+  class BackendDependency(
+    final override val artifact: String,
+    what: String
+  ) extends ScalaDependencyMaker:
+    override def scalaBackend: ScalaBackend = NonJvmBackend.this
+    override def versionDefault: Version    = NonJvmBackend.this.versionDefault
+    final override def description: String  = NonJvmBackend.this.describe(what)
+    final override def group: String        = NonJvmBackend.this.group
+
+  class Jvm(artifact: String, what: String) extends BackendDependency(artifact, what) with DependencyMaker.Jvm
+
+  trait Plugin extends Jvm:
+    final override def isScalaVersionFull: Boolean = true
+
   protected def linkTaskClass         : Class[? <: LinkTask.Main[this.type]]
   protected def testLinkTaskClass     : Class[? <: LinkTask.Test[this.type]]
   protected def runTaskClass          : Class[? <: RunTask .Main[this.type, ? <: LinkTask.Main[this.type]]]
@@ -41,26 +46,32 @@ abstract class NonJvmBackend(
   protected def versionExtractor(version: PreVersion): Version
   protected def versionComposer(projectScalaVersion: ScalaVersion, backendVersion: Version): PreVersion
 
+  protected def junit4: NonJvmJUnit4FrameworkDescriptor
+  protected def library(isScala3: Boolean): BackendDependency
+  protected def compilerPlugin: Plugin
+  protected def junit4Plugin: Plugin
+  protected def linker: Jvm
+  protected def testAdapter: Jvm
+  protected def testBridge: BackendDependency
+  protected def pluginDependencies: Array[Jvm]
+  protected def implementation: Array[BackendDependency]
   protected def implementationDependencyRequirements(scalaVersion: ScalaVersion): Array[DependencyRequirement]
 
   protected def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String]
 
-  private def library(scalaVersion: ScalaVersion): ScalaDependencyMaker =
-    if scalaVersion.isScala3
-    then libraryScala3
-    else libraryScala2
+  private def library(scalaVersion: ScalaVersion): BackendDependency = library(scalaVersion.isScala3)
 
   final def backendVersion(
     project: Project,
     scalaVersion: ScalaVersion
   ): Version =
-    val libraryDependency: ScalaDependencyMaker = library(scalaVersion)
+    val libraryDependency: BackendDependency = library(scalaVersion)
     libraryDependency
       .findable
       .findInConfiguration(Configurations.implementation(project))
       .map(_.version)
       .map(versionExtractor)
-      .getOrElse(libraryDependency.versionDefaultFor(scalaVersion))
+      .getOrElse(libraryDependency.versionDefaultFor(this, scalaVersion))
 
   final def junit4present(project: Project): Boolean = junit4
     .maker(this)
@@ -68,21 +79,14 @@ abstract class NonJvmBackend(
     .findable
     .findInConfiguration(Configurations.testImplementation(project)).isDefined
 
-  override def apply(project: Project, jvmPluginServices: JvmPluginServices): Unit =
-    super.apply(project, jvmPluginServices)
+  override def apply(
+    project: Project, 
+    jvmPluginServices: JvmPluginServices,
+    isRunningInIntelliJ: Boolean
+  ): Unit =
+    super.apply(project, jvmPluginServices, isRunningInIntelliJ)
 
-    // Configure JAR appendix.
-    Tasks.configureEach(
-      project, 
-      classOf[Jar],
-      Tasks.conventionProvider(
-        _,
-        _.getArchiveAppendix,
-        jar => if jar.getArchiveClassifier.isPresent then sourceRoot else null,
-        project
-      )
-    )
-
+    Archive.configureAppendix(project, sourceRoot)
     TaskWithSourceSet.configureTasks(project)
 
     // Create Plugin Dependencies Configuration.
@@ -167,7 +171,7 @@ abstract class NonJvmBackend(
   ): Seq[DependencyRequirement.Many] =
     val backendVersion: Version = NonJvmBackend.this.backendVersion(project, projectScalaVersion)
     
-    def one(configurationName: String, dependency: ScalaDependencyMaker) = DependencyRequirement.Many(
+    def one(configurationName: String, dependency: BackendDependency) = DependencyRequirement.Many(
       configurationName = configurationName,
       scalaVersion = projectScalaVersion,
       dependencyRequirements = Array(dependency.required(backendVersion))
@@ -196,7 +200,7 @@ abstract class NonJvmBackend(
       one(Configurations.testRuntimeOnlyName(project), testBridge)
     ) ++
     (if areCompilerPluginsBuiltIntoScala3 && projectScalaVersion.isScala3 then Seq.empty else
-      Seq(one(Configurations.scalaCompilerPluginsName, compiler)) ++
+      Seq(one(Configurations.scalaCompilerPluginsName, compilerPlugin)) ++
       (if !junit4present(project) then Seq.empty else
         Seq(one(Configurations.testScalaCompilerPluginsName, junit4Plugin))
       )

@@ -1,6 +1,7 @@
 package org.podval.tools.nonjvm
 
 import org.gradle.api.GradleException
+import org.podval.tools.platform.Output
 import org.slf4j.event.Level
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -20,8 +21,7 @@ abstract class Build[L](logSource: String):
   final protected def logThrowable(t: Throwable): Unit = logger.error(s"$logSource Error", t)
 
   final protected def logAtLevel(message: String, level: Level): Unit =
-    def toLog = s"build $logSource $level: $message"
-
+    val toLog: String = if !Output.annotateWithSource then message else s"build $logSource $level: $message"
     // Gradle has its own copy of org.slf4j API, which predates introduction of logger.atLevel().
     given CanEqual[Level, Level] = CanEqual.derived
     level match

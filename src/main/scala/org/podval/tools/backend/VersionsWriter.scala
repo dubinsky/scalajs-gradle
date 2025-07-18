@@ -3,8 +3,8 @@ package org.podval.tools.backend
 import org.podval.tools.build.{ScalaBinaryVersion, Version}
 import org.podval.tools.jvm.{JvmBackend, JvmDependency}
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.scalajs.ScalaJSDependency
-import org.podval.tools.scalanative.ScalaNativeDependency
+import org.podval.tools.scalajs.{PlaywrightJSEnv, ScalaJSBackend}
+import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.test.framework
 import org.podval.tools.util.{Files, Strings}
 import java.io.File
@@ -16,7 +16,7 @@ object VersionsWriter:
   private val gradleVersion: Version = Version("9.0.0-rc-3")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.2"),
+    "plugin" -> Version("0.9.3"),
 
     "gradle" -> gradleVersion,
     
@@ -24,14 +24,14 @@ object VersionsWriter:
 
     "sbt-test-interface" -> JvmDependency.SbtTestInterface.versionDefault,
     
-    "scalajs" -> ScalaJSDependency.versionDefault,
-    "scalajs-dom" -> ScalaJSDependency.DomSJS.versionDefault,
-    "scalajs-env-jsdom-nodejs" -> ScalaJSDependency.JSDomNodeJSEnv.versionDefault,
-    "scala-js-env-playwright" -> ScalaJSDependency.PlaywrightJSEnv.versionDefault,
+    "scalajs" -> ScalaJSBackend.versionDefault,
+    "scalajs-dom" -> ScalaJSBackend.DomSJS.versionDefault,
+    "scalajs-env-jsdom-nodejs" -> ScalaJSBackend.JSDomNodeJSEnv.versionDefault,
+    "scala-js-env-playwright" -> PlaywrightJSEnv.versionDefault,
     
     "node" -> NodeDependency.maker.versionDefault,
 
-    "scalanative" -> ScalaNativeDependency.versionDefault,
+    "scalanative" -> ScalaNativeBackend.versionDefault,
     
     "junit" -> framework.JUnit4Underlying.versionDefault,
     "framework-junit4" -> framework.JUnit4.versionDefault,

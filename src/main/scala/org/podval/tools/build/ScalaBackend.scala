@@ -3,7 +3,6 @@ package org.podval.tools.build
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.jvm.tasks.Jar
 import org.podval.tools.gradle.{Archive, TaskWithGradleUserHomeDir, Tasks}
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.scalajs.ScalaJSBackend
@@ -25,51 +24,42 @@ abstract class ScalaBackend(
 ) derives CanEqual:
 
   final override def toString: String = name
-  
+
+  final def describe(what: String): String = s"$name $what."
+
+  final def artifactSuffixString: String = artifactSuffix.map(suffix => s"_$suffix").getOrElse("")
+
   protected def testTaskClass: Class[? <: TestTask[this.type]]
 
-  def apply(project: Project, jvmPluginServices: JvmPluginServices): Unit =
+  def apply(
+    project: Project,
+    jvmPluginServices: JvmPluginServices,
+    isRunningInIntelliJ: Boolean
+  ): Unit =
     TaskWithGradleUserHomeDir.configureTasks(project)
-    Tasks.configureEach(project, classOf[TestTask[this.type]], (testTask: TestTask[this.type]) =>
-      testTask.setGroup(Tasks.verificationGroup)
-      testTask.useSbt()
-    )
+    TestTask.configureTasks(project, testTaskClass, isRunningInIntelliJ)
 
   def afterEvaluate(project: Project, projectScalaLibrary: ScalaLibrary): Unit =
-    val archiveAppendix: String = s"${artifactSuffixString}_${projectScalaLibrary.scalaVersion.binaryVersion.versionSuffix}"
-    val pluginScalaLibrary: ScalaLibrary = ScalaLibrary.getFromClasspath
-
-    Tasks.configure(project, classOf[Jar], Tasks.jarTaskName, (jar: Jar) =>
-      Tasks.conventionProvider(
-        jar,
-        _.getArchiveFileName,
-        Archive.noDashInFileNameBeforeAppendix,
-        project
-      )
-      Tasks.convention(
-        jar,
-        _.getArchiveAppendix,
-        _ => archiveAppendix
-      )
+    Archive.configureJarTask(
+      project, 
+      archiveAppendix = s"${artifactSuffixString}_${projectScalaLibrary.scalaVersion.binaryVersion.versionSuffix}"
     )
+
+    val pluginScalaLibrary: ScalaLibrary = ScalaLibrary.getFromClasspath
 
     dependencyRequirements(
       project,
       projectScalaVersion = projectScalaLibrary.scalaVersion,
       pluginScalaVersion = pluginScalaLibrary.scalaVersion
     ).foreach(_.apply(project))
-
-  def registerTasks(project: Project): Unit
-
+  
   protected def dependencyRequirements(
     project: Project,
     projectScalaVersion: ScalaVersion,
     pluginScalaVersion: ScalaVersion
   ): Seq[DependencyRequirement.Many]
 
-  final def describe(what: String): String = s"$name $what."
-
-  final def artifactSuffixString: String = artifactSuffix.map(suffix => s"_$suffix").getOrElse("")
+  def registerTasks(project: Project): Unit
 
   final protected def registerTask[T <: BackendTask[this.type]](
     project: Project,
@@ -93,15 +83,14 @@ abstract class ScalaBackend(
   final protected def registerTestTask(
     project: Project,
     dependsOn: Option[TaskProvider[?]]
-  ): TaskProvider[?] =
-    registerTask(
-      project,
-      taskClass = testTaskClass,
-      taskName = Tasks.testTaskName(project),
-      before = "Tests",
-      after = " using sbt frameworks",
-      group = Tasks.verificationGroup,
-      dependsOn = dependsOn,
-      // Replace 'test' task.
-      replace = true
-    )
+  ): TaskProvider[?] = registerTask(
+    project,
+    taskClass = testTaskClass,
+    taskName = Tasks.testTaskName(project),
+    before = "Tests",
+    after = " using sbt frameworks",
+    group = Tasks.verificationGroup,
+    dependsOn = dependsOn,
+    // Replace 'test' task.
+    replace = true
+  )

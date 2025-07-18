@@ -17,12 +17,14 @@ import org.podval.tools.build.Version
 // also:
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
-object ScalaCheck extends FrameworkDescriptor(
+object ScalaCheck extends ScalaFrameworkDescriptor(
   name = "ScalaCheck",
   description = "ScalaCheck",
   group = "org.scalacheck",
   artifact = "scalacheck",
+  versionDefault = Version("1.18.1"),
   className = "org.scalacheck.ScalaCheckFramework",
-  sharedPackages = List("org.scalacheck")
-) with ScalaFrameworkDescriptor:
-  override val versionDefault: Version = Version("1.18.1")
+  sharedPackages = List("org.scalacheck"),
+  tagOptions = None
+)
+

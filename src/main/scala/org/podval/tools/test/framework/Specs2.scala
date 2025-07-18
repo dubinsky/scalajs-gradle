@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaVersion, Version}
 import org.podval.tools.scalanative.ScalaNativeBackend
 
 // http://etorreborre.github.io/specs2/
@@ -32,26 +32,28 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 // also:
 //   org.scala-lang:scala-library:2.13.x
 
-object Specs2 extends FrameworkDescriptor(
+object Specs2 extends ScalaFrameworkDescriptor(
   name = "specs2",
   description = "Specs2",
   group = "org.specs2",
   artifact = "specs2-core",
+  versionDefault = Version("5.6.4"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
-  tagOptionStyle = OptionStyle.ListWithoutEq,
-  includeTagsOption = "include",
-  excludeTagsOption = "exclude"
-) with ScalaFrameworkDescriptor:
-  override val versionDefault: Version = Version("5.6.4")
+  tagOptions = TagOptions.ListWithoutEq("include", "exclude")
+):
+  // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
   val versionDefaultScala2: Version = Version("4.21.0")
-  
-  override def versionDefaultFor(scalaVersion: ScalaVersion): Version =
-    if scalaVersion.isScala3
-    then versionDefault
-    else versionDefaultScala2
 
-  // specs2 v5 does not support Scala Native - but v4 does! TODO
-  override def maker(backend: ScalaBackend): Option[ScalaDependencyMaker] = backend match
-    case ScalaNativeBackend => None
-    case _ => super.maker(backend)
+  override def versionDefaultFor(backend: ScalaBackend, scalaVersion: ScalaVersion): Version =
+    if !scalaVersion.isScala3 || backend == ScalaNativeBackend
+    then versionDefaultScala2
+    else versionDefault
+
+  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array(
+    // On JVM, specs2 writes "stats" into a directory (on non-JVM, it writes them into a memory store);
+    // default directory is "$project/target/specs2-reports/stats", which makes sense for sbt;
+    // changing it to something that makes sense for Gradle;
+    // location is hard-coded and thus not affected by changes to the project layout:
+    "stats.outdir", "build/reports/tests/specs2-reports/stats"
+  )

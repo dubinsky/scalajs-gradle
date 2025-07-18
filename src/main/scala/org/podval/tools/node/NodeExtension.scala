@@ -21,11 +21,7 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
   getModules.convention(List.empty.asJava)
   final def modules: List[String] = getModules.get.asScala.toList
   
-  // Set properties needed to run Node on the `TaskWithNodeProject`s.
-  Tasks.configureEach(project, classOf[TaskWithNodeProject], (task: TaskWithNodeProject) =>
-    task.getVersion.set(getVersion)
-    task.getNodeProjectRoot.set(NodeExtension.nodeProjectRoot(project))
-  )
+  TaskWithNodeProject.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
 
   // Add the utility tasks.
   private def register[T <: NodeTask](

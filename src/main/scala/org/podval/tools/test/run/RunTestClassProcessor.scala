@@ -17,6 +17,7 @@ final class RunTestClassProcessor(
   includeTags: Array[String],
   excludeTags: Array[String],
   logLevelEnabled: LogLevel,
+  isRunningInIntelliJ: Boolean,
   dryRun: Boolean,
   idGenerator: IdGenerator[?],
   clock: Clock
@@ -39,7 +40,11 @@ final class RunTestClassProcessor(
   private def getRunner(frameworkProvider: FrameworkProvider): Runner = synchronized:
     val frameworkName: String = frameworkProvider.frameworkName
     arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
-      val runner: Runner = frameworkProvider.runner(includeTags = includeTags, excludeTags = excludeTags)
+      val runner: Runner = frameworkProvider.runner(
+        isRunningInIntelliJ = isRunningInIntelliJ,
+        includeTags = includeTags,
+        excludeTags = excludeTags
+      )
       runners = arrayAppend(runners, (frameworkName, runner))
       runner
   

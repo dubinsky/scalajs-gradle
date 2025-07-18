@@ -65,10 +65,13 @@ trait DependencyInstallable[T] extends Dependency:
       result
     
     version match
-      case Some(version) => getInternal(Version(version))
-      case None => fromOs.getOrElse:
-        logger.info(s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: ${maker.versionDefault}")
-        getInternal(maker.versionDefault)
+      case Some(version) =>
+        getInternal(Version(version))
+      case None =>
+        fromOs.getOrElse:
+          val version: Version = maker.versionDefault
+          logger.info(s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $version")
+          getInternal(version)
   
   private def install(
     project: Project,
