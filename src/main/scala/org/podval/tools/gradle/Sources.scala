@@ -20,26 +20,32 @@ object Sources:
     scalaVersion: ScalaVersion
   ): Unit =
     val version: Version = scalaVersion.version
+    // TODO introduce version ranges...
     val scalaRoots: Seq[String] = 1
       .to(version.length)
       .map(version.take)
       .map(version => s"scala-$version")
-    
-    def addScalaRoots(sourceSet: SourceSet): Unit =
-      val sourceDirectories: Seq[File] = scalaRoots.map(scalaRoot => Files.file(
+
+    def included(file: File): Boolean = scalaRoots.contains(file.getName)
+
+    def add(sourceSet: SourceSet): Unit =
+      val src: File = Files.file(
         Projects.projectDir(project),
         "src",
-        sourceSet.getName,
-        scalaRoot
-      ))
-      getScalaSourceDirectorySet(sourceSet).srcDirs(sourceDirectories *)
+        sourceSet.getName
+      )
+      val roots: Seq[File] = Option(src.listFiles)
+        .map(_.toSeq)
+        .getOrElse(Seq.empty)
+        .filter(included)
+      if roots.nonEmpty then getScalaSourceDirectorySet(sourceSet).srcDirs(roots *)
 
-    addScalaRoots(Configurations.mainSourceSet(project))
-    addScalaRoots(Configurations.testSourceSet(project))
+    add(Configurations.mainSourceSet(project))
+    add(Configurations.testSourceSet(project))
 
   def addShared(
-    project: Project,
     shared: Project,
+    project: Project,
     isRunningInIntelliJ: Boolean
   ): Unit =
     val mainSourceSet: SourceSet = Configurations.mainSourceSet(project)
@@ -100,10 +106,8 @@ object Sources:
   private val defaultSourceDirectorySetSource: Field = classOf[DefaultSourceDirectorySet].getDeclaredField("source")
   defaultSourceDirectorySetSource.setAccessible(true)
 
-  private def getSrcDirs(
-    scalaSourceDirectorySet: SourceDirectorySet
-  ): List[File] = defaultSourceDirectorySetSource
-    .get(scalaSourceDirectorySet)
+  private def getSrcDirs(sourceDirectorySet: SourceDirectorySet): List[File] = defaultSourceDirectorySetSource
+    .get(sourceDirectorySet)
     .asInstanceOf[java.util.List[Object]]
     .asScala
     .toList

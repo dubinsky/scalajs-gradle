@@ -1,14 +1,11 @@
 package org.podval.tools.test.detect
 
 import org.objectweb.asm.{AnnotationVisitor, ClassReader, ClassVisitor, Opcodes, Type}
-import org.slf4j.{Logger, LoggerFactory}
 import scala.util.Using
 import java.io.{BufferedInputStream, File, FileInputStream}
 
 // Inspired by org.gradle.api.internal.tasks.testing.detection.TestClassVisitor.
 object TestClassVisitor:
-  private val logger: Logger = LoggerFactory.getLogger(TestClassVisitor.getClass)
-
   private def classNameFromInternal(internalName: String): String = // "org/junit/Test"
     Type.getObjectType(internalName).getClassName
   private def annotationNameFromInternal(internalName: String): String = // "Lorg/junit/Test;"
@@ -24,7 +21,7 @@ object TestClassVisitor:
       ClassReader(classStream.readAllBytes)
         .accept(result, ClassReader.SKIP_DEBUG | ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES)
     ).recover((e: Throwable) =>
-      logger.warn(s"TestClassVisitor: failed to read class file ${classFile.getAbsolutePath}.", e)
+      sbtTestFrameworkDetector.output.logThrowable(s"TestClassVisitor: failed to read class file ${classFile.getAbsolutePath}", e)
     )
 
     result

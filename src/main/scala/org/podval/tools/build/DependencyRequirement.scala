@@ -32,7 +32,7 @@ final class DependencyRequirement(
     result
 
 object DependencyRequirement:
-  private val logger: Logger = LoggerFactory.getLogger(DependencyRequirement.getClass)
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   // Arrays are used all the way to here for Scala 2.12 compatibility :(
   final class Many(

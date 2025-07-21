@@ -2,17 +2,14 @@ package org.podval.tools.scalanative
 
 import org.podval.tools.build.TestEnvironment
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
-import org.podval.tools.platform.Runner
+import org.podval.tools.platform.{Output, Runner}
 import java.io.File
 import scala.scalanative.testinterface.adapter.TestAdapter
 
 final class ScalaNativeRun(
   binaryTestFile: File,
-  logSource: String
-) extends ScalaNativeBuild(
-  logSource
-) with Run[ScalaNativeBackend.type]:
-
+  output: Output
+) extends ScalaNativeBuild(output) with Run[ScalaNativeBackend.type]:
   override def run(runner: Runner): Unit = runner.exec(log = true, _.setCommandLine(binaryTestFile.getAbsolutePath))
 
   override def testEnvironment: TestEnvironment[ScalaNativeBackend.type] =

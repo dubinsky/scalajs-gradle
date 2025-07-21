@@ -1,11 +1,12 @@
 package org.podval.tools.node
 
 import org.gradle.api.Project
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
 import org.podval.tools.gradle.{Projects, Tasks}
-import org.podval.tools.platform.Runner
+import org.podval.tools.platform.{Output, Runner}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 import javax.inject.Inject
@@ -15,11 +16,11 @@ object NodeExtension:
 
 abstract class NodeExtension @Inject(project: Project, execOperations: ExecOperations):
   def getVersion: Property[String]
-  final def version: Option[String] = Option(getVersion.getOrNull)
+  private def version: Option[String] = Option(getVersion.getOrNull)
 
   def getModules: ListProperty[String]
   getModules.convention(List.empty.asJava)
-  final def modules: List[String] = getModules.get.asScala.toList
+  private def modules: List[String] = getModules.get.asScala.toList
   
   TaskWithNodeProject.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
 
@@ -39,14 +40,23 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
 
   // install Node (if needed) and set up Node project (if needed).
   project.afterEvaluate: (project: Project) =>
+    val output: Output = Output(
+      logLevelEnabled = LogLevel.LIFECYCLE,
+      isRunningInIntelliJ = false,
+      logSource = "Node.js extension"
+    )
     NodeDependency
       .getInstalledOrInstall(
         version = version,
-        project = project
+        project = project,
+        output = output
       )
       .nodeProject(
         root = NodeExtension.nodeProjectRoot(project),
-        runner = Runner(execOperations)
+        runner = Runner(
+          execOperations,
+          output
+        )
       )
       .setUp(
         installModules = modules

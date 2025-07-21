@@ -11,12 +11,11 @@ import java.io.File
 
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
-// I did not bother putting it into a separate module or into tests to avoid including it in the plugin jar - yet?
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.0.0-rc-3")
+  private val gradleVersion: Version = Version("9.0.0-rc-4")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.3"),
+    "plugin" -> Version("0.9.4"),
 
     "gradle" -> gradleVersion,
     
@@ -48,7 +47,6 @@ object VersionsWriter:
 
   val attributes: Seq[(String, String)] = Seq(
     "pluginScalaBackendProperty"  -> BackendPlugin.scalaBackendProperty,
-    "pluginBuildPerScalaVersionProperty" -> BackendPlugin.buildPerScalaVersionProperty,
     "gradleVersionForBadge" -> gradleVersion.toString.replace("-", "--")
   )
   

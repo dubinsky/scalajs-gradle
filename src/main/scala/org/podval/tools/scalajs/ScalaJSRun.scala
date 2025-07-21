@@ -5,7 +5,7 @@ import org.gradle.process.ExecOperations
 import org.podval.tools.build.TestEnvironment
 import org.podval.tools.node.NodeProject
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
-import org.podval.tools.platform.Runner
+import org.podval.tools.platform.{Output, Runner}
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
@@ -22,11 +22,8 @@ final class ScalaJSRun(
   nodeProject: NodeProject,
   browserName: BrowserName,
   link: ScalaJSLink,
-  logSource: String
-) extends ScalaJSBuild(
-  logSource
-) with Run[ScalaJSBackend.type]:
-
+  output: Output
+) extends ScalaJSBuild(output) with Run[ScalaJSBackend.type]:
   override def run(runner: Runner): Unit =
     val (_: Report.Module, modulePath: Path, input: Input) = link.module(jsEnvKind)
 
@@ -83,8 +80,8 @@ final class ScalaJSRun(
           .withExecutable(executable)
           .withEnv(env)
           .withArgs(args)
-        logger.info(
-          s"""$logSource: jsEnv=NodeJSEnv(
+        debug(
+          s"""jsEnv=NodeJSEnv(
              |  executable=${config.executable},
              |  env=${config.env},
              |  args=${config.args},
@@ -99,8 +96,8 @@ final class ScalaJSRun(
           .withExecutable(executable)
           .withEnv(env)
           .withArgs(args)
-        logger.info(
-          s"""$logSource: jsEnv=JSDOMNodeJSEnv(
+        debug(
+          s"""jsEnv=JSDOMNodeJSEnv(
              |  executable=${config.executable},
              |  env=${config.env},
              |  args=${config.args}
@@ -110,9 +107,9 @@ final class ScalaJSRun(
         JSDOMNodeJSEnv(config)
 
       case JSEnvKind.Playwright =>
-        throw new IllegalArgumentException(s"Playwright JavaScript environment is not supported until org.scala-lang.modules:scala-parallel-collections_2.13 artifacts start being published.")
+        throw new IllegalArgumentException(s"Playwright JavaScript environment is not supported until io.github.gmkumar2005:scala-js-env-playwrights_2.13 artifacts start being published.")
 //        val config: PWEnv.Config = PWEnv.Config()
-//        ScalaJSRunConfig.logger.info(s"$logSource: jsEnv=PWEnv($config), browserName=$browserName")
+//        ScalaJSRunConfig.logger.debug(s"$logSource: jsEnv=PWEnv($config), browserName=$browserName")
 //        PWEnv(
 //          browserName = browserName.name,
 ////          headless = ???,

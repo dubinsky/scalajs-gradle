@@ -1,11 +1,13 @@
 package org.podval.tools.scalajs
 
 import org.podval.tools.nonjvm.Link
+import org.podval.tools.platform.Output
 import org.podval.tools.util.Files
 import org.scalajs.jsenv.Input
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
-import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig, 
-  ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS, ModuleSplitStyle as ModuleSplitStyleSJS}
+import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,
+  ESVersion as ESVersionSJS, ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS,
+  ModuleSplitStyle as ModuleSplitStyleSJS}
 import org.scalajs.testing.adapter.TestAdapterInitializer
 import scala.concurrent.Await
 import java.io.File
@@ -22,14 +24,13 @@ final class ScalaJSLink(
   runtimeClasspath: Seq[File],
   optimization: Optimization,
   moduleSplitStyle: ModuleSplitStyle,
+  esVersion: ESVersion,
   smallModulesFor: List[String],
   moduleInitializers: Option[Seq[ModuleInitializer]],
   isTest: Boolean,
   prettyPrint: Boolean,
-  logSource: String
-) extends ScalaJSBuild(
-  logSource
-) with Link[ScalaJSBackend.type]:
+  output: Output
+) extends ScalaJSBuild(output) with Link[ScalaJSBackend.type]:
   def module(jsEnvKind: JSEnvKind): (Report.Module, Path, Input) =
     if jsEnvKind == JSEnvKind.JSDOMNodeJS && moduleKind != ModuleKind.NoModule then
       abort(s"`jsEnv = 'Node.js+DOM' requires `moduleKind = 'NoModule'`")
@@ -72,9 +73,18 @@ final class ScalaJSLink(
     val fullOptimization: Boolean = optimization == Optimization.Full
 
     val moduleSplitStyleSJS: ModuleSplitStyleSJS = moduleSplitStyle match
-      case ModuleSplitStyle.FewestModules => ModuleSplitStyleSJS.FewestModules
+      case ModuleSplitStyle.FewestModules   => ModuleSplitStyleSJS.FewestModules
       case ModuleSplitStyle.SmallestModules => ModuleSplitStyleSJS.SmallestModules
       case ModuleSplitStyle.SmallModulesFor => ModuleSplitStyleSJS.SmallModulesFor(smallModulesFor)
+
+    val esVersionSJS: ESVersionSJS = esVersion match
+      case ESVersion.ES2015 => ESVersionSJS.ES2015
+      case ESVersion.ES2016 => ESVersionSJS.ES2016
+      case ESVersion.ES2017 => ESVersionSJS.ES2017
+      case ESVersion.ES2018 => ESVersionSJS.ES2018
+      case ESVersion.ES2019 => ESVersionSJS.ES2019
+      case ESVersion.ES2020 => ESVersionSJS.ES2020
+      case ESVersion.ES2021 => ESVersionSJS.ES2021
 
     val linkerConfig: StandardConfig = StandardConfig()
       .withCheckIR(fullOptimization)
@@ -84,6 +94,7 @@ final class ScalaJSLink(
       .withModuleSplitStyle(moduleSplitStyleSJS)
       .withExperimentalUseWebAssembly(useWebAssembly)
       .withPrettyPrint(prettyPrint)
+      .withESFeatures(_.withESVersion(esVersionSJS))
 
     val moduleInitializersSJS: Seq[ModuleInitializerSJS] = moduleInitializers
       .map(_.map(ScalaJSLink.toSJS))
@@ -95,8 +106,8 @@ final class ScalaJSLink(
         )))
       .getOrElse(Seq.empty) 
 
-    logger.info(
-      s"""$logSource:
+    debug(
+      s"""\n
          |JSDirectory = $jsDirectory
          |reportFile = $reportTextFile
          |moduleInitializers = ${moduleInitializersSJS.map(ModuleInitializerSJS.fingerprint).mkString(", ")}

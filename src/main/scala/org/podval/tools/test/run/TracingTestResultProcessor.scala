@@ -1,13 +1,13 @@
 package org.podval.tools.test.run
 
 import org.gradle.api.internal.tasks.testing.{TestCompleteEvent, TestDescriptorInternal, TestResultProcessor, TestStartEvent}
+import org.gradle.api.logging.{Logger, Logging}
 import org.gradle.api.tasks.testing.{TestFailure, TestOutputEvent}
-import org.slf4j.{Logger, LoggerFactory}
 
 class TracingTestResultProcessor(delegate: TestResultProcessor) extends TestResultProcessor:
-  private val logger: Logger = LoggerFactory.getLogger(classOf[TracingTestResultProcessor])
+  private val logger: Logger = Logging.getLogger(getClass)
   
-  private def trace(message: String): Unit = logger.info(s"TracingTestResultProcessor: $message")
+  private def trace(message: String): Unit = logger.debug(s"TracingTestResultProcessor: $message", null, null, null)
   
   override def output(testId: AnyRef, event: TestOutputEvent): Unit =
     // Not tracing the output: it already gets printed at level INFO by Gradle

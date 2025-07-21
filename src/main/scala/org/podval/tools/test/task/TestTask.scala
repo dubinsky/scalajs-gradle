@@ -13,14 +13,15 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.{BackendTask, ScalaBackend, TestEnvironment}
-import org.podval.tools.gradle.Tasks
-
+import org.podval.tools.gradle.{TaskWithOutput, Tasks}
+import org.podval.tools.platform.Output
 import java.lang.reflect.Method
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
-abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
-  @Internal def getRunningInIntelliJ: Property[Boolean]
+abstract class TestTask[B <: ScalaBackend] extends Test
+  with BackendTask[B]
+  with TaskWithOutput:
 
   protected def testEnvironmentCreator: TestEnvironment.Creator[B]
 
@@ -45,15 +46,14 @@ abstract class TestTask[B <: ScalaBackend] extends Test with BackendTask[B]:
       testEnvironment = None
 
   private lazy val sbtTestFramework: SbtTestFramework = SbtTestFramework(
-    logLevelEnabled = getServices.get(classOf[StartParameter]).getLogLevel,
     defaultTestFilter = getFilter.asInstanceOf[DefaultTestFilter],
     options = SbtTestFrameworkOptions(),
     moduleRegistry = getModuleRegistry,
     testTaskTemporaryDir = getTemporaryDirFactory,
     dryRun = getDryRun,
     // delayed: not available at the time of the TestFramework construction (task creation)
-    isRunningInIntelliJ = () => getRunningInIntelliJ.get,
-    testEnvironment = () => getTestEnvironment
+    testEnvironment = () => getTestEnvironment,
+    output = () => output
   )
   
   // Since Gradle's Test task manipulates the test framework in its `executeTests()`,
@@ -95,11 +95,11 @@ object TestTask:
 
   def configureTasks[T <: TestTask[?]](
     project: Project,
-    testTaskClass: Class[T],
-    isRunningInIntelliJ: Boolean
-  ): Unit =
-    Tasks.configureEach(project, testTaskClass, (testTask: T) =>
+    testTaskClass: Class[T]
+  ): Unit = Tasks.configureEach(
+    project,
+    testTaskClass,
+    (testTask: T) =>
       testTask.setGroup(Tasks.verificationGroup)
       testTask.useSbt()
-      testTask.getRunningInIntelliJ.set(isRunningInIntelliJ)
-    )
+  )

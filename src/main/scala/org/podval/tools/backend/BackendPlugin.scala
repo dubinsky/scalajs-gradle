@@ -4,104 +4,74 @@ import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.plugins.scala.ScalaPlugin
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.api.{Plugin, Project, Task}
+import org.gradle.api.{GradleException, Plugin, Project, Task}
 import org.podval.tools.build.{ScalaBackend, ScalaVersion}
 import org.podval.tools.gradle.{Configurations, Projects, ScalaExtension, Sources, Tasks}
 import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.util.Files
+import org.podval.tools.platform.IntelliJIdea
 import java.io.File
 import javax.inject.Inject
 
 final class BackendPlugin @Inject(jvmPluginServices: JvmPluginServices) extends Plugin[Project]:
   override def apply(project: Project): Unit =
+    def info(message: String): Unit = BackendPlugin.info(project, message)
+
     // Apply Scala plugin to this project.
     Projects.applyPlugin(project, classOf[ScalaPlugin])
 
-    // Create extension.
-    val extension: BackendExtension = project.getExtensions.create("scalaBackend", classOf[BackendExtension])
-
     // Configure project.
-    val subprojects: Set[(ScalaBackend, Option[Project])] = BackendPlugin.subprojects(project, extension)
-    val isMixed: Boolean = subprojects.nonEmpty
-    val ijString: String = if !extension.isRunningInIntelliJ then "" else " [IJ]"
-    val shared: Option[Project] = (if isMixed then Some(project) else Option(project.getParent))
-      .flatMap(BackendPlugin.shared(_, extension))
+    val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn
+    val (backends: Set[ScalaBackend], subprojects: Set[Project]) = BackendPlugin.subprojects(project)
+    val isMixed: Boolean = backends.nonEmpty
+    val ijString: String = if !isRunningInIntelliJ then "" else " [IJ]"
+    val shared: Option[Project] = Option(if isMixed then project else project.getParent).flatMap(BackendPlugin.shared)
 
     if isMixed then
-      extension.lifecycle(s"using Scala backends ${subprojects.map(_._1.name).mkString(", ")}$ijString")
-      BackendPlugin.applyMixed(
-        project,
-        extension,
-        subprojects.map(_._2.get),
-        shared
-      )
+      info(s"using Scala backends ${backends.map(_.name).mkString(", ")}$ijString")
+      BackendPlugin.applyMixed(project, subprojects, shared)
     
-    else if shared.isDefined &&  Projects.isProjectDir(project, ScalaBackend.sharedSourceRoot) then
-      extension.lifecycle(s"code shared between backends$ijString")
-      BackendPlugin.applyShared(
-        project,
-        extension
-      )
-    
+    else if shared.isDefined && Projects.isProjectDir(project, ScalaBackend.sharedSourceRoot) then
+      info(s"code shared between backends$ijString")
+      BackendPlugin.applyShared(project)
+
     else
-      val backend: ScalaBackend = BackendPlugin.backend(project, extension)
-      extension.lifecycle(s"using Scala backend ${backend.name}${shared.map(shared => s" [+'${shared.getName}']").getOrElse("")}$ijString")
-      project.afterEvaluate((_: Project) => BackendPlugin.afterEvaluateSingle(
-        project,
-        extension,
-        shared,
-        backend
-      ))
-      BackendPlugin.applySingle(
-        project, 
-        extension,
-        jvmPluginServices,
-        backend
-      )
+      val backend: ScalaBackend = BackendPlugin.backend(project)
+      info(s"using Scala backend ${backend.name}${shared.map(shared => s" [+'${shared.getName}']").getOrElse("")}$ijString")
+      BackendPlugin.applySingle(project, jvmPluginServices, isRunningInIntelliJ, backend, shared)
 
 object BackendPlugin:
   val scalaBackendProperty: String = "org.podval.tools.backend"
-  val buildPerScalaVersionProperty: String = "org.podval.tools.backend.buildPerScalaVersion"
 
-  private def subprojects(
-    project: Project,
-    extension: BackendExtension
-  ): Set[(ScalaBackend, Option[Project])] =
+  def error(project: Project, message: String): Nothing =
+    throw GradleException(s"${pluginMessage(project, message)}\nDocumentation: https://github.com/dubinsky/scalajs-gradle")
+
+  private def info(project: Project, message: String): Unit =
+    project.getLogger.info(pluginMessage(project, message), null, null, null)
+
+  private final def pluginMessage(project: Project, message: String): String =
+    s"Plugin 'org.podval.tools.scalajs' in $project: $message."
+
+  private def subprojects(project: Project): (Set[ScalaBackend], Set[Project]) =
     val backends: Set[ScalaBackend] = ScalaBackend.all.filter(backend => project.file(backend.sourceRoot).exists)
-    // Write `settings-includes.gradle`.
-    if backends.nonEmpty then
-      val path: String = project.getPath
-      val prefix: String = if path == ":" then "" else path
-      Files.write(
-        file = File(Projects.projectDir(project), "settings-includes.gradle"),
-        content = (Seq(ScalaBackend.sharedSourceRoot) ++ backends.map(_.sourceRoot))
-          .map(name => s"include '$prefix:$name'")
-          .mkString("\n")
+    if backends.isEmpty then (Set.empty, Set.empty) else
+      val backendProjects: Set[(ScalaBackend, Option[Project])] = backends
+        .map(backend => backend -> Projects.findSubproject(project, backend.sourceRoot))
+
+      val notSubprojects: Set[ScalaBackend] = backendProjects.filter(_._2.isEmpty).map(_._1)
+      if notSubprojects.nonEmpty then error(project,
+        s"${notSubprojects.map(_.sourceRoot).map(n => s"'$n'").mkString(", ")} must be included in 'settings.gradle'"
       )
-    val backendProjects: Set[(ScalaBackend, Option[Project])] = backends
-      .map(backend => backend -> Projects.findSubproject(project, backend.sourceRoot))
 
-    val notSubprojects: Set[ScalaBackend] = backendProjects.filter(_._2.isEmpty).map(_._1)
-    if notSubprojects.nonEmpty then extension.error(
-      s"${notSubprojects.map(_.sourceRoot).map(n => s"'$n'").mkString(", ")} must be included in 'settings.gradle'"
-    )
-    
-    backendProjects
+      (backends, backendProjects.map(_._2.get))
 
-  private def shared(
-    parentProject: Project,
-    extension: BackendExtension
-  ): Option[Project] =
+  private def shared(parentProject: Project): Option[Project] =
     val file: File = parentProject.file(ScalaBackend.sharedSourceRoot)
     if !file.exists || !file.isDirectory then None else Some(
       Projects.findSubproject(parentProject, ScalaBackend.sharedSourceRoot)
-        .getOrElse(extension.error(s"subproject '${ScalaBackend.sharedSourceRoot}' must be included in 'settings.gradle'"))
+        .getOrElse(error(parentProject, s"subproject '${ScalaBackend.sharedSourceRoot}' must be included in 'settings.gradle'"))
     )
 
-  private def backend(
-    project: Project,
-    extension: BackendExtension
-  ): ScalaBackend = ScalaBackend
+  private def backend(project: Project): ScalaBackend = ScalaBackend
     .all
     .find(_.sourceRoot == Projects.projectDir(project).getName)
     .orElse:
@@ -111,10 +81,10 @@ object BackendPlugin:
         .map((name: String) => ScalaBackend
           .all
           .find(isBackendWithName(name))
-          .getOrElse(extension.error(s"unknown Scala backend '$name'; use one of ${ScalaBackend.names}"))
+          .getOrElse(error(project, s"unknown Scala backend '$name'; use one of ${ScalaBackend.names}"))
         )
     .getOrElse:
-      extension.lifecycle(
+      info(project,
         s"""to choose Scala backend, set property '$scalaBackendProperty' to one of ${ScalaBackend.names};
            |to use multiple backends, create at least one of the subprojects ${ScalaBackend.sourceRoots}""".stripMargin
       )
@@ -124,18 +94,8 @@ object BackendPlugin:
     name.toLowerCase == backend.name      .toLowerCase ||
     name.toLowerCase == backend.sourceRoot.toLowerCase
 
-  private def applyShared(
-    project: Project,
-    extension: BackendExtension
-  ): Unit =
-    setScalaVersionFromParentAndAddVersionSpecificScalaSources(project, extension)
-
-    // Disable all tasks.
-    Tasks.disable(project, classOf[Task])
-  
   private def applyMixed(
     project: Project,
-    extension: BackendExtension,
     subprojects: Set[Project],
     shared: Option[Project]
   ): Unit =
@@ -152,40 +112,42 @@ object BackendPlugin:
 
   private def applySingle(
     project: Project,
-    extension: BackendExtension,
     jvmPluginServices: JvmPluginServices,
-    backend: ScalaBackend
+    isRunningInIntelliJ: Boolean,
+    backend: ScalaBackend,
+    shared: Option[Project]
   ): Unit =
-    setScalaVersionFromParentAndAddVersionSpecificScalaSources(project, extension)
-    extension.setBackend(backend)
-    backend.apply(project, jvmPluginServices, extension.isRunningInIntelliJ)
+    // Create extension.
+    val extension: BackendExtension = project.getExtensions.create(
+      "scalaBackend",
+      classOf[BackendExtension],
+      backend,
+      isRunningInIntelliJ
+    )
+
+    setScalaVersionFromParentAndAddVersionSpecificSources(project)
+    backend.apply(project, jvmPluginServices, isRunningInIntelliJ)
     backend.registerTasks(project)
 
-  private def afterEvaluateSingle(
-    project: Project,
-    extension: BackendExtension,
-    shared: Option[Project],
-    backend: ScalaBackend
-  ): Unit =
-    shared.foreach((shared: Project) => Sources.addShared(
-      project,
-      shared,
-      extension.isRunningInIntelliJ
-    ))
+    project.afterEvaluate: (_: Project) =>
+      shared.foreach(Sources.addShared(_, project, isRunningInIntelliJ))
+      backend.afterEvaluate(
+        project, 
+        projectScalaLibrary = extension.getScalaLibrary, 
+        pluginScalaLibrary = extension.getPluginScalaLibrary
+      )
 
-    // Adjust the build directory for the Scala version if requested.
-    if extension.isBuildPerScalaVersion
-    then Projects.setBuildSubDirectory(project, s"scala-${extension.getScalaVersion}")
+  private def applyShared(project: Project): Unit =
+    setScalaVersionFromParentAndAddVersionSpecificSources(project)
 
-    backend.afterEvaluate(project, extension.getScalaLibrary)
+    // Disable all tasks.
+    Tasks.disable(project, classOf[Task])
 
-  private def setScalaVersionFromParentAndAddVersionSpecificScalaSources(
-    project: Project,
-    extension: BackendExtension
-  ): Unit = Projects.parent(project).foreach: (parentProject: Project) =>
-    Projects.afterEvaluateIfAvailable(parentProject, ScalaExtension
-      .findScalaVersion(parentProject)
-      .foreach: (scalaVersion: ScalaVersion) =>
-        ScalaExtension.setScalaVersion(project, scalaVersion)
-        Sources.addVersionSpecific(project, scalaVersion)
-    )
+  private def setScalaVersionFromParentAndAddVersionSpecificSources(project: Project): Unit =
+    Projects.parent(project).foreach: (parentProject: Project) =>
+      Projects.afterEvaluateIfAvailable(parentProject, ScalaExtension
+        .findScalaVersion(parentProject)
+        .foreach: (scalaVersion: ScalaVersion) =>
+          ScalaExtension.setScalaVersion(project, scalaVersion)
+          Sources.addVersionSpecific(project, scalaVersion)
+      )

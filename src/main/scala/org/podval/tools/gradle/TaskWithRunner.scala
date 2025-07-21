@@ -5,6 +5,10 @@ import org.gradle.process.ExecOperations
 import org.podval.tools.platform.Runner
 import javax.inject.Inject
 
-trait TaskWithRunner extends Task:
+trait TaskWithRunner extends TaskWithOutput:
   @Inject def getExecOperations: ExecOperations
-  final protected def runner: Runner = Runner(getExecOperations)
+  
+  final protected def runner: Runner = Runner(
+    getExecOperations,
+    output
+  )

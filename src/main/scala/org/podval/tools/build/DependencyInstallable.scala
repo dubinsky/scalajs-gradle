@@ -1,17 +1,12 @@
 package org.podval.tools.build
 
-import org.gradle.api.{GradleException, Project}
+import org.gradle.api.Project
 import org.podval.tools.gradle.{Artifact, Projects}
+import org.podval.tools.platform.Output
 import org.podval.tools.util.Files
-import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
-object DependencyInstallable:
-  private val logger: Logger = LoggerFactory.getLogger(DependencyInstallable.getClass)
-
 trait DependencyInstallable[T] extends Dependency:
-  import DependencyInstallable.logger
-  
   def repository: Option[Artifact.Repository] = None
 
   // Where retrieved distributions are cached
@@ -29,27 +24,37 @@ trait DependencyInstallable[T] extends Dependency:
 
   def fromOs: Option[T] = None
 
-  private def fatalError(message: String): Nothing = throw GradleException(s"Fatal error in $this: $message")
-
-  final def getInstalled(version: Option[String], gradleUserHomeDir: File): T = get(
+  final def getInstalled(
+    version: Option[String],
+    gradleUserHomeDir: File,
+    output: Output
+  ): T = get(
     version = version,
     gradleUserHomeDir = gradleUserHomeDir,
-    ifDoesNotExist = (dependencyWithVersion, _) => fatalError(s"Needed dependency does not exist: $dependencyWithVersion")
+    output = output,
+    ifDoesNotExist = (dependencyWithVersion, _) => output.abort(s"Needed dependency does not exist: $dependencyWithVersion")
   )
 
-  final def getInstalledOrInstall(version: Option[String], project: Project): T = get(
+  final def getInstalledOrInstall(
+    version: Option[String],
+    project: Project,
+    output: Output
+  ): T = get(
     version = version,
     gradleUserHomeDir = Projects.gradleUserHomeDir(project),
+    output = output,
     ifDoesNotExist = (dependencyWithVersion, result) => install(
       project,
       dependencyWithVersion, 
-      result
+      result,
+      output
     )
   )
 
   private def get(
     version: Option[String],
     gradleUserHomeDir: File,
+    output: Output,
     ifDoesNotExist: (Dependency#WithVersion, T) => Unit
   ): T =
     def getInternal(version: Version) =
@@ -60,7 +65,7 @@ trait DependencyInstallable[T] extends Dependency:
       ))
   
       if exists(result)
-      then logger.info(s"Existing $dependencyWithVersion detected: $result")
+      then output.info("DependencyInstallable", s"Existing $dependencyWithVersion detected: $result")
       else ifDoesNotExist(dependencyWithVersion, result)
       result
     
@@ -70,26 +75,27 @@ trait DependencyInstallable[T] extends Dependency:
       case None =>
         fromOs.getOrElse:
           val version: Version = maker.versionDefault
-          logger.info(s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $version")
+          output.info("DependencyInstallable", s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $version")
           getInternal(version)
   
   private def install(
     project: Project,
     dependencyWithVersion: Dependency#WithVersion,
-    result: T
+    result: T,
+    output: Output
   ): Unit =
-    logger.warn(s"Installing $dependencyWithVersion as $result")
+    output.lifecycle("DependencyInstallable", s"Installing $dependencyWithVersion as $result")
 
     val artifact: File = Artifact.resolve(
       project,
       dependencyWithVersion.dependencyNotation,
       repository
     )
-      .getOrElse(fatalError(s"No artifact found for: $dependencyWithVersion"))
+      .getOrElse(output.abort(s"No artifact found for: $dependencyWithVersion"))
 
     val gradleUserHomeDir: File = Projects.gradleUserHomeDir(project)
     val into: File = installsInto(gradleUserHomeDir, dependencyWithVersion)
-    logger.info(s"Unpacking $artifact into $into")
+    output.info("DependencyInstallable", s"Unpacking $artifact into $into")
 
     Artifact.unpack(
       project,
@@ -97,7 +103,7 @@ trait DependencyInstallable[T] extends Dependency:
       into
     )
 
-    if !exists(result) then fatalError(s"Does not exist after installation: $result")
+    if !exists(result) then output.abort(s"Does not exist after installation: $result")
     fixup(result)
 
   // Although Gradle caches resolved artifacts and npm caches packages that it retrieves,

@@ -13,7 +13,7 @@ abstract class NonJvmJUnit4FrameworkDescriptor(
 
   final override def group: String = supportedBackend.group
   final override def versionDefault: Version = supportedBackend.versionDefault
-  final override def description: String = supportedBackend.describe("JUnit4")
+  final override def description: String = s"JUnit4 for ${supportedBackend.name}"
   final override def tagOptions: Option[TagOptions] = None
   final override def usesTestSelectorAsNestedTestSelector: Boolean = JUnit4.usesTestSelectorAsNestedTestSelector
   //final override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array.empty

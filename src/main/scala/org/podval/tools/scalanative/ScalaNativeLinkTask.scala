@@ -38,7 +38,7 @@ trait ScalaNativeLinkTask extends LinkTask[ScalaNativeBackend.type]:
       isTest = isTest,
       classpath = runtimeClasspath.map(_.toPath),
       sourcesClasspath = sourcesClasspath,
-      logSource = getName
+      output = output
     )
 
 object ScalaNativeLinkTask:

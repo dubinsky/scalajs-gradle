@@ -5,22 +5,21 @@ import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector
 import org.gradle.internal.Factory
 import org.podval.tools.build.TestEnvironment
+import org.podval.tools.platform.Output
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
 import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider, JUnit4ScalaJS, JUnit4ScalaNative}
 import org.podval.tools.test.taskdef.TestClassRun
-import org.slf4j.{Logger, LoggerFactory}
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint}
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 // Inspired by org.gradle.api.internal.tasks.testing.detection.AbstractTestFrameworkDetector.
 final class SbtTestFrameworkDetector(
+  val output: Output,
   testEnvironment: TestEnvironment[?],
   testFilter: TestFilter,
   testTaskTemporaryDir: Factory[File]
 ) extends TestFrameworkDetector:
-
-  import SbtTestFrameworkDetector.logger
   
   private var testClassesDirectories: Option[List[File]] = None
   override def setTestClasses(value: java.util.List[File]): Unit = testClassesDirectories = Some(value.asScala.toList)
@@ -48,7 +47,7 @@ final class SbtTestFrameworkDetector(
     .map   (_.asInstanceOf[SubclassFingerprintDetector])
 
   private lazy val classFileFinder: ClassFileFinder =
-    logger.debug(s"SbtTestFrameworkDetector.detectors: $detectors")
+    output.debug("SbtTestFrameworkDetector", s"detectors: $detectors")
     ClassFileFinder(
       testClasspath = testClasspath.toList.flatten,
       testClassesDirectories = testClassesDirectories.toList.flatten,
@@ -85,7 +84,7 @@ final class SbtTestFrameworkDetector(
   ): Option[TestClassRun] =
     if detectors.isEmpty then None else
       if detectors.size > 1 then
-        logger.warn(s"SbtTestFrameworkDetector: Ignoring class $className with multiple detectors: $detectors.")
+        output.warn("SbtTestFrameworkDetector", s"Ignoring class $className with multiple detectors: $detectors.")
         None
       else
         val detector: FingerprintDetector = detectors.head
@@ -143,8 +142,6 @@ final class SbtTestFrameworkDetector(
       }))
 
 object SbtTestFrameworkDetector:
-  private val logger: Logger = LoggerFactory.getLogger(classOf[SbtTestFrameworkDetector])
-
   // type hierarchy roots are not tests
   private val hierarchyRoots: Set[String] = Set(
     "scala/AnyRef",
