@@ -1,13 +1,13 @@
 package org.podval.tools.node
 
+import org.gradle.api.logging.{Logger, Logging}
 import org.gradle.process.ExecSpec
 import org.podval.tools.platform.{Exec, Runner}
-import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 
 object NodeProject:
-  private val logger: Logger = LoggerFactory.getLogger(NodeProject.getClass)
+  private val logger: Logger = Logging.getLogger(getClass)
   
 final class NodeProject(
   val node: Node,
@@ -15,16 +15,17 @@ final class NodeProject(
   runner: Runner
 ):
   override def toString: String = s"Node project in $root with $node"
-  private val nodeModules: File = File(root, "node_modules")
-  val nodeEnv: Seq[(String, String)] = Seq(("NODE_PATH", nodeModules.getAbsolutePath))
-  val npmEnv: Seq[(String, String)] = nodeEnv ++ Seq(("PATH", s"${node.bin.getAbsolutePath}:${System.getenv("PATH")}"))
+  private def nodeModules: File = File(root, "node_modules")
+  private def nodePathEnvironmentVariable: (String, String) = "NODE_PATH" -> nodeModules.getAbsolutePath
+  private def pathEnvironmentVariable: (String, String) = "PATH" -> s"${node.bin.getAbsolutePath}:${System.getenv("PATH")}"
+  def nodeEnv: Seq[(String, String)] = Seq(nodePathEnvironmentVariable)
 
   def setUp(installModules: List[String]): Unit =
     val isSetUp: Boolean = File(root, "package.json").exists
 
     // Initialize Node project
     if !isSetUp then
-      NodeProject.logger.warn(s"Setting up $this")
+      NodeProject.logger.lifecycle(s"Setting up $this")
       npm(List("init", "private"), log = !isSetUp)
 
     // Install Node modules
@@ -41,7 +42,7 @@ final class NodeProject(
 
   def npm(arguments: List[String], log: Boolean): Unit = run(
     command = node.npm,
-    environment = npmEnv,
+    environment = Seq(nodePathEnvironmentVariable, pathEnvironmentVariable),
     // in local mode, npm puts packages into node_modules under the current working directory
     cwd = Some(root),
     arguments,

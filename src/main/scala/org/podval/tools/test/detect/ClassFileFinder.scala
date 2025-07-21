@@ -6,7 +6,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
 object ClassFileFinder:
-  private val logger: Logger = LoggerFactory.getLogger(classOf[ClassFileFinder])
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
 final class ClassFileFinder(
   testClasspath: List[File],
@@ -33,5 +33,5 @@ final class ClassFileFinder(
     .find(_.exists)
     .orElse(Option(classFileExtractionManager.getLibraryClassFile(typeName)))
     .orElse:
-      logger.info(s"ClassFileFinder: could not find $typeName file to scan.")
+      logger.debug(s"ClassFileFinder: could not find $typeName file to scan.")
       None

@@ -13,15 +13,15 @@ final private class EventHandler(runTestClass: RunTestClass):
   private def testResultProcessor: TestResultProcessorEx = runTestClass.testResultProcessor
   
   def handleEvent(event: Event): Unit =
-    runTestClass.logger.info(
-      s"""RunTestClassProcessor.EventHandler.handleEvent:
-         |className=${runTestClass.className}
-         |running=${runTestClass.running}
-         |event.fullyQualifiedName=${event.fullyQualifiedName}
-         |event.duration=${event.duration}
-         |event.selector=${event.selector}
-         |event.status=${event.status}
-         |event.throwable=${event.throwable}""", // a problem on Scala 2.12: .stripMargin
+    runTestClass.debug(
+      s"""EventHandler.handleEvent
+         |  className=${runTestClass.className}
+         |  running=${runTestClass.running}
+         |  event.fullyQualifiedName=${event.fullyQualifiedName}
+         |  event.duration=${event.duration}
+         |  event.selector=${event.selector}
+         |  event.status=${event.status}
+         |  event.throwable=${event.throwable}""", // a problem on Scala 2.12: .stripMargin
     )
 
     val endTime: Long = testResultProcessor.getCurrentTime

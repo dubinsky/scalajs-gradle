@@ -7,7 +7,7 @@ import java.nio.file.Paths
 import scala.io.Source
 
 object Files:
-  private val logger: Logger = LoggerFactory.getLogger(Files.getClass)
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
   
   def write(file: File, content: String): Unit =
     logger.debug(s"Writing $file")

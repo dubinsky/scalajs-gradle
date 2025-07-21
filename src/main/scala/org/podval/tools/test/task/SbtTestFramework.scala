@@ -4,33 +4,31 @@ import org.gradle.api.Action
 import org.gradle.api.internal.classpath.ModuleRegistry
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.podval.tools.build.TestEnvironment
 import org.podval.tools.gradle.GradleClasspath
+import org.podval.tools.platform.Output
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.test.run.RunTestClassProcessorFactory
 import org.podval.tools.util.Files
-import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import java.lang.reflect.Field
 import java.net.URL
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class SbtTestFramework(
-  logLevelEnabled: LogLevel,
   defaultTestFilter: DefaultTestFilter,
   options: SbtTestFrameworkOptions,
   moduleRegistry: ModuleRegistry,
   testTaskTemporaryDir: Factory[File],
   dryRun: Provider[java.lang.Boolean],
   // delayed
-  isRunningInIntelliJ: () => Boolean,
+  output: () => Output,
   testEnvironment: () => TestEnvironment[?]
 ) extends TestFramework:
 
@@ -40,13 +38,12 @@ class SbtTestFramework(
     val copiedOptions: SbtTestFrameworkOptions = SbtTestFrameworkOptions()
     copiedOptions.copyFrom(this.options)
     SbtTestFramework(
-      this.logLevelEnabled,
       newTestFilters.asInstanceOf[DefaultTestFilter],
       copiedOptions,
       this.moduleRegistry,
       this.testTaskTemporaryDir,
       this.dryRun,
-      this.isRunningInIntelliJ,
+      this.output,
       this.testEnvironment
     )
   
@@ -58,10 +55,12 @@ class SbtTestFramework(
 
   override def close(): Unit = detector = None
 
-  private def createDetector: SbtTestFrameworkDetector =  
-    SbtTestFramework.logger.info(s"SbtTestFramework: --tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}")
+  private def createDetector: SbtTestFrameworkDetector =
+    val out: Output = output()
+    out.info("SbtTestFramework", "--tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}.")
 
     SbtTestFrameworkDetector(
+      output = out,
       testEnvironment = testEnvironment(),
       testTaskTemporaryDir = testTaskTemporaryDir,
       testFilter = TestFilter(
@@ -74,8 +73,7 @@ class SbtTestFramework(
   override def getProcessorFactory: RunTestClassProcessorFactory = RunTestClassProcessorFactory(
     includeTags = options.getIncludeCategories.asScala.toArray,
     excludeTags = options.getExcludeCategories.asScala.toArray,
-    logLevelEnabled = logLevelEnabled,
-    isRunningInIntelliJ = isRunningInIntelliJ(),
+    output = output(),
     dryRun = dryRun.get
   )
 
@@ -166,8 +164,6 @@ class SbtTestFramework(
     ()
 
 object SbtTestFramework:
-  private val logger: Logger = LoggerFactory.getLogger(classOf[SbtTestFramework])
-
   private def getImplementationClasspath(builder: DefaultWorkerProcessBuilder): java.util.List[URL] =
     val implementationClasspath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
     implementationClasspath.setAccessible(true)

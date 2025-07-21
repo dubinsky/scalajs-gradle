@@ -40,9 +40,9 @@ object MUnit extends ScalaFrameworkDescriptor(
   tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),
   usesTestSelectorAsNestedTestSelector = true
 ):
-  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array(
-    // use SBT loggers
-    "--logger=sbt"
+  override def additionalOptions: Array[String] = Array(
+    "--logger=sbt", // use SBT loggers
+    "--summary=1" // enable one-line summary
   )
 
   override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match

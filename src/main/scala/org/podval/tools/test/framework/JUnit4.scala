@@ -26,9 +26,10 @@ object JUnit4 extends FrameworkDescriptor with JavaDependencyMaker:
   override val tagOptions: Some[TagOptions] = TagOptions.ListWithEq("--include-categories", "--exclude-categories")
   override val usesTestSelectorAsNestedTestSelector: Boolean = true
 
-  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array(
-    // by default, `org.junit.runners.Suite` is ignored; make sure it is not: it is needed to run nested suites:
-    "--ignore-runners=none"
+  override def additionalOptions: Array[String] = Array(
+    // by default, `org.junit.runners.Suite` is ignored; make sure it is not - it is needed to run nested suites:
+    "--ignore-runners=none",
+    "--summary=1" // enable one-line summary
   )
   
   // This is a JVM-only test framework

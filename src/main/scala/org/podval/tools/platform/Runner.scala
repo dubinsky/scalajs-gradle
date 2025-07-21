@@ -1,27 +1,31 @@
 package org.podval.tools.platform
 
+import org.gradle.api.logging.LogLevel
 import org.gradle.process.{ExecOperations, ExecSpec}
-import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.{InputStream, OutputStream}
-
-object Runner:
-  private val logger: Logger = LoggerFactory.getLogger(getClass)
-
-  private def out(log: Boolean)(message: String): Unit =
-    val toLog: String = if !Output.annotateWithSource then message else s"[out]: $message"
-    if log
-    then logger.warn(toLog)
-    else logger.info(toLog)
-
-  private def err(message: String): Unit = logger.error(s"[err]: $message")
 
 // running on JVM is handled by the Application Plugin, and thus the output is not intercepted by the Runner;
 // tests are not handled by the Runner either;
 // as a result, println() output gets lost on Scala Native...
-final class Runner(execOperations: ExecOperations):
+final class Runner(
+  execOperations: ExecOperations,
+  output: Output
+):
+  private def out(log: Boolean)(message: String): Unit = output.logAtLevel(
+    annotation = "out",
+    logLevel = if log then LogLevel.LIFECYCLE else LogLevel.INFO,
+    message = message
+  )
+
+  private def err(message: String): Unit = output.logAtLevel(
+    annotation = "err",
+    logLevel = LogLevel.ERROR,
+    message = message
+  )
+
   def run(running: String, log: Boolean)(body: => Unit): Unit =
-    Runner.out(log)(s"Running [$running].")
+    out(log)(s"Running [$running].")
     try body finally
       close()
       // TODO for Native this prints before the output!
@@ -34,11 +38,11 @@ final class Runner(execOperations: ExecOperations):
     execOperations.exec: (execSpec: ExecSpec) =>
       configure(execSpec)
       run(execSpec.getCommandLine.asScala.mkString(" "), log):
-        val out: OutputStream = CallbackOutputStream(Runner.out(log))
-        val err: OutputStream = CallbackOutputStream(Runner.err)
-        outputStreams = List(out, err)
-        execSpec.setStandardOutput(out)
-        execSpec.setErrorOutput   (err)
+        val outStream: OutputStream = CallbackOutputStream(out(log))
+        val errStream: OutputStream = CallbackOutputStream(err)
+        outputStreams = List(outStream, errStream)
+        execSpec.setStandardOutput(outStream)
+        execSpec.setErrorOutput   (errStream)
 
   /* The list of threads that are piping output to System.out and
    * System.err. This is not an AtomicReference or any other thread-safe
@@ -58,8 +62,8 @@ final class Runner(execOperations: ExecOperations):
     outOpt: Option[InputStream],
     errOpt: Option[InputStream]
   ): Unit = pipeOutputThreads =
-    PipeOutputThread.pipe(outOpt, Runner.out(log = true)) ::: 
-    PipeOutputThread.pipe(errOpt, Runner.err)
+    PipeOutputThread.pipe(outOpt, out(log = true)) ::: 
+    PipeOutputThread.pipe(errOpt, err)
 
   private def close(): Unit =
     /* Wait for the pipe output threads to be done, to make sure that we

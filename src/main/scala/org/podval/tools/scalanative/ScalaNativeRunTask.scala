@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 trait ScalaNativeRunTask[L <: ScalaNativeLinkTask : ClassTag] extends RunTask[ScalaNativeBackend.type, L]:
   final override protected def run: ScalaNativeRun = ScalaNativeRun(
     binaryTestFile = linkTask.getOutputFile,
-    logSource = getName
+    output = output
   )
 
 object ScalaNativeRunTask:

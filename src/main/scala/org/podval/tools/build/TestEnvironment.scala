@@ -35,7 +35,7 @@ abstract class TestEnvironment[B <: ScalaBackend](
     val result: List[Framework] = loadFrameworks
 
     TestEnvironment.logger.info(
-      s"Loaded test frameworks for $backend: ${result.map(framework => FrameworkDescriptor.forName(framework.name).description).mkString(", ")}"
+      s"Loaded test frameworks for $backend: ${result.map(framework => FrameworkDescriptor.forName(framework.name).description).mkString(", ")}."
     )
 
     // Check uniqueness; implementation class cannot be used since in Scala.js mode they all are

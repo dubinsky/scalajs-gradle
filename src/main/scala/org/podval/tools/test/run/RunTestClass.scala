@@ -19,16 +19,12 @@ final private class RunTestClass(
   val testId: AnyRef = testResultProcessor.generateId()
   private val eventHandler: EventHandler = EventHandler(this)
 
-  val logger: Logger = new Logger:
-    private def log(logLevel: LogLevel, message: String): Unit =
-      val toLog: String = if !Output.annotateWithSource then message else s"sbt $logLevel: $message"
-      testResultProcessor.output(logLevel, testId, toLog)
-    override def ansiCodesSupported: Boolean = true
-    override def error(message: String): Unit = log(LogLevel.ERROR, message)
-    override def warn (message: String): Unit = log(LogLevel.WARN , message)
-    override def info (message: String): Unit = log(LogLevel.INFO , message)
-    override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
-    override def trace(throwable: Throwable): Unit = testResultProcessor.failure(testId, throwable)
+  def debug(message: String): Unit = testResultProcessor.output(
+    testId = testId,
+    annotation = "backend plugin debugging",
+    logLevel = LogLevel.DEBUG,
+    message = message
+  )
 
   def started(
     parentId: AnyRef,
@@ -57,7 +53,21 @@ final private class RunTestClass(
       startTime = testResultProcessor.getCurrentTime
     )
 
-    logger.info(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})")
+    debug(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})")
+
+    val logger: Logger = new Logger:
+      private def log(logLevel: LogLevel, message: String): Unit = testResultProcessor.output(
+        testId,
+        annotation = "sbt",
+        logLevel,
+        message
+      )
+      override def ansiCodesSupported: Boolean = true
+      override def error(message: String): Unit = log(LogLevel.ERROR, message)
+      override def warn (message: String): Unit = log(LogLevel.WARN , message)
+      override def info (message: String): Unit = log(LogLevel.INFO , message)
+      override def debug(message: String): Unit = log(LogLevel.DEBUG, message)
+      override def trace(throwable: Throwable): Unit = testResultProcessor.failure(testId, throwable)
 
     try
       val nestedTasks: Array[Task] = task.execute(
@@ -66,7 +76,7 @@ final private class RunTestClass(
       )
       arrayForEach(nestedTasks, (nestedTask: Task) =>
         require(nestedTask.taskDef.fullyQualifiedName == className)
-        logger.info(s"RunTestClassProcessor: nested task ${TaskDefs.toString(nestedTask.taskDef)}")
+        debug(s"RunTestClassProcessor: nested task ${TaskDefs.toString(nestedTask.taskDef)}")
       )
       arrayForEach(nestedTasks, (nestedTask: Task) =>
         RunTestClass(

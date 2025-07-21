@@ -50,9 +50,9 @@ object Specs2 extends ScalaFrameworkDescriptor(
     then versionDefaultScala2
     else versionDefault
 
-  override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array(
-    // On JVM, specs2 writes "stats" into a directory (on non-JVM, it writes them into a memory store);
-    // default directory is "$project/target/specs2-reports/stats", which makes sense for sbt;
+  override def additionalOptions: Array[String] = Array(
+    // specs2 writes "stats" into a "$project/target/specs2-reports/stats", which makes sense for sbt
+    // (on JVM; on non-JVM, it writes them into a memory store);
     // changing it to something that makes sense for Gradle;
     // location is hard-coded and thus not affected by changes to the project layout:
     "stats.outdir", "build/reports/tests/specs2-reports/stats"

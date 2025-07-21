@@ -35,8 +35,7 @@ abstract class NonJvmBackend(
 
   class Jvm(artifact: String, what: String) extends BackendDependency(artifact, what) with DependencyMaker.Jvm
 
-  trait Plugin extends Jvm:
-    final override def isScalaVersionFull: Boolean = true
+  trait Plugin extends Jvm with ScalaDependencyMaker.IsScalaVersionFull
 
   protected def linkTaskClass         : Class[? <: LinkTask.Main[this.type]]
   protected def testLinkTaskClass     : Class[? <: LinkTask.Test[this.type]]
@@ -107,16 +106,20 @@ abstract class NonJvmBackend(
       jvmPluginServices = Some(jvmPluginServices)
     )
 
-  override def afterEvaluate(project: Project, scalaLibrary: ScalaLibrary): Unit =
-    super.afterEvaluate(project, scalaLibrary)
+  override def afterEvaluate(
+    project: Project, 
+    projectScalaLibrary: ScalaLibrary, 
+    pluginScalaLibrary: ScalaLibrary
+  ): Unit =
+    super.afterEvaluate(project, projectScalaLibrary, pluginScalaLibrary)
 
-    ScalaCompiles.configure(project, scalaCompileParameters(scalaLibrary.scalaVersion))
+    ScalaCompiles.configure(project, scalaCompileParameters(projectScalaLibrary.scalaVersion))
 
     ClasspathAddition.Many(Seq(
       ClasspathAddition(pluginDependenciesConfigurationName)
     )).apply(
       project,
-      scalaLibrary
+      projectScalaLibrary
     )
 
   // TODO look into link tasks self-registering run/test counterparts - rules?

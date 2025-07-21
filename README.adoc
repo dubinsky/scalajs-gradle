@@ -4,15 +4,15 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.3
-:version-gradle: 9.0.0-rc-3
+:version-plugin: 0.9.4
+:version-gradle: 9.0.0-rc-4
 :version-scala: 3.7.1
 :version-sbt-test-interface: 1.0
 :version-scalajs: 1.19.0
-:version-scalajs-dom: 2.8.0
+:version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 24.4.0
+:version-node: 24.4.1
 :version-scalanative: 0.5.8
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
@@ -26,8 +26,7 @@
 :version-framework-utest: 0.8.9
 :version-framework-zio-test: 2.1.20
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-pluginBuildPerScalaVersionProperty: org.podval.tools.backend.buildPerScalaVersion
-:attribute-gradleVersionForBadge: 9.0.0--rc--3
+:attribute-gradleVersionForBadge: 9.0.0--rc--4
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -46,8 +45,8 @@ https://docs.gradle.org/current/userguide/scala_plugin.html[Gradle Scala plugin]
 https://www.scala-js.org/[Scala.js], and
 https://scala-native.org/[Scala Native] backends;
 - cross-compile code shared between backends;
-- use any test framework works with https://github.com/sbt/test-interface[sbt];
-- access data about the Scala backend and Scala version from the build script;
+- use any test framework that works with https://github.com/sbt/test-interface[sbt];
+- access Scala backend and Scala version data from the build script;
 - include sources for specific Scala version.
 
 Plugin integrates with:
@@ -143,14 +142,6 @@ $ ./graldew -PscalaVersion={version-scala}
 
 Plugin assumes that the project uses the explicit approach; no assumptions are made about the name of the property.
 
-=== Build Output for Scala Version
-When property `{attribute-pluginBuildPerScalaVersionProperty}` is set:
-[source,shell,subs="+attributes"]
-----
-$ ./gradlew -P{attribute-pluginBuildPerScalaVersionProperty}=true
-----
-plugin puts the build output under `build/scala-<scala version>`.
-
 [#scala-version-specific-sources]
 === Sources Specific to a Scala Version
 Alongside the usual Scala source root `scala`,
@@ -162,23 +153,48 @@ for Scala version `x.y.z`, additional Scala source roots are:
 - `scala-x.y`;
 - `scala-x`;
 
+Additional sources are included both in Scala compilation and archives that package Scala sources.
+
 This applies to Scala sources shared between the backends too.
 
-Additional sources are included both in Scala compilation and archives that package Scala sources.
+Since only sources appropriate to the Scala version in use are added,
+to work on the version-specific sources in the IDE,
+you need to set the Gradle property that selects the Scala version
+and re-load the project in the IDE.
 
 [#scala-backend-extension]
 === Scala Backend Extension
 
-Plugin exposes data about Scala version and Scala backend in use
+Plugin exposes Scala version and Scala backend data
 via the `scalaBackend` extension that it creates.
 
-This can be used to simplify writing build scripts, e.g.:
+This data can be used in build scripts to declare dependencies appropriate
+for the Scala backend and Scala version, as illustrated in
+<<scalajs-dependencies, Scala.js Dependencies>>,
+<<scalanative-dependencies, Scala Native Dependencies>>,
+<<test-frameworks-dependencies, Test Frameworks Dependencies>>.
 
-[source,groovy,subs="+attributes"]
+=== Building for Different Scala Versions
+Plugin does not support building for multiple Scala versions
+_at the same time_ using only Gradle
+(unlike the https://github.com/ADTRAN/gradle-scala-multiversion-plugin[Gradle Scala Multi-Version Plugin]).
+
+Plugin _does_ provide (Gradle-native) functionality that helps build
+for different Scala versions one _at a time_ from outside Gradle:
+<<scala-version-specific-sources>>, <<scala-backend-extension>>.
+
+To run tests for specific Scala version (for instance, in a CI pipeline):
+
+[source,shell,subs="+attributes]
 ----
-dependencies {
-  testImplementation "org.scala-js:scalajs-junit-test-runtime_${scalaBackend.scala2BinaryVersion}:{version-scalajs}"
-}
+./gradlew check -PscalaVersion={version-scala}
+----
+
+To publish artifacts for multiple Scala versions:
+
+[source,shell,subs="+attributes]
+----
+for v in '3.7.1' '2.13.16' '2.12.20'; do ./gradlew clean publish -PscalaVersion=$v; done
 ----
 
 === Dependencies
@@ -195,14 +211,6 @@ before the Scala version another suffix indicating the backend is inserted:
 for `Scala.js` - `_sjs1`, for `Scala Native` - `_native0.5`.
 
 In the examples below, the latest versions of all dependencies are used.
-
-=== Building for Multiple Scala Versions
-Plugin does not (yet?) support building for multiple Scala versions using only Gradle
-(unlike the https://github.com/ADTRAN/gradle-scala-multiversion-plugin[Gradle Scala Multi-Version Plugin]).
-
-Plugin _does_ provide enough functionality
-(<<scala-version-specific-sources>>, <<scala-backend-extension>>)
-to help automate building for multiple Scala versions using a _script_.
 
 [#application-scenarios]
 == Scala Backends
@@ -275,35 +283,6 @@ Backend-specific directories and directory `shared` must also be included as _pr
 for the _Gradle_ build to work correctly,
 but for the shared sources to be recognized in _IntelliJ_ it must be;
 for simplicity, plugin requires that it always is).
-
-For multi-module projects, including every subdirectory of every
-module using the plugin in multi-backend mode is not pretty nor modular:
-[source,groovy]
-----
-include 'module'
-include 'module:shared'
-include 'module:js'
-include 'module:jvm'
-include 'module:native'
-----
-
-A better approach seems to be to create a separate `settings-includes.gradle` file in the _module_:
-[source,groovy]
-----
-include 'module:shared'
-include 'module:js'
-include 'module:jvm'
-include 'module:native'
-----
-
-and apply it in the the overall `settings.gradle` file:
-[source,groovy]
-----
-include 'module'
-apply from: 'module/settings-includes.gradle'
-----
-
-For convenience, plugin writes this file automatically ;)
 
 Gradle _project_ names of the subprojects can be changed, but the _directory_ names
 (`js`, `jvm`, `native`, `shared`) cannot: plugin looks up the subprojects
@@ -383,6 +362,7 @@ dependencies {
 
 == Scala.js
 
+[#scalajs-dependencies]
 === Dependencies
 
 If `org.scala-js:scalajs-library` dependency is specified explicitly,
@@ -453,8 +433,8 @@ The table below lists what is added to what configurations.
 
 |===
 
-The following Gradle build script fragment manually adds all Scala.js dependencies
-that the plugin adds automatically:
+The following Gradle build script fragment manually adds
+all Scala.js dependencies that the plugin adds automatically:
 
 [source,groovy,subs="+attributes"]
 ----
@@ -466,17 +446,42 @@ dependencies {
   if (scalaBackend.scala3) {
     implementation "org.scala-lang:scala3-library_sjs1_${scalaBackend.scalaBinaryVersion}:${scalaBackend.scalaVersion}"
   }
-  scalajs         "org.scala-js:scalajs-linker_${scalaBackend.scala2BinaryVersion}:${scalaBackend.backendVersion}"
-  scalajs         "org.scala-js:scalajs-sbt-test-adapter_${scalaBackend.scala2BinaryVersion}:${scalaBackend.backendVersion}"
-  scalajs         "org.scala-js:scalajs-env-jsdom-nodejs_${scalaBackend.scala2BinaryVersion}:{version-scalajs-env-jsdom-nodejs}"
-  scalajs         "org.scala-lang.modules:scala-parallel-collections_${scalaBackend.scalaBinaryVersion}:{version-scala-parallel-collections}"
+  scalajs         "org.scala-js:scalajs-linker_${scalaBackend.pluginScala2BinaryVersion}:${scalaBackend.backendVersion}"
+  scalajs         "org.scala-js:scalajs-sbt-test-adapter_${scalaBackend.pluginScala2BinaryVersion}:${scalaBackend.backendVersion}"
+  scalajs         "org.scala-js:scalajs-env-jsdom-nodejs_${scalaBackend.pluginScala2BinaryVersion}:{version-scalajs-env-jsdom-nodejs}"
   if (!scalaBackend.scala3) {
     scalaCompilerPlugins "org.scala-js:scalajs-compiler_${scalaBackend.scalaVersion}:${scalaBackend.backendVersion}"
   }
   if (!scalaBackend.scala3 && scalaBackend.nonJvmJUnit4present) {
-    testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_${scalaBackend.scalaVersion}:${backend.backendVersion}"
+    testScalaCompilerPlugins "org.scala-js:scalajs-junit-test-plugin_${scalaBackend.scalaVersion}:${scalaBackend.backendVersion}"
   }
   testRuntimeOnly "org.scala-js:scalajs-test-bridge_${scalaBackend.scala2BinaryVersion}:${scalaBackend.backendVersion}"
+}
+----
+
+Plugin provide methods for adding dependencies easier.
+The following Gradle build script fragment manually adds
+all Scala.js dependencies that the plugin adds automatically
+using these methods:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  implementation scalaBackend.scala2JvmDependency('org.scala-js', 'scalajs-library', '1.19.0') // sets scalaBackend.backendVersion
+  implementation scalaBackend.scalaDependency('org.scala-js', 'scalajs-dom', '2.8.1')
+  if (scalaBackend.scala3) {
+    implementation scalaBackend.scala3Dependency('org.scala-lang', 'scala3-library', scalaBackend.scalaVersion)
+  }
+  scalajs scalaBackend.pluginScala2Dependency('org.scala-js', 'scalajs-linker', scalaBackend.backendVersion)
+  scalajs scalaBackend.pluginScala2Dependency('org.scala-js', 'scalajs-sbt-test-adapter', scalaBackend.backendVersion)
+  scalajs scalaBackend.pluginScala2Dependency('org.scala-js', 'scalajs-env-jsdom-nodejs', '{version-scalajs-env-jsdom-nodejs}')
+  if (!scalaBackend.scala3) {
+    scalaCompilerPlugins scalaBackend.scala2CompilerPlugin('org.scala-js', 'scalajs-compiler', scalaBackend.backendVersion)
+  }
+  if (!scalaBackend.scala3 && scalaBackend.nonJvmJUnit4present) {
+    testScalaCompilerPlugins scalaBackend.scala2CompilerPlugin('org.scala-js', 'scalajs-junit-test-plugin', scalaBackend.backendVersion)
+  }
+  testRuntimeOnly scalaBackend.scala2JvmDependency('org.scala-js', 'scalajs-test-bridge', scalaBackend.backendVersion)
 }
 ----
 
@@ -559,6 +564,9 @@ link {
   optimization     = 'Fast'          // one of: 'Fast', 'Full'
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
   moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
+  // when using `specs2` testing framework, '2018' and later is required:
+  // it supports regular expressions used in many matchers using strings
+  esVersion        = '2015'          // one of '2015', '2016', '2017', '2018', '2019', '2020', '2021'
   smallModulesFor  = []              // list of packages; relevant only when moduleSplitStyle = 'SmallModulesFor'
   prettyPrint      = false
   experimentalUseWebAssembly = false
@@ -616,9 +624,9 @@ the project seems to be abandoned.
 
 https://github.com/gmkumar2005/scala-js-env-playwright[Playwright]
 ('io.github.gmkumar2005:scala-js-env-playwright_2.13:{version-scala-js-env-playwright}')
-is not supported: the project publishes artifacts only for Scala 2.12
-(https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[scala-js-env-playwright/issues/17],
-https://github.com/dubinsky/scalajs-gradle/issues/79[scalajs-gradle/issues/79]).
+is not supported: the project publishes artifacts
+https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[only]
+for Scala 2.12.
 
 If Playwright _was_ supported, property `browserName` would choose the browser:
 'chromium', 'chrome', 'firefox', 'webkit'.
@@ -666,6 +674,7 @@ those tasks can be used from the command line like this:
 
 == Scala Native
 
+[#scalanative-dependencies]
 === Dependencies
 
 If `org.scala-native:scala3lib` (for Scala 3) or
@@ -767,32 +776,66 @@ that the plugin adds automatically:
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  // if version of `scala3lib`/`scalalib` is specified explicitly, ${backend.backendVersion} is set to that value;
+  // if version of `scala3lib`/`scalalib` is specified explicitly, ${scalaBackend.backendVersion} is set to that value;
   // if not, plugin uses default version:
   if (scalaBackend.scala3) {
-    implementation "org.scala-native:scala3lib_native0.5_${backend.scalaBinaryVersion}:${backend.version}+{version-scalanative}"
+    implementation "org.scala-native:scala3lib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.version}+{version-scalanative}"
   } else {
-    implementation "org.scala-native:scalalib_native0.5_${backend.scalaBinaryVersion}:${backend.version}+{version-scalanative}"
+    implementation "org.scala-native:scalalib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.version}+{version-scalanative}"
   }
-  implementation "org.scala-native:nativelib_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
-  implementation "org.scala-native:javalib_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
-  implementation "org.scala-native:clib_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
-  implementation "org.scala-native:posixlib_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
-  implementation "org.scala-native:windowslib_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
-  implementation "org.scala-native:auxlib_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
+  implementation "org.scala-native:nativelib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
+  implementation "org.scala-native:javalib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
+  implementation "org.scala-native:clib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
+  implementation "org.scala-native:posixlib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
+  implementation "org.scala-native:windowslib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
+  implementation "org.scala-native:auxlib_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
 
-  scalanative "org.scala-native:tools_${backend.scalaBinaryVersion}:${backend.backendVersion}"
-  scalanative "org.scala-native:test-runner_${backend.scalaBinaryVersion}:${backend.backendVersion}"
+  scalanative "org.scala-native:tools_${scalaBackend.pluginScalaBinaryVersion}:${scalaBackend.backendVersion}"
+  scalanative "org.scala-native:test-runner_${scalaBackend.pluginScalaBinaryVersion}:${scalaBackend.backendVersion}"
 
-  scalaCompilerPlugins "org.scala-native:nscplugin_${backend.scalaVersion}:${backend.backendVersion}"
+  scalaCompilerPlugins "org.scala-native:nscplugin_${scalaBackend.scalaVersion}:${scalaBackend.backendVersion}"
 
   if (scalaBackend.nonJvmJUnit4present) {
-    testScalaCompilerPlugins "org.scala-native:junit-plugin_${backend.scalaVersion}:${backend.backendVersion}"
+    testScalaCompilerPlugins "org.scala-native:junit-plugin_${scalaBackend.scalaVersion}:${scalaBackend.backendVersion}"
   }
 
-  testRuntimeOnly "org.scala-native:test-interface_native0.5_${backend.scalaBinaryVersion}:${backend.backendVersion}"
+  testRuntimeOnly "org.scala-native:test-interface_native0.5_${scalaBackend.scalaBinaryVersion}:${scalaBackend.backendVersion}"
 }
 ----
+
+Plugin provide methods for adding dependencies easier.
+The following Gradle build script fragment manually adds
+all Scala Native dependencies that the plugin adds automatically
+using these methods:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  if (scalaBackend.scala3) {
+    implementation scalaBackend.scala3Dependency('org.scala-native', 'scala3lib', "${scalaBackend.scalaVersion}+0.5.8") // sets scalaBackend.backendVersion
+  } else {
+    implementation scalaBackend.scala2dependency('org.scala-native', 'scalalib' , "${scalaBackend.scalaVersion}+0.5.8") // sets scalaBackend.backendVersion
+  }
+  implementation scalaBackend.scalaDependency('org.scala-native', 'nativelib' , scalaBackend.backendVersion)
+  implementation scalaBackend.scalaDependency('org.scala-native', 'clib'      , scalaBackend.backendVersion)
+  implementation scalaBackend.scalaDependency('org.scala-native', 'posixlib'  , scalaBackend.backendVersion)
+  implementation scalaBackend.scalaDependency('org.scala-native', 'javalib'   , scalaBackend.backendVersion)
+  implementation scalaBackend.scalaDependency('org.scala-native', 'windowslib', scalaBackend.backendVersion)
+  implementation scalaBackend.scalaDependency('org.scala-native', 'auxlib'    , scalaBackend.backendVersion)
+
+  scalanative scalaBackend.pluginScalaDependency('org.scala-native', 'tools', scalaBackend.backendVersion)
+  scalanative scalaBackend.pluginScalaDependency('org.scala-native', 'test-runner', scalaBackend.backendVersion)
+
+  scalaCompilerPlugins scalaBackend.scalaCompilerPlugin('org.scala-native', 'nscplugin', scalaBackend.backendVersion)
+
+  if (scalaBackend.nonJvmJUnit4present) {
+    testScalaCompilerPlugins scalaBackend.scalaCompilerPlugin('org.scala-native', 'junit-plugin', scalaBackend.backendVersion)
+  }
+
+  testRuntimeOnly scalaBackend.scalaDependency('org.scala-native', 'test-interface', scalaBackend.backendVersion)
+}
+----
+
 
 === Compiling
 To support Scala Native, Scala compiler needs to be configured to produce both the `class` _and_ `nir` files.
@@ -1077,11 +1120,6 @@ As usual, you can run individual test in a test class for _the frameworks Idea r
 
 Idea supplies Gradle test filter "fully.qualified.TestClass.test".
 
-There are some https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[inconsistencies]
-in the way IntelliJ handles test classes and individual tests
-that might one day be fixed in the IntelliJ code
-(in the vicinity of `org.jetbrains.plugins.scala.testingSupport.test.structureView.TestNodeProvider`).
-
 From the test frameworks this plugin supports, Idea recognizes:
 
 - JUnit4
@@ -1095,25 +1133,11 @@ Scala plugin for Idea recognizes:
 - Specs2
 - uTest
 
-ScalaCheck is not recognized by the Scala Plugin:
+ScalaCheck and ZIO Test are not recognized by the Scala Plugin:
 no gutter icon for the test class nor individual tests in it are available,
 Run and Debug commands are not available in the context menu
 of the test classes node in the Project tree
 and of the gutter icon of the test class.
-
-Total lack of activity on the 13 years old issue
-https://youtrack.jetbrains.com/issue/SCL-4398/ScalaCheck-support[ScalaCheck support]
-means that there is no intention for the Scala plugin to support ScalaCheck :(
-
-ZIO Test is not recognized by the Scala Plugin:
-no gutter icon for the test class nor individual tests in it are available,
-Run and Debug commands are not available in the context menu
-of the test classes node in the Project tree
-and of the gutter icon of the test class.
-
-Existence of the separate (now semi-abandoned)
-https://github.com/zio/zio-intellij[ZIO companion plugin for IntelliJ IDEA]
-means that there is no intention for the Scala plugin to support ZIO Test :(
 
 Since `ZIO Test` tests are  objects with main method,
 they can be run from Idea (on JVM),
@@ -1136,6 +1160,7 @@ there is not much the plugin can add anyway.
 
 Framework-specific information for the frameworks that _are_ supported follows.
 
+[#test-frameworks-dependencies]
 === Dependencies
 
 [%autowidth]
@@ -1361,7 +1386,10 @@ final class JUnit4Nested {
 By default, `JUnit4` 's `sbt` framework
 https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitRunner.java#L39[ignores] the
 `org.junit.runners.Suite` runner; plugin supplies an appropriate
-arguments to `JUnit4` to enable it.
+arguments to enable it.
+
+By default, `JUnit4` does not produce summary of the test run;
+plugin supplies an appropriate arguments to enable it.
 
 === JUnit4 for Scala.js
 JUnit4 for Scala.js is a framework distinct from JUnit4:
@@ -1400,6 +1428,9 @@ and transitively brings in the underlying framework dependency
 - on Scala.js - `org.scala-js:scalajs-junit-test-runtime`;
 - on Scala Native - `org.scala-native:junit-runtime`.
 
+By default, `MUnit` does not produce summary of the test run;
+plugin supplies an appropriate arguments to enable it.
+
 ==== Test Tagging
 MUnit is based on JUnit4, so it supports the `Category`-based exclusion and inclusion;
 since on Scala.js MUnit uses `JUnit4 for Scala.js`,
@@ -1423,9 +1454,7 @@ When tagging classes used for inclusion/exclusion are not available,
 MUnit crashes with a `ClassNotFound`.
 
 === ScalaCheck
-- test filtering functionality is not available:
-https://github.com/typelevel/scalacheck/pull/1107[scalacheck/pull/1107],
-https://github.com/dubinsky/scalajs-gradle/issues/43[scalajs-gradle/issues/43];
+- test filtering functionality is not available;
 - test tagging: not supported, but if it is used via another test framework -
 like `ScalaTest` or `specs2` - test tagging mechanisms provided by that
 framework can be used;
@@ -1450,8 +1479,7 @@ object ScalaCheckNested extends org.scalacheck.Properties("ScalaCheckNested") {
 
 With ScalaCheck, nested test cases are attributed to the _nesting_ suite -
 and there is nothing that can be done about it,
-since ScalaCheck itself does not keep information about which class a property belongs to;
-see https://github.com/typelevel/scalacheck/pull/1107[scalacheck/1107].
+since ScalaCheck itself does not keep information about which class a property belongs to.
 
 === ScalaTest
 - test filtering: works fine;
@@ -1595,12 +1623,6 @@ it triggers an infamous (12 years old)
 https://youtrack.jetbrains.com/issue/IDEABKL-6745/Cannot-define-two-identical-content-roots-in-different-module-within-a-single-project[issue]
 of "Duplicate Content Roots".
 
-Buried in the ongoing discussion of this and related issue is a suggestion:
-instead of adding directory to multiple source sets,
-make the source sets depend on the _output_ of the source set owning the shared directory.
-This won't work for cross-compilation, since compiler needs to be fed the actual
-_sources_, not the class files...
-
 So, when running in IntelliJ Idea, plugin does not add shared directories to the source sets
 they belong to at application time,
 allowing the project to be safely imported into IntelliJ Idea;
@@ -1614,18 +1636,6 @@ plugin adds a project dependency on the shared project to every backend-specific
 
 This parasitic dependency is somewhat problematic:
 it creeps into the POMs of the artifacts published from within the IDE...
-
-Interestingly, https://github.com/JetBrains/intellij-scala[Scala Plugin for IntelliJ IDEA]
-_does_ support shared sources for `sbt` projects
-(see `org.jetbrains.sbt.project.sources.SharedSourcesModuleType`);
-an https://youtrack.jetbrains.com/issue/SCL-24128/Support-shared-sources-for-Gradle-not-just-sbt[issue]
-asking for support for shared sources for Gradle in the
-IntelliJ Scala Plugin will not be addressed,
-but there turns out to be an
-https://youtrack.jetbrains.com/issue/IJPL-339/Multi-context-resolve-support-in-IJ-platform[effort] to provide such support in the IntelliJ Platform,
-where the bulk of the Gradle support resides.
-If this effort ever delivers something that is useful to clean up
-my workarounds - I will :)
 
 === Building for Multiple Scala Versions
 
@@ -1878,29 +1888,126 @@ a composite of exactly two Longs!
 
 Because tests are scoped by the workers, it does not seem possible to group test results by framework.
 
-=== Test Output
 Since I can not use the real `rootTestSuiteId` that `DefaultTestExecuter`
 supplies to the `TestMainAction` - because it is a `String` -
 and I am not keen on second-guessing what it is anyway,
-I use a `idPlaceholder` in `WorkerTestClassProcessor`
-and change it to the real one in `FixUpRootTestOutputTestResultProcessor`.
+I use a `RunTestClassProcessor.rootTestSuiteIdPlaceholder`
+and change it to the real one in `FixRootTestSuiteOutputTestResultProcessor`.
 
-Gradle controls the formatting of the test output:
+=== Test Output
 
-- indenting is hard-coded in the
-https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/TestEventLogger.java#L63[TestEventLogger.onOutput()];
-- addition of the test name and the name of the output stream at the top of each indented batch
-(output of the same test) is hard-coded in the
-https://github.com/gradle/gradle/blob/master/subprojects/testing-base/src/main/java/org/gradle/api/internal/tasks/testing/logging/AbstractTestLogger.java#L51[AbstractTestLogger.logEvent()].
+All output of tests and test frameworks,
+regardless if it goes through my plugin or not, printed or logged,
+ends up delivered to Gradle as a `org.gradle.api.tasks.testing.TestOutputEvent` s.
 
-IntelliJ Idea, in `addTestListener.groovy`:
+There are various ways running the tests produces output:
 
-- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L30[suppresses]
-the output and error events and
-- https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/java/resources/org/jetbrains/plugins/gradle/java/addTestListener.groovy#L29[adds]
-its own test and output listener
-https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/resources/org/jetbrains/plugins/gradle/IJTestLogger.groovy[IJTestEventLogger]
-that does not batch, indent nor adds the test name.
+- output of the tests themselves, which goes to the standard output;
+- debug information from the plugin, which it packages
+into `TestOutputEvent`;
+- progress of tests execution, which test frameworks log via an
+  `sbt.testing.Logger` to the plugin, which in turns it into `TestOutputEvent`;
+- test framework summary, which the plugin retrieves once the tests are done
+  and turns into `TestOutputEvent`;
+
+`uTest` exposes _two_ implementations of `sbt.testing.Framework`:
+
+- `utest.runner.Framework` and
+- `utest.runner.MillFramework`.
+
+Situation with test progress reporting is nuanced:
+
+- `JUnit4`, `JUnit4 for Scala.js`, `JUnit4 for Scala Native` do not report progress;
+- `MUnit` on JVM logs the progress;
+- `MUnit` on Scala.js and Scala Native writes progress to standard out;
+- `ScalaCheck`, `ScalaTest`, `specs2` log the progress;
+
+- `uTest` writes to the standard out a header: "--- Running Tests ---", then:
+* `utest.runner.MillFramework` logs the progress while
+* `utest.runner.Framework` writes it to standard out;
+
+- `ZIO Test` writes the progress to standard out;
+
+Like `MUnit` and `ZIO Test`, `ScalaCheck` and `uTest`
+report test on lines that start with a '+';
+unlike as `MUnit` and `ZIO Test`, `ScalaCheck` and `uTest`
+do not print a line for the suite itself.
+
+Situation with the summary is nuanced:
+some test frameworks (`JUnit4`, `MUnit` on JVM, `uTest` s `utest.runner.MillFramework`, `ZIO Test` on JVM),
+instead of logging the summary as they should,
+write it to the standard out,
+as a work-around for a
+https://github.com/sbt/sbt/issues/3510["bug"] reported in 2017
+by https://github.com/lihaoyi[lihaoyi], author of `uTest`.
+This "bug" only manifests when the test framework is instantiated twice:
+in the original process and in the forked one;
+since Scala.js and Scala Native tests can not be forked,
+the "bug" does not apply to them
+(but `uTest` still applies the unnecessary work-around).
+I do not know if this "bug" still exists (or ever existed) in sbt;
+I do know that with some work real test summary _can_ be returned
+as it is supposed to even on JVM:
+witness `ScalaCheck` and `Scalatest`.
+
+- `JUnit4` and `MUnit` on JVM return empty summary, and,
+if enabled with "--summary=1", writes the real summary
+(`All tests passed/Some tests failed: _ failed, _ ignored, _ total, _._s`)
+to standard out - citing the
+https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitRunner.java#L126["bug"];
+
+- `JUnit4 for Scala.js`, `JUnit4 for Scala Native`,
+and `MUnit` on Scala.js or Scala Native return empty summary;
+
+- `ScalaCheck` does the right thing and returns the real summary
+on all backends, "bug" notwithstanding - thanks to the
+https://github.com/typelevel/scalacheck/issues/185#issuecomment-372509235[work] done by https://github.com/retronym[retronym];
+
+- `ScalaTest` return the real summary on all backends,
+"bug" notwithstanding!
+
+- `specs2` returns empty summary; if there were failing tests, it logs them;
+
+- `uTest`:
+* `utest.runner.Framework` returns the real summary
+(`Tests: _, Passed: _, Failed: _`);
+* `utest.runner.MillFramework` returns empty summary,
+and writes the real summary to standard out - citing the
+https://github.com/com-lihaoyi/utest/blob/master/utest/src/utest/runner/MasterRunner.scala#L64["bug"] -
+even on Scala.js and Scala Native, where the "bug" does not exist;
+
+- `ZIO Test`:
+* on JVM - returns a dummy summary "Completed tests" and
+writes the real summary (`_ tests passed. _ tests failed. _ tests ignored.`)
+to standard out - citing the https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestRunnerJVM.scala#L67["bug"];
+* on Scala.js and Scala Native - calculates the totals,
+then promptly discards them and
+returns as a summary list of failure details for failed tests (if any);
+
+Gradle's test output listener
+prints test name and the name of the output stream on a separate line,
+and indents the output under it.
+Which `TestOutputEvent` are logged depends on the
+`testLogging` configuration on the `test` task and
+the log level of the Gradle run: `lifecycle` by default, `info`, etc.
+
+As a result, Gradle does not show any test output,
+progress reports or summaries by default;
+when run with informational logging enabled (`./gradlew -i`)
+it shows them all.
+
+IntelliJ Idea, in https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLoggerInit.gradle[IjTestEventLoggerInit.gradle],
+disables output logging by the Gradle test output listener
+by setting `testLogging.showStandardStreams` to `false` and, in https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLogger.gradle[IjTestEventLogger.gradle],
+installs its own test output listener.
+This listener does not batch, indent, or adds anything to the output.
+
+IntelliJ's TestOutputListener writes the output to the console
+regardless of the Gradle log level.
+When running in IntelliJ, plugin sends `TestOutputEvents`
+carrying test progress reports and summaries regardless of the Gradle log level.
+
+As a result, when running in IntelliJ, all kinds of test output are shown.
 
 === Test Tagging
 Although it is tempting to help the test frameworks out by
@@ -2027,7 +2134,7 @@ which recognizes only the test frameworks explicitly supported by Gradle (`JUnit
 
 === 2022, March
 This plugin was born out of necessity:
-in March of 2022, I had to write some Javascript for my wife's project.
+I had to write some Javascript for my wife's project.
 I dislike untyped languages, so if I _have_ to write `Javascript`,
 I want to be able to do it in my preferred language - `Scala`;
 thanks to https://www.scala-js.org[Scala.js], this is possible.
@@ -2082,32 +2189,26 @@ I lost my day job in January 2025 and spent half a year working on the plugin ;)
 - sources specific to the Scala version;
 - expose data about backend and Scala version via an extension;
 
-=== The Future
+== The Future
 
 All I wanted was to cross-compile my code for JVM and Scala.js
-and test it with Scala Test and ZIO Test. All of that works ;)
+and test it with Scala Test and ZIO Test. All of that already works ;)
 
-If my https://github.com/typelevel/scalacheck/pull/1107[fix]
-increasing fidelity of ScalaCheck's handling of test selectors
-is ever merged (and released),
-plugin - and any other tools using ScalaCheck via the sbt testing interface -
-will benefit from it.
-Judging by the reaction of the maintainers it won't happen though :(
+In some multi-backend projects, I saw what looks like
+a split of the `js` into `js-jvm` and `js-native`;
+I might look into it.
 
-If the https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[issue]
-concerning publishing Scala 2.13 artifacts
-of the Playwright JavaScript environment for Scala.js
-is ever addressed,
-plugin will add support for it.
-Judging by the absence of any reaction of the maintainers it won't happen though :(
+I might add support for more obscure test frameworks:
+https://github.com/wvlet/airframe/tree/main/airspec[AirSpec],
+https://github.com/typelevel/weaver-test[Weaver].
 
-If the https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[issue]
-concerning inconsistencies in test frameworks support in IntelliJ IDEA
-is ever addressed, user experience will improve for all users of the frameworks
-involved in IntelliJ - with or without my Gradle plugin.
+I might, one day, add test summary in `specs2`.
 
-Of course, I plan to address bug reports and feature requests from the
-users of the plugin,
+I might, one day, fix test summary in `ZIO Test`
+on Scala.js and Scala Native.
+
+Of course, I plan to address bug reports and feature requests
+from the users of the plugin,
 and periodically update plugin's dependencies (including Gradle).
 
 == Small Open Source Contributions
@@ -2163,6 +2264,10 @@ Thank you to https://github.com/WojciechMazur[WojciechMazur] for approving.
 _Link errors with ZIO._
 Thank you to https://github.com/WojciechMazur[WojciechMazur] for
 looking into the issue.
+* https://github.com/scala-native/scala-native/issues/4421[issues/4421]
+_Test output is lost._
+Thank you to https://github.com/WojciechMazur[WojciechMazur] for
+looking into the issue.
 
 - https://github.com/gradle/gradle[Gradle]:
 * _https://github.com/gradle/gradle/pull/32656[pull/32656]_
@@ -2171,9 +2276,9 @@ _Allow alternatives to ForkingTestClassProcessor._
 
 - https://github.com/JetBrains/intellij-scala[IntelliJ IDEA Scala Plugin]:
 * https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[24127]
-_Scala Test Inconsistencies_
+_Scala Test Inconsistencies._
 * https://youtrack.jetbrains.com/issue/SCL-24128/Support-shared-sources-for-Gradle-not-just-sbt[24128]
-_Support shared sources for Gradle, not just sbt_
+_Support shared sources for Gradle, not just sbt._
 
 - https://zio.dev/[ZIO]:
 * https://github.com/zio/zio/issues/9629[issues/9629]
@@ -2181,7 +2286,7 @@ _zio-test: Scala.js: no test events._
 Thank you to https://github.com/jdegoes[jdegoes]
 for setting a bounty on this issue
 and to https://github.com/kyri-petrou[kyri-petrou]
-for encouraging my approach to fixing it.
+for encouraging my approach to fix it.
 * _https://github.com/zio/zio/pull/9979[pull/9979]_
 _[test-sbt]: emit sbt.testing.Events on Scala.js and Scala Native._
 Thank you to https://github.com/kyri-petrou[kyri-petrou]
@@ -2198,12 +2303,20 @@ and to https://github.com/hearnadam[hearnadam]
 for accepting my contribution.
 * https://github.com/zio/zio/issues/10037[issues/10037]
 _[zio-test] Relocate/suppress output.json._
+* _https://github.com/zio/zio/pull/10054[pull/10054]_
+_Enable build tools to relocate "target/test-reports-zio/output.json"._
+Thank you to https://github.com/kyri-petrou[kyri-petrou]
+for accepting my contribution.
+* https://github.com/zio/zio/pull/10053[pull/10053]
+_Mention Gradle plugin for Scala.js and Scala Native._
 
 - https://scalacheck.org[ScalaCheck]:
 * https://github.com/typelevel/scalacheck/issues/1105[issues/1105]
 _sbt ScalaCheckRunner: loss of test selection fidelity._
 * _https://github.com/typelevel/scalacheck/pull/1107[pull/1107]_
 _Increase Fidelity of the sbt.testing.Framework Implementation._
+* _https://github.com/typelevel/scalacheck/pull/1117[pull/1117]_
+_Mention Gradle plugin for Scala.js and Scala Native._
 
 - https://www.scalatest.org[ScalaTest]:
 * https://github.com/scalatest/scalatest/issues/2357[issues/2357]
@@ -2211,11 +2324,19 @@ _sbt.testing: Run the tests from the suites nested in the explicitly selected on
 Thank you to https://github.com/cheeseng[cheeseng]
 for helping me understand the problem
 with running nested ScalaTest suites using my plugin.
+
+- https://www.scalatest.org/[ScalaTest website]:
+* _https://github.com/scalatest/scalatest-website/pull/253[pull/253]_
+_Mention Gradle plugin for Scala.js and Scala Native._
+
 - https://scalameta.org/munit[MUnit]:
 * _https://github.com/scalameta/munit/pull/918[pull/918]_
 _Populate sbt.testing.Event.duration on Scala.js._
 Thank you to https://github.com/tgodzik[tgodzik]
 for accepting my contribution.
+* https://github.com/scalameta/munit/pull/968[pull/968]
+_Mention Gradle plugin for Scala.js and Scala Native._
+Thank you to https://github.com/tgodzik[tgodzik] for approving.
 
 - https://etorreborre.github.io/specs2[specs2]:
 * _https://github.com/etorreborre/specs2/pull/1327[pull/1327]_
@@ -2224,10 +2345,17 @@ Thank you to https://github.com/etorreborre[etorreborre]
 for accepting my contribution.
 * https://github.com/etorreborre/specs2/issues/1352[issues/1352]
 _Scala Native in v5 and website issues_
+Thank you to https://github.com/etorreborre[etorreborre]
+for clarifications.
+* https://github.com/etorreborre/specs2/issues/1353[issues/1353]
+_Mention Gradle plugin for Scala.js and Scala Native - or not ;)_
 
 - https://github.com/com-lihaoyi/utest[uTest]:
 * _https://github.com/com-lihaoyi/utest/pull/383[pull/383]_
-_Honour useSbtLoggers for startHeader_
+_Honour useSbtLoggers for startHeader._
+* _https://github.com/com-lihaoyi/utest/pull/384[pull/384]_
+_Mention Gradle plugin for Scala.js and Scala Native._
+Thank you to https://github.com/lihaoyi[lihaoyi] for approving.
 
 == Credits
 
@@ -2265,7 +2393,7 @@ https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
 for https://github.com/gradle/gradle/pull/18001[adding]
 Scala 3 support to Gradle - and for encouraging my work;
 
-I want to thank the authors, contributors, and maintainers and of:
+I want to thank the authors, contributors, and maintainers of:
 
 - https://github.com/gradle/gradle[Gradle];
 - https://www.scala-js.org/[Scala.js];

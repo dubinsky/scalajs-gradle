@@ -13,16 +13,15 @@ trait FrameworkDescriptor extends DependencyMaker derives CanEqual:
   def sharedPackages: List[String]
   def tagOptions: Option[TagOptions]
   def usesTestSelectorAsNestedTestSelector: Boolean
-  def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array.empty
+  def additionalOptions: Array[String] = Array.empty
   def maker(backend: ScalaBackend): Option[DependencyMaker] = None
   def underlying(backend: ScalaBackend): Option[DependencyMaker] = None
 
   final def args(
-    isRunningInIntelliJ: Boolean,
     includeTags: Array[String],
     excludeTags: Array[String]
   ): Array[String] = arrayConcat(
-    additionalOptions(isRunningInIntelliJ),
+    additionalOptions,
     tagOptions
       .map(_.args(includeTags, excludeTags))
       .getOrElse(Array.empty)

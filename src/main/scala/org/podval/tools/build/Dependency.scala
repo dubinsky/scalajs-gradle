@@ -8,6 +8,7 @@ abstract class Dependency:
   def artifactNameSuffix: String
 
   final def withVersion(version: PreVersion): WithVersion = WithVersion(version)
+  final def withDefaultVersion: WithVersion = withVersion(maker.versionDefault)
 
   final class WithVersion(val version: PreVersion):
     override def toString: String = dependencyNotation

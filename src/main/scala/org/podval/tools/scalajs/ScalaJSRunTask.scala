@@ -18,7 +18,7 @@ trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBac
     nodeProject = nodeProject,
     browserName = BrowserName(getBrowserName),
     link = linkTask.link,
-    logSource = getName
+    output = output
   )
 
 object ScalaJSRunTask:

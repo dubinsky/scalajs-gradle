@@ -57,7 +57,7 @@ object ScalaJSBackend extends NonJvmBackend(
 
   object DomSJS extends BackendDependency("scalajs-dom", "Library for DOM manipulations"):
     override def scalaBackend: ScalaJSBackend.type = ScalaJSBackend
-    override val versionDefault: Version = Version("2.8.0")
+    override val versionDefault: Version = Version("2.8.1")
 
   override protected def implementationDependencyRequirements(scalaVersion: ScalaVersion): Array[DependencyRequirement] =
     if !scalaVersion.isScala3 // ++ is from IterableOnce and thus is not available on Scala 2.12...

@@ -26,7 +26,10 @@ trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
   
   @Input def getExperimentalUseWebAssembly: Property[Boolean]
   ExperimentalUseWebAssembly.convention(getExperimentalUseWebAssembly)
-  
+
+  @Input def getEsVersion: Property[String]
+  ESVersion.convention(getEsVersion)
+
   @OutputDirectory final def getJSDirectory: File = outputFile("js")
   @OutputFile final def getReportTextFile: File = outputFile("linking-report.txt")
   @OutputFile final def getReportBinFile : File = outputFile("linking-report.bin")
@@ -37,6 +40,7 @@ trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
     reportTextFile = getReportTextFile,
     moduleKind = ModuleKind(getModuleKind),
     useWebAssembly = ExperimentalUseWebAssembly(getExperimentalUseWebAssembly),
+    esVersion = ESVersion(getEsVersion),
     optimization = Optimization(getOptimization),
     moduleSplitStyle = ModuleSplitStyle(getModuleSplitStyle),
     smallModulesFor = getSmallModulesFor.get.asScala.toList,
@@ -44,7 +48,7 @@ trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
     isTest = isTest,
     prettyPrint = getPrettyPrint.getOrElse(false),
     runtimeClasspath = runtimeClasspath,
-    logSource = getName
+    output = output
   )
 
 object ScalaJSLinkTask:

@@ -4,12 +4,11 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.repositories.{ArtifactRepository, IvyArtifactRepository, IvyPatternRepositoryLayout}
 import org.gradle.api.file.FileTree
-import org.gradle.api.tasks.WorkResult
 import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 
 object Artifact:
-  private val logger: Logger = LoggerFactory.getLogger(Artifact.getClass)
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   final class Repository(
     val url: String,

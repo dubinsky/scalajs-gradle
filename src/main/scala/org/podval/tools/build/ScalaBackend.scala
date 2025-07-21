@@ -3,7 +3,7 @@ package org.podval.tools.build
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
-import org.podval.tools.gradle.{Archive, TaskWithGradleUserHomeDir, Tasks}
+import org.podval.tools.gradle.{Archive, TaskWithGradleUserHomeDir, TaskWithOutput, Tasks}
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
@@ -37,15 +37,18 @@ abstract class ScalaBackend(
     isRunningInIntelliJ: Boolean
   ): Unit =
     TaskWithGradleUserHomeDir.configureTasks(project)
-    TestTask.configureTasks(project, testTaskClass, isRunningInIntelliJ)
+    TaskWithOutput.configureTasks(project, isRunningInIntelliJ)
+    TestTask.configureTasks(project, testTaskClass)
 
-  def afterEvaluate(project: Project, projectScalaLibrary: ScalaLibrary): Unit =
+  def afterEvaluate(
+    project: Project,
+    projectScalaLibrary: ScalaLibrary,
+    pluginScalaLibrary: ScalaLibrary
+  ): Unit =
     Archive.configureJarTask(
       project, 
       archiveAppendix = s"${artifactSuffixString}_${projectScalaLibrary.scalaVersion.binaryVersion.versionSuffix}"
     )
-
-    val pluginScalaLibrary: ScalaLibrary = ScalaLibrary.getFromClasspath
 
     dependencyRequirements(
       project,

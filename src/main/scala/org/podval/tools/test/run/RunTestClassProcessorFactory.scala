@@ -2,10 +2,10 @@ package org.podval.tools.test.run
 
 import org.gradle.api.internal.tasks.testing.{TestClassProcessor, WorkerTestClassProcessorFactory}
 import org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor
-import org.gradle.api.logging.LogLevel
 import org.gradle.internal.actor.ActorFactory
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
 import org.gradle.internal.time.Clock
+import org.podval.tools.platform.Output
 
 // This class gets serialized into the worker when tests are forked;
 // thus it, its parameters, and everything reachable from it must be serializable,
@@ -14,8 +14,7 @@ import org.gradle.internal.time.Clock
 final class RunTestClassProcessorFactory(
   includeTags: Array[String],
   excludeTags: Array[String],
-  logLevelEnabled: LogLevel,
-  isRunningInIntelliJ: Boolean,
+  output: Output,
   dryRun: Boolean
 ) extends WorkerTestClassProcessorFactory with Serializable:
 
@@ -25,8 +24,7 @@ final class RunTestClassProcessorFactory(
   ): RunTestClassProcessor = RunTestClassProcessor(
     includeTags = includeTags,
     excludeTags = excludeTags,
-    logLevelEnabled = logLevelEnabled,
-    isRunningInIntelliJ = isRunningInIntelliJ,
+    output = output,
     dryRun = dryRun,
     idGenerator = idGenerator,
     clock = clock

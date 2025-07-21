@@ -1,6 +1,7 @@
 package org.podval.tools.scalanative
 
 import org.podval.tools.nonjvm.Link
+import org.podval.tools.platform.Output
 import scala.scalanative.build.{Build, BuildTarget, Config, Discover, NativeConfig, GC as GCN, LTO as LTON, Mode as ModeN}
 import scala.scalanative.util.Scope
 import java.nio.file.Path
@@ -16,10 +17,8 @@ final class ScalaNativeLink(
   isTest: Boolean,
   classpath: Seq[Path],
   sourcesClasspath: Seq[Path],
-  logSource: String
-) extends ScalaNativeBuild(
-  logSource
-) with Link[ScalaNativeBackend.type]:
+  output: Output
+) extends ScalaNativeBuild(output) with Link[ScalaNativeBackend.type]:
   private val config: Config =
     val moduleName: String = s"$projectName-${mode.name}"
 
@@ -54,7 +53,7 @@ final class ScalaNativeLink(
   def artifactPath: Path   = config.artifactPath
   
   override def link(): Unit =
-    logger.info(s"ScalaNativeLink.link($config)")
+    debug(s"ScalaNativeLink.link($config)")
 
     implicit val scope: Scope = Scope.forever
     interceptException(

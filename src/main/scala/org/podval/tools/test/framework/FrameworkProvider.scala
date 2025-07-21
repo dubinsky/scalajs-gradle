@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.slf4j.{Logger, LoggerFactory}
+import org.gradle.api.logging.{Logger, Logging}
 import sbt.testing.{Framework, Runner}
 
 sealed abstract class FrameworkProvider:
@@ -22,12 +22,10 @@ sealed abstract class FrameworkProvider:
       case _: ClassNotFoundException => None
 
   final def runner(
-    isRunningInIntelliJ: Boolean,
     includeTags: Array[String],
     excludeTags: Array[String]
   ): Runner = framework.runner(
     frameworkDescriptor.args(
-      isRunningInIntelliJ = isRunningInIntelliJ,
       includeTags = includeTags,
       excludeTags = excludeTags
     ),
@@ -36,7 +34,7 @@ sealed abstract class FrameworkProvider:
   )
 
 object FrameworkProvider:
-  private val logger: Logger = LoggerFactory.getLogger(FrameworkDescriptor.getClass)
+  private val logger: Logger = Logging.getLogger(getClass)
 
   def apply(name: String): FrameworkProvider = new FrameworkProvider:
     override def frameworkName: String = name

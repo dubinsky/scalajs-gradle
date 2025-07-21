@@ -34,7 +34,7 @@ class DefaultTestExecuter(
   clock: Clock,
   testFilter: DefaultTestFilter
 ) extends TestExecuter[JvmTestExecutionSpec]:
-  private val logger: Logger = Logging.getLogger(classOf[DefaultTestExecuter])
+  private val logger: Logger = Logging.getLogger(getClass)
 
   private val testClasspathFactory: ForkedTestClasspathFactory = ForkedTestClasspathFactory(moduleRegistry)
 

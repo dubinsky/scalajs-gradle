@@ -24,8 +24,11 @@ object UTest extends ScalaFrameworkDescriptor(
   group = "com.lihaoyi",
   artifact = "utest",
   versionDefault = Version("0.8.9"),
-  // `utest.runner.Framework` logs using `println`; to force the use of the SBT logs:
-  className = "utest.runner.MillFramework",
+  className =
+  //"utest.runner.MillFramework", // logs progress, but writes summary to standard out
+    "utest.runner.Framework", // returns correct summary, but writes progress to standard out
+  // we are better off with the one that returns the actual summary:
+  // anyway, `MUnit` and `ZIO Test` also write progress to standard out ;)
   sharedPackages = List("utest.runner"),
   tagOptions = None
 )

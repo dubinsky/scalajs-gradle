@@ -5,10 +5,11 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
+import org.podval.tools.platform.Output
 import org.podval.tools.test.framework.FrameworkProvider
 import org.podval.tools.test.taskdef.{Running, TaskDefs, TestClassRun}
 import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
-import sbt.testing.{Framework, Runner, Task, TaskDef}
+import sbt.testing.{Runner, Task, TaskDef}
 
 object RunTestClassProcessor:
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
@@ -16,8 +17,7 @@ object RunTestClassProcessor:
 final class RunTestClassProcessor(
   includeTags: Array[String],
   excludeTags: Array[String],
-  logLevelEnabled: LogLevel,
-  isRunningInIntelliJ: Boolean,
+  output: Output,
   dryRun: Boolean,
   idGenerator: IdGenerator[?],
   clock: Clock
@@ -30,7 +30,7 @@ final class RunTestClassProcessor(
 
   private lazy val testResultProcessor: TestResultProcessorEx = TestResultProcessorEx(
     testResultProcessorOpt.get,
-    logLevelEnabled,
+    output,
     clock,
     idGenerator
   )
@@ -41,18 +41,23 @@ final class RunTestClassProcessor(
     val frameworkName: String = frameworkProvider.frameworkName
     arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
       val runner: Runner = frameworkProvider.runner(
-        isRunningInIntelliJ = isRunningInIntelliJ,
         includeTags = includeTags,
         excludeTags = excludeTags
       )
       runners = arrayAppend(runners, (frameworkName, runner))
       runner
   
-  override def stop(): Unit = arrayForEach(runners, (frameworkName, runner) =>
-    testResultProcessor.output(
-      LogLevel.INFO,
-      RunTestClassProcessor.rootTestSuiteIdPlaceholder,
-      s"RunTestClassProcessor $frameworkName summary:\n${runner.done}"
+  override def stop(): Unit = arrayForEach(runners, (frameworkName, runner: Runner) =>
+    val summary: String = runner.done
+    val isSummaryMeaningful: Boolean =
+      !summary.isBlank &&
+        summary != "Completed tests" && // dummy ZIO Test summary on JVM
+        summary != "Done"  // dummy ZIO Test summary on Scala.js and Scala Native
+    if isSummaryMeaningful then testResultProcessor.output(
+      testId = RunTestClassProcessor.rootTestSuiteIdPlaceholder,
+      annotation = "test framework summary",
+      logLevel = LogLevel.INFO,
+      message = s"[$frameworkName]\n$summary"
     )
   )
 

@@ -15,7 +15,7 @@ trait ScalaDependencyMaker extends DependencyMaker:
 
   // Scala 2 version used by Scala 3 from 3.0.0 to the current is 2.13.
   // Assuming the latest version is somewhat troubling though ;)
-  final def publishedFor(scalaVersion: ScalaVersion): ScalaVersion = 
+  private def publishedFor(scalaVersion: ScalaVersion): ScalaVersion =
     val binaryVersion: ScalaBinaryVersion = scalaVersion.binaryVersion
 
     if isPublishedFor(binaryVersion) then scalaVersion else ScalaBinaryVersion
@@ -32,4 +32,9 @@ object ScalaDependencyMaker:
   trait Scala2 extends ScalaDependencyMaker:
     final override def isPublishedFor(binaryVersion: ScalaBinaryVersion): Boolean = binaryVersion != ScalaBinaryVersion.Scala3
 
-  trait JvmScala2 extends Scala2 with DependencyMaker.Jvm
+  trait Jvm extends ScalaDependencyMaker with DependencyMaker.Jvm
+
+  trait JvmScala2 extends Scala2 with Jvm
+
+  trait IsScalaVersionFull extends ScalaDependencyMaker:
+    final override def isScalaVersionFull: Boolean = true

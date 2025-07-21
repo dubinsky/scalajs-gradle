@@ -16,7 +16,7 @@ object NodeDependency
   override def maker: SimpleDependencyMaker[NodeDependency.type] = NodeDependency
   override def findable: NodeDependency.type = NodeDependency
 
-  override def versionDefault: Version = Version("24.4.0")
+  override def versionDefault: Version = Version("24.4.1")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
   override def description: String = "Node.js"

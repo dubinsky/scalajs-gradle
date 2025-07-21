@@ -7,11 +7,12 @@ import org.gradle.api.tasks.testing.TestOutputEvent
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
+import org.podval.tools.platform.Output
 import org.podval.tools.test.exception.ExceptionConverter
 
 final class TestResultProcessorEx(
   testResultProcessor: TestResultProcessor,
-  logLevelEnabled: LogLevel,
+  output: Output,
   clock: Clock,
   idGenerator: IdGenerator[?]
 ):
@@ -50,18 +51,17 @@ final class TestResultProcessorEx(
   )
 
   def output(
-    logLevel: LogLevel,
     testId: AnyRef,
-    message: String,
-  ): Unit =
-    given CanEqual[LogLevel, LogLevel] = CanEqual.derived
-    if logLevel.ordinal >= logLevelEnabled.ordinal then testResultProcessor.output(
-      testId,
-      DefaultTestOutputEvent(
-        clock.getCurrentTime,
-        if (logLevel == LogLevel.ERROR) || (logLevel == LogLevel.WARN)
-        then TestOutputEvent.Destination.StdErr
-        else TestOutputEvent.Destination.StdOut,
-        s"$message\n"
-      )
+    annotation: String,
+    logLevel: LogLevel,
+    message: String
+  ): Unit = if output.isVisible(logLevel) then testResultProcessor.output(
+    testId,
+    DefaultTestOutputEvent(
+      clock.getCurrentTime,
+      if Output.isError(logLevel)
+      then TestOutputEvent.Destination.StdErr
+      else TestOutputEvent.Destination.StdOut,
+      s"${output.annotate(annotation, logLevel, message)}\n"
     )
+  )
