@@ -34,10 +34,7 @@ object Sources:
         "src",
         sourceSet.getName
       )
-      val roots: Seq[File] = Option(src.listFiles)
-        .map(_.toSeq)
-        .getOrElse(Seq.empty)
-        .filter(included)
+      val roots: Seq[File] = Files.listDirectories(src).filter(included)
       if roots.nonEmpty then getScalaSourceDirectorySet(sourceSet).srcDirs(roots *)
 
     add(Configurations.mainSourceSet(project))

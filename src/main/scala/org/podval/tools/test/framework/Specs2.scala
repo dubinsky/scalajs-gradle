@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaLibrary, Version}
 import org.podval.tools.scalanative.ScalaNativeBackend
 
 // http://etorreborre.github.io/specs2/
@@ -45,8 +45,8 @@ object Specs2 extends ScalaFrameworkDescriptor(
   // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
   val versionDefaultScala2: Version = Version("4.21.0")
 
-  override def versionDefaultFor(backend: ScalaBackend, scalaVersion: ScalaVersion): Version =
-    if !scalaVersion.isScala3 || backend == ScalaNativeBackend
+  override def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version =
+    if !scalaLibrary.isScala3 || backend == ScalaNativeBackend
     then versionDefaultScala2
     else versionDefault
 

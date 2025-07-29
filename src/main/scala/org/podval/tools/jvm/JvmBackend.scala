@@ -1,7 +1,7 @@
 package org.podval.tools.jvm
 
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaVersion, TestEnvironment}
+import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaLibrary, TestEnvironment}
 import org.podval.tools.gradle.Configurations
 import org.podval.tools.test.framework.FrameworkProvider
 import sbt.testing.Framework
@@ -21,12 +21,12 @@ object JvmBackend extends ScalaBackend(
 
   override protected def dependencyRequirements(
     project: Project,
-    projectScalaVersion: ScalaVersion,
-    pluginScalaVersion: ScalaVersion
+    projectScalaLibrary: ScalaLibrary,
+    pluginScalaLibrary: ScalaLibrary
   ): Seq[DependencyRequirement.Many] = Seq(
     DependencyRequirement.Many(
       configurationName = Configurations.testRuntimeOnlyName(project),
-      scalaVersion = projectScalaVersion,
+      scalaLibrary = projectScalaLibrary,
       dependencyRequirements = Array(
         JvmDependency.SbtTestInterface.required()
       )

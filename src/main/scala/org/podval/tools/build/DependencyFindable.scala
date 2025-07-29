@@ -1,7 +1,7 @@
 package org.podval.tools.build
 
 import org.gradle.api.artifacts.{Configuration, Dependency as DependencyG}
-import org.podval.tools.util.{Files, Strings}
+import org.podval.tools.util.Strings
 import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
 
@@ -27,7 +27,7 @@ trait DependencyFindable[D <: Dependency]:
       ))
     )
   )
-  
+
   final def findInClasspath(classpath: Iterable[File]): Option[Dependency#WithVersion] = find(classpath
     .flatMap((file: File) =>
       val (nameAndVersion: String, extension: Option[String]) = Strings.split(file.getName  , '.')

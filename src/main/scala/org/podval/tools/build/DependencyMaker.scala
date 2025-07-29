@@ -5,17 +5,18 @@ import org.podval.tools.jvm.JvmBackend
 trait DependencyMaker:
   override def toString: String = s"$group:$artifact"
 
-  def scalaBackend: ScalaBackend
+  def scalaBackend: ScalaBackend = JvmBackend
   def group: String
   def artifact: String
   def versionDefault: Version // TODO de-emphasize in favour of versionDefaultFor()
-  // Note: backend and scalaVersion parameter is needed only to accommodate specs2
-  def versionDefaultFor(backend: ScalaBackend, scalaVersion: ScalaVersion): Version = versionDefault
+  // Note: `backend` and `scalaLibrary` parameter is needed only to accommodate specs2 -
+  // so if the need goes away, this can be simplified ;)
+  def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version = versionDefault
   def description: String
   def classifier(version: PreVersion): Option[String]
   def extension(version: PreVersion): Option[String]
   def findable: DependencyFindable[?]
-  def dependency(scalaVersion: ScalaVersion): Dependency
+  def dependency(scalaLibrary: ScalaLibrary): Dependency
   def isVersionCompound: Boolean = false
   def isDependencyRequirementVersionExact: Boolean = false
   
@@ -25,10 +26,3 @@ trait DependencyMaker:
     this,
     version
   )
-
-object DependencyMaker:
-  trait Jvm extends DependencyMaker:
-    final override def scalaBackend: JvmBackend.type = JvmBackend
-
-  trait IsVersionCompound extends DependencyMaker:
-    final override def isVersionCompound: Boolean = true

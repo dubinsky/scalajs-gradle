@@ -49,12 +49,12 @@ object Configurations:
     dependencyNotation
   )
 
-  def detached(project: Project, dependencyNotation: String): Configuration =
+  def detached(project: Project, dependencyNotation: String, transitive: Boolean): Configuration =
     val configuration: Configuration = project.getConfigurations.detachedConfiguration(
       project.getDependencies.create(dependencyNotation)
     )
     configuration.setDescription(s"Detached Configuration for resolving $dependencyNotation")
-    configuration.setTransitive(false)
+    configuration.setTransitive(transitive)
     configuration
 
   def create(

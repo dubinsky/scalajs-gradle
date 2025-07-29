@@ -18,5 +18,5 @@ abstract class NonJvmJUnit4FrameworkDescriptor(
   final override def usesTestSelectorAsNestedTestSelector: Boolean = JUnit4.usesTestSelectorAsNestedTestSelector
   //final override def additionalOptions(isRunningInIntelliJ: Boolean): Array[String] = Array.empty
 
-  final override def maker(backend: ScalaBackend): Option[ScalaDependencyMaker] =
+  final override def forBackend(backend: ScalaBackend): Option[ScalaDependencyMaker] =
     if backend != supportedBackend then None else Some(this)

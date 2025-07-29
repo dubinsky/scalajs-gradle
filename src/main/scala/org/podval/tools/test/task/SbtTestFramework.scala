@@ -88,7 +88,7 @@ class SbtTestFramework(
     externalModules: List[String],
     jars: List[String]
   ): List[URL] =
-    jars.map(GradleClasspath.findOn(SbtTestFramework, _)) ++
+    jars.map(GradleClasspath.findOn) ++
     (
       gradleModules.map(moduleRegistry.getModule) ++
       externalModules.map(moduleRegistry.getExternalModule)
