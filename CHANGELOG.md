@@ -6,12 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2025-08-01
+- feat: code shared between _some_ of the backends (partial sharing);
+- chore: Scala 3.7.2;
+- chore: Gradle 9.0.0;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.4] - 2025-07-28
 - feat: `jsLink.esVersion`;
 - chore: Gradle 9.0.0-rc-4;
 - chore: dependency updates;
 - cleanup;
-- 
+
 ## [0.9.3] - 2025-07-21
 - feat: `ZIO Test` on `Scala.js` and `Scala Native`;
 - chore: dependency updates;

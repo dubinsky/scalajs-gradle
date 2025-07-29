@@ -36,3 +36,8 @@ object Files:
   def fileSeq(directory: File, segments: Seq[String]): File =
     if segments.isEmpty then directory
     else fileSeq(File(directory, segments.head), segments.tail)
+
+  def listDirectories(directory: File): Seq[File] = Option(directory.listFiles)
+    .map(_.toSeq.filter(_.isDirectory))
+    .getOrElse(Seq.empty)
+  

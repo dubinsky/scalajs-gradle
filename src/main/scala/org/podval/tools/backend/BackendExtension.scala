@@ -1,7 +1,8 @@
 package org.podval.tools.backend
 
+import groovy.lang.Closure
 import org.gradle.api.Project
-import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaDependencyMaker, ScalaLibrary, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, ScalaLibrary, ScalaVersion, Version}
 import org.podval.tools.gradle.ScalaExtension
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.nonjvm.NonJvmBackend
@@ -27,17 +28,16 @@ abstract class BackendExtension @Inject(
     case nonJvm: NonJvmBackend => nonJvm
     case backend => BackendPlugin.error(project, s"backend must be a non-JVM backend, not ${backend.name}")
 
-  final def getBackendVersion: String = nonJvm.backendVersion(project, getScalaVersion).toString
+  final def getBackendVersion: String = nonJvm.backendVersion(project, getScalaLibrary).toString
   final def getNonJvmJUnit4present: Boolean = nonJvm.junit4present(project)
   
-  final def isScala3: Boolean = getScalaVersion.isScala3
-  final def getScalaBinaryVersion: Version = getScalaVersion.binaryVersion.versionSuffix
-  final def getScala2BinaryVersion: Version = getScalaVersion.binary2Version.versionSuffix
-
-  def getScalaVersion: ScalaVersion = getScalaLibrary.scalaVersion
+  final def isScala3: Boolean = getScalaLibrary.isScala3
+  final def getScalaVersion: String = getScalaLibrary.scalaVersion.toString
+  final def getScalaBinaryVersion: Version = getScalaLibrary.scalaVersion.binaryVersion.versionSuffix
+  final def getScala2BinaryVersion: Version = getScalaLibrary.scala2.binaryVersion.versionSuffix
 
   final lazy val getScalaLibrary: ScalaLibrary =
-    val result: ScalaLibrary = ScalaLibrary.getFromImplementationConfiguration(project)
+    val result: ScalaLibrary = ScalaLibrary.fromImplementationConfiguration(project)
 
     val scalaVersion: ScalaVersion = ScalaExtension
       .findScalaVersion(project)
@@ -62,58 +62,57 @@ abstract class BackendExtension @Inject(
     .forClass(frameworkClass)
     .dependencyWithVersion(
       getBackend,
-      getScalaVersion,
+      getScalaLibrary,
       version
     )
     .dependencyNotation
 
-  def getPluginScalaVersion: ScalaVersion = getPluginScalaLibrary.scalaVersion
-  def getPluginScalaBinaryVersion: ScalaBinaryVersion = getPluginScalaVersion.binaryVersion
-  def getPluginScala2Version: ScalaVersion = getPluginScalaLibrary.scala2.get
-  def getPluginScala2BinaryVersion: ScalaBinaryVersion = getPluginScala2Version.binaryVersion
+  def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaVersion.binaryVersion.versionSuffix
+  def getPluginScala2BinaryVersion: Version = getPluginScalaLibrary.scala2.binaryVersion.versionSuffix
 
-  final lazy val getPluginScalaLibrary: ScalaLibrary = ScalaLibrary.getFromClasspath
+  final lazy val getPluginScalaLibrary: ScalaLibrary = ScalaLibrary.fromAmbientClasspath(project)
 
-  private class ScalaDependencyStub(
-    final override val group: String,
-    final override val artifact: String,
-    version: String
-  ) extends ScalaDependencyMaker:
-    final override def versionDefault: Version = Version(version)
-    final override def description: String = s"BackendExtension: $group:$artifact:$version"
-    override def scalaBackend: ScalaBackend = getBackend
-
-  private def dependencyNotation(scalaVersion: ScalaVersion)(maker: ScalaDependencyMaker): String = maker
-    .dependency(scalaVersion)
-    .withDefaultVersion
-    .dependencyNotation
-
-  private def projectDependencyNotation(maker: ScalaDependencyMaker): String =
-    dependencyNotation(getScalaVersion)(maker)
+  import BackendExtension.Configure
 
   final def scalaDependency(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version))
+    scalaDependency(group, artifact, version, BackendExtension.idClosure)
 
-  final def scala3Dependency(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.Scala3)
+  final def scalaDependency(group: String, artifact: String, version: String, transformer: Configure): String =
+    dependency(group, artifact, version, transformer, getScalaLibrary)
 
-  final def scala2Dependency(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.Scala2)
+  final def pluginDependency(group: String, artifact: String, version: String): String =
+    pluginDependency(group, artifact, version, BackendExtension.idClosure)
 
-  final def scalaJvmDependency(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.Jvm)
+  final def pluginDependency(group: String, artifact: String, version: String, transformer: Configure): String =
+    dependency(group, artifact, version, transformer.andThen(BackendExtension.jvmClosure), getPluginScalaLibrary)
 
-  final def scala2JvmDependency(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.JvmScala2)
+  private def dependency(
+    groupId: String,
+    artifactId: String,
+    version: String,
+    transformer: Configure,
+    scalaLibrary: ScalaLibrary
+  ): String =
+    val scalaDependency: ScalaDependencyMaker = new ScalaDependencyMaker:
+      override def group: String = groupId
+      override def artifact: String = artifactId
+      override def versionDefault: Version = Version(version)
+      override def description: String = s"$group:$artifact:$versionDefault"
+      override def scalaBackend: ScalaBackend = getBackend
 
-  final def scalaCompilerPlugin(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.Jvm with ScalaDependencyMaker.IsScalaVersionFull)
+    transformer
+      .call(scalaDependency)
+      .dependency(scalaLibrary)
+      .withVersion(scalaLibrary, getBackend, None)
+      .dependencyNotation
 
-  final def scala2CompilerPlugin(group: String, artifact: String, version: String): String =
-    projectDependencyNotation(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.JvmScala2 with ScalaDependencyMaker.IsScalaVersionFull)
+object BackendExtension:
+  private type Configure = Closure[ScalaDependencyMaker]
 
-  final def pluginScalaDependency(group: String, artifact: String, version: String): String =
-    dependencyNotation(getPluginScalaVersion)(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.Jvm)
+  private def idClosure: Configure = Closure.IDENTITY.asInstanceOf[Configure]
 
-  final def pluginScala2Dependency(group: String, artifact: String, version: String): String =
-    dependencyNotation(getPluginScala2Version)(new ScalaDependencyStub(group, artifact, version) with ScalaDependencyMaker.Jvm)
+  private def jvmClosure: Configure = new Configure(null):
+    override def call(arguments: Any*): ScalaDependencyMaker = arguments
+      .head
+      .asInstanceOf[ScalaDependencyMaker]
+      .jvm

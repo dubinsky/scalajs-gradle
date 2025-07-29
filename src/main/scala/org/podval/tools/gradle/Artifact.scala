@@ -4,12 +4,10 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.repositories.{ArtifactRepository, IvyArtifactRepository, IvyPatternRepositoryLayout}
 import org.gradle.api.file.FileTree
-import org.slf4j.{Logger, LoggerFactory}
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
 object Artifact:
-  private val logger: Logger = LoggerFactory.getLogger(getClass)
-
   final class Repository(
     val url: String,
     val artifactPattern: String,
@@ -20,7 +18,44 @@ object Artifact:
     project: Project,
     dependencyNotation: String,
     repository: Option[Repository]
-  ): Option[File] =
+  ): Option[File] = resolve(
+    project,
+    dependencyNotation,
+    repository,
+    transitive = false,
+    resolve = (configuration: Configuration) =>
+      try
+        val result: File = configuration.getSingleFile
+        project.getLogger.info(s"Resolved $dependencyNotation: $result", null, null, null)
+        Some(result)
+      catch
+        case _: IllegalStateException =>
+          project.getLogger.info(s"Failed to resolve $dependencyNotation", null, null, null)
+          None
+  )
+
+  def resolveTransitive(
+    project: Project,
+    dependencyNotation: String,
+    repository: Option[Repository]
+  ): Iterable[File] = resolve(
+    project,
+    dependencyNotation,
+    repository,
+    transitive = true,
+    resolve = (configuration: Configuration) =>
+      val result: Iterable[File] = configuration.asScala
+      project.getLogger.info(s"Resolved $dependencyNotation: $result", null, null, null)
+      result
+  )
+
+  private def resolve[R](
+    project: Project,
+    dependencyNotation: String,
+    repository: Option[Repository],
+    transitive: Boolean,
+    resolve: Configuration => R
+  ): R =
     var allRepositories: java.util.List[ArtifactRepository] = null
 
     if repository.isDefined then
@@ -43,17 +78,10 @@ object Artifact:
         // Indicates that this repository may not contain metadata files...
         newRepository.metadataSources((metadataSources: IvyArtifactRepository.MetadataSources) => metadataSources.artifact())
 
-    logger.info(s"Resolving $dependencyNotation")
+    project.getLogger.info(s"Resolving $dependencyNotation", null, null, null)
 
-    val configuration: Configuration = Configurations.detached(project, dependencyNotation)
     try
-      val result: File = configuration.getSingleFile
-      logger.info(s"Resolved: $result")
-      Some(result)
-    catch
-      case _: IllegalStateException =>
-        logger.warn(s"Failed to resolve: $dependencyNotation")
-        None
+      resolve(Configurations.detached(project, dependencyNotation, transitive))
     finally
       // Restore original repositories
       if allRepositories != null then

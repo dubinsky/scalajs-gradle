@@ -1,9 +1,9 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.build.{CompoundVersion, DependencyMaker, DependencyRequirement, PreVersion, ScalaBinaryVersion,
-  ScalaDependencyMaker, ScalaVersion, Version}
+import org.podval.tools.build.{CompoundVersion, DependencyRequirement, PreVersion, ScalaLibrary, Version}
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaNative
+import NonJvmBackend.Dep
 
 object ScalaNativeBackend extends NonJvmBackend(
   name = "Scala Native",
@@ -12,54 +12,48 @@ object ScalaNativeBackend extends NonJvmBackend(
   sourceRoot = "native",
   artifactSuffix = "native0.5",
   pluginDependenciesConfigurationName = "scalanative",
-  areCompilerPluginsBuiltIntoScala3 = false
+  areCompilerPluginsBuiltIntoScala3 = false,
+  libraryScala3  = Dep("scala3lib"     , "Scala 3 Library", _.scala3.withVersionCompound),
+  libraryScala2  = Dep("scalalib"      , "Scala 2 Library", _.scala2.withVersionCompound),
+  compilerPlugin = Dep("nscplugin"     , "Compiler Plugin"),
+  junit4Plugin   = Dep("junit-plugin"  , "JUnit4 Compiler Plugin for generating bootstrappers"),
+  linker         = Dep("tools"         , "Build Tools, including Linker"),
+  testAdapter    = Dep("test-runner"   , "Test Runner"),
+  testBridge     = Dep("test-interface", "SBT Test Interface"),
+  pluginDependencies = Array.empty,
+  withDefaultVersion = Array.empty,
+  withBackendVersion = Array(
+    Dep("nativelib" , "Native Library" ),
+    Dep("clib"      , "C Library"      ),
+    Dep("posixlib"  , "Posix Library"  ),
+    Dep("windowslib", "Windows Library"),
+    Dep("javalib"   , "Java Library"   ),
+    Dep("auxlib"    , "Aux Library"    )
+  )
 ):
   override protected def linkTaskClass    : Class[ScalaNativeLinkTask.Main] = classOf[ScalaNativeLinkTask.Main]
   override protected def testLinkTaskClass: Class[ScalaNativeLinkTask.Test] = classOf[ScalaNativeLinkTask.Test]
   override protected def runTaskClass     : Class[ScalaNativeRunTask .Main] = classOf[ScalaNativeRunTask .Main]
   override protected def testTaskClass    : Class[ScalaNativeRunTask .Test] = classOf[ScalaNativeRunTask .Test]
 
-  override protected def scalaCompileParameters(scalaVersion: ScalaVersion): Seq[String] =
-    if scalaVersion.binaryVersion == ScalaBinaryVersion.Scala2.P13
-    then Seq("-Ytasty-reader")
-    else Seq.empty
-    
+  override protected def junit4: JUnit4ScalaNative.type = JUnit4ScalaNative
+
   override protected def versionExtractor(version: PreVersion): Version = version.compound.right
   
   override protected def versionComposer(
-    projectScalaVersion: ScalaVersion,
+    scalaLibrary: ScalaLibrary,
     backendVersion: Version
   ): PreVersion = new CompoundVersion(
-    projectScalaVersion.version,
+    scalaLibrary.scalaVersion.version,
     backendVersion
   )
 
-  override protected def junit4: JUnit4ScalaNative.type = JUnit4ScalaNative
-
-  override protected def library(isScala3: Boolean): BackendDependency =
-    if isScala3 then new BackendDependency("scala3lib", "Scala 3 Library")
-      with DependencyMaker.IsVersionCompound
-      with ScalaDependencyMaker.Scala3
-    else new BackendDependency("scalalib", "Scala 2 Library")
-      with DependencyMaker.IsVersionCompound
-      with ScalaDependencyMaker.Scala2
-
-  override protected def compilerPlugin: Plugin = new Jvm("nscplugin", "Compiler Plugin") with Plugin
-  override protected def junit4Plugin: Plugin = new Jvm("junit-plugin", "JUnit4 Compiler Plugin for generating bootstrappers") with Plugin
-  override protected def linker: Jvm = Jvm("tools", "Build Tools, including Linker")
-  override protected def testAdapter: Jvm = Jvm("test-runner", "Test Runner")
-  override protected def testBridge: BackendDependency = BackendDependency("test-interface", "SBT Test Interface")
-
-  override protected def pluginDependencies: Array[Jvm] = Array.empty
-  override protected def implementationDependencyRequirements(scalaVersion: ScalaVersion): Array[DependencyRequirement] = Array.empty
-  override def implementation: Array[BackendDependency] = Array(
-    BackendDependency("nativelib" , "Native Library" ),
-    BackendDependency("clib"      , "C Library"      ),
-    BackendDependency("posixlib"  , "Posix Library"  ),
-    BackendDependency("windowslib", "Windows Library"),
-    BackendDependency("javalib"   , "Java Library"   ),
-    BackendDependency("auxlib"    , "Aux Library"    )
-  )
+  override protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String] =
+    if scalaLibrary.scalaVersion.binaryVersion.isScala213
+    then Seq("-Ytasty-reader")
+    else Seq.empty
+  
+  override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] = Array.empty
 
   // // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
   // // When using Scala 3 exclude Scala 2.13 standard native libraries,

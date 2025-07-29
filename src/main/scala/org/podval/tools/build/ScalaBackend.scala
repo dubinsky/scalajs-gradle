@@ -10,10 +10,14 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.test.task.TestTask
 
 object ScalaBackend:
-  val sharedSourceRoot: String = "shared"
   def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
-  def names: String = all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
-  def sourceRoots: String = all.map(_.sourceRoot).mkString(", ")
+
+  def bySourceRoot(sourceRoot: String): Option[ScalaBackend] = all.find(_.sourceRoot == sourceRoot)
+  
+  def byAnyName(name: String): Option[ScalaBackend] = all.find(backend =>
+    name.toLowerCase == backend.name      .toLowerCase ||
+    name.toLowerCase == backend.sourceRoot.toLowerCase
+  )
 
 abstract class ScalaBackend(
   val name: String,
@@ -22,7 +26,6 @@ abstract class ScalaBackend(
   val testsCanNotBeForked: Boolean,
   val expandClasspathForTestEnvironment: Boolean
 ) derives CanEqual:
-
   final override def toString: String = name
 
   final def describe(what: String): String = s"$name $what."
@@ -52,14 +55,14 @@ abstract class ScalaBackend(
 
     dependencyRequirements(
       project,
-      projectScalaVersion = projectScalaLibrary.scalaVersion,
-      pluginScalaVersion = pluginScalaLibrary.scalaVersion
+      projectScalaLibrary = projectScalaLibrary,
+      pluginScalaLibrary = pluginScalaLibrary
     ).foreach(_.apply(project))
   
   protected def dependencyRequirements(
     project: Project,
-    projectScalaVersion: ScalaVersion,
-    pluginScalaVersion: ScalaVersion
+    projectScalaLibrary: ScalaLibrary,
+    pluginScalaLibrary: ScalaLibrary
   ): Seq[DependencyRequirement.Many]
 
   def registerTasks(project: Project): Unit

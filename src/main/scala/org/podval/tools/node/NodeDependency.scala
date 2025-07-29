@@ -10,13 +10,13 @@ import java.nio.file.{Files, Path, Paths}
 // Describes Node distribution's packaging and structure.
 object NodeDependency 
   extends SimpleDependency[NodeDependency.type]
-    with SimpleDependencyMaker[NodeDependency.type]
-    with DependencyInstallable[Node]:
+  with SimpleDependencyMaker[NodeDependency.type]
+  with DependencyInstallable[Node]:
 
   override def maker: SimpleDependencyMaker[NodeDependency.type] = NodeDependency
   override def findable: NodeDependency.type = NodeDependency
 
-  override def versionDefault: Version = Version("24.4.1")
+  override def versionDefault: Version = Version("24.5.0")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
   override def description: String = "Node.js"

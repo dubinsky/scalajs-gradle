@@ -3,7 +3,7 @@ package org.podval.tools.backend
 import org.podval.tools.build.{ScalaBinaryVersion, Version}
 import org.podval.tools.jvm.{JvmBackend, JvmDependency}
 import org.podval.tools.node.NodeDependency
-import org.podval.tools.scalajs.{PlaywrightJSEnv, ScalaJSBackend}
+import org.podval.tools.scalajs.{ScalaJSBackend, ScalaJSEnv}
 import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.test.framework
 import org.podval.tools.util.{Files, Strings}
@@ -12,21 +12,23 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.0.0-rc-4")
+  private val gradleVersion: Version = Version("9.0.0")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.4"),
+    "plugin" -> Version("0.9.5"),
 
     "gradle" -> gradleVersion,
     
-    "scala" -> ScalaBinaryVersion.Scala3.scalaVersionDefault.version,
+    "scala"     -> ScalaBinaryVersion.Scala3   .scalaVersionDefault.version,
+    "scala-213" -> ScalaBinaryVersion.Scala2_13.scalaVersionDefault.version,
+    "scala-212" -> ScalaBinaryVersion.Scala2_12.scalaVersionDefault.version,
 
     "sbt-test-interface" -> JvmDependency.SbtTestInterface.versionDefault,
     
     "scalajs" -> ScalaJSBackend.versionDefault,
-    "scalajs-dom" -> ScalaJSBackend.DomSJS.versionDefault,
-    "scalajs-env-jsdom-nodejs" -> ScalaJSBackend.JSDomNodeJSEnv.versionDefault,
-    "scala-js-env-playwright" -> PlaywrightJSEnv.versionDefault,
+    "scalajs-dom"              -> ScalaJSEnv.domVersion,
+    "scalajs-env-jsdom-nodejs" -> ScalaJSEnv.jsDomNodeVersion,
+    "scala-js-env-playwright"  -> ScalaJSEnv.playwrightVersion,
     
     "node" -> NodeDependency.maker.versionDefault,
 

@@ -1,7 +1,7 @@
 package org.podval.tools.test.framework
 
 import org.gradle.api.GradleException
-import org.podval.tools.build.{Dependency, DependencyMaker, ScalaBackend, ScalaVersion, Version}
+import org.podval.tools.build.{Dependency, DependencyMaker, ScalaBackend, ScalaLibrary, Version}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFind}
 
 // Based on sbt.TestFramework.
@@ -14,7 +14,7 @@ trait FrameworkDescriptor extends DependencyMaker derives CanEqual:
   def tagOptions: Option[TagOptions]
   def usesTestSelectorAsNestedTestSelector: Boolean
   def additionalOptions: Array[String] = Array.empty
-  def maker(backend: ScalaBackend): Option[DependencyMaker] = None
+  def forBackend(backend: ScalaBackend): Option[DependencyMaker] = None
   def underlying(backend: ScalaBackend): Option[DependencyMaker] = None
 
   final def args(
@@ -29,15 +29,12 @@ trait FrameworkDescriptor extends DependencyMaker derives CanEqual:
 
   final def dependencyWithVersion(
     backend: ScalaBackend,
-    scalaVersion: ScalaVersion,
+    scalaLibrary: ScalaLibrary,
     version: Option[Version]
-  ): Dependency#WithVersion =
-    val maker: DependencyMaker = this
-      .maker(backend)
-      .getOrElse(throw GradleException(s"Test framework $this does not support $backend."))
-    maker
-      .dependency(scalaVersion)
-      .withVersion(version.getOrElse(maker.versionDefaultFor(backend, scalaVersion)))
+  ): Dependency#WithVersion = forBackend(backend)
+    .getOrElse(throw GradleException(s"Test framework $this does not support $backend."))
+    .dependency(scalaLibrary)
+    .withVersion(scalaLibrary, backend, version)
 
 object FrameworkDescriptor:
   private val all: Array[FrameworkDescriptor] = Array(
@@ -53,7 +50,7 @@ object FrameworkDescriptor:
   )
 
   def forBackend(backend: ScalaBackend): List[FrameworkDescriptor] =
-    all.toList.filter(_.maker(backend).isDefined)
+    all.toList.filter(_.forBackend(backend).isDefined)
 
   def forName(name: String): FrameworkDescriptor =
     arrayFind(all, _.name == name)

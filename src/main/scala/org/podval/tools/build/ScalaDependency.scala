@@ -1,7 +1,5 @@
 package org.podval.tools.build
 
-import org.podval.tools.util.Strings
-
 final class ScalaDependency(
   findable: ScalaDependencyFindable,
   scalaVersion: ScalaVersion

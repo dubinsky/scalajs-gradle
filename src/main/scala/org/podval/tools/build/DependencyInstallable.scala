@@ -69,15 +69,15 @@ trait DependencyInstallable[T] extends Dependency:
       else ifDoesNotExist(dependencyWithVersion, result)
       result
     
-    version match
-      case Some(version) =>
-        getInternal(Version(version))
-      case None =>
-        fromOs.getOrElse:
-          val version: Version = maker.versionDefault
-          output.info("DependencyInstallable", s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $version")
-          getInternal(version)
-  
+    version
+      .map(Version(_))
+      .map(getInternal)
+      .orElse(fromOs)
+      .getOrElse:
+        val version: Version = maker.versionDefault
+        output.info("DependencyInstallable", s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $version")
+        getInternal(version)
+
   private def install(
     project: Project,
     dependencyWithVersion: Dependency#WithVersion,
@@ -86,11 +86,12 @@ trait DependencyInstallable[T] extends Dependency:
   ): Unit =
     output.lifecycle("DependencyInstallable", s"Installing $dependencyWithVersion as $result")
 
-    val artifact: File = Artifact.resolve(
-      project,
-      dependencyWithVersion.dependencyNotation,
-      repository
-    )
+    val artifact: File = Artifact
+      .resolve(
+        project,
+        dependencyWithVersion.dependencyNotation,
+        repository
+      )
       .getOrElse(output.abort(s"No artifact found for: $dependencyWithVersion"))
 
     val gradleUserHomeDir: File = Projects.gradleUserHomeDir(project)

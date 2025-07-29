@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.ScalaDependencyMaker
+import org.podval.tools.build.{ScalaDependencyMaker, ScalaVersion}
 import org.podval.tools.scalajs.ScalaJSBackend
 
 // https://github.com/scala-js/scala-js/tree/main/junit-runtime/src/main/scala
@@ -11,5 +11,6 @@ object JUnit4ScalaJS extends NonJvmJUnit4FrameworkDescriptor(
   name = "Scala.js JUnit test framework",
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
-) with ScalaDependencyMaker.JvmScala2:
+) with ScalaDependencyMaker:
+  override def isPublishedFor(scalaVersion: ScalaVersion): Boolean = scalaVersion.isScala2
   override def supportedBackend: ScalaJSBackend.type = ScalaJSBackend

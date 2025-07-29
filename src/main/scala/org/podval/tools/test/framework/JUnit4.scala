@@ -33,7 +33,7 @@ object JUnit4 extends FrameworkDescriptor with JavaDependencyMaker:
   )
   
   // This is a JVM-only test framework
-  override def maker(backend: ScalaBackend): Option[DependencyMaker] = backend match
+  override def forBackend(backend: ScalaBackend): Option[DependencyMaker] = backend match
     case JvmBackend => Some(this)
     case _ => None
 

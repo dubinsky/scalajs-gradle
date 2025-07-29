@@ -3,7 +3,7 @@ package org.podval.tools.build
 import org.podval.tools.util.Strings
 
 final class ScalaDependencyFindable(
-  val maker: ScalaDependencyMaker
+  override val maker: ScalaDependencyMaker
 ) extends DependencyFindable[ScalaDependency]:
 
   def withScalaVersion(

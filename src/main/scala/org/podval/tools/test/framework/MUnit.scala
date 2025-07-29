@@ -47,5 +47,5 @@ object MUnit extends ScalaFrameworkDescriptor(
 
   override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match
     case JvmBackend         => JUnit4           .underlying(backend)
-    case ScalaJSBackend     => JUnit4ScalaJS    .maker     (backend)
-    case ScalaNativeBackend => JUnit4ScalaNative.maker     (backend)
+    case ScalaJSBackend     => JUnit4ScalaJS    .forBackend(backend)
+    case ScalaNativeBackend => JUnit4ScalaNative.forBackend(backend)
