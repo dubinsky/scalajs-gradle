@@ -15,7 +15,7 @@ object VersionsWriter:
   private val gradleVersion: Version = Version("9.0.0")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.5"),
+    "plugin" -> Version("0.9.6"),
 
     "gradle" -> gradleVersion,
     
@@ -30,20 +30,24 @@ object VersionsWriter:
     "scalajs-env-jsdom-nodejs" -> ScalaJSEnv.jsDomNodeVersion,
     "scala-js-env-playwright"  -> ScalaJSEnv.playwrightVersion,
     
-    "node" -> NodeDependency.maker.versionDefault,
+    "node" -> NodeDependency.dependency.versionDefault,
 
     "scalanative" -> ScalaNativeBackend.versionDefault,
     
-    "junit" -> framework.JUnit4Underlying.versionDefault,
-    "framework-junit4" -> framework.JUnit4.versionDefault,
+    "junit" -> framework.JUnit4Jvm.Underlying.versionDefault,
+    "framework-junit4-jvm" -> framework.JUnit4Jvm.versionDefault,
     "framework-junit4-scalajs" -> framework.JUnit4ScalaJS.versionDefault,
     "framework-junit4-scalanative" -> framework.JUnit4ScalaNative.versionDefault,
+    "framework-airspec" -> framework.AirSpec.versionDefault,
+    "framework-hedgehog" -> framework.Hedgehog.versionDefault,
     "framework-munit" -> framework.MUnit.versionDefault,
     "framework-scalacheck" -> framework.ScalaCheck.versionDefault,
+    "framework-scalaprops" -> framework.Scalaprops.versionDefault,
     "framework-scalatest" -> framework.ScalaTest.versionDefault,
     "framework-specs2" -> framework.Specs2.versionDefault,
     "framework-specs2-scala2" -> framework.Specs2.versionDefaultScala2,
     "framework-utest" -> framework.UTest.versionDefault,
+    "framework-weaver" -> framework.WeaverTest.versionDefault,
     "framework-zio-test" -> framework.ZioTest.versionDefault
   )
 

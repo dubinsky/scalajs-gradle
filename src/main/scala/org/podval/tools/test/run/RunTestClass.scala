@@ -9,7 +9,7 @@ import scala.util.control.NonFatal
 
 final private class RunTestClass(
   val testResultProcessor: TestResultProcessorEx,
-  frameworkUsesTestSelectorAsNestedTestSelector: Boolean,
+  frameworkUsesTestSelectorAsNested: Boolean,
   parentId: AnyRef,
   val running: Running,
   task: Task
@@ -33,7 +33,7 @@ final private class RunTestClass(
     startTime: Long
   ): Unit =
     val runningEffective: Running =
-      if !frameworkUsesTestSelectorAsNestedTestSelector
+      if !frameworkUsesTestSelectorAsNested
       then running
       else running.reconstructNestedTestSelector
     
@@ -81,7 +81,7 @@ final private class RunTestClass(
       arrayForEach(nestedTasks, (nestedTask: Task) =>
         RunTestClass(
           testResultProcessor,
-          frameworkUsesTestSelectorAsNestedTestSelector,
+          frameworkUsesTestSelectorAsNested,
           parentId = testId,
           running = running.forNestedTask(nestedTask),
           task = nestedTask

@@ -31,6 +31,9 @@ object ScalaNativeBackend extends NonJvmBackend(
     Dep("auxlib"    , "Aux Library"    )
   )
 ):
+  override def isJs    : Boolean = false
+  override def isNative: Boolean = true
+
   override protected def linkTaskClass    : Class[ScalaNativeLinkTask.Main] = classOf[ScalaNativeLinkTask.Main]
   override protected def testLinkTaskClass: Class[ScalaNativeLinkTask.Test] = classOf[ScalaNativeLinkTask.Test]
   override protected def runTaskClass     : Class[ScalaNativeRunTask .Main] = classOf[ScalaNativeRunTask .Main]

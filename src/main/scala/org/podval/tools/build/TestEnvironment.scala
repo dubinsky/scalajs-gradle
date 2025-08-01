@@ -1,9 +1,8 @@
 package org.podval.tools.build
 
 import org.podval.tools.gradle.GradleClasspath
-import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.test.framework.Framework
 import org.slf4j.{Logger, LoggerFactory}
-import sbt.testing.Framework
 import java.io.File
 
 // Based on org.scalajs.testing.adapter.TestAdapter.
@@ -17,25 +16,26 @@ abstract class TestEnvironment[B <: ScalaBackend](
   val backend: B,
   val sourceMapper: Option[SourceMapper]
 ):
-  protected def loadFrameworks: List[Framework]
+  protected def loadFrameworks: List[Framework.Loaded]
 
   def close(): Unit
 
-  final protected def frameworksToLoad[T](f: FrameworkDescriptor => T): List[T] = FrameworkDescriptor
-    .forBackend(backend)
-    .map(f)
+  final def frameworks: List[Framework] = Framework
+    .all
+    .toList
+    .filter(_.isBackendSupported(backend))
 
-  final def loadFrameworks(testClasspath: Iterable[File]): List[Framework] =
+  final def loadFrameworks(testClasspath: Iterable[File]): List[Framework.Loaded] =
     // This is the only way I know to:
     // - instantiate test frameworks from a classloader that has them and
     // - return sbt.testing.Framework used elsewhere, instead of something loaded from a different classloader
     //  (and thus can not be cast)
     if backend.expandClasspathForTestEnvironment then GradleClasspath.addTo(filesToAdd = testClasspath)
 
-    val result: List[Framework] = loadFrameworks
+    val result: List[Framework.Loaded] = loadFrameworks
 
     TestEnvironment.logger.info(
-      s"Loaded test frameworks for $backend: ${result.map(framework => FrameworkDescriptor.forName(framework.name).description).mkString(", ")}."
+      s"Loaded test frameworks for $backend: ${result.map(_.framework.description).mkString(", ")}."
     )
 
     // Check uniqueness; implementation class cannot be used since in Scala.js mode they all are

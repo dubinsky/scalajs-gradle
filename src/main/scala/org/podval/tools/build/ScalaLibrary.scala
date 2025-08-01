@@ -82,11 +82,11 @@ object ScalaLibrary:
     project: Project,
     source: String,
     isFromClasspath: Boolean,
-    find: JavaDependency => Option[Dependency#WithVersion]
+    find: JavaDependency => Option[Dependency.WithVersion]
   ): ScalaLibrary =
-    val scala3: Option[Dependency#WithVersion] = find(ScalaBinaryVersion.Scala3   .dependency)
+    val scala3: Option[Dependency.WithVersion] = find(ScalaBinaryVersion.Scala3   )
     // Note: this finds any Scala 2 library, even if it is 2.12, not 2.13:
-    val scala2: Option[Dependency#WithVersion] = find(ScalaBinaryVersion.Scala2_13.dependency)
+    val scala2: Option[Dependency.WithVersion] = find(ScalaBinaryVersion.Scala2_13)
 
     require(scala3.nonEmpty || scala2.nonEmpty, s"No Scala library $source.")
     if isFromClasspath then require(scala2.nonEmpty, s"No Scala 2 library $source.")

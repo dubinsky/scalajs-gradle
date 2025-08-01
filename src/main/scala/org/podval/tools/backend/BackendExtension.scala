@@ -2,13 +2,10 @@ package org.podval.tools.backend
 
 import groovy.lang.Closure
 import org.gradle.api.Project
-import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, ScalaLibrary, ScalaVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaDependency, ScalaLibrary, ScalaVersion, Version}
 import org.podval.tools.gradle.ScalaExtension
-import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.nonjvm.NonJvmBackend
-import org.podval.tools.scalajs.ScalaJSBackend
-import org.podval.tools.scalanative.ScalaNativeBackend
-import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.test.framework.Framework
 import javax.inject.Inject
 
 abstract class BackendExtension @Inject(
@@ -18,12 +15,8 @@ abstract class BackendExtension @Inject(
 ):
   final def getName      : String = getBackend.name
   final def getSourceRoot: String = getBackend.sourceRoot
-  final def getSuffix    : String = getBackend.artifactSuffixString
+  final def getSuffix    : String = getBackend.artifactNameSuffix(getScalaBinaryVersion)
   
-  final def isJvm   : Boolean = getBackend == JvmBackend
-  final def isJs    : Boolean = getBackend == ScalaJSBackend
-  final def isNative: Boolean = getBackend == ScalaNativeBackend
-
   private def nonJvm: NonJvmBackend = getBackend match
     case nonJvm: NonJvmBackend => nonJvm
     case backend => BackendPlugin.error(project, s"backend must be a non-JVM backend, not ${backend.name}")
@@ -49,31 +42,18 @@ abstract class BackendExtension @Inject(
     require(result.scalaVersion == scalaVersion)
     result
 
-  final def testFramework(frameworkClass: Class[? <: FrameworkDescriptor]): String =
-    testFramework(frameworkClass, None)
-
-  final def testFramework(frameworkClass: Class[? <: FrameworkDescriptor], version: String): String =
-    testFramework(frameworkClass, Some(Version(version)))
-
-  private def testFramework(
-    frameworkClass: Class[? <: FrameworkDescriptor],
-    version: Option[Version]
-  ): String = FrameworkDescriptor
-    .forClass(frameworkClass)
-    .dependencyWithVersion(
-      getBackend,
-      getScalaLibrary,
-      version
-    )
-    .dependencyNotation
-
   def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaVersion.binaryVersion.versionSuffix
   def getPluginScala2BinaryVersion: Version = getPluginScalaLibrary.scala2.binaryVersion.versionSuffix
-
   final lazy val getPluginScalaLibrary: ScalaLibrary = ScalaLibrary.fromAmbientClasspath(project)
 
   import BackendExtension.Configure
 
+  final def testFramework(frameworkClass: Class[? <: Framework]): String =
+    testFramework(frameworkClass, None)
+
+  final def testFramework(frameworkClass: Class[? <: Framework], version: String): String =
+    testFramework(frameworkClass, Some(Version(version)))
+  
   final def scalaDependency(group: String, artifact: String, version: String): String =
     scalaDependency(group, artifact, version, BackendExtension.idClosure)
 
@@ -86,6 +66,14 @@ abstract class BackendExtension @Inject(
   final def pluginDependency(group: String, artifact: String, version: String, transformer: Configure): String =
     dependency(group, artifact, version, transformer.andThen(BackendExtension.jvmClosure), getPluginScalaLibrary)
 
+  private def testFramework(
+    frameworkClass: Class[? <: Framework],
+    version: Option[Version]
+  ): String = Framework
+    .find(_.getClass.getName.startsWith(frameworkClass.getName), frameworkClass.toString)
+    .withBackend(getBackend)
+    .dependencyNotation(getBackend, getScalaLibrary, version)
+
   private def dependency(
     groupId: String,
     artifactId: String,
@@ -93,26 +81,25 @@ abstract class BackendExtension @Inject(
     transformer: Configure,
     scalaLibrary: ScalaLibrary
   ): String =
-    val scalaDependency: ScalaDependencyMaker = new ScalaDependencyMaker:
-      override def group: String = groupId
-      override def artifact: String = artifactId
-      override def versionDefault: Version = Version(version)
-      override def description: String = s"$group:$artifact:$versionDefault"
-      override def scalaBackend: ScalaBackend = getBackend
+    val scalaDependency: ScalaDependency = ScalaDependency(
+      backend = getBackend,
+      groupId = groupId,
+      artifactId = artifactId,
+      version = Version(version),
+      what = s"$groupId:$artifactId:$version"
+    )
 
     transformer
       .call(scalaDependency)
-      .dependency(scalaLibrary)
-      .withVersion(scalaLibrary, getBackend, None)
-      .dependencyNotation
+      .dependencyNotation(getBackend, scalaLibrary, version = None)
 
 object BackendExtension:
-  private type Configure = Closure[ScalaDependencyMaker]
+  private type Configure = Closure[ScalaDependency]
 
   private def idClosure: Configure = Closure.IDENTITY.asInstanceOf[Configure]
 
   private def jvmClosure: Configure = new Configure(null):
-    override def call(arguments: Any*): ScalaDependencyMaker = arguments
+    override def call(arguments: Any*): ScalaDependency = arguments
       .head
-      .asInstanceOf[ScalaDependencyMaker]
+      .asInstanceOf[ScalaDependency]
       .jvm

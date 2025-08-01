@@ -133,7 +133,9 @@ final class ScalaJSLink(
       Files.write(reportTextFile, report.toString)
       Files.writeBytes(reportBinFile, Report.serialize(report))
     catch
-      case e: LinkingException => abort(s"ScalaJS link error: ${e.getMessage}")
+      case e: LinkingException =>
+        //e.printStackTrace()
+        abort(s"ScalaJS link error: $e.getMessage}")
 
   private def validateLink(moduleSplitStyle: ModuleSplitStyle): Unit =
     if useWebAssembly && moduleKind != ModuleKind.ESModule then

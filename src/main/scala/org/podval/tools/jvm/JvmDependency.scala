@@ -1,9 +1,9 @@
 package org.podval.tools.jvm
 
-import org.podval.tools.build.{JavaDependencyMaker, Version}
+import org.podval.tools.build.{JavaDependency, Version}
 
 object JvmDependency:
-  object SbtTestInterface extends JavaDependencyMaker:
+  object SbtTestInterface extends JavaDependency:
     override val group: String = "org.scala-sbt"
     override val artifact: String = "test-interface"
     override val versionDefault: Version = Version("1.0")

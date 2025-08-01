@@ -1,9 +1,9 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.test.framework.FrameworkDescriptor
+import org.podval.tools.test.framework.Framework
 
 abstract class Fixture(
-  val framework: FrameworkDescriptor,
+  val framework: Framework,
   val mainSources: Seq[SourceFile] = Seq.empty,
   val testSources: Seq[SourceFile],
   val includeTestNames: Seq[String] = Seq.empty,

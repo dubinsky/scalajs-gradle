@@ -6,23 +6,23 @@ import org.podval.tools.platform.Output
 import org.podval.tools.util.Files
 import java.io.File
 
-trait DependencyInstallable[T] extends Dependency:
+trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
   def repository: Option[Artifact.Repository] = None
 
   // Where retrieved distributions are cached
-  def cacheDirectory: String = maker.artifact
+  def cacheDirectory: String
 
-  def archiveSubdirectoryPath(version: PreVersion): Seq[String] = Seq.empty
+  def archiveSubdirectoryPath(version: PreVersion): Seq[String]
 
-  def isZip(version: PreVersion): Boolean = false
+  def isZip(version: PreVersion): Boolean
 
   def installation(root: File): T
 
   def exists(installation: T): Boolean
 
-  def fixup(installation: T): Unit = ()
+  def fixup(installation: T): Unit
 
-  def fromOs: Option[T] = None
+  def fromOs: Option[T]
 
   final def getInstalled(
     version: Option[String],
@@ -55,18 +55,18 @@ trait DependencyInstallable[T] extends Dependency:
     version: Option[String],
     gradleUserHomeDir: File,
     output: Output,
-    ifDoesNotExist: (Dependency#WithVersion, T) => Unit
+    ifDoesNotExist: (Dependency.WithVersion, T) => Unit
   ): T =
     def getInternal(version: Version) =
-      val dependencyWithVersion: Dependency#WithVersion = withVersion(version)
+      val withVersion: Dependency.WithVersion = this.withVersion(version)
       val result: T = installation(root = Files.fileSeq(
-        installsInto(gradleUserHomeDir, dependencyWithVersion),
-        archiveSubdirectoryPath(dependencyWithVersion.version)
+        installsInto(gradleUserHomeDir, withVersion),
+        archiveSubdirectoryPath(version)
       ))
   
       if exists(result)
-      then output.info("DependencyInstallable", s"Existing $dependencyWithVersion detected: $result")
-      else ifDoesNotExist(dependencyWithVersion, result)
+      then output.info("DependencyInstallable", s"Existing $withVersion detected: $result")
+      else ifDoesNotExist(withVersion, result)
       result
     
     version
@@ -74,28 +74,28 @@ trait DependencyInstallable[T] extends Dependency:
       .map(getInternal)
       .orElse(fromOs)
       .getOrElse:
-        val version: Version = maker.versionDefault
+        val version: Version = dependency.versionDefault
         output.info("DependencyInstallable", s"Needed dependency is not installed locally and no version to install is specified: $this; installing default version: $version")
         getInternal(version)
 
   private def install(
     project: Project,
-    dependencyWithVersion: Dependency#WithVersion,
+    withVersion: Dependency.WithVersion,
     result: T,
     output: Output
   ): Unit =
-    output.lifecycle("DependencyInstallable", s"Installing $dependencyWithVersion as $result")
+    output.lifecycle("DependencyInstallable", s"Installing $withVersion as $result")
 
     val artifact: File = Artifact
       .resolve(
         project,
-        dependencyWithVersion.dependencyNotation,
+        withVersion.dependencyNotation,
         repository
       )
-      .getOrElse(output.abort(s"No artifact found for: $dependencyWithVersion"))
+      .getOrElse(output.abort(s"No artifact found for: $withVersion"))
 
     val gradleUserHomeDir: File = Projects.gradleUserHomeDir(project)
-    val into: File = installsInto(gradleUserHomeDir, dependencyWithVersion)
+    val into: File = installsInto(gradleUserHomeDir, withVersion)
     output.info("DependencyInstallable", s"Unpacking $artifact into $into")
 
     Artifact.unpack(
@@ -112,9 +112,9 @@ trait DependencyInstallable[T] extends Dependency:
   // so, I am caching unpacked frameworks under `~/.gradle`.
   private def installsInto(
     gradleUserHomeDir: File,
-    dependencyWithVersion: Dependency#WithVersion
+    withVersion: Dependency.WithVersion
   ): File = Files.file(
     gradleUserHomeDir,
     cacheDirectory,
-    dependencyWithVersion.fileName
+    withVersion.fileName
   )

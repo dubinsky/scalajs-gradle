@@ -13,7 +13,6 @@ import org.podval.tools.gradle.GradleClasspath
 import org.podval.tools.platform.Output
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
-import org.podval.tools.test.framework.FrameworkDescriptor
 import org.podval.tools.test.run.RunTestClassProcessorFactory
 import org.podval.tools.util.Files
 import java.io.File
@@ -57,7 +56,7 @@ class SbtTestFramework(
 
   private def createDetector: SbtTestFrameworkDetector =
     val out: Output = output()
-    out.info("SbtTestFramework", "--tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}.")
+    out.info("SbtTestFramework", s"--tests ${defaultTestFilter.getCommandLineIncludePatterns}; build file includes: ${defaultTestFilter.getIncludePatterns}.")
 
     SbtTestFrameworkDetector(
       output = out,
@@ -132,7 +131,7 @@ class SbtTestFramework(
     // and this is used in the getWorkerConfigurationAction,
     // we do not yet know what frameworks were actually loaded,
     // so we have to take into account all that could load - depending on the back-end in use.
-    FrameworkDescriptor.forBackend(testEnvironment().backend).flatMap(_.sharedPackages) ++
+    testEnvironment().frameworks.flatMap(_.sharedPackages) ++
     List(
       // Scala 3 and Scala 2 libraries;
       // when running on Scala 3, both jars themselves are already on the classpath;

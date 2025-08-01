@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaBackend, Version}
 
 // https://github.com/typelevel/scalacheck
 // https://github.com/typelevel/scalacheck/blob/main/core/shared/src/main/scala/org/scalacheck/ScalaCheckFramework.scala
@@ -17,7 +17,7 @@ import org.podval.tools.build.Version
 // also:
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
-object ScalaCheck extends ScalaFrameworkDescriptor(
+object ScalaCheck extends ScalaFramework(
   name = "ScalaCheck",
   description = "ScalaCheck",
   group = "org.scalacheck",
@@ -26,5 +26,7 @@ object ScalaCheck extends ScalaFrameworkDescriptor(
   className = "org.scalacheck.ScalaCheckFramework",
   sharedPackages = List("org.scalacheck"),
   tagOptions = None
-)
+):
+  override def isBackendSupported(backend: ScalaBackend): Boolean = true
+
 

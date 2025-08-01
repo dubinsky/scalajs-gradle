@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.5
+:version-plugin: 0.9.6
 :version-gradle: 9.0.0
 :version-scala: 3.7.2
 :version-scala-213: 2.13.16
@@ -17,15 +17,19 @@
 :version-node: 24.5.0
 :version-scalanative: 0.5.8
 :version-junit: 4.13.2
-:version-framework-junit4: 0.13.3
+:version-framework-junit4-jvm: 0.13.3
 :version-framework-junit4-scalajs: 1.19.0
 :version-framework-junit4-scalanative: 0.5.8
+:version-framework-airspec: 2025.1.14
+:version-framework-hedgehog: 0.12.0
 :version-framework-munit: 1.1.1
 :version-framework-scalacheck: 1.18.1
+:version-framework-scalaprops: 0.10.0
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.6.4
 :version-framework-specs2-scala2: 4.21.0
 :version-framework-utest: 0.9.0
+:version-framework-weaver: 0.9.3
 :version-framework-zio-test: 2.1.20
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
 :attribute-gradleVersionForBadge: 9.0.0
@@ -1189,13 +1193,21 @@ Scala plugin for Idea recognizes:
 - Specs2
 - uTest
 
-ScalaCheck and ZIO Test are not recognized by the Scala Plugin:
+`Weaver Test` test objects _are_ recognized by IntelliJ as tests
+(because `weaver.RunnableSuite` is annotated with `org.junit.runner.RunWith`):
+you get a gutter icon for the test object,
+which lets you run or debug it,
+and reflects the results of the previous run;
+there are no gutter icons for the individual tests,
+and even if there were, `Weaver Test` ignores test selectors ;)
+
+`ScalaCheck` and `ZIO Test` are not recognized by the Scala Plugin:
 no gutter icon for the test class nor individual tests in it are available,
 Run and Debug commands are not available in the context menu
 of the test classes node in the Project tree
 and of the gutter icon of the test class.
 
-Since `ZIO Test` tests are  objects with main method,
+Since `Hedgehog` and `ZIO Test` tests are objects with main method,
 they can be run from Idea (on JVM),
 but there is no test result tree nor test counts displayed,
 and since Gradle is not involved, no test reports.
@@ -1205,14 +1217,138 @@ and since Gradle is not involved, no test reports.
 Plugin replaces the `test` task with one that supports running
 sbt-compatible test frameworks; multiple test frameworks can be used at the same time.
 
-TestNG is not supported: its
-https://github.com/sbt/sbt-testng[SBT interface] is long since abandoned.
+Various test frameworks are listed or recognized by:
 
-JUnit5 (`com.github.sbt.junit:jupiter-interface`) is not supported,
-since it insists on using its own test discovery mechanism.
-Both Gradle and IntelliJ Idea support JUnit5 out of the box,
-and since there is no JUnit5 for Scala.js,
-there is not much the plugin can add anyway.
+|===
+|Framework |Recognized by https://github.com/sbt/sbt/blob/develop/testing/src/main/scala/sbt/TestFramework.scala[sbt] |Recognized by IntelliJ IDEA |Recognized by https://github.com/JetBrains/intellij-scala/tree/idea252.x/scala/test-integration/testing-support/src/org/jetbrains/plugins/scala/testingSupport/test[IntelliJ Scala Plugin] |Listed by https://www.scala-js.org/libraries/testing.html[Scala.js] |Works with this Plugin
+
+|https://wvlet.org/airframe/docs/airspec[AirSpec]
+|no
+|no
+|no
+|yes
+|yes
+
+|https://github.com/greencatsoft/greenlight[Greenlight]
+|no
+|no
+|no
+|yes
+|no: defunct
+
+|https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog]
+|yes
+|no
+|no
+|no
+|yes
+
+|https://junit.org/junit4/[JUnit4]
+|yes
+|yes
+|no
+|yes
+|yes; reimplemented for Scala.js and Scala Native
+
+|https://junit.org/[JUnit5]
+|no
+|yes
+|no
+|no
+|no: own test discovery; no point: JVM only
+
+|https://github.com/monix/minitest[MiniTest]
+|no
+|no
+|no
+|yes
+|no: defunct
+
+|https://scalameta.org/munit/[MUnit]
+|yes
+|
+|yes
+|yes
+|yes
+
+|https://github.com/japgolly/nyaya[Nyaya]
+|no
+|no
+|no
+|yes
+|no: defunct
+
+|https://scalacheck.org/[ScalaCheck]
+|yes
+|no
+|no
+|yes
+|yes
+
+|https://github.com/scalaprops/scalaprops[Scalaprops]
+|no
+|no
+|no
+|yes
+|yes
+
+|https://www.scalatest.org/[ScalaTest]
+|yes
+|no
+|yes
+|yes
+|yes
+
+|https://github.com/japgolly/test-state[Scala Test-State]
+|no
+|no
+|no
+|yes
+|no: defunct
+
+|specs
+|yes
+|no
+|no
+|no
+|no: defunct, use specs2
+
+|https://etorreborre.github.io/specs2/[specs2]
+|yes
+|no
+|yes
+|no
+|yes
+
+|https://testng.org/[TestNG]
+|no
+|yes
+|no
+|no
+|no: https://github.com/sbt/sbt-testng[SBT interface] defunct; no point: JVM only
+
+|https://github.com/com-lihaoyi/utest[uTest]
+|no
+|no
+|yes
+|yes
+|yes
+
+|https://github.com/typelevel/weaver-test[Weaver Test]
+|yes
+|yes
+|no
+|no
+|yes
+
+|https://zio.dev/reference/test/[ZIO test]
+|yes
+|no
+|no
+|no
+|yes
+
+|===
 
 Framework-specific information for the frameworks that _are_ supported follows.
 
@@ -1226,7 +1362,7 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |JUnit4
 |com.github.sbt:junit-interface
 |jvm
-|{version-framework-junit4}
+|{version-framework-junit4-jvm}
 |Java
 
 |JUnit4 for Scala.js
@@ -1241,6 +1377,18 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |{version-framework-junit4-scalanative}
 |
 
+|AirSpec
+|org.wvlet.airframe:airspec
+|jvm, js, native
+|{version-framework-airspec}
+|Scala Native only on Scala 3
+
+|Hedgehog
+|qa.hedgehog:hedgehog-sbt
+|jvm, js
+|{version-framework-hedgehog}
+|currently not supported on Scala Native
+
 |MUnit
 |org.scalameta:munit
 |jvm, js, native
@@ -1252,6 +1400,12 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |jvm, js, native
 |{version-framework-scalacheck}
 |
+
+|Scalaprops
+|com.github.scalaprops:scalaprops
+|jvm
+|{version-framework-scalaprops}
+|currently not supported on Scala.js nor Scala Native
 
 |ScalaTest
 |org.scalatest:scalatest
@@ -1271,6 +1425,12 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |{version-framework-utest}
 |
 
+|Weaver Test
+|org.typelevel:weaver-cats
+|jvm
+|{version-framework-weaver}
+|support for Scala Native and Scala.js is currently broken
+
 |ZIO Test
 |dev.zio:zio-test-sbt
 |jvm, js, native
@@ -1288,28 +1448,37 @@ final String scalaJSVersion = '{version-scalajs}'
 final String scalaNativeVersion = '{version-scalanative}'
 
 dependencies {
-  if (scalaBackend.jvm) {
-    testImplementation "com.github.sbt:junit-interface:{version-framework-junit4}"
+  if (scalaBackend.backend.jvm) {
+    testImplementation "com.github.sbt:junit-interface:{version-framework-junit4-jvm}"
   }
-  if (scalaBackend.js) {
+  if (scalaBackend.backend.js) {
     testImplementation "org.scala-js:scalajs-junit-test-runtime_${scalaBackend.scala2BinaryVersion}:$scalaJSVersion"
   }
-  if (scalaBackend.native) {
-    testImplementation "org.scala-native:junit-runtime${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:$scalaNativeVersion"
+  if (scalaBackend.backend.native) {
+    testImplementation "org.scala-native:junit-runtime${scalaBackend.suffix}:$scalaNativeVersion"
   }
-
-  testImplementation "org.scalameta:munit${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-munit}"
-  testImplementation "org.scalacheck:scalacheck${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-scalacheck}"
-  testImplementation "org.scalatest:scalatest${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-scalatest}"
-  testImplementation "com.lihaoyi:utest${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-utest}"
-  testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-zio-test}"
-
-
-  if (!scalaBackend.scala3 || scalaBackend.native) {
-    testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2-scala2}"
+  if (!scalaBackend.backend.native || scalaBackend.scala3) {
+    testImplementation "org.wvlet.airframe:airspec${scalaBackend.suffix}:{version-framework-airspec}"
+  }
+  if (!scalaBackend.backend.native) {
+    testImplementation "qa.hedgehog:hedgehog-sbt${scalaBackend.suffix}:{version-framework-hedgehog}"
+  }
+  testImplementation "org.scalameta:munit${scalaBackend.suffix}:{version-framework-munit}"
+  testImplementation "org.scalacheck:scalacheck${scalaBackend.suffix}:{version-framework-scalacheck}"
+  if (scalaBackend.backend.jvm) {
+    testImplementation "com.github.scalaprops:scalaprops:{version-framework-scalaprops}"
+  }
+  testImplementation "org.scalatest:scalatest${scalaBackend.suffix}:{version-framework-scalatest}"
+  if (!scalaBackend.scala3 || scalaBackend.backend.native) {
+    testImplementation "org.specs2:specs2-core${scalaBackend.suffix}:{version-framework-specs2-scala2}"
   } else {
-    testImplementation "org.specs2:specs2-core${scalaBackend.suffix}_${scalaBackend.scalaBinaryVersion}:{version-framework-specs2}"
+    testImplementation "org.specs2:specs2-core${scalaBackend.suffix}:{version-framework-specs2}"
   }
+  testImplementation "com.lihaoyi:utest${scalaBackend.suffix}:{version-framework-utest}"
+  if (scalaBackend.backend.jvm) {
+    testImplementation "org.typelevel:weaver-cats:{version-framework-weaver}"
+  }
+  testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}:{version-framework-zio-test}"
 }
 ----
 
@@ -1322,27 +1491,37 @@ that fit the Scala version and backend using this method:
 import org.podval.tools.test.framework.*
 
 dependencies {
-  if (scalaBackend.jvm) {
-    testImplementation scalaBackend.testFramework(JUnit4, '{version-framework-junit4}')
+  if (scalaBackend.backend.jvm) {
+    testImplementation scalaBackend.testFramework(JUnit4Jvm, '{version-framework-junit4-jvm}')
   }
-  if (scalaBackend.js) {
+  if (scalaBackend.backend.js) {
     testImplementation scalaBackend.testFramework(JUnit4ScalaJS, '{version-scalajs}')
   }
-  if (scalaBackend.native) {
+  if (scalaBackend.backend.native) {
     testImplementation scalaBackend.testFramework(JUnit4ScalaNative, '{version-scalanative}')
   }
-
+  if (!scalaBackend.backend.native || scalaBackend.scala3) {
+    testImplementation scalaBackend.testFramework(AirSpec, '{version-framework-airspec}')
+  }
+  if (!scalaBackend.backend.native) {
+    testImplementation scalaBackend.testFramework(Hedgehog, '{version-framework-hedgehog}')
+  }
   testImplementation scalaBackend.testFramework(MUnit, '{version-framework-munit}')
   testImplementation scalaBackend.testFramework(ScalaCheck, '{version-framework-scalacheck}')
+  if (scalaBackend.backend.jvm) {
+    testImplementation scalaBackend.testFramework(Scalaprops, '{version-framework-scalaprops}')
+  }
   testImplementation scalaBackend.testFramework(ScalaTest, '{version-framework-scalatest}')
-  testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
-  testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-zio-test}')
-
-  if (!scalaBackend.scala3 || scalaBackend.native) {
+ if (!scalaBackend.scala3 || scalaBackend.backend.native) {
     testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2-scala2}')
   } else {
     testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
   }
+  testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
+  if (scalaBackend.backend.jvm) {
+    testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver}')
+  }
+  testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-zio-test}')
 }
 ----
 
@@ -1355,21 +1534,32 @@ you are using was released, above can be simplified further:
 import org.podval.tools.test.framework.*
 
 dependencies {
-  if (scalaBackend.jvm) {
-    testImplementation scalaBackend.testFramework(JUnit4)
+  if (scalaBackend.backend.jvm) {
+    testImplementation scalaBackend.testFramework(JUnit4Jvm)
   }
-  if (scalaBackend.js) {
+  if (scalaBackend.backend.js) {
     testImplementation scalaBackend.testFramework(JUnit4ScalaJS)
   }
-  if (scalaBackend.native) {
+  if (scalaBackend.backend.native) {
     testImplementation scalaBackend.testFramework(JUnit4ScalaNative)
   }
-
+  if (!scalaBackend.backend.native || scalaBackend.scala3) {
+    testImplementation scalaBackend.testFramework(AirSpec)
+  }
+  if (!scalaBackend.backend.native) {
+    testImplementation scalaBackend.testFramework(Hedgehog)
+  }
   testImplementation scalaBackend.testFramework(MUnit)
   testImplementation scalaBackend.testFramework(ScalaCheck)
+  if (scalaBackend.backend.jvm) {
+    testImplementation scalaBackend.testFramework(Scalaprops)
+  }
   testImplementation scalaBackend.testFramework(ScalaTest)
   testImplementation scalaBackend.testFramework(Specs2)
   testImplementation scalaBackend.testFramework(UTest)
+  if (scalaBackend.backend.jvm) {
+    testImplementation scalaBackend.testFramework(WeaverTest)
+  }
   testImplementation scalaBackend.testFramework(ZioTest)
 }
 ----
@@ -1470,6 +1660,20 @@ and has different capabilities.
 - ignoring tests: not supported;
 - assumptions: not supported;
 
+=== AirSpec
+- test filtering: does not support test case selectors and runs all test cases in the class;
+- test tagging: not supported;
+- nested suites: not supported;
+- assumptions: not supported;
+- ignoring a test: not supported;
+
+=== Hedgehog
+- test filtering: does not support test case selectors and runs all test cases in the class;
+- test tagging: not supported;
+- nested suites: not supported;
+- assumptions: not supported;
+- ignoring a test: not supported;
+
 === MUnit
 - test filtering: works fine on `JVM`; on `Scala.js`, does not support test case selectors and runs all test cases in the class;
 - nested suites: not supported;
@@ -1537,6 +1741,13 @@ With ScalaCheck, nested test cases are attributed to the _nesting_ suite -
 and there is nothing that can be done about it,
 since ScalaCheck itself does not keep information about which class a property belongs to.
 
+=== Scalaprops
+- test filtering: does not support test case selectors and runs all test cases in the class;
+- test tagging: not supported;
+- nested suites: not supported;
+- assumptions: not supported;
+- ignoring a test: `Property.forAll { ... }.ignore("...")`;
+
 === ScalaTest
 - test filtering: works fine;
 - assumptions: not supported;
@@ -1582,6 +1793,8 @@ exclude tests tagged for exclusion $excludedTest ${tag(
 === uTest
 - test filtering: does not support test case selectors and runs all test cases in the class.
 - test tagging: not supported;
+- assumptions: not supported;
+- ignoring a test: not supported;
 
 ==== Nested Suites
 Only test suites defined in the same test class can be nested:
@@ -1601,6 +1814,13 @@ object UTestNesting extends TestSuite {
   }
 }
 ----
+
+=== Weaver Test
+- test filtering: does not support test case selectors and runs all test cases in the class;
+- test tagging: not supported;
+- nested suites: not supported;
+- assumptions: not supported;
+- ignoring a test: not supported;
 
 === ZIO Test
 
@@ -1984,20 +2204,18 @@ into `TestOutputEvent`;
 Situation with test progress reporting is nuanced:
 
 - `JUnit4`, `JUnit4 for Scala.js`, `JUnit4 for Scala Native` do not report progress;
+
+- `AirSpec`, `Hedgehog`, `Weaver Test`, `ZIO Test`
+write progress to standard out;
+
 - `MUnit` on JVM logs the progress;
 - `MUnit` on Scala.js and Scala Native writes progress to standard out;
+
 - `ScalaCheck`, `ScalaTest`, `specs2` log the progress;
 
 - `uTest` writes to the standard out a header: "--- Running Tests ---", then:
 * `utest.runner.MillFramework` logs the progress while
 * `utest.runner.Framework` writes it to standard out;
-
-- `ZIO Test` writes the progress to standard out;
-
-Like `MUnit` and `ZIO Test`, `ScalaCheck` and `uTest`
-report test on lines that start with a '+';
-unlike as `MUnit` and `ZIO Test`, `ScalaCheck` and `uTest`
-do not print a line for the suite itself.
 
 Situation with the summary is nuanced:
 some test frameworks (`JUnit4`, `MUnit` on JVM, `uTest` s `utest.runner.MillFramework`, `ZIO Test` on JVM),
@@ -2025,6 +2243,10 @@ https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/j
 - `JUnit4 for Scala.js`, `JUnit4 for Scala Native`,
 and `MUnit` on Scala.js or Scala Native return empty summary;
 
+- `AirSpec` returns empty summary;
+
+- `Hedgehog` returns empty summary;
+
 - `ScalaCheck` does the right thing and returns the real summary
 on all backends, "bug" notwithstanding - thanks to the
 https://github.com/typelevel/scalacheck/issues/185#issuecomment-372509235[work] done by https://github.com/retronym[retronym];
@@ -2041,6 +2263,10 @@ https://github.com/typelevel/scalacheck/issues/185#issuecomment-372509235[work] 
 and writes the real summary to standard out - citing the
 https://github.com/com-lihaoyi/utest/blob/master/utest/src/utest/runner/MasterRunner.scala#L64["bug"] -
 even on Scala.js and Scala Native, where the "bug" does not exist;
+
+- `Weaver Test`:
+* on JVM: returns empty summary;
+* on Scala.js and Scala Native: returns some with the list of failed tests and `_ test completed, _ failed`;
 
 - `ZIO Test`:
 * on JVM - returns a dummy summary "Completed tests" and
@@ -2249,33 +2475,22 @@ since my plugin does not support `JUnit5`
 - add tasks to run `npm` and `node` commands;
 - initialize Node project and install modules;
 
-=== 2025, February-July
+=== 2025, February-August
 
 I lost my day job in January 2025 and spent half a year working on the plugin ;)
 
 - test tagging for all the supported test frameworks;
 - nested test suites;
 - test dry-run;
-- `Scala Native`;
-- mixed-backend projects with some code shared among the backends;
+- support `Scala Native`;
+- mixed-backend projects with some sources shared among some of the backends;
 - sources specific to the Scala version;
 - expose data about backend and Scala version via an extension;
-
-== The Future
+- support more test frameworks on more backends;
 
 All I wanted was to cross-compile my code for JVM and Scala.js
 and test it with Scala Test and ZIO Test.
-
 All of that already works ;)
-
-I might add support for more obscure test frameworks:
-https://github.com/wvlet/airframe/tree/main/airspec[AirSpec],
-https://github.com/typelevel/weaver-test[Weaver].
-
-I might, one day, add test summary in `specs2`.
-
-I might, one day, fix test summary in `ZIO Test`
-on Scala.js and Scala Native.
 
 Of course, I plan to address bug reports and feature requests
 from the users of the plugin,
@@ -2385,6 +2600,7 @@ Thank you to https://github.com/kyri-petrou[kyri-petrou]
 for accepting my contribution.
 * https://github.com/zio/zio/pull/10053[pull/10053]
 _Mention Gradle plugin for Scala.js and Scala Native._
+Thank you to https://github.com/kyri-petrou[kyri-petrou] for approving.
 
 - https://scalacheck.org[ScalaCheck]:
 * https://github.com/typelevel/scalacheck/issues/1105[issues/1105]
@@ -2432,6 +2648,12 @@ _Honour useSbtLoggers for startHeader._
 * _https://github.com/com-lihaoyi/utest/pull/384[pull/384]_
 _Mention Gradle plugin for Scala.js and Scala Native._
 Thank you to https://github.com/lihaoyi[lihaoyi] for approving.
+
+- https://github.com/typelevel/weaver-test[Weaver Test]:
+* _https://github.com/typelevel/weaver-test/pull/183[pull/183]_
+_Less discarding of test failure throwables_
+* https://github.com/typelevel/weaver-test/issues/185[issues/185]
+_Update Scala Native to 0.5 and munit-diff to 1.1_
 
 == Credits
 

@@ -1,6 +1,5 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.build.Dependency
 import org.podval.tools.util.Files
 import java.io.File
 
