@@ -2,7 +2,7 @@ package org.podval.tools.test.framework
 
 import org.podval.tools.scalanative.ScalaNativeBackend
 
-object JUnit4ScalaNative extends NonJvmJUnit4FrameworkDescriptor(
+object JUnit4ScalaNative extends NonJvmJUnit4Framework(
   artifact = "junit-runtime",
   name = "Scala Native JUnit test framework",
   className = "scala.scalanative.junit.JUnitFramework",

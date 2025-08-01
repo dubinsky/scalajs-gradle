@@ -1,10 +1,11 @@
 package org.podval.tools.test.detect
 
-import sbt.testing.{AnnotatedFingerprint, Framework}
+import org.podval.tools.test.framework.Framework
+import sbt.testing.AnnotatedFingerprint
 
 private final class AnnotatedFingerprintDetector(
   fingerprint: AnnotatedFingerprint,
-  framework: Framework
+  framework: Framework.Loaded
 ) extends FingerprintDetector(
   fingerprint,
   framework

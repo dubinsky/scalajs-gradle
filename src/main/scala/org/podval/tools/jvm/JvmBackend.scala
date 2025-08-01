@@ -3,8 +3,7 @@ package org.podval.tools.jvm
 import org.gradle.api.Project
 import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaLibrary, TestEnvironment}
 import org.podval.tools.gradle.Configurations
-import org.podval.tools.test.framework.FrameworkProvider
-import sbt.testing.Framework
+import org.podval.tools.test.framework.Framework
 
 object JvmBackend extends ScalaBackend(
   name = "JVM",
@@ -13,6 +12,9 @@ object JvmBackend extends ScalaBackend(
   testsCanNotBeForked = false,
   expandClasspathForTestEnvironment = true
 ) with TestEnvironment.Creator[JvmBackend.type]:
+  override def isJvm   : Boolean = true
+  override def isJs    : Boolean = false
+  override def isNative: Boolean = false
 
   override protected def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
   
@@ -38,6 +40,4 @@ object JvmBackend extends ScalaBackend(
     sourceMapper = None
   ):
     override def close(): Unit = ()
-
-    override protected def loadFrameworks: List[Framework] =
-      frameworksToLoad(FrameworkProvider(_).frameworkOpt).flatten
+    override protected def loadFrameworks: List[Framework.Loaded] = frameworks.flatMap(_.tryLoad)

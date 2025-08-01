@@ -1,9 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{DependencyMaker, ScalaBackend, ScalaVersion, Version}
-import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.scalajs.ScalaJSBackend
-import org.podval.tools.scalanative.ScalaNativeBackend
+import org.podval.tools.build.{ScalaBackend, Version}
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala
@@ -29,7 +26,7 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
 //   org.scala-lang:scala-library:2.13.x
-object MUnit extends ScalaFrameworkDescriptor(
+object MUnit extends ScalaFramework(
   name = "munit",
   description = "MUnit",
   group = "org.scalameta",
@@ -38,14 +35,11 @@ object MUnit extends ScalaFrameworkDescriptor(
   className = "munit.Framework",
   sharedPackages = List("munit"),
   tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),
-  usesTestSelectorAsNestedTestSelector = true
+  usesTestSelectorAsNested = true
 ):
+  override def isBackendSupported(backend: ScalaBackend): Boolean = true
+
   override def additionalOptions: Array[String] = Array(
     "--logger=sbt", // use SBT loggers
     "--summary=1" // enable one-line summary
   )
-
-  override def underlying(backend: ScalaBackend): Option[DependencyMaker] = backend match
-    case JvmBackend         => JUnit4           .underlying(backend)
-    case ScalaJSBackend     => JUnit4ScalaJS    .forBackend(backend)
-    case ScalaNativeBackend => JUnit4ScalaNative.forBackend(backend)

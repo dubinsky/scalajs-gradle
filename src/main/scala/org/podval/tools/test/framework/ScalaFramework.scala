@@ -1,8 +1,9 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaDependencyMaker, Version}
+import org.podval.tools.build.{ScalaDependency, Version}
+import org.podval.tools.jvm.JvmBackend
 
-abstract class ScalaFrameworkDescriptor(
+abstract class ScalaFramework(
   final override val group: String,
   final override val artifact: String,
   final override val versionDefault: Version,
@@ -11,6 +12,6 @@ abstract class ScalaFrameworkDescriptor(
   final override val className: String,
   final override val sharedPackages: List[String],
   final override val tagOptions: Option[TagOptions],
-  final override val usesTestSelectorAsNestedTestSelector: Boolean = false
-) extends FrameworkDescriptor with ScalaDependencyMaker:
-  final override def forBackend(backend: ScalaBackend): Option[ScalaDependencyMaker] = Some(this.withBackend(backend))
+  final override val usesTestSelectorAsNested: Boolean = false
+) extends Framework with ScalaDependency:
+  override def scalaBackend: JvmBackend.type = JvmBackend

@@ -6,9 +6,9 @@ import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
 import org.podval.tools.platform.Output
-import org.podval.tools.test.framework.FrameworkProvider
+import org.podval.tools.test.framework.Framework
 import org.podval.tools.test.taskdef.{Running, TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind, arrayForEach}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
 import sbt.testing.{Runner, Task, TaskDef}
 
 object RunTestClassProcessor:
@@ -37,22 +37,23 @@ final class RunTestClassProcessor(
 
   private var runners: Array[(String, Runner)] = Array.empty
 
-  private def getRunner(frameworkProvider: FrameworkProvider): Runner = synchronized:
-    val frameworkName: String = frameworkProvider.frameworkName
-    arrayFind(runners, _._1 == frameworkName).map(_._2).getOrElse:
-      val runner: Runner = frameworkProvider.runner(
-        includeTags = includeTags,
-        excludeTags = excludeTags
+  private def getRunner(framework: Framework.Loaded): Runner = synchronized:
+    arrayFind(runners, _._1 == framework.name).map(_._2).getOrElse:
+      val args: Array[String] = arrayConcat(
+        framework.framework.additionalOptions,
+        framework.framework.tagOptions.map(_.args(includeTags, excludeTags)).getOrElse(Array.empty)
       )
-      runners = arrayAppend(runners, (frameworkName, runner))
+      val runner: Runner = framework.runner(args)
+      runners = arrayAppend(runners, (framework.name, runner))
       runner
-  
+
   override def stop(): Unit = arrayForEach(runners, (frameworkName, runner: Runner) =>
     val summary: String = runner.done
     val isSummaryMeaningful: Boolean =
       !summary.isBlank &&
-        summary != "Completed tests" && // dummy ZIO Test summary on JVM
-        summary != "Done"  // dummy ZIO Test summary on Scala.js and Scala Native
+      // TODO remove
+      summary != "Completed tests" && // dummy ZIO Test summary on JVM
+      summary != "Done"  // dummy ZIO Test summary on Scala.js and Scala Native
     if isSummaryMeaningful then testResultProcessor.output(
       testId = RunTestClassProcessor.rootTestSuiteIdPlaceholder,
       annotation = "test framework summary",
@@ -81,7 +82,7 @@ final class RunTestClassProcessor(
     val tasks: Array[Task] =
       if dryRun
       then Array(DryRunSbtTask(taskDef))
-      else getRunner(testClassRun.frameworkProvider).tasks(Array(taskDef))
+      else getRunner(testClassRun.framework).tasks(Array(taskDef))
 
     require(tasks.length == 1)
     val task: Task = tasks(0)
@@ -89,8 +90,7 @@ final class RunTestClassProcessor(
 
     RunTestClass(
       testResultProcessor = testResultProcessor,
-      frameworkUsesTestSelectorAsNestedTestSelector =
-        testClassRun.frameworkProvider.frameworkDescriptor.usesTestSelectorAsNestedTestSelector,
+      frameworkUsesTestSelectorAsNested = testClassRun.framework.framework.usesTestSelectorAsNested,
       parentId = null,
       running = running,
       task = task

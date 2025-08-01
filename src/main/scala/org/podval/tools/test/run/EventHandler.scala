@@ -57,7 +57,16 @@ final private class EventHandler(runTestClass: RunTestClass):
 
         handling match
           case Handling.Failed =>
-            ()
+            // We get here when test framework does not bubble up an exception for a test failure,
+            // which can happen even with my fixes for
+            // JUnit4 for Scala.js (https://github.com/scala-js/scala-js/pull/5132),
+            // JUnit4 for Scala Native (https://github.com/scala-native/scala-native/pull/4320),
+            // and Weaver - TODO add a link.
+            // Since Gradle requires an exception to accompany a test failure,
+            // we make one up:
+            startedThen(_.failure(_, new IllegalArgumentException(
+              "FAKE THROWABLE TO REPLACE EXCEPTION THAT THE TEST FRAMEWORK DID NOT REPORT"
+            )))
 
           case Handling.Failure(throwable) =>
             startedThen(_.failure(_, throwable))

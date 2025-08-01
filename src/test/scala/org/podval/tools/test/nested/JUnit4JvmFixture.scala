@@ -3,8 +3,8 @@ package org.podval.tools.test.nested
 import org.podval.tools.test.testproject.ForClass.*
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile}
 
-object JUnit4Fixture extends Fixture(
-  framework = org.podval.tools.test.framework.JUnit4,
+object JUnit4JvmFixture extends Fixture(
+  framework = org.podval.tools.test.framework.JUnit4Jvm,
   includeTestNames = Seq("org.podval.tools.test.JUnit4Nesting"),
   testSources = Seq(
     SourceFile("JUnit4Nesting",

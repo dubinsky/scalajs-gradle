@@ -22,11 +22,14 @@ object ScalaJSBackend extends NonJvmBackend(
   junit4Plugin   = Dep("scalajs-junit-test-plugin", "JUnit4 Compiler Plugin for Scala 2", _.scala2),
   linker         = Dep("scalajs-linker"           , "Linker"                            , _.scala2),
   testAdapter    = Dep("scalajs-sbt-test-adapter" , "Test Adapter for Node.js"          , _.scala2),
-  testBridge     = Dep("scalajs-test-bridge"      , "Test Bridge for Node.js"           , _.scala2.jvm.withDependencyRequirementVersionExact),
+  testBridge     = Dep("scalajs-test-bridge"      , "Test Bridge for Node.js"           , _.scala2.jvm),
   pluginDependencies = Array(ScalaJSEnv.jsDomNode),
-  withDefaultVersion = Array(ScalaJSEnv.dom),
+  withDefaultVersion = Array(ScalaJSEnv.dom, ScalaJSEnv.javaLogging),
   withBackendVersion = Array.empty
 ):
+  override def isJs    : Boolean = true
+  override def isNative: Boolean = false
+  
   override protected def linkTaskClass    : Class[ScalaJSLinkTask.Main] = classOf[ScalaJSLinkTask.Main]
   override protected def testLinkTaskClass: Class[ScalaJSLinkTask.Test] = classOf[ScalaJSLinkTask.Test]
   override protected def runTaskClass     : Class[ScalaJSRunTask .Main] = classOf[ScalaJSRunTask .Main]
@@ -49,11 +52,10 @@ object ScalaJSBackend extends NonJvmBackend(
   // There is no Scala 2 equivalent.
   private def scala3Library: Dep = Dep(
     "scala3-library",
-    "Scala 3 library in Scala.js.",
-    _
-      .withGroup(ScalaBinaryVersion.group)
-      .withVersionDefault(ScalaBinaryVersion.Scala3.versionDefault)
-      .scala3
+    "Scala 3 library in Scala.js",
+    _.scala3,
+    group = Some(ScalaBinaryVersion.group),
+    version = Some((ScalaBinaryVersion.Scala3.versionDefault))
   )
 
   override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] =

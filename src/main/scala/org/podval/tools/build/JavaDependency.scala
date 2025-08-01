@@ -1,5 +1,6 @@
 package org.podval.tools.build
 
-final class JavaDependency(
-  override val maker: JavaDependencyMaker
-) extends SimpleDependency[JavaDependency]
+trait JavaDependency extends NonScalaDependency:
+  final override def classifier(version: PreVersion): Option[String] = None
+  final override def extension (version: PreVersion): Option[String] = None
+ 

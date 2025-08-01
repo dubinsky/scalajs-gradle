@@ -7,9 +7,9 @@ import org.gradle.internal.Factory
 import org.podval.tools.build.TestEnvironment
 import org.podval.tools.platform.Output
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
-import org.podval.tools.test.framework.{FrameworkDescriptor, FrameworkProvider, JUnit4ScalaJS, JUnit4ScalaNative}
+import org.podval.tools.test.framework.{Framework, JUnit4ScalaJS, JUnit4ScalaNative}
 import org.podval.tools.test.taskdef.TestClassRun
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, Framework, SubclassFingerprint}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint}
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
@@ -32,7 +32,7 @@ final class SbtTestFrameworkDetector(
 
   private lazy val detectors: Seq[FingerprintDetector] =
     for
-      framework: Framework <- testEnvironment.loadFrameworks(testClasspath.get)
+      framework: Framework.Loaded <- testEnvironment.loadFrameworks(testClasspath.get)
       fingerprint: Fingerprint <- framework.fingerprints
     yield fingerprint match
       case subclassFingerprint : SubclassFingerprint  => SubclassFingerprintDetector (subclassFingerprint , framework)
@@ -67,7 +67,7 @@ final class SbtTestFrameworkDetector(
       testClassVisitor.addDetector(annotatedFingerprintDetector)
 
   private def bootstrapperDetector(
-    junit4: FrameworkDescriptor,
+    junit4: Framework,
     bootstrapperClassNameSuffix: String
   ): Option[BootstrapperDetector] = annotatedDetectors
     .find(_.framework.name == junit4.name)
@@ -97,7 +97,7 @@ final class SbtTestFrameworkDetector(
             )
 
           TestClassRun(
-            frameworkProvider = FrameworkProvider(detector.framework),
+            framework = detector.framework,
             getTestClassName = className,
             fingerprint = detector.fingerprint,
             explicitlySpecified = testFilterMatch.explicitlySpecified,

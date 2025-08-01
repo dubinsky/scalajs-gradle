@@ -3,7 +3,7 @@ package org.podval.tools.test.testproject
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.podval.tools.backend.BackendPlugin
-import org.podval.tools.build.{Dependency, ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion}
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
 import ForClass.{ClassExpectation, MethodExpectation}
@@ -107,9 +107,10 @@ abstract class GroupingFunSpec extends AnyFunSpec:
 
   private def fixturesSupported(
     fixtures: Seq[Fixture],
-    backend: ScalaBackend
+    backend: ScalaBackend,
+    scalaVersion: ScalaVersion
   ): Seq[Fixture] = fixtures
-    .filter(_.framework.forBackend(backend).isDefined)
+    .filter(_.framework.isBackendSupported(backend, scalaVersion))
 
   private def forBackends(
     projectName: Seq[String],
@@ -117,12 +118,12 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion
   ): Unit =
-    val backendsSupported: Set[ScalaBackend] = backends.filter(fixturesSupported(fixtures, _).nonEmpty)
+    val backendsSupported: Set[ScalaBackend] = backends.filter(fixturesSupported(fixtures, _, scalaVersion).nonEmpty)
 
     if backendsSupported.nonEmpty then
       if backendsSupported.size == 1 || testByBackend then
         for backend: ScalaBackend <- backendsSupported do
-          val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend)
+          val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend, scalaVersion)
           if fixturesSupported.nonEmpty then
             val backendString: String = s"on ${backend.name}"
             describe(backendString):
@@ -149,7 +150,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     project: TestProject,
     scalaVersion: ScalaVersion,
     settingsFragments: Seq[String],
-    testImplementation: Seq[Dependency#WithVersion],
+    testImplementation: Seq[String],
     buildFragments: Seq[String]
   ): Unit =
     val writer: TestProjectWriter = project.writer(backend = None)
@@ -226,14 +227,15 @@ abstract class GroupingFunSpec extends AnyFunSpec:
       )
       for backend: ScalaBackend <- backends do
         val writer: TestProjectWriter = project.writer(backend = Some(backend))
+        val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend, scalaVersion)
         writer.writeBuild(Seq(
           Fragments.dependencies(
             implementation = Seq.empty,
-            testImplementation = frameworkDependencies(fixturesSupported(fixtures, backend), scalaVersion, backend)
+            testImplementation = frameworkDependencies(fixturesSupported, scalaVersion, backend)
           ),
           testTask(feature, fixtures)
         ))
-        writer.writeSources(fixturesSupported(fixtures, backend))
+        writer.writeSources(fixturesSupported)
       project
 
     val project: Memo[TestProject] = Memo(createProject)
@@ -242,23 +244,22 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     for backend: ScalaBackend <- backends do test(
       testResultsRetriever.map(_.testResults(backend = Some(backend))),
       s"${backend.sourceRoot} tests",
-      checks = fixturesSupported(fixtures, backend).flatMap(_.checks(feature))
+      checks = fixturesSupported(fixtures, backend, scalaVersion).flatMap(_.checks(feature))
     )
-
-//    if doRun then run(
-//      project,
-//      runOutputExpectations = fixtures.head.runOutputExpectations
-//    )
   
   private def frameworkDependencies(
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion,
     backend: ScalaBackend
-  ): Seq[Dependency#WithVersion] = fixtures.map(_.framework.dependencyWithVersion(
-    backend,
-    scalaLibrary = ScalaLibrary.fromScalaVersion(scalaVersion),
-    version = None
-  ))
+  ): Seq[String] = fixtures.map(_
+    .framework
+    .withBackend(backend)
+    .dependencyNotation(
+      backend,
+      scalaLibrary = ScalaLibrary.fromScalaVersion(scalaVersion),
+      version = None
+    )
+  )
   
   private def testTask(
     feature: Feature,

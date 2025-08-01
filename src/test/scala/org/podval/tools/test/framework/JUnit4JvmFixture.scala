@@ -3,9 +3,9 @@ package org.podval.tools.test.framework
 import org.podval.tools.test.testproject.ForClass.*
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile}
 
-object JUnit4Fixture extends Fixture(
-  framework = org.podval.tools.test.framework.JUnit4,
-  testSources = Seq(SourceFile("JUnit4Test",
+object JUnit4JvmFixture extends Fixture(
+  framework = org.podval.tools.test.framework.JUnit4Jvm,
+  testSources = Seq(SourceFile("JUnit4JvmTest",
     s"""import org.junit.Assert.{assertArrayEquals, assertEquals, assertFalse, assertNotNull, assertNotSame, assertNull,
        |  assertSame, assertTrue}
        |import org.junit.Assume.assumeTrue
@@ -23,7 +23,7 @@ object JUnit4Fixture extends Fixture(
        |//   trying to do lub/glb of typevar ?T
        |  
        |@Test
-       |final class JUnit4Test {
+       |final class JUnit4JvmTest {
        |  @Test def successNotIncluded(): Unit = assertFalse("should be false", false)
        |  @Test def assumeFalse(): Unit = assumeTrue(false)
        |  @Test @Category(Array(classOf[IncludedTest])) def success(): Unit = assertTrue("should be true", true)
@@ -66,7 +66,7 @@ object JUnit4Fixture extends Fixture(
   override def checks(feature: Feature): Seq[ForClass] = feature match
     case FrameworksTest.basicFunctionality =>
       Seq(
-        forClass("JUnit4Test",
+        forClass("JUnit4JvmTest",
           passed("successNotIncluded"),
           skipped("assumeFalse"),
           passed("success"),
@@ -80,7 +80,7 @@ object JUnit4Fixture extends Fixture(
       )
     case FrameworksTest.withTagInclusions =>
       Seq(
-        forClass("JUnit4Test",
+        forClass("JUnit4JvmTest",
           absent("successNotIncluded"),
           passed("success"),
           failed("failure"),

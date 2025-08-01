@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaBackend, Version}
 
 // implementation: https://github.com/scalatest/scalatest/blob/main/jvm/core/src/main/scala/org/scalatest/tools/Framework.scala
 // runner arguments: https://www.scalatest.org/user_guide/using_the_runner
@@ -53,7 +53,7 @@ import org.podval.tools.build.Version
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
 
-object ScalaTest extends ScalaFrameworkDescriptor(
+object ScalaTest extends ScalaFramework(
   name = "ScalaTest",
   description = "ScalaTest",
   group = "org.scalatest",
@@ -62,4 +62,6 @@ object ScalaTest extends ScalaFrameworkDescriptor(
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest"),
   tagOptions = TagOptions.OptionPerValue("-n", "-l")
-)
+):
+  override def isBackendSupported(backend: ScalaBackend): Boolean = true
+

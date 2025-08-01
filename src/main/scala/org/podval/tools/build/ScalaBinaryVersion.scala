@@ -1,6 +1,6 @@
 package org.podval.tools.build
 
-sealed trait ScalaBinaryVersion extends JavaDependencyMaker derives CanEqual:
+sealed trait ScalaBinaryVersion extends JavaDependency derives CanEqual:
   final override def toString: String = versionSuffix.toString
   final override def group: String = ScalaBinaryVersion.group
   final override def versionDefault: Version = scalaVersionDefault.version

@@ -1,6 +1,6 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{DependencyInstallable, PreVersion, SimpleDependency, SimpleDependencyMaker, Version}
+import org.podval.tools.build.{DependencyInstallable, NonScalaDependency, PreVersion, Version}
 import org.podval.tools.gradle.Artifact
 import org.podval.tools.platform.{Architecture, Exec, Os}
 import org.podval.tools.util.Strings
@@ -8,14 +8,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
-object NodeDependency 
-  extends SimpleDependency[NodeDependency.type]
-  with SimpleDependencyMaker[NodeDependency.type]
-  with DependencyInstallable[Node]:
-
-  override def maker: SimpleDependencyMaker[NodeDependency.type] = NodeDependency
-  override def findable: NodeDependency.type = NodeDependency
-
+object NodeDependency extends NonScalaDependency with DependencyInstallable[Node]:
   override def versionDefault: Version = Version("24.5.0")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
@@ -75,9 +68,9 @@ object NodeDependency
   override def isZip(version: PreVersion): Boolean = isWindows && hasWindowsZip(version)
   
   override def archiveSubdirectoryPath(version: PreVersion): Seq[String] =
-    val classifierStr: String = Strings.prefix("-", maker.classifier(version))
+    val classifierStr: String = Strings.prefix("-", dependency.classifier(version))
     Seq(
-      s"${maker.artifact}-v$version$classifierStr"
+      s"${dependency.artifact}-v$version$classifierStr"
     )
 
   override def installation(root: File): Node =

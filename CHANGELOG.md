@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2025-08-07
+- feat: support `Weaver Test` test framework;
+- feat: support `Hedgehog` test framework;
+- feat: support `AirSpec` test framework;
+- feat: support `Scalaprops` test framework;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.5] - 2025-08-01
 - feat: code shared between _some_ of the backends (partial sharing);
 - chore: Scala 3.7.2;

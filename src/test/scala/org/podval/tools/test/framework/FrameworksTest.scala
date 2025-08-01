@@ -12,14 +12,18 @@ class FrameworksTest extends GroupingFunSpec:
   )
 
   override protected def fixtures: Seq[Fixture] = List(
-    JUnit4Fixture,
+    JUnit4JvmFixture,
     JUnit4ScalaJSFixture,
     JUnit4ScalaNativeFixture,
+    AirSpecFixture,
+    HedgehogFixture,
     MUnitFixture,
     ScalaCheckFixture,
+    ScalapropsFixture,
     ScalaTestFixture,
     Specs2Fixture,
     UTestFixture,
+    WeaverTestFixture,
     ZioTestFixture
   )
 

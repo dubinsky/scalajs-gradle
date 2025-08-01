@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.Version
+import org.podval.tools.build.{ScalaBackend, Version}
 
 // https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestFramework.scala
 // https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/TestArgs.scala
@@ -51,7 +51,7 @@ import org.podval.tools.build.Version
 
 // Note: DO NOT supply "-renderer intellij" argument:
 // zio.test.render.IntelliJRenderer emits "##teamcity[" messages!
-object ZioTest extends ScalaFrameworkDescriptor(
+object ZioTest extends ScalaFramework(
   // This must be exactly as reported by the framework!
   name = s"${io.AnsiColor.UNDERLINED}ZIO Test${io.AnsiColor.RESET}",
   description = "ZioTest",
@@ -62,6 +62,8 @@ object ZioTest extends ScalaFrameworkDescriptor(
   sharedPackages = List("zio.test.sbt"),
   tagOptions = TagOptions.OptionPerValue("-tags", "-ignore-tags")
 ):
+  override def isBackendSupported(backend: ScalaBackend): Boolean = true
+
   override def additionalOptions: Array[String] = Array(
     // ZIO Test writes test report "test-reports-zio/output.json" into "target", which makes sense for sbt;
     // changing it to something that makes sense for Gradle;

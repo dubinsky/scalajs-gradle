@@ -3,9 +3,9 @@ package org.podval.tools.nonjvm
 import org.gradle.api.Project
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.TaskProvider
-import org.podval.tools.build.{DependencyRequirement, PreVersion, ScalaBackend, ScalaDependencyMaker, ScalaLibrary, Version}
+import org.podval.tools.build.{DependencyRequirement, PreVersion, ScalaBackend, ScalaDependency, ScalaLibrary, Version}
 import org.podval.tools.gradle.{Archive, Configurations, GradleClasspath, ScalaCompiles, TaskWithSourceSet, Tasks}
-import org.podval.tools.test.framework.NonJvmJUnit4FrameworkDescriptor
+import org.podval.tools.test.framework.NonJvmJUnit4Framework
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 import NonJvmBackend.Dep
 
@@ -34,6 +34,8 @@ abstract class NonJvmBackend(
   testsCanNotBeForked = true,
   expandClasspathForTestEnvironment = false
 ):
+  override def isJvm: Boolean = false
+  
   protected def linkTaskClass         : Class[? <: LinkTask.Main[this.type]]
   protected def testLinkTaskClass     : Class[? <: LinkTask.Test[this.type]]
   protected def runTaskClass          : Class[? <: RunTask .Main[this.type, ? <: LinkTask.Main[this.type]]]
@@ -42,31 +44,27 @@ abstract class NonJvmBackend(
   protected def versionExtractor(version: PreVersion): Version
   protected def versionComposer(scalaLibrary: ScalaLibrary, backendVersion: Version): PreVersion
 
-  protected def junit4: NonJvmJUnit4FrameworkDescriptor
+  protected def junit4: NonJvmJUnit4Framework
 
   protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement]
 
   protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String]
 
-  private def library(scalaLibrary: ScalaLibrary): ScalaDependencyMaker =
+  private def library(scalaLibrary: ScalaLibrary): ScalaDependency =
     (if scalaLibrary.isScala3 then libraryScala3 else libraryScala2)(this)
 
   final def backendVersion(
     project: Project,
     scalaLibrary: ScalaLibrary
   ): Version =
-    val libraryDependency: ScalaDependencyMaker = library(scalaLibrary)
+    val libraryDependency: ScalaDependency = library(scalaLibrary)
     libraryDependency
-      .findable
       .findInConfiguration(Configurations.implementation(project))
       .map(_.version)
       .map(versionExtractor)
       .getOrElse(libraryDependency.versionDefaultFor(this, scalaLibrary))
 
   final def junit4present(project: Project): Boolean = junit4
-    .forBackend(this)
-    .get
-    .findable
     .findInConfiguration(Configurations.testImplementation(project))
     .isDefined
 
@@ -156,7 +154,7 @@ abstract class NonJvmBackend(
   ): Seq[DependencyRequirement.Many] =
     val backendVersion: Version = NonJvmBackend.this.backendVersion(project, projectScalaLibrary)
     
-    def one(configurationName: String, dependency: ScalaDependencyMaker) = DependencyRequirement.Many(
+    def one(configurationName: String, dependency: ScalaDependency) = DependencyRequirement.Many(
       configurationName = configurationName,
       scalaLibrary = projectScalaLibrary,
       dependencyRequirements = Array(dependency.required(backendVersion))
@@ -196,15 +194,16 @@ abstract class NonJvmBackend(
 
 object NonJvmBackend:
   final class Dep(
-    val artifactId: String,
-    val what: String,
-    val transformer: ScalaDependencyMaker => ScalaDependencyMaker = identity
+    artifact: String,
+    what: String,
+    transformer: ScalaDependency => ScalaDependency = identity,
+    group: Option[String] = None,
+    version: Option[Version] = None
   ):
-    def apply(backend: NonJvmBackend): ScalaDependencyMaker = transformer(
-      new ScalaDependencyMaker:
-        override def artifact: String = artifactId
-        override def group: String = backend.group
-        override def description: String = backend.describe(what)
-        override def scalaBackend: ScalaBackend = backend
-        override def versionDefault: Version = backend.versionDefault
-    )
+    def apply(nonJvmBackend: NonJvmBackend): ScalaDependency = transformer(ScalaDependency(
+      backend = nonJvmBackend,
+      artifactId = artifact,
+      groupId = group.getOrElse(nonJvmBackend.group),
+      version = version.getOrElse(nonJvmBackend.versionDefault),
+      what = what
+    ))

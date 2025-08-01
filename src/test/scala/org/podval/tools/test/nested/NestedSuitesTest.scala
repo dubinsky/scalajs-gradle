@@ -10,8 +10,8 @@ class NestedSuitesTest extends GroupingFunSpec:
   )
   
   override protected def fixtures: List[Fixture] = List(
-    // only for frameworks that support nested suited
-    JUnit4Fixture,
+    // only for frameworks that support nested suites
+    JUnit4JvmFixture,
     ScalaCheckFixture,
     ScalaTestFixture,
     UTestFixture,

@@ -5,30 +5,23 @@ import org.gradle.api.{GradleException, Project}
 import org.podval.tools.gradle.Configurations
 
 final class DependencyRequirement(
-  maker: DependencyMaker,
+  dependency: Dependency,
   version: PreVersion
 ):
   def apply(
     project: Project,
     configuration: Configuration,
     scalaLibrary: ScalaLibrary
-  ): Dependency#WithVersion =
-    val findable: DependencyFindable[?] = maker.findable
-    val dependency: Dependency = maker.dependency(scalaLibrary)
-
-    val result: Dependency#WithVersion = findable.findInConfiguration(configuration).getOrElse:
-      val toAdd: Dependency#WithVersion = dependency.withVersion(version)
-      val display: String = s"dependency $toAdd to configuration '${project.getName}.${configuration.getName}': ${maker.description}."
-      project.getLogger.info(s"Adding $display", null, null, null)
-      Configurations.addDependency(project, configuration.getName, toAdd.dependencyNotation)
-      findable
-        .findInConfiguration(configuration)
-        .getOrElse(throw GradleException(s"Failed to add $display"))
-    
-    if maker.isDependencyRequirementVersionExact && result.version != version then
-      project.getLogger.warn(s"Found $result, but the project uses version $version.")
-    
-    result
+  ): Dependency.WithVersion = dependency.findInConfiguration(configuration).getOrElse:
+    val dependencyNotation: String = dependency.dependencyNotation(
+      backend = dependency.scalaBackend,
+      scalaLibrary = scalaLibrary,
+      version = Some(version)
+    )
+    val what: String = s"dependency '$dependencyNotation' to configuration '${project.getName}.${configuration.getName}': ${dependency.description}."
+    project.getLogger.info(s"Adding $what", null, null, null)
+    Configurations.addDependency(project, configuration.getName, dependencyNotation)
+    dependency.findInConfiguration(configuration).getOrElse(throw GradleException(s"Failed to add $what"))
 
 object DependencyRequirement:
   // Arrays are used all the way to here for Scala 2.12 compatibility :(
