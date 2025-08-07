@@ -1,14 +1,14 @@
-package org.podval.tools.util
+package org.podval.tools.platform
 
+import org.slf4j.{Logger, LoggerFactory}
+import scala.io.Source
 import java.io.{BufferedWriter, File, FileWriter}
 import java.net.URL
-import org.slf4j.{Logger, LoggerFactory}
 import java.nio.file.Paths
-import scala.io.Source
 
 object Files:
   private val logger: Logger = LoggerFactory.getLogger(getClass)
-  
+
   def write(file: File, content: String): Unit =
     logger.debug(s"Writing $file")
     file.getParentFile.mkdirs()
@@ -27,7 +27,7 @@ object Files:
 
   def writeBytes(file: File, content: Array[Byte]): Unit =
     java.nio.file.Files.write(Paths.get(file.toURI), content)
-  
+
   def url2file(url: URL): File = Paths.get(url.toURI).toFile
 
   def file(directory: File, segments: String*): File = fileSeq(directory, segments)

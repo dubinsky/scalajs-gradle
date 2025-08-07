@@ -1,10 +1,11 @@
-package org.podval.tools.gradle
+package org.podval.tools.task
 
-import org.gradle.api.{Project, Task}
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.tasks.{InputFiles, Internal, SourceSet}
-import scala.jdk.CollectionConverters.SetHasAsScala
+import org.gradle.api.{Project, Task}
+import org.podval.tools.gradle.{Configurations, Tasks}
 import java.io.File
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 trait TaskWithSourceSet extends Task:
   @Internal def isTest: Boolean

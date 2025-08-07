@@ -3,21 +3,17 @@ package org.podval.tools.build
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
-import org.podval.tools.gradle.{Archive, TaskWithGradleUserHomeDir, TaskWithOutput, Tasks}
+import org.podval.tools.gradle.{Archive, Tasks}
 import org.podval.tools.jvm.JvmBackend
+import org.podval.tools.platform.Strings
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
+import org.podval.tools.task.{TaskWithGradleUserHomeDir, TaskWithOutput}
 import org.podval.tools.test.task.TestTask
 
 object ScalaBackend:
   def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
-
   def bySourceRoot(sourceRoot: String): Option[ScalaBackend] = all.find(_.sourceRoot == sourceRoot)
-  
-  def byAnyName(name: String): Option[ScalaBackend] = all.find(backend =>
-    name.toLowerCase == backend.name      .toLowerCase ||
-    name.toLowerCase == backend.sourceRoot.toLowerCase
-  )
 
 abstract class ScalaBackend(
   val name: String,
@@ -32,9 +28,8 @@ abstract class ScalaBackend(
 
   final override def toString: String = name
   
-  final def artifactNameSuffix(version: Version): String =
-    val artifactSuffixString: String = artifactSuffix.map(suffix => s"_$suffix").getOrElse("")
-    s"${artifactSuffixString}_$version"
+  final def artifactNameSuffix(versionSuffix: Version): String =
+    s"${Strings.prefix("_", artifactSuffix)}_$versionSuffix"
 
   protected def testTaskClass: Class[? <: TestTask[this.type]]
 
@@ -54,7 +49,7 @@ abstract class ScalaBackend(
   ): Unit =
     Archive.configureJarTask(
       project, 
-      archiveAppendix = artifactNameSuffix(projectScalaLibrary.scalaVersion.binaryVersion.versionSuffix)
+      archiveAppendix = artifactNameSuffix(projectScalaLibrary.scalaVersion.binaryVersionSuffix)
     )
 
     dependencyRequirements(

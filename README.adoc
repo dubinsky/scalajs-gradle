@@ -4,8 +4,8 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.6
-:version-gradle: 9.0.0
+:version-plugin: 0.9.7
+:version-gradle: 9.1.0-rc-1
 :version-scala: 3.7.2
 :version-scala-213: 2.13.16
 :version-scala-212: 2.12.20
@@ -20,8 +20,8 @@
 :version-framework-junit4-jvm: 0.13.3
 :version-framework-junit4-scalajs: 1.19.0
 :version-framework-junit4-scalanative: 0.5.8
-:version-framework-airspec: 2025.1.14
-:version-framework-hedgehog: 0.12.0
+:version-framework-airspec: 2025.1.16
+:version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.1.1
 :version-framework-scalacheck: 1.18.1
 :version-framework-scalaprops: 0.10.0
@@ -32,7 +32,7 @@
 :version-framework-weaver: 0.9.3
 :version-framework-zio-test: 2.1.20
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.0.0
+:attribute-gradleVersionForBadge: 9.1.0--rc--1
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -1385,9 +1385,9 @@ Framework-specific information for the frameworks that _are_ supported follows.
 
 |Hedgehog
 |qa.hedgehog:hedgehog-sbt
-|jvm, js
+|jvm, js, native
 |{version-framework-hedgehog}
-|currently not supported on Scala Native
+|
 
 |MUnit
 |org.scalameta:munit
@@ -1460,9 +1460,7 @@ dependencies {
   if (!scalaBackend.backend.native || scalaBackend.scala3) {
     testImplementation "org.wvlet.airframe:airspec${scalaBackend.suffix}:{version-framework-airspec}"
   }
-  if (!scalaBackend.backend.native) {
-    testImplementation "qa.hedgehog:hedgehog-sbt${scalaBackend.suffix}:{version-framework-hedgehog}"
-  }
+  testImplementation "qa.hedgehog:hedgehog-sbt${scalaBackend.suffix}:{version-framework-hedgehog}"
   testImplementation "org.scalameta:munit${scalaBackend.suffix}:{version-framework-munit}"
   testImplementation "org.scalacheck:scalacheck${scalaBackend.suffix}:{version-framework-scalacheck}"
   if (scalaBackend.backend.jvm) {
@@ -1503,9 +1501,7 @@ dependencies {
   if (!scalaBackend.backend.native || scalaBackend.scala3) {
     testImplementation scalaBackend.testFramework(AirSpec, '{version-framework-airspec}')
   }
-  if (!scalaBackend.backend.native) {
-    testImplementation scalaBackend.testFramework(Hedgehog, '{version-framework-hedgehog}')
-  }
+  testImplementation scalaBackend.testFramework(Hedgehog, '{version-framework-hedgehog}')
   testImplementation scalaBackend.testFramework(MUnit, '{version-framework-munit}')
   testImplementation scalaBackend.testFramework(ScalaCheck, '{version-framework-scalacheck}')
   if (scalaBackend.backend.jvm) {
@@ -1546,9 +1542,7 @@ dependencies {
   if (!scalaBackend.backend.native || scalaBackend.scala3) {
     testImplementation scalaBackend.testFramework(AirSpec)
   }
-  if (!scalaBackend.backend.native) {
-    testImplementation scalaBackend.testFramework(Hedgehog)
-  }
+  testImplementation scalaBackend.testFramework(Hedgehog)
   testImplementation scalaBackend.testFramework(MUnit)
   testImplementation scalaBackend.testFramework(ScalaCheck)
   if (scalaBackend.backend.jvm) {
@@ -2607,8 +2601,12 @@ Thank you to https://github.com/kyri-petrou[kyri-petrou] for approving.
 _sbt ScalaCheckRunner: loss of test selection fidelity._
 * _https://github.com/typelevel/scalacheck/pull/1107[pull/1107]_
 _Increase Fidelity of the sbt.testing.Framework Implementation._
+Thank you to https://github.com/Duhemm[Duhemm] for blazing the trail and
+to https://github.com/satorg[satorg] for accepting my contribution.
 * _https://github.com/typelevel/scalacheck/pull/1117[pull/1117]_
 _Mention Gradle plugin for Scala.js and Scala Native._
+Thank you to https://github.com/SethTisue[SethTisue] for approving
+and to https://github.com/satorg[satorg] for merging.
 
 - https://www.scalatest.org[ScalaTest]:
 * https://github.com/scalatest/scalatest/issues/2357[issues/2357]
@@ -2652,8 +2650,25 @@ Thank you to https://github.com/lihaoyi[lihaoyi] for approving.
 - https://github.com/typelevel/weaver-test[Weaver Test]:
 * _https://github.com/typelevel/weaver-test/pull/183[pull/183]_
 _Less discarding of test failure throwables_
+Thank you to https://github.com/zainab-ali[zainab-ali]
+for helpful suggestions and to https://github.com/Baccata[Baccata]
+for accepting my contribution.
 * https://github.com/typelevel/weaver-test/issues/185[issues/185]
 _Update Scala Native to 0.5 and munit-diff to 1.1_
+
+- https://wvlet.org/airframe/docs/airspec[AirSpec]:
+* https://github.com/wvlet/airframe/issues/4006[issues/4006]
+_AirSpec: Missing dependency on Scala.js: org.scala-js:scalajs-java-logging_
+Thank you to https://github.com/xerial[xerial] for addressing the issue.
+
+- https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog]:
+* https://github.com/hedgehogqa/scala-hedgehog/issues/296[issues/296]
+_The state of Scala Native support?_
+Thank you to https://github.com/kevin-lee[kevin-lee] for addressing the issue.
+
+- https://github.com/scalaprops/scalaprops[scalaprops]:
+* https://github.com/scalaprops/scalaprops/issues/530[issues/530]
+_Support for sbt.testing.Framework on Scala.js and Scala Native_
 
 == Credits
 

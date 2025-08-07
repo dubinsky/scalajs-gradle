@@ -7,14 +7,14 @@ import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.{Internal, TaskAction}
+import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.{BackendTask, ScalaBackend, TestEnvironment}
-import org.podval.tools.gradle.{TaskWithOutput, Tasks}
-import org.podval.tools.platform.Output
+import org.podval.tools.build.{BackendTask, ScalaBackend}
+import org.podval.tools.gradle.Tasks
+import org.podval.tools.task.TaskWithOutput
 import java.lang.reflect.Method
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html

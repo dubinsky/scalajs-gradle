@@ -1,8 +1,8 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.build.Named.BooleanCompanion
+import org.podval.tools.platform.Named
 
-object Optimize extends BooleanCompanion(
+object Optimize extends Named.BooleanCompanion(
   "Optimize",
   Some("SCALANATIVE_OPTIMIZE")
 )

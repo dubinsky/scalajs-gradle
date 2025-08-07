@@ -17,6 +17,7 @@ object Handling:
     status: Status,
     optionalThrowable: OptionalThrowable
   ): Handling =
+    // Note: Can't use `Option.when()` here: it does not exist in Scala 2.21.
     val throwable: Option[Throwable] = if optionalThrowable.isEmpty then None else Some(optionalThrowable.get)
     
     status.name match

@@ -1,9 +1,10 @@
 package org.podval.tools.jvm
 
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaLibrary, TestEnvironment}
+import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaLibrary}
 import org.podval.tools.gradle.Configurations
 import org.podval.tools.test.framework.Framework
+import org.podval.tools.test.task.TestEnvironment
 
 object JvmBackend extends ScalaBackend(
   name = "JVM",
@@ -39,5 +40,5 @@ object JvmBackend extends ScalaBackend(
     backend = this,
     sourceMapper = None
   ):
-    override def close(): Unit = ()
-    override protected def loadFrameworks: List[Framework.Loaded] = frameworks.flatMap(_.tryLoad)
+    final override def close(): Unit = ()
+    final override protected def loadFrameworks: List[Framework.Loaded] = frameworks.flatMap(_.tryLoad)

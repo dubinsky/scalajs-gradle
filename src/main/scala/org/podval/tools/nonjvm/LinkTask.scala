@@ -3,8 +3,9 @@ package org.podval.tools.nonjvm
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import org.podval.tools.build.BackendTask
-import org.podval.tools.gradle.{Projects, TaskWithOutput, TaskWithSourceSet}
-import org.podval.tools.util.Files
+import org.podval.tools.gradle.Projects
+import org.podval.tools.platform.Files
+import org.podval.tools.task.{TaskWithOutput, TaskWithSourceSet}
 import java.io.File
 
 abstract class LinkTask[B <: NonJvmBackend] extends DefaultTask
@@ -21,7 +22,7 @@ abstract class LinkTask[B <: NonJvmBackend] extends DefaultTask
 
 object LinkTask:
   abstract class Main[B <: NonJvmBackend] extends LinkTask[B]:
-    override def isTest: Boolean = false
+    final override def isTest: Boolean = false
 
   abstract class Test[B <: NonJvmBackend] extends LinkTask[B]:
-    override def isTest: Boolean = true
+    final override def isTest: Boolean = true

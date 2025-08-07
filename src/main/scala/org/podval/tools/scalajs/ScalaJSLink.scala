@@ -1,8 +1,7 @@
 package org.podval.tools.scalajs
 
 import org.podval.tools.nonjvm.Link
-import org.podval.tools.platform.Output
-import org.podval.tools.util.Files
+import org.podval.tools.platform.{Files, Output}
 import org.scalajs.jsenv.Input
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,

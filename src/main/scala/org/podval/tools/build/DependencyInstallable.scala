@@ -2,8 +2,7 @@ package org.podval.tools.build
 
 import org.gradle.api.Project
 import org.podval.tools.gradle.{Artifact, Projects}
-import org.podval.tools.platform.Output
-import org.podval.tools.util.Files
+import org.podval.tools.platform.{Files, Output}
 import java.io.File
 
 trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
@@ -12,9 +11,9 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
   // Where retrieved distributions are cached
   def cacheDirectory: String
 
-  def archiveSubdirectoryPath(version: PreVersion): Seq[String]
+  def archiveSubdirectoryPath(version: Version): Seq[String]
 
-  def isZip(version: PreVersion): Boolean
+  def isZip(version: Version): Boolean
 
   def installation(root: File): T
 
@@ -89,7 +88,7 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
     val artifact: File = Artifact
       .resolve(
         project,
-        withVersion.dependencyNotation,
+        withVersion.dependencyNotation(backendOverride = None),
         repository
       )
       .getOrElse(output.abort(s"No artifact found for: $withVersion"))

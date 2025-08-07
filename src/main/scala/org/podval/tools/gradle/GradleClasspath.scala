@@ -2,7 +2,7 @@ package org.podval.tools.gradle
 
 import org.gradle.api.{GradleException, Project}
 import org.gradle.internal.classloader.{ClassLoaderVisitor, ClasspathUtil, VisitableURLClassLoader}
-import org.podval.tools.util.Files
+import org.podval.tools.platform.Files
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.{IterableHasAsJava, IterableHasAsScala}
 import java.io.File

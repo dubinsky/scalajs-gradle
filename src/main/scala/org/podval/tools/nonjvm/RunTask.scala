@@ -2,9 +2,9 @@ package org.podval.tools.nonjvm
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
-import org.podval.tools.build.{BackendTask, TestEnvironment}
-import org.podval.tools.gradle.{TaskWithDependency, TaskWithOutput, TaskWithRunner}
-import org.podval.tools.test.task.TestTask
+import org.podval.tools.build.BackendTask
+import org.podval.tools.task.{TaskWithDependency, TaskWithOutput, TaskWithRunner}
+import org.podval.tools.test.task.{TestEnvironment, TestTask}
 import scala.reflect.ClassTag
 
 trait RunTask[B <: NonJvmBackend, L <: LinkTask[B] : ClassTag] extends BackendTask[B]
@@ -20,4 +20,4 @@ object RunTask:
     @TaskAction final def execute(): Unit = run.run(runner)
 
   abstract class Test[B <: NonJvmBackend, L <: LinkTask.Test[B] : ClassTag] extends TestTask[B] with RunTask[B, L]:
-    protected def testEnvironmentCreator: TestEnvironment.Creator[B] = run
+    final override protected def testEnvironmentCreator: TestEnvironment.Creator[B] = run

@@ -1,4 +1,4 @@
-package org.podval.tools.util
+package org.podval.tools.platform
 
 import scala.reflect.ClassTag
 

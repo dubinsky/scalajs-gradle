@@ -2,7 +2,7 @@ package org.podval.tools.test.run
 
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.podval.tools.test.taskdef.{Handling, Running, Selectors}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayFind}
+import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayFind}
 import sbt.testing.{Event, Selector}
 
 final private class EventHandler(runTestClass: RunTestClass):

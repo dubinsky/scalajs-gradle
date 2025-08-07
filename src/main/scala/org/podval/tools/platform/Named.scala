@@ -1,4 +1,4 @@
-package org.podval.tools.build
+package org.podval.tools.platform
 
 import org.gradle.api.GradleException
 import org.gradle.api.provider.Property

@@ -23,7 +23,7 @@ final class ScalaNativeLink(
     val moduleName: String = s"$projectName-${mode.name}"
 
     val mainClassEffective: Option[String] = mainClass.orElse:
-      if !isTest then None else Some("scala.scalanative.testinterface.TestMain")
+      Option.when(isTest)("scala.scalanative.testinterface.TestMain")
 
     val buildTarget: BuildTarget = mainClassEffective match
       case Some(_) => BuildTarget.application

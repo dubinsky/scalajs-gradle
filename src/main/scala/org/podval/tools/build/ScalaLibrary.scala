@@ -41,7 +41,7 @@ object ScalaLibrary:
   def fromScalaVersion(scalaVersion: ScalaVersion): ScalaLibrary =
     val isScala3: Boolean = scalaVersion.isScala3
     new ScalaLibrary(
-      scala3 = if isScala3 then Some(scalaVersion) else None,
+      scala3 = Option.when(isScala3)(scalaVersion),
       scala2 = if !isScala3 then scalaVersion else
         // For Scala 3, we *approximate* Scala 2;
         // this is safe, since the full Scala 2 version
@@ -93,9 +93,10 @@ object ScalaLibrary:
     if !isFromClasspath then require(scala3.isEmpty || scala2.isEmpty, s"Both Scala 3 and Scala 2 library present $source.")
 
     if scala2.isDefined then
+      def toScalaVersion(withVersion: Dependency.WithVersion): ScalaVersion = ScalaVersion(withVersion.version.version)
       new ScalaLibrary(
-        scala3.map(_.version.simple.toScalaVersion),
-        scala2.get  .version.simple.toScalaVersion
+        scala3.map(toScalaVersion),
+        toScalaVersion(scala2.get)
       )
     else
       // When constructing Scala 3 ScalaLibrary `fromImplementationConfiguration`,
@@ -108,5 +109,9 @@ object ScalaLibrary:
       fromClasspath(
         project,
         source = s"'${scala3.get}' resolved",
-        classPath = Artifact.resolveTransitive(project, scala3.get.dependencyNotation, None)
+        classPath = Artifact.resolveTransitive(
+          project,
+          dependencyNotation = scala3.get.dependencyNotation(backendOverride = None),
+          repository = None
+        )
       )

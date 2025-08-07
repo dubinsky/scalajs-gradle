@@ -7,9 +7,9 @@ object Hedgehog extends ScalaFramework(
   description = "Hedgehog",
   group = "qa.hedgehog",
   artifact = "hedgehog-sbt",
-  versionDefault = Version("0.12.0"),
+  versionDefault = Version("0.13.0"),
   className = "hedgehog.sbt.Framework",
   sharedPackages = List("hedgehog"),
   tagOptions = None
 ):
-  override def isBackendSupported(backend: ScalaBackend): Boolean = !backend.isNative
+  override def isBackendSupported(backend: ScalaBackend): Boolean = true

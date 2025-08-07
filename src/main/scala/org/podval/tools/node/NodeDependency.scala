@@ -1,9 +1,8 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{DependencyInstallable, NonScalaDependency, PreVersion, Version}
+import org.podval.tools.build.{DependencyInstallable, NonScalaDependency, Version}
 import org.podval.tools.gradle.Artifact
-import org.podval.tools.platform.{Architecture, Exec, Os}
-import org.podval.tools.util.Strings
+import org.podval.tools.platform.{Architecture, Exec, Os, Strings}
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
@@ -13,9 +12,9 @@ object NodeDependency extends NonScalaDependency with DependencyInstallable[Node
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
   override def description: String = "Node.js"
-  override def extension(version: PreVersion): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
+  override def extension(version: Version): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
   
-  override def classifier(version: PreVersion): Option[String] =
+  override def classifier(version: Version): Option[String] =
     val fixUpOsAndArch: Boolean = isWindows && !hasWindowsZip(version)
     val dependencyOsName: String = if fixUpOsAndArch then "linux" else osName
     val dependencyOsArch: String = if fixUpOsAndArch then "x86"   else osArch
@@ -56,18 +55,18 @@ object NodeDependency extends NonScalaDependency with DependencyInstallable[Node
     case Architecture.nacl    => "x86"
 
   //https://github.com/nodejs/node/pull/5995
-  private def hasWindowsZip(version: PreVersion): Boolean =
-    val major: Int = version.simple.major
-    val minor: Int = version.simple.minor
-    val patch: Int = version.simple.patch
+  private def hasWindowsZip(version: Version): Boolean =
+    val major: Int = version.major
+    val minor: Int = version.minor
+    val patch: Int = version.patch
 
     ((major == 4) && (minor >= 5)) || // >= 4.5.0..6
     ((major == 6) && ((minor > 2) || ((patch == 2) && (patch >= 1)))) || // >= 6.2.1..7
      (major >  6) // 7..
   
-  override def isZip(version: PreVersion): Boolean = isWindows && hasWindowsZip(version)
+  override def isZip(version: Version): Boolean = isWindows && hasWindowsZip(version)
   
-  override def archiveSubdirectoryPath(version: PreVersion): Seq[String] =
+  override def archiveSubdirectoryPath(version: Version): Seq[String] =
     val classifierStr: String = Strings.prefix("-", dependency.classifier(version))
     Seq(
       s"${dependency.artifact}-v$version$classifierStr"
