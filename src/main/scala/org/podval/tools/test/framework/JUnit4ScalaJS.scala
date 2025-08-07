@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaDependency, ScalaVersion}
+import org.podval.tools.build.ScalaDependency
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.scalajs.ScalaJSBackend
 
@@ -15,9 +15,5 @@ object JUnit4ScalaJS extends NonJvmJUnit4Framework(
 ) with ScalaDependency:
   override def supportedBackend: ScalaJSBackend.type = ScalaJSBackend
   override def scalaBackend: JvmBackend.type = JvmBackend
-  override def isPublishedFor(scalaVersion: ScalaVersion): Boolean = scalaVersion.isScala2
-
-  // it is a JVM dependency!
-  override def withBackend(backend: ScalaBackend): ScalaDependency =
-    require(isBackendSupported(backend))
-    this
+  override def isJvm: Boolean = true
+  override def isPublishedForScala3: Boolean = false

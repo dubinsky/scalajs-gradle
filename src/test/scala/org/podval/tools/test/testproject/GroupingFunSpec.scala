@@ -253,11 +253,10 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     backend: ScalaBackend
   ): Seq[String] = fixtures.map(_
     .framework
-    .withBackend(backend)
     .dependencyNotation(
-      backend,
-      scalaLibrary = ScalaLibrary.fromScalaVersion(scalaVersion),
-      version = None
+      backendOverride = Some(backend),
+      versionOverride = None,
+      scalaLibrary = ScalaLibrary.fromScalaVersion(scalaVersion)
     )
   )
   

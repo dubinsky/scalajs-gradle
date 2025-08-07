@@ -19,8 +19,6 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
 import org.gradle.process.JavaForkOptions
 import java.io.File
-import java.util.ArrayList
-import scala.jdk.CollectionConverters.*
 
 // Translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter.
 // This is the only Gradle class that I need to fork, modify and maintain

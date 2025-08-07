@@ -3,10 +3,11 @@ package org.podval.tools.nonjvm
 import org.gradle.api.Project
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.TaskProvider
-import org.podval.tools.build.{DependencyRequirement, PreVersion, ScalaBackend, ScalaDependency, ScalaLibrary, Version}
-import org.podval.tools.gradle.{Archive, Configurations, GradleClasspath, ScalaCompiles, TaskWithSourceSet, Tasks}
+import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaDependency, ScalaLibrary, Version}
+import org.podval.tools.gradle.{Archive, Configurations, GradleClasspath, ScalaCompiles, Tasks}
 import org.podval.tools.test.framework.NonJvmJUnit4Framework
-import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
+import org.podval.tools.platform.Scala212Collections.{arrayConcat, arrayMap}
+import org.podval.tools.task.TaskWithSourceSet
 import NonJvmBackend.Dep
 
 abstract class NonJvmBackend(
@@ -34,34 +35,30 @@ abstract class NonJvmBackend(
   testsCanNotBeForked = true,
   expandClasspathForTestEnvironment = false
 ):
-  override def isJvm: Boolean = false
-  
+  final override def isJvm: Boolean = false
+
+  protected def junit4: NonJvmJUnit4Framework
+
   protected def linkTaskClass         : Class[? <: LinkTask.Main[this.type]]
   protected def testLinkTaskClass     : Class[? <: LinkTask.Test[this.type]]
   protected def runTaskClass          : Class[? <: RunTask .Main[this.type, ? <: LinkTask.Main[this.type]]]
   override protected def testTaskClass: Class[? <: RunTask .Test[this.type, ? <: LinkTask.Test[this.type]]]
 
-  protected def versionExtractor(version: PreVersion): Version
-  protected def versionComposer(scalaLibrary: ScalaLibrary, backendVersion: Version): PreVersion
-
-  protected def junit4: NonJvmJUnit4Framework
-
   protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement]
 
   protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String]
 
-  private def library(scalaLibrary: ScalaLibrary): ScalaDependency =
-    (if scalaLibrary.isScala3 then libraryScala3 else libraryScala2)(this)
+  private def library(scalaLibrary: ScalaLibrary): Dep =
+    if scalaLibrary.isScala3 then libraryScala3 else libraryScala2
 
   final def backendVersion(
     project: Project,
     scalaLibrary: ScalaLibrary
   ): Version =
-    val libraryDependency: ScalaDependency = library(scalaLibrary)
+    val libraryDependency: ScalaDependency = library(scalaLibrary)(this)
     libraryDependency
       .findInConfiguration(Configurations.implementation(project))
-      .map(_.version)
-      .map(versionExtractor)
+      .map(_.version.version)
       .getOrElse(libraryDependency.versionDefaultFor(this, scalaLibrary))
 
   final def junit4present(project: Project): Boolean = junit4
@@ -96,7 +93,7 @@ abstract class NonJvmBackend(
       jvmPluginServices = Some(jvmPluginServices)
     )
 
-  override def afterEvaluate(
+  final override def afterEvaluate(
     project: Project, 
     projectScalaLibrary: ScalaLibrary, 
     pluginScalaLibrary: ScalaLibrary
@@ -165,8 +162,10 @@ abstract class NonJvmBackend(
         configurationName = pluginDependenciesConfigurationName,
         scalaLibrary = pluginScalaLibrary,
         dependencyRequirements = arrayConcat(
-          arrayMap(Array(linker, testAdapter), _(this).jvm.required(backendVersion)),
-          arrayMap(pluginDependencies, _(this).jvm.required())
+          arrayMap(Array(linker, testAdapter),
+            _(this).jvm.required(backendVersion)),
+          arrayMap(pluginDependencies,
+            _(this).jvm.required())
         )
       ),
       DependencyRequirement.Many(
@@ -174,11 +173,10 @@ abstract class NonJvmBackend(
         scalaLibrary = projectScalaLibrary,
         dependencyRequirements = arrayConcat(
           arrayConcat(
-            arrayConcat(
-              Array(library(projectScalaLibrary).required(versionComposer(projectScalaLibrary, backendVersion))),
-              arrayMap(withBackendVersion, _(this).required(backendVersion))
-            ),
-            arrayMap(withDefaultVersion, _(this).required())
+            arrayMap(arrayConcat(Array(library(projectScalaLibrary)), withBackendVersion),
+              _(this).required(backendVersion)),
+            arrayMap(withDefaultVersion,
+              _(this).required())
           ),
           implementation(projectScalaLibrary)
         )
@@ -193,17 +191,19 @@ abstract class NonJvmBackend(
     )
 
 object NonJvmBackend:
-  final class Dep(
+  class Dep(
     artifact: String,
     what: String,
     transformer: ScalaDependency => ScalaDependency = identity,
-    group: Option[String] = None,
-    version: Option[Version] = None
+    groupOverride: Option[String] = None,
+    versionOverride: Option[Version] = None
   ):
+    final def versionDefault: Version = versionOverride.get
+
     def apply(nonJvmBackend: NonJvmBackend): ScalaDependency = transformer(ScalaDependency(
       backend = nonJvmBackend,
       artifactId = artifact,
-      groupId = group.getOrElse(nonJvmBackend.group),
-      version = version.getOrElse(nonJvmBackend.versionDefault),
+      groupId = groupOverride.getOrElse(nonJvmBackend.group),
+      version = versionOverride.getOrElse(nonJvmBackend.versionDefault),
       what = what
     ))

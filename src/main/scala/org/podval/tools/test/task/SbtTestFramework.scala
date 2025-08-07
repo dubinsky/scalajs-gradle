@@ -8,17 +8,15 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
-import org.podval.tools.build.TestEnvironment
 import org.podval.tools.gradle.GradleClasspath
-import org.podval.tools.platform.Output
+import org.podval.tools.platform.{Files, Output}
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.run.RunTestClassProcessorFactory
-import org.podval.tools.util.Files
+import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 import java.io.File
 import java.lang.reflect.Field
 import java.net.URL
-import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 
 class SbtTestFramework(
   defaultTestFilter: DefaultTestFilter,

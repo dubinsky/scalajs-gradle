@@ -1,8 +1,9 @@
-package org.podval.tools.gradle
+package org.podval.tools.task
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Internal
 import org.gradle.api.{Project, Task}
+import org.podval.tools.gradle.{Projects, Tasks}
 import java.io.File
 
 trait TaskWithGradleUserHomeDir extends Task:

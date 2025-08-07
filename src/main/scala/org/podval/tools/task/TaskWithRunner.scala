@@ -1,6 +1,5 @@
-package org.podval.tools.gradle
+package org.podval.tools.task
 
-import org.gradle.api.Task
 import org.gradle.process.ExecOperations
 import org.podval.tools.platform.Runner
 import javax.inject.Inject

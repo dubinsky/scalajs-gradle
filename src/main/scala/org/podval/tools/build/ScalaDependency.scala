@@ -1,29 +1,34 @@
 package org.podval.tools.build
 
 import org.gradle.api.GradleException
-import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.util.Strings
+import org.podval.tools.platform.Strings
 
 trait ScalaDependency extends Dependency:
-  def isPublishedFor(scalaVersion: ScalaVersion): Boolean = true
+  override def isJvm: Boolean = false
+  def isPublishedForScala3: Boolean = true
+  def isPublishedForScala2: Boolean = true
   def isScalaVersionFull: Boolean = false
-
-  final override def classifier(version: PreVersion): Option[String] = None
-  final override def extension (version: PreVersion): Option[String] = None
+  
+  final override def classifier(version: Version): Option[String] = None
+  final override def extension (version: Version): Option[String] = None
 
   final override def forArtifact(artifactName: String): Option[ScalaDependency.WithScalaVersion] =
-    val (artifactAndBackend: String, scalaVersionOpt: Option[String]) = Strings.split(artifactName, '_')
-    val (artifact: String, backendSuffixOpt: Option[String]) = Strings.split(artifactAndBackend, '_')
+    val (artifactAndBackend: String, scalaVersion: Option[String]) = Strings.split(artifactName, '_')
+    val (artifact: String, artifactSuffix: Option[String]) = Strings.split(artifactAndBackend, '_')
     val matches: Boolean =
       (artifact == ScalaDependency.this.artifact) &&
-      (backendSuffixOpt == scalaBackend.artifactSuffix)
-    if !matches
-    then None
-    else scalaVersionOpt.map(Version(_).toScalaVersion).map(withScalaVersion)
+      (artifactSuffix == scalaBackend(backendOverride = None).artifactSuffix)
+    if !matches then None else scalaVersion.map(ScalaVersion(_)).map(withScalaVersion)
+
+  final def artifactNameSuffix(
+    backendOverride: Option[ScalaBackend],
+    scalaVersion: ScalaVersion
+  ): String =
+    scalaBackend(backendOverride).artifactNameSuffix(scalaVersion.versionSuffix(isScalaVersionFull))
 
   final override def withScalaVersion(scalaLibrary: ScalaLibrary): ScalaDependency.WithScalaVersion = withScalaVersion(
-    scalaLibrary.scala3.filter(isPublishedFor)
-      .orElse(Some(scalaLibrary.scala2).filter(isPublishedFor))
+    scalaLibrary.scala3.filter(_ => isPublishedForScala3)
+      .orElse(Some(scalaLibrary.scala2).filter(_ => isPublishedForScala2))
       .getOrElse(throw GradleException(s"Dependency $this is not published for $scalaLibrary."))
   )
 
@@ -32,22 +37,18 @@ trait ScalaDependency extends Dependency:
 
   import ScalaDependency.Wrapper
 
-  override def withBackend(backend: ScalaBackend): ScalaDependency =
-    require(isBackendSupported(backend))
-    if backend == scalaBackend then this else new Wrapper(this):
-      final override def scalaBackend: ScalaBackend = backend
-
-  final def jvm: ScalaDependency = withBackend(JvmBackend)
+  final def jvm: ScalaDependency = new Wrapper(this):
+    final override def isJvm: Boolean = true
   
   final def scala3: ScalaDependency = new Wrapper(this):
-    final override def isPublishedFor(scalaVersion: ScalaVersion): Boolean = scalaVersion.isScala3
+    final override def isPublishedForScala2: Boolean = false
 
   final def scala2: ScalaDependency = new Wrapper(this):
-    final override def isPublishedFor(scalaVersion: ScalaVersion): Boolean = scalaVersion.isScala2
+    final override def isPublishedForScala3: Boolean = false
 
-  final def scalaCompilerPlugin: ScalaDependency = (new Wrapper(this):
+  final def scalaCompilerPlugin: ScalaDependency = new Wrapper(this):
     final override def isScalaVersionFull: Boolean = true
-  ).jvm
+    final override def isJvm: Boolean = true
 
   final def withVersionCompound: ScalaDependency = new Wrapper(this):
     final override def isVersionCompound: Boolean = true
@@ -77,16 +78,14 @@ object ScalaDependency:
     override def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version = delegate.versionDefaultFor(backend, scalaLibrary)
     override def description: String = delegate.description
     override def isVersionCompound: Boolean = delegate.isVersionCompound
-    override def isPublishedFor(scalaVersion: ScalaVersion): Boolean = delegate.isPublishedFor(scalaVersion)
+    override def isJvm: Boolean = delegate.isJvm
+    override def isPublishedForScala3: Boolean = delegate.isPublishedForScala3
+    override def isPublishedForScala2: Boolean = delegate.isPublishedForScala2
     override def isScalaVersionFull: Boolean = delegate.isScalaVersionFull
 
   final class WithScalaVersion(
     override val dependency: ScalaDependency,
     scalaVersion: ScalaVersion
   ) extends Dependency.WithScalaVersion:
-    override def artifactNameSuffix: String = dependency.scalaBackend.artifactNameSuffix(versionSuffix)
-
-    def versionSuffix: Version =
-      if dependency.isScalaVersionFull
-      then scalaVersion.version
-      else scalaVersion.binaryVersion.versionSuffix
+    override def artifactNameSuffix(backendOverride: Option[ScalaBackend]): String = dependency
+      .artifactNameSuffix(backendOverride, scalaVersion)

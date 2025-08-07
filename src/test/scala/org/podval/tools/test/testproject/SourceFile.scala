@@ -1,6 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.util.Files
+import org.podval.tools.platform.Files
 
 final class SourceFile(val name: String, val content: String)
 

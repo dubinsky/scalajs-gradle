@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.build.Named
+import org.podval.tools.platform.Named
 
 enum BrowserName(name: String) extends Named(name) derives CanEqual:
   case Chrome   extends BrowserName("chrome")

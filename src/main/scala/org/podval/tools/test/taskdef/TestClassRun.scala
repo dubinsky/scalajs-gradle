@@ -2,7 +2,7 @@ package org.podval.tools.test.taskdef
 
 import org.gradle.api.internal.tasks.testing.TestClassRunInfo
 import org.podval.tools.test.framework.Framework
-import org.podval.tools.util.Scala212Collections.arrayMkString
+import org.podval.tools.platform.Scala212Collections.arrayMkString
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint, TaskDef}
 
 final class TestClassRun(

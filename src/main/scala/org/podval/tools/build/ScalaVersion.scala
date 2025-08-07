@@ -9,7 +9,16 @@ final class ScalaVersion(val version: Version) derives CanEqual:
     case that: ScalaVersion => this.version == that.version
     case _ => false
 
-  def isScala3: Boolean = binaryVersion.isScala3
-  def isScala2: Boolean = binaryVersion.isScala2
+  private def binaryVersion: ScalaBinaryVersion = ScalaBinaryVersion.forVersion(version)
 
-  def binaryVersion: ScalaBinaryVersion = ScalaBinaryVersion.forVersion(version)
+  def versionSuffix(isFull: Boolean): Version = if isFull then version else binaryVersionSuffix
+  def binaryVersionSuffix: Version = binaryVersion.versionSuffix
+
+  def isScala3  : Boolean = binaryVersion.isScala3
+  def isScala2  : Boolean = binaryVersion.isScala2
+  def isScala213: Boolean = binaryVersion.isScala213
+  def isScala212: Boolean = binaryVersion.isScala212
+
+object ScalaVersion:
+  def apply(string: String): ScalaVersion = ScalaVersion(Version(string))
+  def apply(version: Version): ScalaVersion = new ScalaVersion(version)

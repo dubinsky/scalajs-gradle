@@ -3,7 +3,7 @@ package org.podval.tools.test.testproject
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult, TestResultSerializer}
 import org.podval.tools.build.ScalaBackend
-import org.podval.tools.util.Files
+import org.podval.tools.platform.Files
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 

@@ -1,10 +1,11 @@
 package org.podval.tools.nonjvm
 
-import org.podval.tools.build.{ScalaBackend, SourceMapper, TestEnvironment}
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.test.framework.Framework
+import org.podval.tools.test.task.{SourceMapper, TestEnvironment}
 import sbt.testing.Framework => FrameworkSBT
 
-class NonJvmTestEnvironment[B <: ScalaBackend, A](
+final class NonJvmTestEnvironment[B <: ScalaBackend, A](
   backend: B,
   testAdapter: A,
   loadFrameworksFromTestAdapter: (A, List[List[String]]) => List[Option[FrameworkSBT]],

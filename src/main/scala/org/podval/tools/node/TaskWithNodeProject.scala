@@ -3,7 +3,8 @@ package org.podval.tools.node
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{Input, Internal, Optional}
-import org.podval.tools.gradle.{TaskWithGradleUserHomeDir, TaskWithOutput, TaskWithRunner, Tasks}
+import org.podval.tools.gradle.Tasks
+import org.podval.tools.task.{TaskWithGradleUserHomeDir, TaskWithOutput, TaskWithRunner}
 import java.io.File
 
 object TaskWithNodeProject:
@@ -11,8 +12,10 @@ object TaskWithNodeProject:
     project: Project,
     version: Option[String],
     nodeProjectRoot: File
-  ): Unit =
-    Tasks.configureEach(project, classOf[TaskWithNodeProject], (task: TaskWithNodeProject) =>
+  ): Unit = Tasks.configureEach(
+    project,
+    classOf[TaskWithNodeProject],
+    (task: TaskWithNodeProject) =>
       task.getVersion.set(version.orNull)
       task.getNodeProjectRoot.set(nodeProjectRoot)
     )

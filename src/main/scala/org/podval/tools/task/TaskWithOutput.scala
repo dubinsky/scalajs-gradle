@@ -1,11 +1,12 @@
-package org.podval.tools.gradle
+package org.podval.tools.task
 
 import org.gradle.StartParameter
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.{Project, Task}
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Internal
+import org.gradle.api.{Project, Task}
+import org.podval.tools.gradle.Tasks
 import org.podval.tools.platform.Output
 
 trait TaskWithOutput extends Task:

@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.build.Named
+import org.podval.tools.platform.Named
 
 enum ESVersion(name: String) extends Named(name) derives CanEqual:
   case ES2015 extends ESVersion("2015")

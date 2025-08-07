@@ -1,6 +1,6 @@
 package org.podval.tools.test.testproject
 
-import org.podval.tools.util.Files
+import org.podval.tools.platform.Files
 import java.io.File
 
 final class TestProjectWriter(projectDir: File):

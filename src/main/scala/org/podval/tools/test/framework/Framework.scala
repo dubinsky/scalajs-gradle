@@ -2,7 +2,7 @@ package org.podval.tools.test.framework
 
 import org.gradle.api.GradleException
 import org.podval.tools.build.Dependency
-import org.podval.tools.util.Scala212Collections.arrayFind
+import org.podval.tools.platform.Scala212Collections.arrayFind
 import sbt.testing.{Fingerprint, Runner, Framework as FrameworkSBT}
 
 // Based on sbt.TestFramework.

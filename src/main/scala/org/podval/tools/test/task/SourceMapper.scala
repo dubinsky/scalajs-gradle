@@ -1,9 +1,9 @@
-package org.podval.tools.build
+package org.podval.tools.test.task
 
 import org.gradle.api.internal.tasks.testing.{AssertionFailureDetails, DefaultTestFailure}
 import org.gradle.api.tasks.testing.{TestExecutionException, TestFailure, TestFailureDetails}
 import org.gradle.internal.serialize.PlaceholderExceptionSupport
-import org.podval.tools.util.Strings
+import org.podval.tools.platform.Strings
 import scala.annotation.tailrec
 
 abstract class SourceMapper:

@@ -1,6 +1,6 @@
 package org.podval.tools.scalajs
 
-import org.podval.tools.build.Named
+import org.podval.tools.platform.Named
 
 enum ModuleSplitStyle(name: String) extends Named(name) derives CanEqual:
   case FewestModules   extends ModuleSplitStyle("FewestModules")

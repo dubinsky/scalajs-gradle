@@ -6,7 +6,7 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.{AbstractCopyTask, ScalaSourceDirectorySet, SourceSet, SourceTask}
 import org.gradle.api.{Action, Project, Task}
 import org.podval.tools.build.{ScalaVersion, Version}
-import org.podval.tools.util.Files
+import org.podval.tools.platform.Files
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 import java.lang.reflect.Field

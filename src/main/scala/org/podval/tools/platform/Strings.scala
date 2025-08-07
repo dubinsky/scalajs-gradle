@@ -1,4 +1,4 @@
-package org.podval.tools.util
+package org.podval.tools.platform
 
 object Strings:
   def split(what: String, on: Char): (String, Option[String]) = what.lastIndexOf(on) match
@@ -9,7 +9,7 @@ object Strings:
     if from.startsWith(prefix) then from.substring(prefix.length)
     else throw IllegalArgumentException(s"String '$from' doesn't start with '$prefix'")
 
-  def prefix(prefix: String, what: Option[String]): String = what.fold("")(string => prefix + string)
+  def prefix(prefix: String, what: Option[String]): String = what.fold("")(prefix + _)
 
   def splice(
     in: Seq[String],

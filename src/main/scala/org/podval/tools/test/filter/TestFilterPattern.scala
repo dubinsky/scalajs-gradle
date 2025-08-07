@@ -1,8 +1,8 @@
 package org.podval.tools.test.filter
 
-import org.podval.tools.util.Strings
-import java.util.regex.Pattern
+import org.podval.tools.platform.Strings
 import scala.annotation.tailrec
+import java.util.regex.Pattern
 
 // Based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher.TestPattern;
 // see https://github.com/gradle/gradle/blob/master/platforms/software/testing-base-infrastructure/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java#L140
@@ -28,7 +28,7 @@ final class TestFilterPattern(pattern: String):
       ss.last.nonEmpty && 
       !isUpperCase(ss.last) && 
       (ss.init.exists(isUpperCase) || ss.init.exists(_.contains('*')))
-    TestFilterPatternMatch.forMethod(if !hasMethod then None else Some(ss.last))
+    TestFilterPatternMatch.forMethod(Option.when(hasMethod)(ss.last))
     
   def matchClass(classNameStr: String): Option[TestFilterPatternMatch] =
     val targetClassName: String =

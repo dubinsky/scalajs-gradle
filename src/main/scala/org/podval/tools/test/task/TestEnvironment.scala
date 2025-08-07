@@ -1,5 +1,6 @@
-package org.podval.tools.build
+package org.podval.tools.test.task
 
+import org.podval.tools.build.ScalaBackend
 import org.podval.tools.gradle.GradleClasspath
 import org.podval.tools.test.framework.Framework
 import org.slf4j.{Logger, LoggerFactory}

@@ -6,7 +6,7 @@ import org.podval.tools.gradle.Configurations
 
 final class DependencyRequirement(
   dependency: Dependency,
-  version: PreVersion
+  versionOverride: Option[Version]
 ):
   def apply(
     project: Project,
@@ -14,9 +14,9 @@ final class DependencyRequirement(
     scalaLibrary: ScalaLibrary
   ): Dependency.WithVersion = dependency.findInConfiguration(configuration).getOrElse:
     val dependencyNotation: String = dependency.dependencyNotation(
-      backend = dependency.scalaBackend,
-      scalaLibrary = scalaLibrary,
-      version = Some(version)
+      backendOverride = None,
+      versionOverride = versionOverride,
+      scalaLibrary = scalaLibrary
     )
     val what: String = s"dependency '$dependencyNotation' to configuration '${project.getName}.${configuration.getName}': ${dependency.description}."
     project.getLogger.info(s"Adding $what", null, null, null)

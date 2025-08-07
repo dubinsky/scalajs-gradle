@@ -1,6 +1,6 @@
 package org.podval.tools.test.run
 
-import org.podval.tools.util.Scala212Collections.arrayForEach
+import org.podval.tools.platform.Scala212Collections.arrayForEach
 import sbt.testing.{Event, EventHandler, Fingerprint, Logger, NestedSuiteSelector, NestedTestSelector,
   OptionalThrowable, Selector, Status, SuiteSelector, Task, TaskDef, TestSelector, TestWildcardSelector}
 

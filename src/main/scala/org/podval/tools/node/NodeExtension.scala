@@ -14,6 +14,7 @@ import javax.inject.Inject
 object NodeExtension:
   private def nodeProjectRoot(project: Project): File = Projects.projectDir(project)
 
+// Note: Gradle extensions must be abstract.
 abstract class NodeExtension @Inject(project: Project, execOperations: ExecOperations):
   def getVersion: Property[String]
   private def version: Option[String] = Option(getVersion.getOrNull)

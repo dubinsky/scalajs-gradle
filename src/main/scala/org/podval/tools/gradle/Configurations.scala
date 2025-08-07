@@ -68,7 +68,7 @@ object Configurations:
     new Action[Configuration]:
       override def execute(configuration: Configuration): Unit =
         configuration.setTransitive   (isTransitive)
-        configuration.setCanBeResolved(true)  // TODO should be false; when (and if) ScalaBasePlugin is cleaned up, copy it here.
+        configuration.setCanBeResolved(true)  // TODO should be false; when (if ever) ScalaBasePlugin is cleaned up, copy it here.
         configuration.setCanBeDeclared(true)
         configuration.setCanBeConsumed(false)
         configuration.setDescription(description)

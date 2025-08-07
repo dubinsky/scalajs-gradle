@@ -10,8 +10,8 @@ sealed trait ScalaBinaryVersion extends JavaDependency derives CanEqual:
   def versionSuffixLength: Int
   def scalaVersionDefault: ScalaVersion
 
-  def isScala3: Boolean
-  def isScala2: Boolean
+  def isScala3  : Boolean
+  def isScala2  : Boolean
   def isScala213: Boolean
   def isScala212: Boolean
 
@@ -37,13 +37,13 @@ object ScalaBinaryVersion:
     override def versionSuffixLength: Int = 1
     override def artifact: String = "scala3-library_3"
     override def description: String = "Scala 3 Library."
-    override val scalaVersionDefault: ScalaVersion = Version("3.7.2").toScalaVersion
+    override val scalaVersionDefault: ScalaVersion = ScalaVersion("3.7.2")
     override def isScala3: Boolean = true
     override def isScala2: Boolean = false
     override def isScala213: Boolean = false
     override def isScala212: Boolean = false
 
-  object Scala2:
+  private object Scala2:
     def versionMajor: Int = 2
 
   sealed trait Scala2 extends ScalaBinaryVersion:
@@ -59,10 +59,10 @@ object ScalaBinaryVersion:
     override def versionMinor: Int = 13
     override def isScala213: Boolean = true
     override def isScala212: Boolean = false
-    val scalaVersionDefault: ScalaVersion = Version("2.13.16").toScalaVersion
+    val scalaVersionDefault: ScalaVersion = ScalaVersion("2.13.16")
 
   object Scala2_12 extends Scala2:
     override def versionMinor: Int = 12
     override def isScala213: Boolean = false
     override def isScala212: Boolean = true
-    val scalaVersionDefault: ScalaVersion = Version("2.12.20").toScalaVersion
+    val scalaVersionDefault: ScalaVersion = ScalaVersion("2.12.20")

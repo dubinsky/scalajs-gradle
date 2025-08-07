@@ -3,6 +3,7 @@ package org.podval.tools.gradle
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.{Plugin, Project}
 import org.gradle.api.internal.project.ProjectStateInternal
+import org.podval.tools.platform.Files
 import java.io.File
 import scala.jdk.CollectionConverters.SetHasAsScala
 
@@ -17,8 +18,14 @@ object Projects:
 
   def projectDir(project: Project): File = project.getProjectDir
 
-  def isProjectDir(project: Project, projectDirName: String): Boolean =
-    projectDir(project).getName == projectDirName
+  def subProjects(project: Project): Set[String] = Files.listDirectories(projectDir(project)).toSet.map(_.getName)
+
+  // We look up projects by their *directory* names, not by their *project* names,
+  // so `Option(project.findProject(name))` does not do it for projects renamed in `settings.gradle` ;)
+  def findSubproject(project: Project, name: String): Option[Project] = project
+    .getSubprojects
+    .asScala
+    .find(projectDir(_).getName == name)
 
   def findProperty(project: Project, propertyName: String): Option[AnyRef] =
     Option(project.findProperty(propertyName))
@@ -42,10 +49,3 @@ object Projects:
     if isAfterEvaluateAvailable
     then project.afterEvaluate(_ => action)
     else action
-
-  // We look up projects by their *directory* names, not by their *project* names,
-  // so `Option(project.findProject(name))` does not do it for projects renamed in `settings.gradle` ;)
-  def findSubproject(project: Project, name: String): Option[Project] = project
-    .getSubprojects
-    .asScala
-    .find(isProjectDir(_, name))

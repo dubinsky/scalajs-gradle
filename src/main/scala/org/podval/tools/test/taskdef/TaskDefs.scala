@@ -1,6 +1,6 @@
 package org.podval.tools.test.taskdef
 
-import org.podval.tools.util.Scala212Collections.{arrayMap, arrayMkString, arrayZipForAll}
+import org.podval.tools.platform.Scala212Collections.{arrayMap, arrayMkString, arrayZipForAll}
 import sbt.testing.{AnnotatedFingerprint, SubclassFingerprint, TaskDef}
 
 object TaskDefs:

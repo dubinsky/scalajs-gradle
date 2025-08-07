@@ -4,10 +4,10 @@ import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.TestClassProcessor
 import org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector
 import org.gradle.internal.Factory
-import org.podval.tools.build.TestEnvironment
 import org.podval.tools.platform.Output
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
 import org.podval.tools.test.framework.{Framework, JUnit4ScalaJS, JUnit4ScalaNative}
+import org.podval.tools.test.task.TestEnvironment
 import org.podval.tools.test.taskdef.TestClassRun
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint}
 import scala.jdk.CollectionConverters.ListHasAsScala

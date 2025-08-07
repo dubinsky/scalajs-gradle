@@ -8,7 +8,7 @@ import org.gradle.internal.time.Clock
 import org.podval.tools.platform.Output
 import org.podval.tools.test.framework.Framework
 import org.podval.tools.test.taskdef.{Running, TaskDefs, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
+import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
 import sbt.testing.{Runner, Task, TaskDef}
 
 object RunTestClassProcessor:
@@ -49,12 +49,7 @@ final class RunTestClassProcessor(
 
   override def stop(): Unit = arrayForEach(runners, (frameworkName, runner: Runner) =>
     val summary: String = runner.done
-    val isSummaryMeaningful: Boolean =
-      !summary.isBlank &&
-      // TODO remove
-      summary != "Completed tests" && // dummy ZIO Test summary on JVM
-      summary != "Done"  // dummy ZIO Test summary on Scala.js and Scala Native
-    if isSummaryMeaningful then testResultProcessor.output(
+    if !summary.isBlank then testResultProcessor.output(
       testId = RunTestClassProcessor.rootTestSuiteIdPlaceholder,
       annotation = "test framework summary",
       logLevel = LogLevel.INFO,

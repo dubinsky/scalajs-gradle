@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.7] - 2025-08-14
+- feat: support `Hedgehog` test framework on `Scala Native`;
+- chore: Gradle 9.1.0-rc-1;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.6] - 2025-08-07
 - feat: support `Weaver Test` test framework;
 - feat: support `Hedgehog` test framework;

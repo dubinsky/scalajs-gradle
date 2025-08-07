@@ -1,7 +1,7 @@
 package org.podval.tools.test.taskdef
 
 import org.podval.tools.test.taskdef.{Selectors, TestClassRun}
-import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
+import org.podval.tools.platform.Scala212Collections.{arrayConcat, arrayMap}
 import sbt.testing.{Event, NestedSuiteSelector, NestedTestSelector, Selector, SuiteSelector, Task, TestSelector,
   TestWildcardSelector}
 

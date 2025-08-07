@@ -1,7 +1,7 @@
 package org.podval.tools.gradle
 
 import org.gradle.api.artifacts.{Configuration, Dependency}
-import org.podval.tools.util.Strings
+import org.podval.tools.platform.Strings
 import java.io.File
 import scala.jdk.CollectionConverters.SetHasAsScala
 
@@ -26,7 +26,7 @@ object Dependencies:
       group = Option(dependency.getGroup),
       artifactName = dependency.getName,
       classifier = None,
-      extension = Some("jar")
+      extension = None
     ))
   )
 

@@ -1,10 +1,10 @@
-package org.podval.tools.gradle
+package org.podval.tools.task
 
-import org.gradle.api.{GradleException, Task}
 import org.gradle.api.internal.provider.ProviderInternal
 import org.gradle.api.tasks.TaskProvider
-import scala.reflect.ClassTag
+import org.gradle.api.{GradleException, Task}
 import scala.jdk.CollectionConverters.SetHasAsScala
+import scala.reflect.ClassTag
 
 trait TaskWithDependency[D <: Task : ClassTag] extends Task:
   private def dependencyTaskClass: Class[D] = summon[ClassTag[D]].runtimeClass.asInstanceOf[Class[D]]

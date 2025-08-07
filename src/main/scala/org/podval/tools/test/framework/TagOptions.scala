@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayFlatMap, arrayMkString}
+import org.podval.tools.platform.Scala212Collections.{arrayConcat, arrayFlatMap, arrayMkString}
 
 final class TagOptions(
   style: TagOptions.Style,

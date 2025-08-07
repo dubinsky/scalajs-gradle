@@ -3,7 +3,7 @@ package org.podval.tools.test.run
 import org.gradle.api.logging.LogLevel
 import org.podval.tools.platform.Output
 import org.podval.tools.test.taskdef.{Running, TaskDefs}
-import org.podval.tools.util.Scala212Collections.arrayForEach
+import org.podval.tools.platform.Scala212Collections.arrayForEach
 import sbt.testing.{Logger, Task}
 import scala.util.control.NonFatal
 
