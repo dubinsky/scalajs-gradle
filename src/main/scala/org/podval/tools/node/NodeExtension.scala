@@ -5,6 +5,7 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
+import org.podval.tools.build.Version
 import org.podval.tools.gradle.{Projects, Tasks}
 import org.podval.tools.platform.{Output, Runner}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
@@ -17,7 +18,7 @@ object NodeExtension:
 // Note: Gradle extensions must be abstract.
 abstract class NodeExtension @Inject(project: Project, execOperations: ExecOperations):
   def getVersion: Property[String]
-  private def version: Option[String] = Option(getVersion.getOrNull)
+  private def version: Option[Version] = Version(getVersion)
 
   def getModules: ListProperty[String]
   getModules.convention(List.empty.asJava)

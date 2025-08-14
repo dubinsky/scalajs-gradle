@@ -1,5 +1,7 @@
 package org.podval.tools.build
 
+import org.gradle.api.provider.Property
+
 final class Version private(segments: Array[String]) extends Version.Pre:
   override def toString: String = segments.mkString(".")
   override def version: Version = this
@@ -24,6 +26,8 @@ object Version:
       case that: Pre => this.toString == that.toString
       case _ => false
 
+  def apply(property: Property[String]): Option[Version] = Option(property.getOrNull).map(apply)
+  
   def apply(string: String): Version = new Version(string.split("\\."))
 
   private final class WithScalaVersion(

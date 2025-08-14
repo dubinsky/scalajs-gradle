@@ -57,7 +57,7 @@ object ZioTest extends ScalaFramework(
   description = "ZioTest",
   group = "dev.zio",
   artifact = "zio-test-sbt",
-  versionDefault = Version("2.1.20"),
+  versionDefault = Version("2.1.21"),
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt"),
   tagOptions = TagOptions.OptionPerValue("-tags", "-ignore-tags")

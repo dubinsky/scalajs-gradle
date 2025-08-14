@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2025-09-05
+- chore: Gradle 9.1.0-rc-2;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.7] - 2025-08-14
 - feat: support `Hedgehog` test framework on `Scala Native`;
 - chore: Gradle 9.1.0-rc-1;
@@ -354,7 +359,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup: tested with the modified Gradle
 
 ## [0.4.4] - 2023-02-19
-- fix: "Could not dispatch message" caused by the presence of a test classes with no tests in them.cleanup: ForkingTestClassProcessor
+- fix: "Could not dispatch message" caused by the presence of a test classes with no tests in them
+- cleanup: ForkingTestClassProcessor
 - fix: tests fail to terminate when parallelized caused by the missing `TestFailureSerializer`
 - feat: take Gradle log level into account when processing test output
 - cleanup: consolidated test output processing in TestClassProcessor

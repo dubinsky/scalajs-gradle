@@ -2,37 +2,31 @@ package org.podval.tools.node
 
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.{Input, Internal, Optional}
+import org.gradle.api.tasks.Internal
+import org.podval.tools.build.Version
 import org.podval.tools.gradle.Tasks
-import org.podval.tools.task.{TaskWithGradleUserHomeDir, TaskWithOutput, TaskWithRunner}
+import org.podval.tools.task.{TaskWithDependencyInstallable, TaskWithRunner}
 import java.io.File
 
 object TaskWithNodeProject:
   def configureTasks(
     project: Project,
-    version: Option[String],
+    version: Option[Version],
     nodeProjectRoot: File
   ): Unit = Tasks.configureEach(
     project,
     classOf[TaskWithNodeProject],
     (task: TaskWithNodeProject) =>
-      task.getVersion.set(version.orNull)
+      task.getVersion.set(version.map(_.toString).orNull)
       task.getNodeProjectRoot.set(nodeProjectRoot)
     )
     
-trait TaskWithNodeProject extends TaskWithRunner
-  with TaskWithGradleUserHomeDir
-  with TaskWithOutput:
+trait TaskWithNodeProject extends TaskWithDependencyInstallable[Node] with TaskWithRunner:
+  final override protected def dependencyInstallable: NodeDependency.type = NodeDependency
 
-  @Optional @Input def getVersion: Property[String]
   @Internal def getNodeProjectRoot: Property[File]
-
-  final def nodeProject: NodeProject = NodeDependency
-    .getInstalled(
-      version = Option(getVersion.getOrNull),
-      gradleUserHomeDir = getGradleUserHomeDir.get,
-      output = output
-    )
+  
+  final def nodeProject: NodeProject = dependencyInstalled
     .nodeProject(
       root = getNodeProjectRoot.get,
       runner = runner

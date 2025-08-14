@@ -1,6 +1,5 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.ScalaDependency
 import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.scalajs.ScalaJSBackend
 
@@ -12,7 +11,7 @@ object JUnit4ScalaJS extends NonJvmJUnit4Framework(
   name = "Scala.js JUnit test framework",
   className = "com.novocode.junit.JUnitFramework",
   sharedPackages = List("com.novocode.junit", "junit.framework", "junit.extensions", "org.junit")
-) with ScalaDependency:
+):
   override def supportedBackend: ScalaJSBackend.type = ScalaJSBackend
   override def scalaBackend: JvmBackend.type = JvmBackend
   override def isJvm: Boolean = true
