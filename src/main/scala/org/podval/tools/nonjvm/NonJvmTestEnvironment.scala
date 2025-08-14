@@ -22,4 +22,4 @@ final class NonJvmTestEnvironment[B <: ScalaBackend, A](
     frameworks.map((framework: Framework) => List(framework.className))
   )
     .flatten
-    .map(Framework.forSBTFramework)
+    .map(Framework.Loaded.apply)

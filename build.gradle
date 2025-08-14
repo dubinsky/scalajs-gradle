@@ -2,8 +2,8 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.52.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.9.6'
-  id 'com.gradle.plugin-publish' version '1.3.1'
+  id 'org.podval.tools.scalajs' version '0.9.7'
+  id 'com.gradle.plugin-publish' version '2.0.0'
 }
 
 group = 'org.podval.tools'
@@ -54,7 +54,6 @@ def isNonStable = { String version ->
   return !stableKeyword && !(version ==~ regex)
 }
 
-// dependencyUpdates.revision = 'release'
 tasks.named("dependencyUpdates").configure {
   rejectVersionIf {
     isNonStable(it.candidate.version)
@@ -81,7 +80,6 @@ jar {
   }
 }
 
-// TODO move this into `library.gradle` and use `direnv` to define what needs to be defined and git to get the name of the repository
 final String gitHubRepository = 'dubinsky/scalajs-gradle'
 final String gitHubRepositoryUrl = "https://github.com/$gitHubRepository"
 final String orgName = 'Podval Group'
@@ -152,7 +150,7 @@ gradlePlugin {
       tags = [
         'scala', 'scalajs', 'scalanative', 'crosscompile',
         'sbt', 'testing',
-        'junit4', 'munit', 'scalatest', 'scalacheck', 'specs2', 'utest', 'ziotest']
+        'airspec', 'hedgehog', 'junit4', 'munit', 'scalacheck', 'scalaprops', 'scalatest', 'specs2', 'utest', 'weaver', 'ziotest']
     }
   }
 }

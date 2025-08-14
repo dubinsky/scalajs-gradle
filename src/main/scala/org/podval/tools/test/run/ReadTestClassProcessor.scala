@@ -8,7 +8,6 @@ class ReadTestClassProcessor(delegate: RunTestClassProcessor) extends TestClassP
   override def stopNow(): Unit = delegate.stopNow()
   override def stop(): Unit = delegate.stop()
 
-  override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit =
-    delegate.processTestClass(
-      TestClassRun.read(testClassRunInfo.getTestClassName)
-    )
+  override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = delegate.processTestClass(
+    TestClassRun.read(testClassRunInfo.getTestClassName)
+  )

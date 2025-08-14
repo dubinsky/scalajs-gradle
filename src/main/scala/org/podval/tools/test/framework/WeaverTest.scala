@@ -7,7 +7,7 @@ object WeaverTest extends ScalaFramework(
   description = "Weaver-test",
   group = "org.typelevel",
   artifact = "weaver-cats",
-  versionDefault = Version("0.9.3"),
+  versionDefault = Version("0.10.1"),
   className = "weaver.framework.CatsEffect",
   sharedPackages = List("weaver"),
   tagOptions = None

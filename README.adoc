@@ -1,11 +1,11 @@
-= Gradle plugin for Scala.js and Scala Native
+= Gradle plugin for multi-backend Scala and sbt test frameworks
 :toc:
 :toclevels: 4
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.7
-:version-gradle: 9.1.0-rc-1
+:version-plugin: 0.9.8
+:version-gradle: 9.1.0-rc-2
 :version-scala: 3.7.2
 :version-scala-213: 2.13.16
 :version-scala-212: 2.12.20
@@ -14,13 +14,13 @@
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 24.5.0
+:version-node: 24.7.0
 :version-scalanative: 0.5.8
 :version-junit: 4.13.2
 :version-framework-junit4-jvm: 0.13.3
 :version-framework-junit4-scalajs: 1.19.0
 :version-framework-junit4-scalanative: 0.5.8
-:version-framework-airspec: 2025.1.16
+:version-framework-airspec: 2025.1.17
 :version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.1.1
 :version-framework-scalacheck: 1.18.1
@@ -28,11 +28,11 @@
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.6.4
 :version-framework-specs2-scala2: 4.21.0
-:version-framework-utest: 0.9.0
-:version-framework-weaver: 0.9.3
-:version-framework-zio-test: 2.1.20
+:version-framework-utest: 0.9.1
+:version-framework-weaver: 0.10.1
+:version-framework-zio-test: 2.1.21
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.1.0--rc--1
+:attribute-gradleVersionForBadge: 9.1.0--rc--2
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -1154,6 +1154,14 @@ As usual, when you run tests:
 - results are displayed in tree form
 - test counts are displayed.
 
+Note: if the test name in the `sbt.testing.Event`
+that IntelliJ receives starts with the name of the type the test belongs to,
+IntelliJ drops this prefix - probably to accommodate JUnit4,
+which incorrectly prepends all test names with the name of their class.
+As a result, for frameworks that have a notion of named suite
+(ZIO Test and ScalaCheck), if the name of the suite is the same as the
+name of the type, incorrectly IntelliJ drops it.
+
 As usual, you can run all tests from the project tree using any of the nodes:
 
 [source]
@@ -1938,7 +1946,7 @@ Scala.js Gradle plugin.
 Also, I want to be able to run `npm` from within my code without creating tasks.
 Also, I would like to be able to use Node available via GraalVM's polyglot support.
 
-My simplified Node support is under 300 lines.
+My simplified Node support is around 300 lines.
 
 === Dynamic Dependencies
 I coded a neat way to add dependencies dynamically,
@@ -2595,6 +2603,15 @@ for accepting my contribution.
 * https://github.com/zio/zio/pull/10053[pull/10053]
 _Mention Gradle plugin for Scala.js and Scala Native._
 Thank you to https://github.com/kyri-petrou[kyri-petrou] for approving.
+* https://github.com/zio/zio/pull/10120[pull/10120]
+_[test-sbt] More uniformity._
+Thank you to https://github.com/narma[narma],
+https://github.com/He-Pin[He-Pin],
+and https://github.com/khajavi[khajavi]
+for encouragement;
+to https://github.com/kyri-petrou[kyri-petrou]
+and https://github.com/hearnadam[hearnadam]
+for reviewing and accepting my contribution.
 
 - https://scalacheck.org[ScalaCheck]:
 * https://github.com/typelevel/scalacheck/issues/1105[issues/1105]
@@ -2655,16 +2672,26 @@ for helpful suggestions and to https://github.com/Baccata[Baccata]
 for accepting my contribution.
 * https://github.com/typelevel/weaver-test/issues/185[issues/185]
 _Update Scala Native to 0.5 and munit-diff to 1.1_
+* _https://github.com/typelevel/weaver-test/pull/186[pull/186]_
+Do not pluralize singular failure.
+* _https://github.com/typelevel/weaver-test/pull/187[pull/187]_
+_Mention Gradle support with the multi-backend Scala plugin._
 
 - https://wvlet.org/airframe/docs/airspec[AirSpec]:
 * https://github.com/wvlet/airframe/issues/4006[issues/4006]
 _AirSpec: Missing dependency on Scala.js: org.scala-js:scalajs-java-logging_
 Thank you to https://github.com/xerial[xerial] for addressing the issue.
+* _https://github.com/wvlet/airframe/pull/4012[pull/4012]_
+_Mention Gradle multi-backend Scala plugin._
+Than you to https://github.com/xerial[xerial] for approving.
 
 - https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog]:
 * https://github.com/hedgehogqa/scala-hedgehog/issues/296[issues/296]
 _The state of Scala Native support?_
 Thank you to https://github.com/kevin-lee[kevin-lee] for addressing the issue.
+* _https://github.com/hedgehogqa/scala-hedgehog/pull/300[pull/300]_
+_Mention Gradle multi-backend plugin - and fix the badges._
+Thank you to https://github.com/kevin-lee[kevin-lee] for accepting my contribution.
 
 - https://github.com/scalaprops/scalaprops[scalaprops]:
 * https://github.com/scalaprops/scalaprops/issues/530[issues/530]

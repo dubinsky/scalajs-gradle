@@ -6,7 +6,7 @@ import org.gradle.api.{GradleException, Task}
 import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.reflect.ClassTag
 
-trait TaskWithDependency[D <: Task : ClassTag] extends Task:
+trait TaskThatDependsOn[D <: Task : ClassTag] extends Task:
   private def dependencyTaskClass: Class[D] = summon[ClassTag[D]].runtimeClass.asInstanceOf[Class[D]]
   
   private def is[T](clazz: T => Class[?])(candidate: T): Boolean =

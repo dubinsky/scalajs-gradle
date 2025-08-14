@@ -36,12 +36,11 @@ final class BackendPlugin @Inject(
       .getOrElse:
         single(sharedProjects = Set.empty, backend = Projects
           .findProperty(project, BackendPlugin.scalaBackendProperty)
-          .map(_.toString)
-          .map: (name: String) =>
+          .map: (backendName: String) =>
             BackendPlugin
-              .findBackend(name)
+              .findBackend(backendName)
               .getOrElse:
-                error(s"""unknown Scala backend '$name'; use one of
+                error(s"""unknown Scala backend '$backendName'; use one of
                          |${BackendPlugin.backendNames}""".stripMargin)
           .getOrElse:
             info(s"""to choose Scala backend, set property '${BackendPlugin.scalaBackendProperty}' to one of
@@ -62,7 +61,10 @@ object BackendPlugin:
   val scalaBackendProperty: String = "org.podval.tools.backend"
 
   private def mixed(project: Project): Option[MixedProject] = Option
-    .when(Projects.subProjects(project).flatMap(ScalaBackend.bySourceRoot).nonEmpty)(MixedProject(project))
+    .when(Projects
+      .subProjects(project)
+      .exists(ScalaBackend.bySourceRoot(_).isDefined)
+    )(MixedProject(project))
 
   private def backendNames: String = ScalaBackend.all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
 
