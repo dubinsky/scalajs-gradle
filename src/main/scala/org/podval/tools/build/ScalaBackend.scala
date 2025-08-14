@@ -8,7 +8,7 @@ import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.platform.Strings
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
-import org.podval.tools.task.{TaskWithGradleUserHomeDir, TaskWithOutput}
+import org.podval.tools.task.{TaskWithDependencyInstallable, TaskWithOutput}
 import org.podval.tools.test.task.TestTask
 
 object ScalaBackend:
@@ -38,7 +38,7 @@ abstract class ScalaBackend(
     jvmPluginServices: JvmPluginServices,
     isRunningInIntelliJ: Boolean
   ): Unit =
-    TaskWithGradleUserHomeDir.configureTasks(project)
+    TaskWithDependencyInstallable.configureTasks(project)
     TaskWithOutput.configureTasks(project, isRunningInIntelliJ)
     TestTask.configureTasks(project, testTaskClass)
 

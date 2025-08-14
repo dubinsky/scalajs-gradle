@@ -58,7 +58,11 @@ abstract class BackendExtension @Inject(
     version: Option[Version]
   ): String = Framework
     .find(_.getClass.getName.startsWith(frameworkClass.getName), frameworkClass.toString)
-    .dependencyNotation(backendOverride = Some(getBackend), versionOverride = version, getScalaLibrary)
+    .dependencyNotation(
+      backendOverride = Some(getBackend), 
+      versionOverride = version, 
+      scalaLibrary = getScalaLibrary
+    )
 
   final def scalaDependency(group: String, artifact: String, version: String): String =
     scalaDependency(group, artifact, version, BackendExtension.id)
@@ -87,7 +91,11 @@ abstract class BackendExtension @Inject(
       what = s"$groupId:$artifactId:$version"
     )
 
-    f(scalaDependency).dependencyNotation(backendOverride = None, versionOverride = None, scalaLibrary)
+    f(scalaDependency).dependencyNotation(
+      backendOverride = None,
+      versionOverride = None,
+      scalaLibrary = scalaLibrary
+    )
 
 object BackendExtension:
   private type Configure = Closure[ScalaDependency]

@@ -27,8 +27,8 @@ object Projects:
     .asScala
     .find(projectDir(_).getName == name)
 
-  def findProperty(project: Project, propertyName: String): Option[AnyRef] =
-    Option(project.findProperty(propertyName))
+  def findProperty(project: Project, propertyName: String): Option[String] =
+    Option(project.findProperty(propertyName)).map(_.toString)
 
   private def buildDirectoryProperty(project: Project): DirectoryProperty = project
     .getLayout

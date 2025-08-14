@@ -12,4 +12,3 @@ private final class AnnotatedFingerprintDetector(
 ):
   override def name: String = fingerprint.annotationName
   override def isModule: Boolean = fingerprint.isModule
-
