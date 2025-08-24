@@ -24,4 +24,3 @@ abstract class FingerprintDetector(
   def isModule: Boolean
 
   def name: String
-  

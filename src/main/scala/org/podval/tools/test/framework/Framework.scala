@@ -23,17 +23,12 @@ trait Framework extends Dependency derives CanEqual:
       .getDeclaredConstructor()
       .newInstance()
     match
-      case frameworkSBT: FrameworkSBT => Some(Framework.Loaded(this, frameworkSBT))
+      case frameworkSBT: FrameworkSBT => Some(new Framework.Loaded(this, frameworkSBT))
       case other => throw GradleException(s"${other.getClass.getName} is not an SBT framework!")
     catch
       case _: ClassNotFoundException => None
 
 object Framework:
-  def forSBTFramework(frameworkSBT: FrameworkSBT): Loaded = Loaded(
-    frameworkSBT = frameworkSBT,
-    framework = forName(frameworkSBT.name)
-  )
-
   final class Loaded(
     val framework: Framework,
     frameworkSBT: FrameworkSBT
@@ -48,6 +43,12 @@ object Framework:
       args,
       Array.empty,
       frameworkSBT.getClass.getClassLoader
+    )
+
+  object Loaded:
+    def apply(frameworkSBT: FrameworkSBT): Loaded = new Loaded(
+      frameworkSBT = frameworkSBT,
+      framework = forName(frameworkSBT.name)
     )
 
   val all: Array[Framework] = Array(

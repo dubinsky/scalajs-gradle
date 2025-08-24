@@ -24,7 +24,7 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
   def fromOs: Option[T]
 
   final def getInstalled(
-    version: Option[String],
+    version: Option[Version],
     gradleUserHomeDir: File,
     output: Output
   ): T = get(
@@ -35,23 +35,26 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
   )
 
   final def getInstalledOrInstall(
-    version: Option[String],
+    version: Option[Version],
     project: Project,
     output: Output
-  ): T = get(
-    version = version,
-    gradleUserHomeDir = Projects.gradleUserHomeDir(project),
-    output = output,
-    ifDoesNotExist = (dependencyWithVersion, result) => install(
-      project,
-      dependencyWithVersion, 
-      result,
-      output
+  ): T =
+    val gradleUserHomeDir: File = Projects.gradleUserHomeDir(project)
+    get(
+      version = version,
+      gradleUserHomeDir = gradleUserHomeDir,
+      output = output,
+      ifDoesNotExist = (dependencyWithVersion, result) => install(
+        dependencyWithVersion, 
+        result,
+        gradleUserHomeDir,
+        project,
+        output
+      )
     )
-  )
 
   private def get(
-    version: Option[String],
+    version: Option[Version],
     gradleUserHomeDir: File,
     output: Output,
     ifDoesNotExist: (Dependency.WithVersion, T) => Unit
@@ -69,7 +72,6 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
       result
     
     version
-      .map(Version(_))
       .map(getInternal)
       .orElse(fromOs)
       .getOrElse:
@@ -78,9 +80,10 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
         getInternal(version)
 
   private def install(
-    project: Project,
     withVersion: Dependency.WithVersion,
     result: T,
+    gradleUserHomeDir: File,
+    project: Project,
     output: Output
   ): Unit =
     output.lifecycle("DependencyInstallable", s"Installing $withVersion as $result")
@@ -93,14 +96,13 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
       )
       .getOrElse(output.abort(s"No artifact found for: $withVersion"))
 
-    val gradleUserHomeDir: File = Projects.gradleUserHomeDir(project)
-    val into: File = installsInto(gradleUserHomeDir, withVersion)
-    output.info("DependencyInstallable", s"Unpacking $artifact into $into")
+    val installsInto: File = this.installsInto(gradleUserHomeDir, withVersion)
+    output.info("DependencyInstallable", s"Unpacking $artifact into $installsInto")
 
     Artifact.unpack(
       project,
       artifact,
-      into
+      installsInto
     )
 
     if !exists(result) then output.abort(s"Does not exist after installation: $result")

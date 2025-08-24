@@ -15,7 +15,7 @@ object VersionsWriter:
   private val gradleVersion: Version = Version("9.1.0-rc-1")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.7"),
+    "plugin" -> Version("0.9.8"),
 
     "gradle" -> gradleVersion,
     
@@ -51,7 +51,7 @@ object VersionsWriter:
     "framework-zio-test"           -> framework.ZioTest          .versionDefault
   )
 
-  val attributes: Seq[(String, String)] = Seq(
+  private val attributes: Seq[(String, String)] = Seq(
     "pluginScalaBackendProperty"  -> BackendPlugin.scalaBackendProperty,
     "gradleVersionForBadge" -> gradleVersion.toString.replace("-", "--")
   )
