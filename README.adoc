@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.8
+:version-plugin: 0.9.9
 :version-gradle: 9.1.0-rc-2
 :version-scala: 3.7.2
 :version-scala-213: 2.13.16
@@ -2666,16 +2666,20 @@ Thank you to https://github.com/lihaoyi[lihaoyi] for approving.
 
 - https://github.com/typelevel/weaver-test[Weaver Test]:
 * _https://github.com/typelevel/weaver-test/pull/183[pull/183]_
-_Less discarding of test failure throwables_
+_Less discarding of test failure throwables._
 Thank you to https://github.com/zainab-ali[zainab-ali]
 for helpful suggestions and to https://github.com/Baccata[Baccata]
 for accepting my contribution.
 * https://github.com/typelevel/weaver-test/issues/185[issues/185]
 _Update Scala Native to 0.5 and munit-diff to 1.1_
 * _https://github.com/typelevel/weaver-test/pull/186[pull/186]_
-Do not pluralize singular failure.
+_Do not pluralize singular failure._
+Thank you to https://github.com/zainab-ali[zainab-ali]
+for https://github.com/typelevel/weaver-test/pull/192[fixing]
+the issue in a much cleaner way.
 * _https://github.com/typelevel/weaver-test/pull/187[pull/187]_
 _Mention Gradle support with the multi-backend Scala plugin._
+Thank you to https://github.com/Baccata[Baccata] for approving.
 
 - https://wvlet.org/airframe/docs/airspec[AirSpec]:
 * https://github.com/wvlet/airframe/issues/4006[issues/4006]
@@ -2732,6 +2736,8 @@ https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
 - https://github.com/tgodzik[tgodzik]
 for https://github.com/gradle/gradle/pull/18001[adding]
 Scala 3 support to Gradle - and for encouraging my work;
+- https://github.com/FlorianKirmaier[FlorianKirmaier]
+for encouragement and https://github.com/dubinsky/scalajs-gradle/pull/108[bug fixes];
 
 I want to thank the authors, contributors, and maintainers of:
 
