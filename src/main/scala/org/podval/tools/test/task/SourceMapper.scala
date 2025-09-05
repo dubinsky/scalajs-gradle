@@ -33,7 +33,7 @@ abstract class SourceMapper:
       .flatMap(_._1)
       .find(_.file.startsWith("file://"))
       .fold(""): (sourceLocation: SourceMapper.SourceLocation) =>
-        val filePath: String = Strings.drop(sourceLocation.file, "file://")
+        val filePath: String = Strings.dropPrefix(sourceLocation.file, "file://")
         s" ($filePath:${sourceLocation.line}:${sourceLocation.column})"
 
     val details: TestFailureDetails = testFailure.getDetails

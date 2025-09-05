@@ -13,7 +13,33 @@ import org.podval.tools.test.task.TestTask
 
 object ScalaBackend:
   def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
+
   def bySourceRoot(sourceRoot: String): Option[ScalaBackend] = all.find(_.sourceRoot == sourceRoot)
+
+  def names(backends: Set[ScalaBackend]): String = backends.map(_.name).mkString(", ")
+  
+  def sourceRoots(backends: Set[ScalaBackend]): String = backends.map(_.sourceRoot).mkString(", ")
+  
+  private def sourceRoots: String = sourceRoots(all)
+
+  def byName(backendName: String): Option[ScalaBackend] = all.find((backend: ScalaBackend) =>
+    backendName.toLowerCase == backend.name      .toLowerCase ||
+    backendName.toLowerCase == backend.sourceRoot.toLowerCase
+  )
+
+  def unknownBackendMessage(backendName: String): String =
+    s"""unknown Scala backend '$backendName'; use one of
+       |$names""".stripMargin
+  
+  val property: String = "org.podval.tools.backend"
+  
+  def noPropertyMessage: String =
+    s"""to choose Scala backend, set property '$property' to one of
+       |$fullNames;
+       |to use multiple backends, create at least one of the subprojects
+       |$sourceRoots""".stripMargin
+
+  private def fullNames: String = all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
 
 abstract class ScalaBackend(
   val name: String,

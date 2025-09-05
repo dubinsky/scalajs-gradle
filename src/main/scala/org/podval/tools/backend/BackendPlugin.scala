@@ -17,58 +17,25 @@ final class BackendPlugin @Inject(
     Projects.applyPlugin(project, classOf[ScalaPlugin])
 
     // Determine what type of BackendProject we have and configure it.
-    BackendPlugin
-      .mixed(project)
+    MixedProject(project)
       .orElse:
         Projects
           .parent(project)
-          .flatMap(BackendPlugin.mixed)
-          .flatMap: (parent: MixedProject) =>
-            findProject(parent.sharedProjects, _.project)
-              .orElse:
-                findProject(parent.backendProjects, _.project)
-                  .map(_.backend)
-                  .map: (backend: ScalaBackend) =>
-                    single(backend, sharedProjects = parent
-                      .sharedProjects
-                      .filter(_.backends.contains(backend))
-                    )
+          .flatMap(MixedProject(_))
+          .flatMap(_.findProject(project, jvmPluginServices))
       .getOrElse:
-        single(sharedProjects = Set.empty, backend = Projects
-          .findProperty(project, BackendPlugin.scalaBackendProperty)
-          .map: (backendName: String) =>
-            BackendPlugin
-              .findBackend(backendName)
-              .getOrElse:
-                error(s"""unknown Scala backend '$backendName'; use one of
-                         |${BackendPlugin.backendNames}""".stripMargin)
-          .getOrElse:
-            info(s"""to choose Scala backend, set property '${BackendPlugin.scalaBackendProperty}' to one of
-                    |${BackendPlugin.backendNames};
-                    |to use multiple backends, create at least one of the subprojects
-                    |${ScalaBackend.all.map(_.sourceRoot).mkString(", ")}""".stripMargin)
-            JvmBackend
+        SingleBackendProject(
+          project,
+          jvmPluginServices,
+          sharedProjects = Set.empty,
+          backend = Projects
+            .findProperty(project, ScalaBackend.property)
+            .map: (backendName: String) =>
+              ScalaBackend
+                .byName(backendName)
+                .getOrElse(error(ScalaBackend.unknownBackendMessage(backendName)))
+            .getOrElse:
+              info(ScalaBackend.noPropertyMessage)
+              JvmBackend
         )
       .apply()
-
-  private def findProject[T](candidates: Set[T], i: T => Project): Option[T] = candidates
-    .find(candidate => Projects.projectDir(i(candidate)).getName == Projects.projectDir(project).getName)
-
-  private def single(backend: ScalaBackend, sharedProjects: Set[SharedProject]) =
-    SingleBackendProject(project, backend, jvmPluginServices, sharedProjects)
-
-object BackendPlugin:
-  val scalaBackendProperty: String = "org.podval.tools.backend"
-
-  private def mixed(project: Project): Option[MixedProject] = Option
-    .when(Projects
-      .subProjects(project)
-      .exists(ScalaBackend.bySourceRoot(_).isDefined)
-    )(MixedProject(project))
-
-  private def backendNames: String = ScalaBackend.all.map(backend => s"${backend.name} (${backend.sourceRoot})").mkString(", ")
-
-  private def findBackend(name: String): Option[ScalaBackend] = ScalaBackend.all.find((backend: ScalaBackend) =>
-    name.toLowerCase == backend.name      .toLowerCase ||
-    name.toLowerCase == backend.sourceRoot.toLowerCase
-  )

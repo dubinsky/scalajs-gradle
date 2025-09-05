@@ -6,13 +6,12 @@ import org.podval.tools.gradle.Tasks
 
 final class SharedProject(
   project: Project,
-  val sourceRoot: String,
   val backends: Set[ScalaBackend]
 ) extends SingleProject(
   project
 ):
   override def apply(): Unit =
-    announce(s"code shared between backends ${backends.map(_.name).mkString(", ")}")
+    announce(s"code shared between backends ${ScalaBackend.names(backends)}")
 
     setScalaVersionFromParentAndAddVersionSpecificSources()
 

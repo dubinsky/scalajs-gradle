@@ -17,7 +17,9 @@ object Projects:
   def parent(project: Project): Option[Project] = Option(project.getParent)
 
   def projectDir(project: Project): File = project.getProjectDir
-
+  
+  def projectDirName(project: Project): String = projectDir(project).getName
+  
   def subProjects(project: Project): Set[String] = Files.listDirectories(projectDir(project)).toSet.map(_.getName)
 
   // We look up projects by their *directory* names, not by their *project* names,
@@ -25,7 +27,7 @@ object Projects:
   def findSubproject(project: Project, name: String): Option[Project] = project
     .getSubprojects
     .asScala
-    .find(projectDir(_).getName == name)
+    .find(projectDirName(_) == name)
 
   def findProperty(project: Project, propertyName: String): Option[String] =
     Option(project.findProperty(propertyName)).map(_.toString)

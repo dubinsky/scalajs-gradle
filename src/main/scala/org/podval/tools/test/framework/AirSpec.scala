@@ -7,7 +7,7 @@ object AirSpec extends ScalaFramework(
   description = "AirSpec",
   group = "org.wvlet.airframe",
   artifact = "airspec",
-  versionDefault = Version("2025.1.17"),
+  versionDefault = Version("2025.1.18"),
   className = "wvlet.airspec.Framework",
   sharedPackages = List("wvlet.airspec"),
   tagOptions = None

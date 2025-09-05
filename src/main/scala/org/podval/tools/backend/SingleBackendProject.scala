@@ -6,18 +6,14 @@ import org.podval.tools.build.ScalaBackend
 import org.podval.tools.gradle.Sources
 import org.podval.tools.platform.IntelliJIdea
 
-class SingleBackendProject(
+final class SingleBackendProject(
   project: Project,
-  backend: ScalaBackend,
   jvmPluginServices: JvmPluginServices,
+  backend: ScalaBackend,
   sharedProjects: Set[SharedProject]
 ) extends SingleProject(project):
   override def apply(): Unit =
-    val sharedString: String =
-      if sharedProjects.isEmpty
-      then ""
-      else sharedProjects.map(_.sourceRoot).mkString(" [+ ", ", ", "]")
-
+    val sharedString: String = if sharedProjects.isEmpty then "" else s" [+${WithProject.names(sharedProjects)}]"
     announce(s"using Scala backend ${backend.name}$sharedString")
 
     val isRunningInIntelliJ: Boolean = IntelliJIdea.runningIn

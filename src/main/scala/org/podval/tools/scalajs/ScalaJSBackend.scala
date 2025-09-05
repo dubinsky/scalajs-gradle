@@ -11,7 +11,7 @@ import ScalaJSDependency.*
 object ScalaJSBackend extends NonJvmBackend(
   name = "Scala.js",
   group = "org.scala-js",
-  versionDefault = Version("1.19.0"),
+  versionDefault = Version("1.20.1"),
   sourceRoot = "js",
   artifactSuffix = "sjs1",
   pluginDependenciesConfigurationName = "scalajs",
