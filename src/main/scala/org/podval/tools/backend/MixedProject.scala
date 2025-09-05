@@ -1,32 +1,31 @@
 package org.podval.tools.backend
 
 import org.gradle.api.Project
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.podval.tools.build.ScalaBackend
-import org.podval.tools.gradle.{Configurations, Projects, Sources, Tasks}
+import org.podval.tools.gradle.{Projects, Sources, Tasks}
 import org.podval.tools.platform.Strings
 
 object MixedProject:
   private val sharedSourceRoot: String = "shared"
 
-final class MixedProject(project: Project) extends BackendProject(project):
-  // Gather subprojects.
-  private def findSubproject(sourceRoot: String): Project = Projects
-    .findSubproject(project, sourceRoot)
-    .getOrElse(error(s"subproject '$sourceRoot' must be included in 'settings.gradle'"))
+  def apply(project: Project): Option[MixedProject] =
+    val backends: Set[ScalaBackend] = Projects
+      .subProjects(project)
+      .flatMap(ScalaBackend.bySourceRoot)
 
-  val backendProjects: Set[ProjectWithBackend] = Projects
-    .subProjects(project)
-    .flatMap(ScalaBackend.bySourceRoot)
+    Option.when(backends.nonEmpty)(new MixedProject(project, backends))
+
+final class MixedProject private(project: Project, backends: Set[ScalaBackend]) extends BackendProject(project):
+  private val pojectsWithBackend: Set[ProjectWithBackend] = backends
     .map(backend => ProjectWithBackend(findSubproject(backend.sourceRoot), backend))
 
-  require(backendProjects.nonEmpty)
-  
-  val sharedProjects: Set[SharedProject] = Projects
+  private val sharedProjects: Set[SharedProject] = Projects
     .subProjects(project)
     .filter(sourceRoot => ScalaBackend.bySourceRoot(sourceRoot).isEmpty)
-    .flatMap(sourceRoot => sharedBackends(sourceRoot).map(SharedProject(findSubproject(sourceRoot), sourceRoot, _)))
+    .flatMap(sourceRoot => sharedBackends(sourceRoot).map(SharedProject(findSubproject(sourceRoot), _)))
 
   // Verify that there are no duplicate backends among the shared projects.
   sharedProjects
@@ -35,41 +34,52 @@ final class MixedProject(project: Project) extends BackendProject(project):
     .foreach:
       case (backends: Set[ScalaBackend], projects: Set[SharedProject]) =>
         error(s"""duplicate shared directories for backends
-               |${backends.map(_.sourceRoot).mkString(", ")}
-               |${projects.map(_.sourceRoot).mkString(", ")}
+               |${ScalaBackend.sourceRoots(backends)}
+               |${WithProject.names(projects)}
                |""".stripMargin)
-    
+
+  private def findSubproject(sourceRoot: String): Project = Projects
+    .findSubproject(project, sourceRoot)
+    .getOrElse(error(s"subproject '$sourceRoot' must be included in 'settings.gradle'"))
+
   private def sharedBackends(sourceRoot: String): Option[Set[ScalaBackend]] =
     import MixedProject.sharedSourceRoot
-    def error(message: String): Nothing = this.error(s"shared source root '$sourceRoot': $message")
-
     Option.when(sourceRoot == sharedSourceRoot)(ScalaBackend.all).orElse:
-      val suffix: String =
-        if sourceRoot.startsWith(s"$sharedSourceRoot-")
-        then Strings.drop(sourceRoot, s"$sharedSourceRoot-")
-        else sourceRoot
-      val backendNames: Array[String] = suffix.split("-", -1)
-      val backendOpts: Set[Option[ScalaBackend]] = backendNames.toSet.map(ScalaBackend.bySourceRoot)
-      Option.when(backendOpts.forall(_.isDefined)):
-        val backends: Set[ScalaBackend] = backendOpts.map(_.get)
-        if backends.size != backendNames.length then error("duplicate backend names")
+      def error(message: String): Nothing = this.error(s"shared source root '$sourceRoot': $message")
+      val backendNames: Array[String] = Strings.dropPrefixIfPresent(sourceRoot, s"$sharedSourceRoot-").split("-", -1)
+      val backendsSeq: Seq[ScalaBackend] = backendNames.toSeq.flatMap(ScalaBackend.bySourceRoot)
+      Option.when(backendsSeq.length == backendNames.length):
+        val backends: Set[ScalaBackend] = backendsSeq.toSet
+        if backends.size != backendNames.length then error(s"duplicate backend names")
         if backends.size == ScalaBackend.all.size then error(s"code shared between all the backends belongs in '$sharedSourceRoot'")
-        if backends.size == 1 then
-          val backend: ScalaBackend = backends.head
-          error(s"code specific to the '${backend.name}' backend belongs in '${backend.sourceRoot}'")
+        if backends.size == 1 then error(s"code specific to the '${backends.head.name}' backend belongs in '${backends.head.sourceRoot}'")
         backends
 
+  def findProject(
+    candidate: Project,
+    jvmPluginServices: JvmPluginServices
+  ): Option[SingleProject] = sharedProjects
+    .find(_.is(candidate))
+    .orElse:
+      pojectsWithBackend
+        .find(_.is(candidate))
+        .map(_.backend)
+        .map: (backend: ScalaBackend) =>
+          SingleBackendProject(
+            candidate,
+            jvmPluginServices,
+            backend,
+            sharedProjects =
+              (sharedProjects ++ Option.when(Sources.exist(project))(SharedProject(project, ScalaBackend.all)).toSet)
+                .filter(_.backends.contains(backend))
+          )
+
   override def apply(): Unit =
-    announce(s"using Scala backends ${backendProjects.map(_.backend.name).mkString(", ")}")
+    announce(s"using Scala backends ${ScalaBackend.names(pojectsWithBackend.map(_.backend))}")
 
     // Apply plugin to subprojects.
-    (backendProjects.map(_.project) ++ sharedProjects.map(_.project))
-      .foreach(_.getPluginManager.apply(classOf[BackendPlugin]))
+    (pojectsWithBackend ++ sharedProjects).foreach(_.project.getPluginManager.apply(classOf[BackendPlugin]))
 
     // Disable tasks.
     Tasks.disable(project, classOf[SourceTask])
     Tasks.disable(project, classOf[AbstractArchiveTask])
-
-    // Unregister Scala sources.
-    Sources.removeAll(Configurations.mainSourceSet(project))
-    Sources.removeAll(Configurations.testSourceSet(project))

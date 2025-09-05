@@ -1,6 +1,6 @@
 package org.podval.tools.backend
 
-import org.podval.tools.build.{ScalaBinaryVersion, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, Version}
 import org.podval.tools.jvm.{JvmBackend, JvmDependency}
 import org.podval.tools.node.NodeDependency
 import org.podval.tools.platform.{Files, Strings}
@@ -12,10 +12,10 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.1.0-rc-2")
+  private val gradleVersion: Version = Version("9.1.0-rc-3")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.9"),
+    "plugin" -> Version("0.9.10"),
 
     "gradle" -> gradleVersion,
     
@@ -52,7 +52,7 @@ object VersionsWriter:
   )
 
   private val attributes: Seq[(String, String)] = Seq(
-    "pluginScalaBackendProperty"  -> BackendPlugin.scalaBackendProperty,
+    "pluginScalaBackendProperty"  -> ScalaBackend.property,
     "gradleVersionForBadge" -> gradleVersion.toString.replace("-", "--")
   )
   
@@ -60,7 +60,7 @@ object VersionsWriter:
     def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
 
     Files.write(File("gradle.properties").getAbsoluteFile, toString(
-      Seq(s"${BackendPlugin.scalaBackendProperty} = ${JvmBackend.name}") ++
+      Seq(s"${ScalaBackend.property} = ${JvmBackend.name}") ++
       versions.map((name, value) => s"version_${name.replace('-', '_')} = ${value.toString}")
     ))
 

@@ -2,7 +2,6 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.backend.BackendPlugin
 import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion}
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
@@ -191,7 +190,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         buildFragments = Seq(testTask(feature, fixtures))
       )
       val writer: TestProjectWriter = project.writer(backend = None)
-      writer.writeProperties(Seq(BackendPlugin.scalaBackendProperty -> backend.name))
+      writer.writeProperties(Seq(ScalaBackend.property -> backend.name))
       writer.writeSources(fixtures)
       project
 

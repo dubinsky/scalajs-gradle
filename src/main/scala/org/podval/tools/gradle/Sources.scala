@@ -12,6 +12,8 @@ import java.io.File
 import java.lang.reflect.Field
 
 object Sources:
+  def exist(project: Project): Boolean = File(Projects.projectDir(project), "src").exists
+
   def removeAll(sourceSet: SourceSet): SourceDirectorySet =
     getScalaSourceDirectorySet(sourceSet).setSrcDirs(List.empty.asJava)
 

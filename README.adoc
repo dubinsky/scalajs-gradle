@@ -4,26 +4,26 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.9
-:version-gradle: 9.1.0-rc-2
-:version-scala: 3.7.2
+:version-plugin: 0.9.10
+:version-gradle: 9.1.0-rc-3
+:version-scala: 3.7.3
 :version-scala-213: 2.13.16
 :version-scala-212: 2.12.20
 :version-sbt-test-interface: 1.0
-:version-scalajs: 1.19.0
+:version-scalajs: 1.20.1
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 24.7.0
+:version-node: 24.8.0
 :version-scalanative: 0.5.8
 :version-junit: 4.13.2
 :version-framework-junit4-jvm: 0.13.3
-:version-framework-junit4-scalajs: 1.19.0
+:version-framework-junit4-scalajs: 1.20.1
 :version-framework-junit4-scalanative: 0.5.8
-:version-framework-airspec: 2025.1.17
+:version-framework-airspec: 2025.1.18
 :version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.1.1
-:version-framework-scalacheck: 1.18.1
+:version-framework-scalacheck: 1.19.0
 :version-framework-scalaprops: 0.10.0
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.6.4
@@ -32,7 +32,7 @@
 :version-framework-weaver: 0.10.1
 :version-framework-zio-test: 2.1.21
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.1.0--rc--2
+:attribute-gradleVersionForBadge: 9.1.0--rc--3
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -169,6 +169,13 @@ To run tests for specific Scala version (for instance, in a CI pipeline):
 [source,shell,subs="+attributes"]
 ----
 ./gradlew clean check -PscalaVersion={version-scala}
+----
+
+To run tests for multiple Scala versions:
+
+[source,shell,subs="+attributes"]
+----
+for v in '{version-scala}' '{version-scala-213}' '{version-scala-212}'; do ./gradlew clean check -PscalaVersion=$v; done
 ----
 
 To publish artifacts for multiple Scala versions:
@@ -312,7 +319,11 @@ included as _projects_ in the `settings.gradle` file.
 
 To share sources (include them in the
 backend-specific compilation _together_ with the backend-specific sources)
-between _all_ the backends, place them in the directory `shared`.
+between _all_ the backends, place them in the directory `shared` -
+or directly in the `src` directory of the overall mixed-backend project;
+to avoid confusion, only one of those locations should be used,
+although plugin currently does not enforce this restriction :)
+
 To share sources between _some_ of the backends (partial sharing),
 place them in a directory with the name listing the backends
 the sources are to be shared between:
@@ -323,7 +334,7 @@ the sources are to be shared between:
 - `jvm-js-native` and `shared-jvm-js-native` are not allowed -
 use `shared` instead;
 - `shared-jvm`, `shared-js` and `shared-native` are not allowed -
-use `jvm`, `js`, `native`;
+use `jvm`, `js`, `native` instead;
 - `jvm-jvm` and other duplicate backend names are not allowed;
 - `js-native` and `native-js` and other pairs of directories that
 share sources between the same set of backends are not allowed -
@@ -348,17 +359,13 @@ Build script for the overall project (or module) is where:
 - Scala version is set,
 - any build logic that applies to the overall project resides.
 
-There is no need (nor point) to have an `src` directory in the overall project:
-
-- backend-specific sources reside in the backend-specific subprojects;
-- sources shared between backends reside in the shared subprojects.
-
 Build scripts in the backend-specific directories are where:
 
 - backend-specific dependencies (including test frameworks) are added,
 - backend-specific tasks (including `link` and `test`) are configured,
 - any build logic that applies only to specific backend resides.
 
+Shared directories hold sources fully or partially shared between the backends.
 There is no need (nor point) to have a `build.gradle` file in
 any of the shared directories:
 they are just containers for the sources shared between the backends.
@@ -376,29 +383,35 @@ In this mode, plugin:
 Project layout for such setup is:
 [source]
 ----
-project <6>
+project <7>
 +--- settings.gradle <1>
 +--- build.gradle <2>
++--- src <4>
 +--- shared
 |    \--- src <4>
++--- js-jvm
+|    \--- src <5>
 +--- js-native
-|    \--- src <4>
+|    \--- src <5>
++--- jvm-native
+|    \--- src <5>
 +--- js
 |    +--- build.gradle <3>
-|    \--- src <5>
+|    \--- src <6>
 +--- jvm
 |    +--- build.gradle <3>
-|    \--- src <5>
+|    \--- src <6>
 \--- native
      +--- build.gradle <3>
-     \--- src <5>
+     \--- src <6>
 ----
 <1> settings file where backend-specific and shared subprojects are included
 <2> build script of the overall project
 <3> build scripts of the backend-specific projects
-<4> sources shared between backends
-<5> sources specific to a backend
-<6> there are no sources in the overall project
+<4> sources shared between all backends
+<5> sources shared between some backends
+<6> sources specific to a backend
+<7> there are no sources in the overall project
 
 == JVM
 
@@ -1970,7 +1983,8 @@ classpath is expanded, they can only be used indirectly;
 that is why such classes are only mentioned by name in dedicated intermediate classes.
 
 === Scala 2.12
-When running on JVM (and not on Scala.js), tests are forked into a separate JVM.
+When running on JVM (and not on Scala.js nor Scala Native),
+tests are forked into a separate JVM.
 Code involved in this is running on the project's, not the plugin's, version of Scala.
 
 If the project uses Scala 2.13, Scala 3 classes like `scala/runtime/LazyVals$`
@@ -2403,7 +2417,8 @@ see:
 - https://github.com/scala-js/scala-js/issues/4191[scala-js/issues/4191]
 
 === Gradle Internals
-To stop tests from being forked - which is needed to run tests on Scala.js -
+To stop tests from being forked - which is needed to run tests
+on Scala.js or Scala Native -
 I had to fork `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter`
 (see link:src/main/scala/org/podval/tools/test/task/DefaultTestExecuter.scala[DefaultTestExecuter]).
 This is suboptimal, since I now have to track changes to the forked class.

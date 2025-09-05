@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.10] - 2025-09-10
+- feat: fully shared code in the mixed project root;
+- chore: Scala 3.7.3;
+- chore: Gradle 9.1.0-rc-3;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.9] - 2025-09-05
 - fix: https://github.com/dubinsky/scalajs-gradle/pull/108[108]
   from https://github.com/FlorianKirmaier[FlorianKirmaier] - thank you!
