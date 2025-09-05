@@ -45,7 +45,7 @@ final class MixedProject(project: Project) extends BackendProject(project):
 
     Option.when(sourceRoot == sharedSourceRoot)(ScalaBackend.all).orElse:
       val suffix: String =
-        if sourceRoot.startsWith(sharedSourceRoot)
+        if sourceRoot.startsWith(s"$sharedSourceRoot-")
         then Strings.drop(sourceRoot, s"$sharedSourceRoot-")
         else sourceRoot
       val backendNames: Array[String] = suffix.split("-", -1)
