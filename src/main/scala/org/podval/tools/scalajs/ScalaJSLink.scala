@@ -89,7 +89,7 @@ final class ScalaJSLink(
       .withCheckIR(fullOptimization)
       .withSemantics(if fullOptimization then Semantics.Defaults.optimized else Semantics.Defaults)
       .withModuleKind(moduleKindSJS)
-      .withClosureCompiler(fullOptimization && (moduleKind == ModuleKind.ESModule))
+      .withClosureCompiler(fullOptimization && (moduleKind != ModuleKind.ESModule))
       .withModuleSplitStyle(moduleSplitStyleSJS)
       .withExperimentalUseWebAssembly(useWebAssembly)
       .withPrettyPrint(prettyPrint)
