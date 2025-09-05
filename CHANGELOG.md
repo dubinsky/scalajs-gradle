@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9] - 2025-09-05
+- fix: https://github.com/dubinsky/scalajs-gradle/pull/108[108]
+  from https://github.com/FlorianKirmaier[FlorianKirmaier] - thank you!
+- fix: run GitHub workflow on pull requests;
+
 ## [0.9.8] - 2025-09-05
 - chore: Gradle 9.1.0-rc-2;
 - chore: dependency updates;
