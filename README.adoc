@@ -4,7 +4,7 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.10
+:version-plugin: 0.9.11
 :version-gradle: 9.1.0-rc-3
 :version-scala: 3.7.3
 :version-scala-213: 2.13.16
@@ -78,8 +78,8 @@ Plugin:
 - for `Scala.js`, retrieves and installs the configured version of https://nodejs.org/[Node.js];
 - for `Scala.js`, installs the configured `Node.js` modules using `npm`;
 - augments the `test` task to work with sbt-enabled test frameworks;
-- includes sources shared between backends;
-- includes sources for specific Scala version;
+- includes sources and resources shared between backends;
+- includes sources and resources for specific Scala version;
 - configures project artifacts to include shared code when needed;
 - configures names of the project artifact in accordance with the accepted conventions;
 - exposes, via `scalaBackend` extension,
@@ -194,14 +194,23 @@ for Scala version `x.y.z`, additional Scala source roots are:
 
 - `scala-x.y.z`;
 - `scala-x.y`;
-- `scala-x`;
+- `scala-x`;.
 
-Additional sources are included both in Scala compilation and archives that package Scala sources.
+Similarly, alongside the usual resource root `resources`,
+as in `src/main/resources` and `src/test/resources`,
+plugin includes resources from resource roots specific to the Scala version in use;
+for Scala version `x.y.z`, additional resource roots are:
+
+- `resources-x.y.z`;
+- `resources-x.y`;
+- `resources-x`.
+
+Additional Scala sources and resources are included both in Scala compilation and archives that package Scala sources.
 
 This applies to Scala sources shared between the backends too.
 
-Since only sources appropriate to the Scala version in use are added,
-to work on the version-specific sources in the IDE,
+Since only sources and resources appropriate to the Scala version in use are added,
+to work on the version-specific sources and resources in the IDE,
 you need to set the Gradle property that selects the Scala version
 and re-load the project in the IDE.
 

@@ -2,8 +2,7 @@ package org.podval.tools.backend
 
 import groovy.lang.Closure
 import org.gradle.api.Project
-import org.podval.tools.build.{ScalaBackend, ScalaDependency, ScalaLibrary, ScalaVersion, Version}
-import org.podval.tools.gradle.ScalaExtension
+import org.podval.tools.build.{ScalaBackend, ScalaDependency, ScalaLibrary, Version}
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.Framework
 import javax.inject.Inject
@@ -32,15 +31,7 @@ abstract class BackendExtension @Inject(
 
   final lazy val getScalaLibrary: ScalaLibrary =
     val result: ScalaLibrary = ScalaLibrary.fromImplementationConfiguration(project)
-
-    val scalaVersion: ScalaVersion = ScalaExtension
-      .findScalaVersion(project)
-      .getOrElse(error(
-        s"""Scala version data is not supported when Scala version is inferred from the Scala library dependency;
-           |set Scala version on the Scala plugin's extension instead: `scala.scalaVersion=...`""".stripMargin
-      ))
-
-    require(result.scalaVersion == scalaVersion)
+    require(result.scalaVersion == getScalaVersionFromScalaExtension)
     result
 
   def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaVersion.binaryVersionSuffix

@@ -77,9 +77,14 @@ final class MixedProject private(project: Project, backends: Set[ScalaBackend]) 
   override def apply(): Unit =
     announce(s"using Scala backends ${ScalaBackend.names(pojectsWithBackend.map(_.backend))}")
 
+    // Disable tasks.
+    Set(
+      classOf[SourceTask],
+      classOf[AbstractArchiveTask]
+    )
+      .foreach(Tasks.disable(project, _))
+
     // Apply plugin to subprojects.
     (pojectsWithBackend ++ sharedProjects).foreach(_.project.getPluginManager.apply(classOf[BackendPlugin]))
 
-    // Disable tasks.
-    Tasks.disable(project, classOf[SourceTask])
-    Tasks.disable(project, classOf[AbstractArchiveTask])
+    project.afterEvaluate((_: Project) => addVersionSpecificSources())
