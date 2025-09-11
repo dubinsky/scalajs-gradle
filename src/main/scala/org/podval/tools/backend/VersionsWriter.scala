@@ -15,7 +15,7 @@ object VersionsWriter:
   private val gradleVersion: Version = Version("9.1.0-rc-3")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.10"),
+    "plugin" -> Version("0.9.11"),
 
     "gradle" -> gradleVersion,
     

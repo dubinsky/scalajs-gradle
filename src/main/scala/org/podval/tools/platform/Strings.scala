@@ -5,12 +5,14 @@ object Strings:
     case -1 => (what, None)
     case index => (what.substring(0, index), Some(what.substring(index+1)))
 
-  def dropPrefixIfPresent(string: String, prefix: String): String =
-    if string.startsWith(prefix) then string.substring(prefix.length) else string
+  def dropPrefixIfPresent(string: String, prefix: String): String = detectPrefix(string, prefix)
+    .getOrElse(string)
 
-  def dropPrefix(string: String, prefix: String): String =
-    if string.startsWith(prefix) then string.substring(prefix.length)
-    else throw IllegalArgumentException(s"String '$string' doesn't start with '$prefix'")
+  def dropPrefix(string: String, prefix: String): String = detectPrefix(string, prefix)
+    .getOrElse(throw IllegalArgumentException(s"String '$string' doesn't start with '$prefix'"))
+
+  def detectPrefix(string: String, prefix: String): Option[String] =
+    if string.startsWith(prefix) then Some(string.substring(prefix.length)) else None
 
   def prefix(prefix: String, what: Option[String]): String = what.fold("")(prefix + _)
 

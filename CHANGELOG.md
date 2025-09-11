@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.11] - 2025-09-11
+- feat: include Scala-version-specific resources, not just Scala sources;
+- feat: inclusion of Scala-version-specific Scala sources and resources is idempotent and permanent now;
+- feat: include Scala-version-specific Scala sources and resources in the mixed project too;
+- cleanup;
+
 ## [0.9.10] - 2025-09-10
 - feat: fully shared code in the mixed project root;
 - chore: Scala 3.7.3;
