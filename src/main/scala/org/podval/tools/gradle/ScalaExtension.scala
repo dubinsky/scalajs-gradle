@@ -15,7 +15,5 @@ object ScalaExtension:
     .getScalaVersion
     .set(version.toString)
 
-  private def find(project: Project): Option[ScalaPluginExtension] = Option(project
-    .getExtensions
-    .findByType(classOf[ScalaPluginExtension])
-  )
+  private def find(project: Project): Option[ScalaPluginExtension] = Extensions
+    .findByType(project, classOf[ScalaPluginExtension])

@@ -12,10 +12,10 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.1.0-rc-3")
+  private val gradleVersion: Version = Version("9.1.0-rc-4")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.11"),
+    "plugin" -> Version("0.9.12"),
 
     "gradle" -> gradleVersion,
     

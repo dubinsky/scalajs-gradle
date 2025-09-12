@@ -4,8 +4,8 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.11
-:version-gradle: 9.1.0-rc-3
+:version-plugin: 0.9.12
+:version-gradle: 9.1.0-rc-4
 :version-scala: 3.7.3
 :version-scala-213: 2.13.16
 :version-scala-212: 2.12.20
@@ -22,7 +22,7 @@
 :version-framework-junit4-scalanative: 0.5.8
 :version-framework-airspec: 2025.1.18
 :version-framework-hedgehog: 0.13.0
-:version-framework-munit: 1.1.1
+:version-framework-munit: 1.2.0
 :version-framework-scalacheck: 1.19.0
 :version-framework-scalaprops: 0.10.0
 :version-framework-scalatest: 3.2.19
@@ -32,7 +32,7 @@
 :version-framework-weaver: 0.10.1
 :version-framework-zio-test: 2.1.21
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.1.0--rc--3
+:attribute-gradleVersionForBadge: 9.1.0--rc--4
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -2501,9 +2501,9 @@ since my plugin does not support `JUnit5`
 - add tasks to run `npm` and `node` commands;
 - initialize Node project and install modules;
 
-=== 2025, February-August
+=== 2025, February-September
 
-I lost my day job in January 2025 and spent half a year working on the plugin ;)
+I lost my day job in January 2025 and spent more than half a year working on the plugin ;)
 
 - test tagging for all the supported test frameworks;
 - nested test suites;
@@ -2542,6 +2542,10 @@ Thank you to https://github.com/sjrd[sjrd] for working with me on this.
 * _https://github.com/scala-js/scala-js-website/pull/658[pull/658]_
 _Mention build tools other than sbt._
 Thank you to https://github.com/sjrd[sjrd] for approving.
+
+- https://github.com/scala-js/scala-js-env-jsdom-nodejs/[Scala.js JSDom Node.js Environment]:
+* https://github.com/scala-js/scala-js-env-jsdom-nodejs/issues/57[issues/57]
+_Support jsdom 27.0.0+_
 
 - https://github.com/gmkumar2005/scala-js-env-playwright[Playwright for Scala.js]:
 * https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[issues/17]

@@ -29,7 +29,7 @@ final class Runner(
     try body finally
       close()
       // TODO for Native this prints before the output!
-      // Runner.out(log)(s"Done running [$running].")
+      //out(true)(s"Done running [$running].")
 
   @volatile private var outputStreams: List[OutputStream] = Nil
   
