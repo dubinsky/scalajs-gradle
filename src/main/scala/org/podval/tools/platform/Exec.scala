@@ -1,10 +1,12 @@
 package org.podval.tools.platform
 
 import java.io.File
-import scala.sys.process.Process
+import scala.sys.process.{Process, ProcessLogger}
 
 object Exec:
-  def apply(command: String): String = Process(command).!!.trim
+  def apply(command: String): String = Process(command)
+    .!!(ProcessLogger(_ => ())) // Note: discard error output
+    .trim
   
   def which(what: String): Option[File] =
     attempt(command = s"which $what").map(File(_))

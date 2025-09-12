@@ -54,4 +54,4 @@ object ScalaJSBackend extends NonJvmBackend(
   ): Unit =
     super.apply(project, jvmPluginServices, isRunningInIntelliJ)
 
-    project.getExtensions.create("node", classOf[NodeExtension])
+    NodeExtension.create(project)

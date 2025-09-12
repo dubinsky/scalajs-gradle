@@ -14,9 +14,8 @@ object Configurations:
 
   def testScalaCompilerPluginsName: String = GUtil.toLowerCamelCase(s"test $scalaCompilerPluginsName")
 
-  private def sourceSet(project: Project, sourceSetName: String): SourceSet = project
-    .getExtensions
-    .getByType(classOf[JavaPluginExtension])
+  private def sourceSet(project: Project, sourceSetName: String): SourceSet = Extensions
+    .getByType(project, classOf[JavaPluginExtension])
     .getSourceSets
     .getByName(sourceSetName)
 

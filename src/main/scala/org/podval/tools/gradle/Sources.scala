@@ -94,7 +94,7 @@ object Sources:
         Configurations.testSourceSet
       )
       (prefix, directorySetGetter) <- Set[(String, SourceSet => SourceDirectorySet)](
-        ("scala"    , _.getExtensions.getByType(classOf[ScalaSourceDirectorySet])),
+        ("scala"    , Extensions.getByType(_, classOf[ScalaSourceDirectorySet])),
         ("resources", _.getResources)
       )
     do

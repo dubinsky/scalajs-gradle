@@ -6,13 +6,15 @@ import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
 import org.podval.tools.build.Version
-import org.podval.tools.gradle.{Projects, Tasks}
+import org.podval.tools.gradle.{Extensions, Projects, Tasks}
 import org.podval.tools.platform.{Output, Runner}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 import javax.inject.Inject
 
 object NodeExtension:
+  def create(project: Project): NodeExtension = Extensions.create(project, "node", classOf[NodeExtension])
+
   private def nodeProjectRoot(project: Project): File = Projects.projectDir(project)
 
 // Note: Gradle extensions must be abstract.
@@ -23,8 +25,6 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
   def getModules: ListProperty[String]
   getModules.convention(List.empty.asJava)
   private def modules: List[String] = getModules.get.asScala.toList
-  
-  TaskWithNodeProject.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
 
   // Add the utility tasks.
   private def register[T <: NodeTask](
@@ -40,8 +40,10 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
   register("node", classOf[NodeTask.NodeRunTask])
   register("npm" , classOf[NodeTask.NpmRunTask ])
 
-  // install Node (if needed) and set up Node project (if needed).
+  // configure tasks, install Node (if needed) and set up Node project (if needed).
   project.afterEvaluate: (project: Project) =>
+    TaskWithNodeProject.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
+
     val output: Output = Output(
       logLevelEnabled = LogLevel.LIFECYCLE,
       isRunningInIntelliJ = false,

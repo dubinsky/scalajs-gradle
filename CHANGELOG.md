@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.12] - 2025-09-17
+- fix: set Node version on the tasks correctly;
+- fix: suppress error output when running command like `which`;
+- chore: Gradle 9.1.0-rc-4;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.11] - 2025-09-11
 - feat: include Scala-version-specific resources, not just Scala sources;
 - feat: inclusion of Scala-version-specific Scala sources and resources is idempotent and permanent now;
