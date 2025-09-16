@@ -19,6 +19,7 @@ import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
 import org.gradle.process.JavaForkOptions
 import java.io.File
+import java.lang.reflect.{InvocationTargetException, Method}
 
 // Translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter.
 // This is the only Gradle class that I need to fork, modify and maintain
@@ -33,7 +34,6 @@ class DefaultTestExecuter(
   testFilter: DefaultTestFilter
 ) extends TestExecuter[JvmTestExecutionSpec]:
   private val logger: Logger = Logging.getLogger(getClass)
-
   private val testClasspathFactory: ForkedTestClasspathFactory = ForkedTestClasspathFactory(moduleRegistry)
 
   private var testClassProcessor: Option[TestClassProcessor] = None
@@ -43,10 +43,8 @@ class DefaultTestExecuter(
     val testFramework: TestFramework = testExecutionSpec.getTestFramework
     val testInstanceFactory: WorkerTestClassProcessorFactory = testFramework.getProcessorFactory
 
-    val classpath: ForkedTestClasspath = testClasspathFactory.create(
-      testExecutionSpec.getClasspath,
-      testExecutionSpec.getModulePath
-    )
+    val classpath: ForkedTestClasspath =
+      createForkedTestClasspathCompat(testClasspathFactory, testExecutionSpec, testFramework)
 
     val forkingProcessorFactory: Factory[TestClassProcessor] = new Factory[TestClassProcessor]:
       override def create: TestClassProcessor =
@@ -123,5 +121,53 @@ class DefaultTestExecuter(
         maxWorkerCount
       )
       maxParallelForks = maxWorkerCount
-
     maxParallelForks
+
+  // Tries new 2-arg create, then old 4-arg create. Uses reflection to avoid hard API dependency.
+  private def createForkedTestClasspathCompat(
+                                               factory: ForkedTestClasspathFactory,
+                                               spec: JvmTestExecutionSpec,
+                                               framework: TestFramework
+                                             ): ForkedTestClasspath =
+    val argsNew: Array[Object] = Array(
+      spec.getClasspath.asInstanceOf[Object],
+      spec.getModulePath.asInstanceOf[Object]
+    )
+    val argsOld: Array[Object] = Array(
+      spec.getClasspath.asInstanceOf[Object],
+      spec.getModulePath.asInstanceOf[Object],
+      framework.asInstanceOf[Object],
+      java.lang.Boolean.valueOf(spec.getTestIsModule).asInstanceOf[Object]
+    )
+
+    // Prefer new signature first
+    tryInvokeCreate(factory, 2, argsNew)
+      .orElse {
+        tryInvokeCreate(factory, 4, argsOld)
+      }
+      .getOrElse {
+        val methods = factory.getClass.getMethods.filter(_.getName == "create").map(_.toString).mkString("\n  - ", "\n  - ", "")
+        throw new NoSuchMethodException(
+          s"Could not invoke ForkedTestClasspathFactory.create with either new or old signatures." +
+            s"\nTried 2 and 4 parameters." +
+            s"\nAvailable create methods:${methods}"
+        )
+      }
+
+  private def tryInvokeCreate(
+                               factory: ForkedTestClasspathFactory,
+                               paramCount: Int,
+                               args: Array[Object]
+                             ): Option[ForkedTestClasspath] =
+    val candidates = factory.getClass.getMethods.filter(m => m.getName == "create" && m.getParameterCount == paramCount)
+    candidates.view
+      .map { m =>
+        try
+          Some(m.invoke(factory, args*).asInstanceOf[ForkedTestClasspath])
+        catch
+          case _: IllegalArgumentException => None
+          case _: InvocationTargetException => None
+          case _: ClassCastException => None
+          case _: ReflectiveOperationException => None
+      }
+      .collectFirst { case Some(v) => v }
