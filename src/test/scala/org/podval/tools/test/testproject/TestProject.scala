@@ -23,6 +23,7 @@ final class TestProject(projectName: Seq[String]):
   private def gradleRunner: GradleRunner = GradleRunner
     .create
     .withProjectDir(projectDir)
+    .withGradleVersion("8.14.3")
 
   def test(commandLineIncludeTestNames: Seq[String]): TestResultsRetriever =
     // With ZIO Test on Scala.js and Scala Native, I get:
