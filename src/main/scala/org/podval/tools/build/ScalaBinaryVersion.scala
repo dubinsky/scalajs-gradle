@@ -59,10 +59,10 @@ object ScalaBinaryVersion:
     override def versionMinor: Int = 13
     override def isScala213: Boolean = true
     override def isScala212: Boolean = false
-    val scalaVersionDefault: ScalaVersion = ScalaVersion("2.13.16")
+    override val scalaVersionDefault: ScalaVersion = ScalaVersion("2.13.16")
 
   object Scala2_12 extends Scala2:
     override def versionMinor: Int = 12
     override def isScala213: Boolean = false
     override def isScala212: Boolean = true
-    val scalaVersionDefault: ScalaVersion = ScalaVersion("2.12.20")
+    override val scalaVersionDefault: ScalaVersion = ScalaVersion("2.12.20")

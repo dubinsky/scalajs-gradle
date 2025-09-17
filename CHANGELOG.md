@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.13] - 2025-10-06
+- cleanup: remove failed attempt at supporting Gradle 8;
+- chore: Gradle 9.1.0, Gradle 9.2.0-rc-1;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.12] - 2025-09-17
 - fix: set Node version on the tasks correctly;
 - fix: suppress error output when running command like `which`;
@@ -27,8 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cleanup;
 
 ## [0.9.9] - 2025-09-05
-- fix: https://github.com/dubinsky/scalajs-gradle/pull/108[108]
-  from https://github.com/FlorianKirmaier[FlorianKirmaier] - thank you!
+- fix: [108](https://github.com/dubinsky/scalajs-gradle/pull/108)
+  from [FlorianKirmaier](https://github.com/FlorianKirmaier) - thank you!
 - fix: run GitHub workflow on pull requests;
 
 ## [0.9.8] - 2025-09-05

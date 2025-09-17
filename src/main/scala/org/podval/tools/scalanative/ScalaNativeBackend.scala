@@ -1,9 +1,8 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.build.{DependencyRequirement, ScalaLibrary, Version}
+import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaLibrary, Version}
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaNative
-import ScalaNativeDependency.*
 
 object ScalaNativeBackend extends NonJvmBackend(
   name = "Scala Native",
@@ -12,27 +11,46 @@ object ScalaNativeBackend extends NonJvmBackend(
   sourceRoot = "native",
   artifactSuffix = "native0.5",
   pluginDependenciesConfigurationName = "scalanative",
-  areCompilerPluginsBuiltIntoScala3 = false,
-  libraryScala3  = LibraryScala3,
-  libraryScala2  = LibraryScala2,
-  compilerPlugin = CompilerPlugin,
-  junit4Plugin   = Junit4Plugin,
-  linker         = Linker,
-  testAdapter    = TestAdapter,
-  testBridge     = TestBridge,
-  pluginDependencies = Array.empty,
-  withDefaultVersion = Array.empty,
-  withBackendVersion = Array(NativeLib, CLib, PosixLib, WindowsLib, JavaLib, AuxLib)
+  areCompilerPluginsBuiltIntoScala3 = false
 ):
   override def isJs    : Boolean = false
   override def isNative: Boolean = true
-
-  override protected def junit4: JUnit4ScalaNative.type = JUnit4ScalaNative
 
   override protected def linkTaskClass    : Class[ScalaNativeLinkTask.Main] = classOf[ScalaNativeLinkTask.Main]
   override protected def testLinkTaskClass: Class[ScalaNativeLinkTask.Test] = classOf[ScalaNativeLinkTask.Test]
   override protected def runTaskClass     : Class[ScalaNativeRunTask .Main] = classOf[ScalaNativeRunTask .Main]
   override protected def testTaskClass    : Class[ScalaNativeRunTask .Test] = classOf[ScalaNativeRunTask .Test]
+
+  override protected def compilerPlugin: ScalaDependency =
+    scalaDependency("nscplugin", "Compiler Plugin")
+  override protected def junit4Plugin: ScalaDependency =
+    scalaDependency("junit-plugin", "JUnit4 Compiler Plugin for generating bootstrappers")
+  override protected def linker: ScalaDependency =
+    scalaDependency("tools", "Build Tools, including Linker")
+  override protected def testAdapter: ScalaDependency =
+    scalaDependency("test-runner", "Test Runner")
+  override protected def testBridge: ScalaDependency =
+    scalaDependency("test-interface", "SBT Test Interface")
+
+  override protected def library(isScala3: Boolean): ScalaDependency = (
+    if isScala3
+    then scalaDependency("scala3lib", "Scala 3 Library").scala3
+    else scalaDependency("scalalib" , "Scala 2 Library").scala2
+  ).withVersionCompound
+
+  override protected def pluginDependencies: Array[ScalaDependency] = Array.empty
+  override protected def withDefaultVersion: Array[ScalaDependency] = Array.empty
+
+  override protected def withBackendVersion: Array[ScalaDependency] = Array(
+    scalaDependency("nativelib" , "Native Library" ),
+    scalaDependency("clib"      , "C Library"      ),
+    scalaDependency("posixlib"  , "Posix Library"  ),
+    scalaDependency("windowslib", "Windows Library"),
+    scalaDependency("javalib"   , "Java Library"   ),
+    scalaDependency("auxlib"    , "Aux Library"    )
+  )
+
+  override protected def junit4: JUnit4ScalaNative.type = JUnit4ScalaNative
 
   override protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String] =
     if scalaLibrary.scalaVersion.isScala213

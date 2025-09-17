@@ -14,8 +14,8 @@ import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
 import org.podval.tools.build.{BackendTask, ScalaBackend}
 import org.podval.tools.gradle.Tasks
+import org.podval.tools.platform.Reflection
 import org.podval.tools.task.TaskWithOutput
-import java.lang.reflect.Method
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
@@ -32,7 +32,7 @@ abstract class TestTask[B <: ScalaBackend] extends Test
     useSbt()
     Actions.`with`(Cast.cast(classOf[SbtTestFrameworkOptions], getOptions), testFrameworkConfigure)
 
-  final def useSbt(): Unit = TestTask.useTestFramework(this, sbtTestFramework)
+  final def useSbt(): Unit = Reflection.Invoke[Unit, Test]("useTestFramework", classOf[TestFramework])(this, sbtTestFramework)
   
   private var testEnvironment: Option[TestEnvironment[B]] = None
 
@@ -88,11 +88,6 @@ abstract class TestTask[B <: ScalaBackend] extends Test
     else super.getMaxParallelForks
 
 object TestTask:
-  private def useTestFramework(task: Test, value: TestFramework): Unit =
-    val useTestFramework: Method = classOf[Test].getDeclaredMethod("useTestFramework", classOf[TestFramework])
-    useTestFramework.setAccessible(true)
-    useTestFramework.invoke(task, value)
-
   def configureTasks[T <: TestTask[?]](
     project: Project,
     testTaskClass: Class[T]

@@ -14,9 +14,8 @@ final class DependencyRequirement(
     scalaLibrary: ScalaLibrary
   ): Dependency.WithVersion = dependency.findInConfiguration(configuration).getOrElse:
     val dependencyNotation: String = dependency.dependencyNotation(
-      backendOverride = None,
-      versionOverride = versionOverride,
-      scalaLibrary = scalaLibrary
+      scalaLibrary = scalaLibrary,
+      versionOverride = versionOverride
     )
     val what: String = s"dependency '$dependencyNotation' to configuration '${project.getName}.${configuration.getName}': ${dependency.description}."
     project.getLogger.info(s"Adding $what", null, null, null)

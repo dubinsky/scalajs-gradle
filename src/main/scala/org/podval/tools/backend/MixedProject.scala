@@ -5,22 +5,26 @@ import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.podval.tools.build.{ScalaBackend, ScalaVersion}
-import org.podval.tools.gradle.{Projects, ScalaExtension, Sources, Tasks}
+import org.podval.tools.gradle.{Projects, Sources, Tasks}
 import org.podval.tools.platform.Strings
 
 object MixedProject:
   private val sharedSourceRoot: String = "shared"
+
+  private def backendBySourceRoot(sourceRoot: String): Option[ScalaBackend] = ScalaBackend
+    .all
+    .find(_.sourceRoot == sourceRoot)
 
   def apply(
     project: Project,
     jvmPluginServices: JvmPluginServices
   ): Option[MixedProject] =
     val (
-      withBackend: Set[(String, Option[ScalaBackend])],
+      withBackend   : Set[(String, Option[ScalaBackend])],
       withoutBackend: Set[(String, Option[ScalaBackend])]
     ) = Projects
       .subProjects(project)
-      .map(sourceRoot => sourceRoot -> ScalaBackend.bySourceRoot(sourceRoot))
+      .map(sourceRoot => sourceRoot -> backendBySourceRoot(sourceRoot))
       .partition(_._2.isDefined)
 
     Option.when(withBackend.nonEmpty)(new MixedProject(
@@ -38,7 +42,7 @@ final class MixedProject private(
 ) extends BackendProject(project):
   require(backends.nonEmpty)
 
-  private def sharedSelf: Option[SharedProject] = Option.when(Sources.exist(project))(SharedProject(
+  private lazy val sharedSelf: Option[SharedProject] = Option.when(Sources.exist(project))(SharedProject(
     project,
     ScalaBackend.all
   ))
@@ -51,17 +55,18 @@ final class MixedProject private(
       .orElse:
         def error(message: String): Nothing = this.error(s"shared source root '$sourceRoot': $message")
         val backendNames: Array[String] = Strings.dropPrefixIfPresent(sourceRoot, s"$sharedSourceRoot-").split("-", -1)
-        val backendsSeq: Seq[ScalaBackend] = backendNames.toSeq.flatMap(ScalaBackend.bySourceRoot)
+        val backendsSeq: Seq[ScalaBackend] = backendNames.toSeq.flatMap(MixedProject.backendBySourceRoot)
         Option.when(backendsSeq.length == backendNames.length):
           val backends: Set[ScalaBackend] = backendsSeq.toSet
           if backends.size != backendNames.length then error(s"duplicate backend names")
           if backends.size == ScalaBackend.all.size then error(s"code shared between all the backends belongs in '$sharedSourceRoot'")
           if backends.size == 1 then error(s"code specific to the '${backends.head.name}' backend belongs in '${backends.head.sourceRoot}'")
           backends
-      .map(SharedProject(
-        project = findSubProject(sourceRoot),
-        _
-      ))
+      .map:
+        SharedProject(
+          project = findSubProject(sourceRoot),
+          _
+        )
 
   // Verify that there are no duplicate backends among the shared projects.
   sharedProjects
@@ -70,8 +75,8 @@ final class MixedProject private(
     .foreach:
       case (backends: Set[ScalaBackend], projects: Set[SharedProject]) =>
         error(s"""duplicate shared directories for backends
-               |${ScalaBackend.sourceRoots(backends)}
-               |${WithProject.names(projects)}
+               |${Strings.toString(backends, _.sourceRoot)}
+               |${Strings.toString(projects, _.name)}
                |""".stripMargin)
 
   private val singleBackendProjects: Set[SingleBackendProject] = backends.map: (backend: ScalaBackend) =>
@@ -86,9 +91,11 @@ final class MixedProject private(
     .findSubProject(project, sourceRoot)
     .getOrElse(error(s"subproject '$sourceRoot' must be included in 'settings.gradle'"))
 
-  def subProjects: Set[SingleProject] = singleBackendProjects ++ sharedProjects
+  private def subProjects: Set[SingleProject] = singleBackendProjects ++ sharedProjects
 
-  override def announcement: String = s"using Scala backends ${ScalaBackend.names(singleBackendProjects.map(_.backend))}"
+  def findSubProject(project: Project): Option[SingleProject] = subProjects.find(_.is(project))
+  
+  override def announcement: String = s"using Scala backends ${Strings.toString(backends, _.name)}"
 
   override def apply(): Unit =
     // Disable tasks.
@@ -99,10 +106,9 @@ final class MixedProject private(
       .foreach(Tasks.disable(project, _))
 
     // Apply plugin to subprojects.
-    SingleProject.forEach(subProjects, Projects.applyPlugin(_, classOf[BackendPlugin]))
+    subProjects.map(_.project).foreach(Projects.applyPlugin(_, classOf[BackendPlugin]))
 
   override def afterEvaluate(): Unit =
     val scalaVersion: ScalaVersion = getScalaVersionFromScalaExtension
-    Sources.addVersionSpecific(project, scalaVersion)
-    SingleProject.forEach(subProjects, ScalaExtension.setScalaVersion(_, scalaVersion))
-    SingleProject.forEach(subProjects, _.afterEvaluate(Sources.addVersionSpecific(_, scalaVersion)))
+    subProjects.foreach(_.setScalaVersion(scalaVersion))
+    (subProjects ++ sharedSelf.toSet).foreach(_.addVersionSpecificSources(scalaVersion))

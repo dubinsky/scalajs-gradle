@@ -46,10 +46,10 @@ object Specs2 extends ScalaFramework(
   // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
   val versionDefaultScala2: Version = Version("4.21.0")
 
-  override def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version =
+  override def versionDefaultOverride(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Option[Version] =
     if !scalaLibrary.isScala3 || backend.isNative
-    then versionDefaultScala2
-    else versionDefault
+    then Some(versionDefaultScala2)
+    else None
 
   override def additionalOptions: Array[String] = Array(
     // specs2 writes "stats" into a "$project/target/specs2-reports/stats", which makes sense for sbt

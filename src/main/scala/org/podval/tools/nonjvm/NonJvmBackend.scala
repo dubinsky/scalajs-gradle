@@ -8,7 +8,6 @@ import org.podval.tools.gradle.{Archive, Configurations, GradleClasspath, ScalaC
 import org.podval.tools.test.framework.NonJvmJUnit4Framework
 import org.podval.tools.platform.Scala212Collections.{arrayConcat, arrayMap}
 import org.podval.tools.task.TaskWithSourceSet
-import NonJvmBackend.Dep
 
 abstract class NonJvmBackend(
   name: String,
@@ -17,17 +16,7 @@ abstract class NonJvmBackend(
   sourceRoot: String,
   artifactSuffix: String,
   pluginDependenciesConfigurationName: String,
-  areCompilerPluginsBuiltIntoScala3: Boolean,
-  libraryScala3 : Dep,
-  libraryScala2 : Dep,
-  compilerPlugin: Dep,
-  junit4Plugin  : Dep,
-  linker        : Dep,
-  testAdapter   : Dep,
-  testBridge    : Dep,
-  pluginDependencies: Array[Dep],
-  withBackendVersion: Array[Dep],
-  withDefaultVersion: Array[Dep]
+  areCompilerPluginsBuiltIntoScala3: Boolean
 ) extends ScalaBackend(
   name = name,
   sourceRoot = sourceRoot,
@@ -37,25 +26,47 @@ abstract class NonJvmBackend(
 ):
   final override def isJvm: Boolean = false
 
-  protected def junit4: NonJvmJUnit4Framework
-
   protected def linkTaskClass         : Class[? <: LinkTask.Main[this.type]]
   protected def testLinkTaskClass     : Class[? <: LinkTask.Test[this.type]]
   protected def runTaskClass          : Class[? <: RunTask .Main[this.type, ? <: LinkTask.Main[this.type]]]
   override protected def testTaskClass: Class[? <: RunTask .Test[this.type, ? <: LinkTask.Test[this.type]]]
 
+  protected def compilerPlugin: ScalaDependency
+  protected def junit4Plugin: ScalaDependency
+  protected def linker: ScalaDependency
+  protected def testAdapter: ScalaDependency
+  protected def testBridge: ScalaDependency
+
+  protected def library(isScala3: Boolean): ScalaDependency
+
+  protected def pluginDependencies: Array[ScalaDependency]
+  protected def withBackendVersion: Array[ScalaDependency]
+  protected def withDefaultVersion: Array[ScalaDependency]
+
+  final protected def scalaDependency(
+    artifact: String,
+    what: String
+  ): ScalaDependency = ScalaDependency(
+    artifactId = artifact,
+    what = Some(what),
+    backend = this,
+    groupId = group,
+    version = versionDefault
+  )
+
+  protected def junit4: NonJvmJUnit4Framework
+
   protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement]
 
   protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String]
 
-  private def library(scalaLibrary: ScalaLibrary): Dep =
-    if scalaLibrary.isScala3 then libraryScala3 else libraryScala2
+  private def library(scalaLibrary: ScalaLibrary): ScalaDependency = library(scalaLibrary.isScala3)
 
   final def backendVersion(
     project: Project,
     scalaLibrary: ScalaLibrary
   ): Version =
-    val libraryDependency: ScalaDependency = library(scalaLibrary)(this)
+    val libraryDependency: ScalaDependency = library(scalaLibrary)
     libraryDependency
       .findInConfiguration(Configurations.implementation(project))
       .map(_.version.version)
@@ -163,9 +174,9 @@ abstract class NonJvmBackend(
         scalaLibrary = pluginScalaLibrary,
         dependencyRequirements = arrayConcat(
           arrayMap(Array(linker, testAdapter),
-            _(this).jvm.required(backendVersion)),
+            _.jvm.required(backendVersion)),
           arrayMap(pluginDependencies,
-            _(this).jvm.required())
+            _.jvm.required())
         )
       ),
       DependencyRequirement.Many(
@@ -174,36 +185,18 @@ abstract class NonJvmBackend(
         dependencyRequirements = arrayConcat(
           arrayConcat(
             arrayMap(arrayConcat(Array(library(projectScalaLibrary)), withBackendVersion),
-              _(this).required(backendVersion)),
+              _.required(backendVersion)),
             arrayMap(withDefaultVersion,
-              _(this).required())
+              _.required())
           ),
           implementation(projectScalaLibrary)
         )
       ),
-      one(Configurations.testRuntimeOnlyName(project), testBridge(this))
+      one(Configurations.testRuntimeOnlyName(project), testBridge)
     ) ++
     (if areCompilerPluginsBuiltIntoScala3 && projectScalaLibrary.isScala3 then Seq.empty else
-      Seq(one(Configurations.scalaCompilerPluginsName, compilerPlugin(this).scalaCompilerPlugin)) ++
+      Seq(one(Configurations.scalaCompilerPluginsName, compilerPlugin.scalaCompilerPlugin)) ++
       (if !junit4present(project) then Seq.empty else
-        Seq(one(Configurations.testScalaCompilerPluginsName, junit4Plugin(this).scalaCompilerPlugin))
+        Seq(one(Configurations.testScalaCompilerPluginsName, junit4Plugin.scalaCompilerPlugin))
       )
     )
-
-object NonJvmBackend:
-  class Dep(
-    artifact: String,
-    what: String,
-    transformer: ScalaDependency => ScalaDependency = identity,
-    groupOverride: Option[String] = None,
-    versionOverride: Option[Version] = None
-  ):
-    final def versionDefault: Version = versionOverride.get
-
-    def apply(nonJvmBackend: NonJvmBackend): ScalaDependency = transformer(ScalaDependency(
-      backend = nonJvmBackend,
-      artifactId = artifact,
-      groupId = groupOverride.getOrElse(nonJvmBackend.group),
-      version = versionOverride.getOrElse(nonJvmBackend.versionDefault),
-      what = what
-    ))

@@ -16,6 +16,8 @@ object Strings:
 
   def prefix(prefix: String, what: Option[String]): String = what.fold("")(prefix + _)
 
+  def toString[T](backends: Iterable[T], f: T => String): String = backends.map(f).mkString(", ")
+
   def splice(
     in: Seq[String],
     boundary: String,
