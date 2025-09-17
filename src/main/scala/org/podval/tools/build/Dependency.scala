@@ -19,7 +19,9 @@ trait Dependency:
   def versionDefault: Version
   // Note: `backend` and `scalaLibrary` parameter is needed only to accommodate specs2 -
   // so if the need goes away, this can be simplified ;)
-  def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version = versionDefault
+  final def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version =
+    versionDefaultOverride(backend, scalaLibrary).getOrElse(versionDefault)
+  def versionDefaultOverride(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Option[Version] = None
   def isVersionCompound: Boolean = false
   def description: String
   def classifier(version: Version): Option[String]
@@ -35,7 +37,6 @@ trait Dependency:
   final def dependencyNotation(artifactNameSuffix: String, version: Version.Pre): String =
     s"$group:$artifact$artifactNameSuffix:$version${prefix(":", classifier(version.version))}${prefix("@", extension(version.version))}"
 
-  // TODO why is this 'this.' necessary?!
   final def fileName(artifactNameSuffix: String, version: Version.Pre): String =
     s"$artifact$artifactNameSuffix-$version${prefix("-", classifier(version.version))}.${this.extension(version.version).getOrElse("jar")}"
 
@@ -43,9 +44,9 @@ trait Dependency:
   final def required()                : DependencyRequirement = DependencyRequirement(this, versionOverride = None)
 
   final def dependencyNotation(
-    backendOverride: Option[ScalaBackend],
-    versionOverride: Option[Version],
-    scalaLibrary: ScalaLibrary
+    scalaLibrary: ScalaLibrary,
+    backendOverride: Option[ScalaBackend] = None,
+    versionOverride: Option[Version] = None
   ): String = this
     .withScalaVersion(scalaLibrary)
     .withVersion(Version.compose(

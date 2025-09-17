@@ -4,8 +4,8 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.12
-:version-gradle: 9.1.0-rc-4
+:version-plugin: 0.9.13
+:version-gradle: 9.2.0-rc-1
 :version-scala: 3.7.3
 :version-scala-213: 2.13.16
 :version-scala-212: 2.12.20
@@ -14,13 +14,13 @@
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.0
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 24.8.0
+:version-node: 24.9.0
 :version-scalanative: 0.5.8
 :version-junit: 4.13.2
 :version-framework-junit4-jvm: 0.13.3
 :version-framework-junit4-scalajs: 1.20.1
 :version-framework-junit4-scalanative: 0.5.8
-:version-framework-airspec: 2025.1.18
+:version-framework-airspec: 2025.1.19
 :version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.2.0
 :version-framework-scalacheck: 1.19.0
@@ -32,7 +32,7 @@
 :version-framework-weaver: 0.10.1
 :version-framework-zio-test: 2.1.21
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.1.0--rc--4
+:attribute-gradleVersionForBadge: 9.2.0--rc--1
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -2449,7 +2449,8 @@ in link:src/main/scala/org/podval/tools/test/task/TestTask.scala[TestTask];
 - to call `ForkedTestClasspath.getApplicationClasspath()` I had to use reflection,
 since it returns `org.gradle.internal.impldep.com.google.common.collect.ImmutableList`,
 which is not accessible from the plugin and results in `java.lang.NoSuchMethodError`;
-- since Gradle's internal copy of `org.ow2.asm:asm` is under `impldep` and is not accessible to the plugin, I had to add an explicit dependency on `org.ow2.asm:asm`;
+- since Gradle's internal copy of `org.ow2.asm:asm` is under `impldep` and is not accessible to the plugin,
+I had to add an explicit dependency on `org.ow2.asm:asm`;
 - `org.gradle.api.tasks.testing.Test.testsAreNotFiltered()` calls `Test.noCategoryOrTagOrGroupSpecified()`,
 which recognizes only the test frameworks explicitly supported by Gradle (`JUnit` and `TestNG`); since I can not override it, I just use
 `org.gradle.api.tasks.testing.junit.JUnitOptions` as `SbtTestFrameworkOptions`.
@@ -2765,7 +2766,10 @@ https://github.com/dubinsky/scalajs-gradle/issues/34[bug report];
 for https://github.com/gradle/gradle/pull/18001[adding]
 Scala 3 support to Gradle - and for encouraging my work;
 - https://github.com/FlorianKirmaier[FlorianKirmaier]
-for encouragement and https://github.com/dubinsky/scalajs-gradle/pull/108[bug fixes];
+for encouragement,
+https://github.com/dubinsky/scalajs-gradle/pull/108[bug fixes],
+and an https://github.com/dubinsky/scalajs-gradle/pull/115[attempt]
+to support Gradle 8 in addition to Gradle 9;
 
 I want to thank the authors, contributors, and maintainers of:
 

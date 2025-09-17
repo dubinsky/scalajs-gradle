@@ -68,9 +68,9 @@ final class ScalaJSRun(
 
     // see https://www.scala-js.org/doc/project/webassembly.html
     def args: List[String] = if !link.useWebAssembly then List.empty else List(
-      "--experimental-wasm-exnref", // always required
-      "--experimental-wasm-jspi", // required for js.async/js.await
-      "--experimental-wasm-imported-strings", // optional (good for performance)
+      "--experimental-wasm-exnref",           // always required
+      "--experimental-wasm-jspi",             // for JSPI, used by async/await
+      "--experimental-wasm-imported-strings", // for JS string builtins
     )
 
     jsEnvKind match

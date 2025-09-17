@@ -9,7 +9,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 object Projects:
   def gradleUserHomeDir(project: Project): File = project.getGradle.getGradleUserHomeDir
 
-  def applyPlugin[P <: Plugin[?]](project: Project, pluginClass: Class[P]): Unit = project
+  def applyPlugin[P <: Plugin[Project]](project: Project, pluginClass: Class[P]): Unit = project
     .getPluginManager
     .apply(pluginClass)
 

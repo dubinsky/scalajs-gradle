@@ -53,20 +53,26 @@ trait ScalaDependency extends Dependency:
   final def withVersionCompound: ScalaDependency = new Wrapper(this):
     final override def isVersionCompound: Boolean = true
 
+  final def withVersionDefault(version: Version): ScalaDependency = new Wrapper(this):
+    final override def versionDefault: Version = version
+
+  final def withGroup(groupId: String): ScalaDependency = new Wrapper(this):
+    final override def group: String = groupId
+
 object ScalaDependency:
   def apply(
     backend: ScalaBackend,
     groupId: String,
     artifactId: String,
     version: Version,
-    what: String
+    what: Option[String] = None
   ): ScalaDependency = new ScalaDependency:
     override def scalaBackend: ScalaBackend = backend
     override def isBackendSupported(backend: ScalaBackend): Boolean = true
     override def group: String = groupId
     override def artifact: String = artifactId
     override def versionDefault: Version = version
-    override def description: String = s"${backend.name} $what"
+    override def description: String = s"${backend.name} ${what.getOrElse(s"$groupId:$artifactId:$version")}"
 
   private abstract class Wrapper(delegate: ScalaDependency) extends ScalaDependency:
     override def scalaBackend: ScalaBackend = delegate.scalaBackend
@@ -75,7 +81,7 @@ object ScalaDependency:
     override def group: String = delegate.group
     override def artifact: String = delegate.artifact
     override def versionDefault: Version = delegate.versionDefault
-    override def versionDefaultFor(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Version = delegate.versionDefaultFor(backend, scalaLibrary)
+    override def versionDefaultOverride(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Option[Version] = delegate.versionDefaultOverride(backend, scalaLibrary)
     override def description: String = delegate.description
     override def isVersionCompound: Boolean = delegate.isVersionCompound
     override def isJvm: Boolean = delegate.isJvm

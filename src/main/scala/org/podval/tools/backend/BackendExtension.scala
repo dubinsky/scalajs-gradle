@@ -6,6 +6,7 @@ import org.podval.tools.build.{ScalaBackend, ScalaDependency, ScalaLibrary, Vers
 import org.podval.tools.gradle.Extensions
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.Framework
+
 import javax.inject.Inject
 
 // Note: Gradle extensions must be abstract.
@@ -51,46 +52,57 @@ abstract class BackendExtension @Inject(
   ): String = Framework
     .find(_.getClass.getName.startsWith(frameworkClass.getName), frameworkClass.toString)
     .dependencyNotation(
+      scalaLibrary = getScalaLibrary,
       backendOverride = Some(getBackend), 
-      versionOverride = version, 
-      scalaLibrary = getScalaLibrary
+      versionOverride = version
     )
 
   final def scalaDependency(group: String, artifact: String, version: String): String =
-    scalaDependency(group, artifact, version, BackendExtension.id)
+    scalaDependency(group, artifact, version, BackendExtension.idConfigure)
 
   final def scalaDependency(group: String, artifact: String, version: String, configure: BackendExtension.Configure): String =
-    dependency(group, artifact, version, BackendExtension.toFunction(configure), getScalaLibrary)
+    dependencyNotation(
+      ScalaDependency(
+        backend = getBackend,
+        groupId = group,
+        artifactId = artifact,
+        version = Version(version)
+      ),
+      configure,
+      getScalaLibrary
+    )
 
   final def pluginDependency(group: String, artifact: String, version: String): String =
-    pluginDependency(group, artifact, version, BackendExtension.id)
+    pluginDependency(group, artifact, version, BackendExtension.idConfigure)
 
   final def pluginDependency(group: String, artifact: String, version: String, configure: BackendExtension.Configure): String =
-    dependency(group, artifact, version, BackendExtension.toFunction(configure).compose(_.jvm), getPluginScalaLibrary)
+    dependencyNotation(
+      ScalaDependency(
+        backend = getBackend,
+        groupId = group,
+        artifactId = artifact,
+        version = Version(version)
+      ).jvm,
+      configure,
+      getPluginScalaLibrary
+    )
 
-  private def dependency(
-    groupId: String,
-    artifactId: String,
-    version: String,
-    f: ScalaDependency => ScalaDependency,
+  private def dependencyNotation(
+    scalaDependency: ScalaDependency,
+    configure: BackendExtension.Configure,
     scalaLibrary: ScalaLibrary
-  ): String =
-    val scalaDependency: ScalaDependency = ScalaDependency(
-      backend = getBackend,
-      groupId = groupId,
-      artifactId = artifactId,
-      version = Version(version),
-      what = s"$groupId:$artifactId:$version"
-    )
-
-    f(scalaDependency).dependencyNotation(
-      backendOverride = None,
-      versionOverride = None,
-      scalaLibrary = scalaLibrary
-    )
-
+  ) = configure
+    .call(scalaDependency)
+    .dependencyNotation(scalaLibrary)
+  
 object BackendExtension:
-  val name: String = "scalaBackend"
+  private type Configure = Closure[ScalaDependency]
+  
+  private def idConfigure: Configure = Closure.IDENTITY.asInstanceOf[Configure]
+
+  private val name: String = "scalaBackend"
+
+  def get(project: Project): BackendExtension = Extensions.getByName(project, name)
 
   def create(
     project: Project,
@@ -103,9 +115,3 @@ object BackendExtension:
     backend,
     isRunningInIntelliJ
   )
-
-  def get(project: Project): BackendExtension = Extensions.getByName(project, name)
-
-  private type Configure = Closure[ScalaDependency]
-  private def id: Configure = Closure.IDENTITY.asInstanceOf[Configure]
-  private def toFunction(configure: Configure): ScalaDependency => ScalaDependency = configure.call

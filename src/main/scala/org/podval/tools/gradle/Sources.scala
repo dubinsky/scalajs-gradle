@@ -6,10 +6,9 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.{AbstractCopyTask, ScalaSourceDirectorySet, SourceSet, SourceTask}
 import org.gradle.api.{Action, Project, Task}
 import org.podval.tools.build.{ScalaVersion, Version}
-import org.podval.tools.platform.{Files, Strings}
+import org.podval.tools.platform.{Files, Reflection, Strings}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SetHasAsScala}
 import java.io.File
-import java.lang.reflect.Field
 
 object Sources:
   def exist(project: Project): Boolean = src(project).exists
@@ -50,9 +49,8 @@ object Sources:
         sourceSetGetter: Project => SourceSet,
         _: String,
         directorySetGetter: SourceSet => SourceDirectorySet
-      ) => defaultSourceDirectorySetSource
-        .get(directorySetGetter(sourceSetGetter(shared)))
-        .asInstanceOf[java.util.List[Object]]
+      ) => Reflection
+        .Get[java.util.List[Object], DefaultSourceDirectorySet]("source")(directorySetGetter(sourceSetGetter(shared)))
         .asScala
         .toSeq
         .filter(_.isInstanceOf[File])
@@ -70,7 +68,7 @@ object Sources:
       Set(
         classOf[SourceTask         ], // compilation
         classOf[AbstractArchiveTask], // archives
-        classOf[AbstractCopyTask   ] // resources
+        classOf[AbstractCopyTask   ]  // resources
       ).foreach(Tasks.configureEach(
         project,
         _,
@@ -81,12 +79,13 @@ object Sources:
         })
       ))
 
-  private val defaultSourceDirectorySetSource: Field = classOf[DefaultSourceDirectorySet].getDeclaredField("source")
-  defaultSourceDirectorySetSource.setAccessible(true)
-
   private def add(
     project: Project,
-    f: (Project => SourceSet, String, SourceSet => SourceDirectorySet) => Seq[File]
+    f: (
+      Project => SourceSet,
+      String,
+      SourceSet => SourceDirectorySet
+    ) => Seq[File]
   ): Unit =
     for
       sourceSetGetter <- Set[Project => SourceSet](

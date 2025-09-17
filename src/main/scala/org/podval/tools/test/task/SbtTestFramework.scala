@@ -9,13 +9,12 @@ import org.gradle.api.tasks.testing.TestFilter as TestFilterG
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.podval.tools.gradle.GradleClasspath
-import org.podval.tools.platform.{Files, Output}
+import org.podval.tools.platform.{Files, Output, Reflection}
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.run.RunTestClassProcessorFactory
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 import java.io.File
-import java.lang.reflect.Field
 import java.net.URL
 
 class SbtTestFramework(
@@ -148,7 +147,10 @@ class SbtTestFramework(
     val builder: DefaultWorkerProcessBuilder = builderInterface.asInstanceOf[DefaultWorkerProcessBuilder]
 
     builder.setImplementationClasspath((
-      SbtTestFramework.getImplementationClasspath(builder).asScala.toList ++
+      Reflection
+        .Get[java.util.List[URL], DefaultWorkerProcessBuilder]("implementationClassPath")(builder)
+        .asScala
+        .toList ++
       implementationClasspathAdditions
     ).asJava)
 
@@ -159,11 +161,3 @@ class SbtTestFramework(
     builder.sharedPackages(sharedPackages.asJava)
 
     ()
-
-object SbtTestFramework:
-  private def getImplementationClasspath(builder: DefaultWorkerProcessBuilder): java.util.List[URL] =
-    val implementationClasspath: Field = classOf[DefaultWorkerProcessBuilder].getDeclaredField("implementationClassPath")
-    implementationClasspath.setAccessible(true)
-    implementationClasspath
-      .get(builder)
-      .asInstanceOf[java.util.List[URL]]

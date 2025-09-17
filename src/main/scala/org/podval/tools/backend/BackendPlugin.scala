@@ -6,7 +6,7 @@ import org.gradle.api.{Plugin, Project}
 import org.podval.tools.build.ScalaBackend
 import org.podval.tools.gradle.Projects
 import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.platform.IntelliJIdea
+import org.podval.tools.platform.{IntelliJIdea, Strings}
 import javax.inject.Inject
 
 final class BackendPlugin @Inject(
@@ -24,21 +24,13 @@ final class BackendPlugin @Inject(
         Projects
           .parent(project)
           .flatMap(MixedProject(_, jvmPluginServices))
-          .flatMap(_.subProjects.find(_.is(project)))
+          .flatMap(_.findSubProject(project))
       .getOrElse:
         SingleBackendProject(
           project,
           jvmPluginServices,
           sharedProjects = Set.empty,
-          backend = Projects
-            .findProperty(project, ScalaBackend.property)
-            .map: (backendName: String) =>
-              ScalaBackend
-                .byName(backendName)
-                .getOrElse(error(ScalaBackend.unknownBackendMessage(backendName)))
-            .getOrElse:
-              info(ScalaBackend.noPropertyMessage)
-              JvmBackend
+          backend = getBackend
         )
 
     // Announce the project.
@@ -49,7 +41,29 @@ final class BackendPlugin @Inject(
     // Note: register `afterEvaluate()` *before* calling `apply()`,
     // so that `afterEvaluate()` registered by `apply()` (if any)
     // can rely on the Scala version being already set,
-    // and version-specific sources being already added, etc.
+    // version-specific sources being already added, etc.
     backendProject.project.afterEvaluate(_ => backendProject.afterEvaluate())
     
     backendProject.apply()
+
+  private def getBackend: ScalaBackend = Projects
+    .findProperty(project, ScalaBackend.property)
+    .map: (backendName: String) =>
+      ScalaBackend
+        .all
+        .find((backend: ScalaBackend) =>
+          backendName.toLowerCase == backend.name      .toLowerCase ||
+          backendName.toLowerCase == backend.sourceRoot.toLowerCase
+        )
+        .getOrElse:
+          error(mkMessage(s"unknown Scala backend '$backendName'"))
+    .getOrElse:
+      info(mkMessage("backend not set"))
+      JvmBackend
+
+  private def mkMessage(message: String): String =
+    s"""$message;
+       |to use one backend, set property '${ScalaBackend.property}' to one of
+       |${Strings.toString(ScalaBackend.all, _.fullName)};
+       |to use multiple backends, create at least one of the subprojects
+       |${Strings.toString(ScalaBackend.all, _.sourceRoot)}""".stripMargin
