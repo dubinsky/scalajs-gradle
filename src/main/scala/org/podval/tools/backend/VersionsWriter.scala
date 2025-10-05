@@ -12,10 +12,10 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.2.0-rc-1")
+  private val gradleVersion: Version = Version("9.2.0")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.13"),
+    "plugin" -> Version("0.9.14"),
 
     "gradle" -> gradleVersion,
     
@@ -23,16 +23,16 @@ object VersionsWriter:
     "scala-213" -> ScalaBinaryVersion.Scala2_13.scalaVersionDefault.version,
     "scala-212" -> ScalaBinaryVersion.Scala2_12.scalaVersionDefault.version,
 
-    "sbt-test-interface" -> JvmBackend.sbtTestInterfaceVersion,
+    "sbt-test-interface"           -> JvmBackend.sbtTestInterfaceVersion,
     
-    "scalajs" -> ScalaJSBackend.versionDefault,
-    "scalajs-dom"              -> ScalaJSBackend.domVersion,
-    "scalajs-env-jsdom-nodejs" -> ScalaJSBackend.jsDomNodeVersion,
-    "scala-js-env-playwright"  -> ScalaJSBackend.playwrightVersion,
+    "scalajs"                      -> ScalaJSBackend.versionDefault,
+    "scalajs-dom"                  -> ScalaJSBackend.domVersion,
+    "scalajs-env-jsdom-nodejs"     -> ScalaJSBackend.jsDomNodeVersion,
+    "scala-js-env-playwright"      -> ScalaJSBackend.playwrightVersion,
     
-    "node" -> NodeDependency.dependency.versionDefault,
+    "node"                         -> NodeDependency.dependency.versionDefault,
 
-    "scalanative" -> ScalaNativeBackend.versionDefault,
+    "scalanative"                  -> ScalaNativeBackend.versionDefault,
     
     "junit"                        -> framework.JUnit4Jvm.Underlying.versionDefault,
     "framework-junit4-jvm"         -> framework.JUnit4Jvm        .versionDefault,

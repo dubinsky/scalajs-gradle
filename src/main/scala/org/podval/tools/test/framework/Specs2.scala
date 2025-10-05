@@ -36,7 +36,7 @@ object Specs2 extends ScalaFramework(
   description = "Specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.6.4"),
+  versionDefault = Version("5.7.0"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptions = TagOptions.ListWithoutEq("include", "exclude")
@@ -44,7 +44,7 @@ object Specs2 extends ScalaFramework(
   override def isBackendSupported(backend: ScalaBackend): Boolean = true
 
   // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
-  val versionDefaultScala2: Version = Version("4.21.0")
+  val versionDefaultScala2: Version = Version("4.23.0")
 
   override def versionDefaultOverride(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Option[Version] =
     if !scalaLibrary.isScala3 || backend.isNative

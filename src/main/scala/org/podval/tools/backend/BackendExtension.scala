@@ -61,40 +61,29 @@ abstract class BackendExtension @Inject(
     scalaDependency(group, artifact, version, BackendExtension.idConfigure)
 
   final def scalaDependency(group: String, artifact: String, version: String, configure: BackendExtension.Configure): String =
-    dependencyNotation(
-      ScalaDependency(
-        backend = getBackend,
-        groupId = group,
-        artifactId = artifact,
-        version = Version(version)
-      ),
-      configure,
-      getScalaLibrary
-    )
+    dependencyNotation(group, artifact, version, identity, configure, getScalaLibrary)
 
   final def pluginDependency(group: String, artifact: String, version: String): String =
     pluginDependency(group, artifact, version, BackendExtension.idConfigure)
 
   final def pluginDependency(group: String, artifact: String, version: String, configure: BackendExtension.Configure): String =
-    dependencyNotation(
-      ScalaDependency(
-        backend = getBackend,
-        groupId = group,
-        artifactId = artifact,
-        version = Version(version)
-      ).jvm,
-      configure,
-      getPluginScalaLibrary
-    )
+    dependencyNotation(group, artifact, version, _.jvm, configure, getPluginScalaLibrary)
 
   private def dependencyNotation(
-    scalaDependency: ScalaDependency,
+    group: String,
+    artifact: String,
+    version: String,
+    transform: ScalaDependency => ScalaDependency,
     configure: BackendExtension.Configure,
     scalaLibrary: ScalaLibrary
-  ) = configure
-    .call(scalaDependency)
-    .dependencyNotation(scalaLibrary)
-  
+  ): String = configure.call(transform(ScalaDependency(
+    backend = getBackend,
+    groupId = group,
+    artifactId = artifact,
+    what = s"$group:$artifact:$version",
+    version = Version(version)
+  ))).dependencyNotation(scalaLibrary)
+
 object BackendExtension:
   private type Configure = Closure[ScalaDependency]
   

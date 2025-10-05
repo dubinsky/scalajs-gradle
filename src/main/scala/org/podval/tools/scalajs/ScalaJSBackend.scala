@@ -40,7 +40,7 @@ object ScalaJSBackend extends NonJvmBackend(
 
   override protected def withBackendVersion: Array[ScalaDependency] = Array.empty
 
-  val jsDomNodeVersion: Version = Version("1.1.0")
+  val jsDomNodeVersion: Version = Version("1.1.1")
   override protected def pluginDependencies: Array[ScalaDependency] = Array(
     scalaDependency("scalajs-env-jsdom-nodejs", "Node.js JavaScript environment with JSDOM")
       .withVersionDefault(jsDomNodeVersion)

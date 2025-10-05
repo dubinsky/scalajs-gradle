@@ -4,35 +4,35 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.13
-:version-gradle: 9.2.0-rc-1
+:version-plugin: 0.9.14
+:version-gradle: 9.2.0
 :version-scala: 3.7.3
-:version-scala-213: 2.13.16
+:version-scala-213: 2.13.17
 :version-scala-212: 2.12.20
 :version-sbt-test-interface: 1.0
 :version-scalajs: 1.20.1
 :version-scalajs-dom: 2.8.1
-:version-scalajs-env-jsdom-nodejs: 1.1.0
+:version-scalajs-env-jsdom-nodejs: 1.1.1
 :version-scala-js-env-playwright: 0.1.18
 :version-node: 24.9.0
-:version-scalanative: 0.5.8
+:version-scalanative: 0.5.9
 :version-junit: 4.13.2
 :version-framework-junit4-jvm: 0.13.3
 :version-framework-junit4-scalajs: 1.20.1
-:version-framework-junit4-scalanative: 0.5.8
-:version-framework-airspec: 2025.1.19
+:version-framework-junit4-scalanative: 0.5.9
+:version-framework-airspec: 2025.1.21
 :version-framework-hedgehog: 0.13.0
-:version-framework-munit: 1.2.0
+:version-framework-munit: 1.2.1
 :version-framework-scalacheck: 1.19.0
 :version-framework-scalaprops: 0.10.0
 :version-framework-scalatest: 3.2.19
-:version-framework-specs2: 5.6.4
-:version-framework-specs2-scala2: 4.21.0
+:version-framework-specs2: 5.7.0
+:version-framework-specs2-scala2: 4.23.0
 :version-framework-utest: 0.9.1
 :version-framework-weaver: 0.10.1
-:version-framework-zio-test: 2.1.21
+:version-framework-zio-test: 2.1.22
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.2.0--rc--1
+:attribute-gradleVersionForBadge: 9.2.0
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -894,9 +894,9 @@ using these methods:
 ----
 dependencies {
   if (scalaBackend.scala3) {
-    implementation scalaBackend.scalaDependency('org.scala-native', 'scala3lib', "${scalaBackend.scalaVersion}+0.5.8", {it.scala3()}) // sets scalaBackend.backendVersion
+    implementation scalaBackend.scalaDependency('org.scala-native', 'scala3lib', "${scalaBackend.scalaVersion}+0.5.9", {it.scala3()}) // sets scalaBackend.backendVersion
   } else {
-    implementation scalaBackend.scalaDependency('org.scala-native', 'scalalib', "${scalaBackend.scalaVersion}+0.5.8", {it.scala2()}) // sets scalaBackend.backendVersion
+    implementation scalaBackend.scalaDependency('org.scala-native', 'scalalib', "${scalaBackend.scalaVersion}+0.5.9", {it.scala2()}) // sets scalaBackend.backendVersion
   }
   implementation scalaBackend.scalaDependency('org.scala-native', 'nativelib', scalaBackend.backendVersion)
   implementation scalaBackend.scalaDependency('org.scala-native', 'clib', scalaBackend.backendVersion)
