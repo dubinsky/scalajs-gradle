@@ -19,7 +19,7 @@ class ScalaJSTutorialTest extends GroupingFunSpec:
   override protected def buildGradleFragments: Seq[String] = Seq(
     // TODO relax once Scala.js starts supporting jsdom >= 27.0.0;
     // see https://github.com/scala-js/scala-js-env-jsdom-nodejs/issues/57
-    "node.modules=['jsdom@26.1.0']",
+    "node.modules=['jsdom']",
     ScalaJSTutorialTest.linkTask(
       ScalaJSTutorialScalaTestFixture.mainSources.headOption.map(_.name)
     ),

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.14] - 2025-10-30
+- chore: Scala 2.13.17;
+- chore: Scala Native 0.5.9;
+- chore: Gradle 9.2.0;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.13] - 2025-10-06
 - cleanup: remove failed attempt at supporting Gradle 8;
 - chore: Gradle 9.1.0, Gradle 9.2.0-rc-1;

@@ -31,7 +31,7 @@ object MUnit extends ScalaFramework(
   description = "MUnit",
   group = "org.scalameta",
   artifact = "munit",
-  versionDefault = Version("1.2.0"),
+  versionDefault = Version("1.2.1"),
   className = "munit.Framework",
   sharedPackages = List("munit"),
   tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),

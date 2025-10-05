@@ -48,7 +48,7 @@ abstract class NonJvmBackend(
     what: String
   ): ScalaDependency = ScalaDependency(
     artifactId = artifact,
-    what = Some(what),
+    what = what,
     backend = this,
     groupId = group,
     version = versionDefault

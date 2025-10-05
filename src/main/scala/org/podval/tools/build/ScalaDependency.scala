@@ -65,14 +65,14 @@ object ScalaDependency:
     groupId: String,
     artifactId: String,
     version: Version,
-    what: Option[String] = None
+    what: String
   ): ScalaDependency = new ScalaDependency:
     override def scalaBackend: ScalaBackend = backend
     override def isBackendSupported(backend: ScalaBackend): Boolean = true
     override def group: String = groupId
     override def artifact: String = artifactId
     override def versionDefault: Version = version
-    override def description: String = s"${backend.name} ${what.getOrElse(s"$groupId:$artifactId:$version")}"
+    override def description: String = s"${backend.name} $what"
 
   private abstract class Wrapper(delegate: ScalaDependency) extends ScalaDependency:
     override def scalaBackend: ScalaBackend = delegate.scalaBackend
