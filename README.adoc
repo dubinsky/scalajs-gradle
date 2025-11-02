@@ -4,23 +4,23 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.14
-:version-gradle: 9.2.0
-:version-scala: 3.7.3
-:version-scala-213: 2.13.17
-:version-scala-212: 2.12.20
+:version-plugin: 0.9.15
+:version-gradle: 9.2.1
+:version-scala: 3.7.4
+:version-scala-213: 2.13.18
+:version-scala-212: 2.12.21
 :version-sbt-test-interface: 1.0
-:version-scalajs: 1.20.1
+:version-scalanative: 0.5.9
+:version-scalajs: 1.20.2
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.1
 :version-scala-js-env-playwright: 0.1.18
 :version-node: 24.9.0
-:version-scalanative: 0.5.9
 :version-junit: 4.13.2
 :version-framework-junit4-jvm: 0.13.3
-:version-framework-junit4-scalajs: 1.20.1
+:version-framework-junit4-scalajs: 1.20.2
 :version-framework-junit4-scalanative: 0.5.9
-:version-framework-airspec: 2025.1.21
+:version-framework-airspec: 2025.1.27
 :version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.2.1
 :version-framework-scalacheck: 1.19.0
@@ -28,11 +28,11 @@
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.7.0
 :version-framework-specs2-scala2: 4.23.0
-:version-framework-utest: 0.9.1
-:version-framework-weaver: 0.10.1
-:version-framework-zio-test: 2.1.22
+:version-framework-utest: 0.9.5
+:version-framework-weaver: 0.11.3
+:version-framework-zio-test: 2.1.24
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.2.0
+:attribute-gradleVersionForBadge: 9.2.1
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -41,6 +41,8 @@ image:https://img.shields.io/badge/Gradle-{attribute-gradleVersionForBadge}-blue
 image:https://img.shields.io/badge/Scala.js-{version-scalajs}-blue[]
 image:https://img.shields.io/badge/Scala_Native-{version-scalanative}-blue[]
 image:https://img.shields.io/badge/Node-{version-node}-blue?logo=nodedotjs[]
+
+image:https://api.star-history.com/svg?repos=dubinsky/scalajs-gradle&type=Date[Star History Chart]
 
 == Summary
 

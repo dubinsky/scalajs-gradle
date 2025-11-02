@@ -22,7 +22,7 @@ object Version:
   abstract class Pre derives CanEqual:
     def version: Version
 
-    final override def equals(other: Any): Boolean = other match
+    final override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
       case that: Pre => this.toString == that.toString
       case _ => false
 

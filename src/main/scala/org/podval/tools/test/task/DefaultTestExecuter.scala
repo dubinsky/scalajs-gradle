@@ -24,7 +24,7 @@ import java.io.File
 // Translated and improved org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter.
 // This is the only Gradle class that I need to fork, modify and maintain -
 // to use NonForkingTestClassProcessor needed for Scala.js and Scala Native tests.
-class DefaultTestExecuter(
+open class DefaultTestExecuter(
   workerFactory: WorkerProcessFactory,
   actorFactory: ActorFactory,
   moduleRegistry: ModuleRegistry,

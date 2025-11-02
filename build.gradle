@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.53.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.9.13'
+  id 'org.podval.tools.scalajs' version '0.9.14'
   id 'com.gradle.plugin-publish' version '2.0.0'
 }
 
@@ -16,7 +16,7 @@ project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
 dependencies {
   // for TestClassVisitor
-  implementation 'org.ow2.asm:asm:9.9'
+  implementation 'org.ow2.asm:asm:9.9.1'
 
   // for running tests
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
@@ -65,8 +65,8 @@ tasks.withType(ScalaCompile).configureEach {
     additionalParameters = [
       '-new-syntax',
       '-feature',
-      '-language:strictEquality'
-//      '-source:future'
+      '-language:strictEquality',
+      '-source:future'
     ]
   }
 }
@@ -133,8 +133,8 @@ publishing {
 signing {
   sign publishing.publications.library
   useInMemoryPgpKeys(
-    findProperty('gnupg.dub-podval-org.key').toString(),
-    findProperty('gnupg.dub-podval-org.password').toString()
+    findProperty('signingKey').toString(),
+    findProperty('signingPassword').toString()
   )
 }
 

@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.15] - 2026-01-16
+- chore: Scala 3.7.4;
+- chore: Scala 2.13.18;
+- chore: Scala 2.12.21;
+- chore: Scala.js 1.20.2;
+- chore: Gradle 9.2.1;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.14] - 2025-10-30
 - chore: Scala 2.13.17;
 - chore: Scala Native 0.5.9;

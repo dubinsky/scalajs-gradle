@@ -5,7 +5,7 @@ import org.podval.tools.nonjvm.Build
 import org.podval.tools.platform.Output
 import org.scalajs.logging.{Level as LevelJS, Logger as LoggerJS}
 
-class ScalaJSBuild(output: Output) extends Build[LoggerJS](output):
+open class ScalaJSBuild(output: Output) extends Build[LoggerJS](output):
   final override protected def interceptedExceptions: Set[Class[? <: Exception]] = Set.empty
 
   final override protected def backendLogger: LoggerJS = new LoggerJS:

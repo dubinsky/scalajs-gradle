@@ -10,7 +10,7 @@ import org.podval.tools.test.framework.JUnit4ScalaJS
 object ScalaJSBackend extends NonJvmBackend(
   name = "Scala.js",
   group = "org.scala-js",
-  versionDefault = Version("1.20.1"),
+  versionDefault = Version("1.20.2"),
   sourceRoot = "js",
   artifactSuffix = "sjs1",
   pluginDependenciesConfigurationName = "scalajs",

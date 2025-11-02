@@ -7,6 +7,6 @@ final class Feature(
   val excludeTags: Seq[String] = Seq.empty
 ) derives CanEqual:
   override def hashCode(): Int = name.hashCode
-  override def equals(obj: Any): Boolean = obj match
+  override def equals(obj: Any): Boolean = obj.asInstanceOf[Matchable] match
     case that: Feature => this.name == that.name
     case _ => false

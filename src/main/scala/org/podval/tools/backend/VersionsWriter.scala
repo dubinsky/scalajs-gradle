@@ -12,10 +12,10 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.2.0")
+  private val gradleVersion: Version = Version("9.2.1")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.14"),
+    "plugin" -> Version("0.9.15"),
 
     "gradle" -> gradleVersion,
     
@@ -24,31 +24,32 @@ object VersionsWriter:
     "scala-212" -> ScalaBinaryVersion.Scala2_12.scalaVersionDefault.version,
 
     "sbt-test-interface"           -> JvmBackend.sbtTestInterfaceVersion,
-    
-    "scalajs"                      -> ScalaJSBackend.versionDefault,
+
+    "scalanative"                  -> ScalaNativeBackend.versionDefault,
+
+    "scalajs"                      -> ScalaJSBackend    .versionDefault,
+
     "scalajs-dom"                  -> ScalaJSBackend.domVersion,
     "scalajs-env-jsdom-nodejs"     -> ScalaJSBackend.jsDomNodeVersion,
     "scala-js-env-playwright"      -> ScalaJSBackend.playwrightVersion,
-    
-    "node"                         -> NodeDependency.dependency.versionDefault,
 
-    "scalanative"                  -> ScalaNativeBackend.versionDefault,
-    
+    "node"                         -> NodeDependency.dependency     .versionDefault,
+
     "junit"                        -> framework.JUnit4Jvm.Underlying.versionDefault,
-    "framework-junit4-jvm"         -> framework.JUnit4Jvm        .versionDefault,
-    "framework-junit4-scalajs"     -> framework.JUnit4ScalaJS    .versionDefault,
-    "framework-junit4-scalanative" -> framework.JUnit4ScalaNative.versionDefault,
-    "framework-airspec"            -> framework.AirSpec          .versionDefault,
-    "framework-hedgehog"           -> framework.Hedgehog         .versionDefault,
-    "framework-munit"              -> framework.MUnit            .versionDefault,
-    "framework-scalacheck"         -> framework.ScalaCheck       .versionDefault,
-    "framework-scalaprops"         -> framework.Scalaprops       .versionDefault,
-    "framework-scalatest"          -> framework.ScalaTest        .versionDefault,
-    "framework-specs2"             -> framework.Specs2           .versionDefault,
-    "framework-specs2-scala2"      -> framework.Specs2           .versionDefaultScala2,
-    "framework-utest"              -> framework.UTest            .versionDefault,
-    "framework-weaver"             -> framework.WeaverTest       .versionDefault,
-    "framework-zio-test"           -> framework.ZioTest          .versionDefault
+    "framework-junit4-jvm"         -> framework.JUnit4Jvm           .versionDefault,
+    "framework-junit4-scalajs"     -> framework.JUnit4ScalaJS       .versionDefault,
+    "framework-junit4-scalanative" -> framework.JUnit4ScalaNative   .versionDefault,
+    "framework-airspec"            -> framework.AirSpec             .versionDefault,
+    "framework-hedgehog"           -> framework.Hedgehog            .versionDefault,
+    "framework-munit"              -> framework.MUnit               .versionDefault,
+    "framework-scalacheck"         -> framework.ScalaCheck          .versionDefault,
+    "framework-scalaprops"         -> framework.Scalaprops          .versionDefault,
+    "framework-scalatest"          -> framework.ScalaTest           .versionDefault,
+    "framework-specs2"             -> framework.Specs2              .versionDefault,
+    "framework-specs2-scala2"      -> framework.Specs2              .versionDefaultScala2,
+    "framework-utest"              -> framework.UTest               .versionDefault,
+    "framework-weaver"             -> framework.WeaverTest          .versionDefault,
+    "framework-zio-test"           -> framework.ZioTest             .versionDefault
   )
 
   private val attributes: Seq[(String, String)] = Seq(
