@@ -54,12 +54,10 @@ final class ScalaNativeLink(
   
   override def link(): Unit =
     debug(s"ScalaNativeLink.link($config)")
-
-    implicit val scope: Scope = Scope.forever
     interceptException(
       Build.buildCachedAwait(config
         .withLogger(backendLogger)
-      )
+      )(using Scope.forever)
     )
 
 object ScalaNativeLink:

@@ -13,7 +13,7 @@ abstract class FingerprintDetector(
 ):
   final override def toString: String = Fingerprints.toString(fingerprint)
 
-  final override def equals(other: Any): Boolean = other match
+  final override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
     case that: FingerprintDetector =>
       this.framework.name == that.framework.name &&
       Fingerprints.equal(this.fingerprint, that.fingerprint)

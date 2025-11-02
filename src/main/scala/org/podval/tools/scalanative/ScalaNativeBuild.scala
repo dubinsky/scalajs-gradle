@@ -7,7 +7,7 @@ import scala.scalanative.build.Logger as LoggerN
 
 // see scala.scalanative.sbtplugin.ScalaNativePluginInternal
 // https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala
-class ScalaNativeBuild(output: Output) extends Build[LoggerN](output):
+open class ScalaNativeBuild(output: Output) extends Build[LoggerN](output):
   final override protected val interceptedExceptions: Set[Class[? <: Exception]] = Set(
     classOf[scala.scalanative.build.BuildException],
     classOf[org.scalajs.linker.interface.LinkingException]

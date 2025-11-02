@@ -23,7 +23,7 @@ object UTest extends ScalaFramework(
   description = "UTest",
   group = "com.lihaoyi",
   artifact = "utest",
-  versionDefault = Version("0.9.1"),
+  versionDefault = Version("0.9.5"),
   className =
   //"utest.runner.MillFramework", // logs progress, but writes summary to standard out
     "utest.runner.Framework", // returns correct summary, but writes progress to standard out

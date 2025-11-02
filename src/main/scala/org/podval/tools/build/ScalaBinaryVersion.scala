@@ -37,7 +37,7 @@ object ScalaBinaryVersion:
     override def versionSuffixLength: Int = 1
     override def artifact: String = "scala3-library_3"
     override def description: String = "Scala 3 Library."
-    override val scalaVersionDefault: ScalaVersion = ScalaVersion("3.7.3")
+    override val scalaVersionDefault: ScalaVersion = ScalaVersion("3.7.4")
     override def isScala3: Boolean = true
     override def isScala2: Boolean = false
     override def isScala213: Boolean = false
@@ -59,10 +59,10 @@ object ScalaBinaryVersion:
     override def versionMinor: Int = 13
     override def isScala213: Boolean = true
     override def isScala212: Boolean = false
-    override val scalaVersionDefault: ScalaVersion = ScalaVersion("2.13.17")
+    override val scalaVersionDefault: ScalaVersion = ScalaVersion("2.13.18")
 
   object Scala2_12 extends Scala2:
     override def versionMinor: Int = 12
     override def isScala213: Boolean = false
     override def isScala212: Boolean = true
-    override val scalaVersionDefault: ScalaVersion = ScalaVersion("2.12.20")
+    override val scalaVersionDefault: ScalaVersion = ScalaVersion("2.12.21")

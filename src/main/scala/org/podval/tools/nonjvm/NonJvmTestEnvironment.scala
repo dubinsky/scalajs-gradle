@@ -3,7 +3,7 @@ package org.podval.tools.nonjvm
 import org.podval.tools.build.ScalaBackend
 import org.podval.tools.test.framework.Framework
 import org.podval.tools.test.task.{SourceMapper, TestEnvironment}
-import sbt.testing.Framework => FrameworkSBT
+import sbt.testing.Framework as FrameworkSBT
 
 final class NonJvmTestEnvironment[B <: ScalaBackend, A](
   backend: B,

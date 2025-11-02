@@ -5,7 +5,7 @@ final class ScalaVersion(val version: Version) derives CanEqual:
 
   override def toString: String = version.toString
 
-  override def equals(other: Any): Boolean = other match
+  override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
     case that: ScalaVersion => this.version == that.version
     case _ => false
 
