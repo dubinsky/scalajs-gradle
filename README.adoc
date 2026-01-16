@@ -4,9 +4,9 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.15
+:version-plugin: 0.9.16
 :version-gradle: 9.2.1
-:version-scala: 3.7.4
+:version-scala: 3.8.0
 :version-scala-213: 2.13.18
 :version-scala-212: 2.12.21
 :version-sbt-test-interface: 1.0

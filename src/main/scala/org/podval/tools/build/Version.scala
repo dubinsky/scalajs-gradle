@@ -2,12 +2,17 @@ package org.podval.tools.build
 
 import org.gradle.api.provider.Property
 
-final class Version private(segments: Array[String]) extends Version.Pre:
+final class Version private(val segments: Array[String]) extends Version.Pre:
   override def toString: String = segments.mkString(".")
   override def version: Version = this
 
   def length: Int = segments.length
   def take(n: Int): Version = new Version(segments.take(n))
+
+  def startsWith(suffix: Version): Boolean =
+    (length >= suffix.length) &&
+    0.until(suffix.length).forall(index => segments(index) == suffix.segments(index))
+
   private def segment(index: Int): Int = segments(index).toInt
   def major: Int = segment(0)
   def minor: Int = segment(1)

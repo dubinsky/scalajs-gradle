@@ -27,8 +27,7 @@ trait ScalaDependency extends Dependency:
     scalaBackend(backendOverride).artifactNameSuffix(scalaVersion.versionSuffix(isScalaVersionFull))
 
   final override def withScalaVersion(scalaLibrary: ScalaLibrary): ScalaDependency.WithScalaVersion = withScalaVersion(
-    scalaLibrary.scala3.filter(_ => isPublishedForScala3)
-      .orElse(Some(scalaLibrary.scala2).filter(_ => isPublishedForScala2))
+    scalaLibrary.scalaVersion(isPublishedForScala3, isPublishedForScala2)
       .getOrElse(throw GradleException(s"Dependency $this is not published for $scalaLibrary."))
   )
 
