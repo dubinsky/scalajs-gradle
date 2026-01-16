@@ -165,6 +165,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         Fragments.applyScalaJsPlugin,
         Fragments.continueOnFailure,
         Fragments.noJava,
+        Fragments.scalaJavaVersion,
         Fragments.scalaVersion(scalaVersion),
         Fragments.dependencies(
           implementation = Seq.empty,
@@ -232,7 +233,8 @@ abstract class GroupingFunSpec extends AnyFunSpec:
             implementation = Seq.empty,
             testImplementation = frameworkDependencies(fixturesSupported, scalaVersion, backend)
           ),
-          testTask(feature, fixtures)
+          testTask(feature, fixtures),
+          Fragments.scalaJavaVersion
         ))
         writer.writeSources(fixturesSupported)
       project

@@ -28,16 +28,16 @@ abstract class BackendExtension @Inject(
   
   final def isScala3: Boolean = getScalaLibrary.isScala3
   final def getScalaVersion: String = getScalaLibrary.scalaVersion.toString
-  final def getScalaBinaryVersion: Version = getScalaLibrary.scalaVersion.binaryVersionSuffix
-  final def getScala2BinaryVersion: Version = getScalaLibrary.scala2.binaryVersionSuffix
+  final def getScalaBinaryVersion: Version = getScalaLibrary.scalaBinaryVersionSuffix
+  final def getScala2BinaryVersion: Version = getScalaLibrary.scala2BinaryVersionSuffix
 
   final lazy val getScalaLibrary: ScalaLibrary =
     val result: ScalaLibrary = ScalaLibrary.fromImplementationConfiguration(project)
     require(result.scalaVersion == getScalaVersionFromScalaExtension)
     result
 
-  def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaVersion.binaryVersionSuffix
-  def getPluginScala2BinaryVersion: Version = getPluginScalaLibrary.scala2.binaryVersionSuffix
+  final def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaBinaryVersionSuffix
+  final def getPluginScala2BinaryVersion: Version = getPluginScalaLibrary.scala2BinaryVersionSuffix
   final lazy val getPluginScalaLibrary: ScalaLibrary = ScalaLibrary.fromAmbientClasspath(project)
 
   final def testFramework(frameworkClass: Class[? <: Framework]): String =

@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.53.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.9.14'
+  id 'org.podval.tools.scalajs' version '0.9.15'
   id 'com.gradle.plugin-publish' version '2.0.0'
 }
 
@@ -63,6 +63,7 @@ tasks.named("dependencyUpdates").configure {
 tasks.withType(ScalaCompile).configureEach {
   scalaCompileOptions.with {
     additionalParameters = [
+      '-release:17',
       '-new-syntax',
       '-feature',
       '-language:strictEquality',

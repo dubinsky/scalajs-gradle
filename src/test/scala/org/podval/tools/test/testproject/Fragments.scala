@@ -41,6 +41,10 @@ object Fragments:
     s"""// There is no Java in the project :)
        |project.gradle.startParameter.excludedTaskNames.add('compileJava')
        |""".stripMargin
+  
+  def scalaJavaVersion: String =
+    s"""tasks.withType(ScalaCompile).configureEach {scalaCompileOptions.additionalParameters = ['-release:17'] }
+       |""".stripMargin
        
   def scalaVersion(version: ScalaVersion): String = s"scala.scalaVersion = '$version'"
 

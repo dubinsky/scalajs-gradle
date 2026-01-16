@@ -100,15 +100,15 @@ class SbtTestFramework(
     jars = List(
       "org.podval.tools.scalajs",
 
-      // Without this, when running framework tests on Scala 2.13 I get (on JVM only):
-      // java.lang.NoClassDefFoundError: scala/runtime/LazyVals$
-      //	at org.podval.tools.test.framework.FrameworkDescriptor.<clinit>(FrameworkDescriptor.scala:36)
-      //	at org.podval.tools.test.framework.FrameworkDescriptor$.<clinit>(FrameworkDescriptor.scala:37)
-      //	at org.podval.tools.test.TaskDefTestSpec$.makeRunner(TaskDefTestSpec.scala:48)
-      //	at org.podval.tools.test.processor.WorkerTestClassProcessor.getRunner$$anonfun$1(WorkerTestClassProcessor.scala:115)
-      // when trying to look up FrameworkDescriptor by name when running forked;
-      // it does not seem to break anything even on Scala.js and even on Scala 2.12.
-      "scala3-library_3"
+      // Plugin itself is compiled with Scala 3,
+      // so those parts of its code that run in a Scala 2 need to have access to the Scala 3 library, or execution fails
+      // (on JVM only) with NoClassDefFoundError for things like scala/runtime/LazyVals$, scala.CanEqual etc.
+      // Before Scala 3.8.0 all it took was to share 'scala3-library_3':
+      //"scala3-library_3",
+      // Starting with Scala 3.8.0 'scala3-library_3' is empty, so there is no point in sharing it;
+      // everything is in `scala-library`, which is built with Scala 3, so we share that now:
+      "scala-library"
+      // it does not seem to break anything even on Scala.js and even on Scala 2.12 :)
     )
   )
 
