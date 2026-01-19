@@ -5,4 +5,5 @@ import sbt.testing.AnnotatedFingerprint
 private final class AnnotatedFingerprintImpl(
   override val annotationName: String,
   override val isModule: Boolean
-) extends AnnotatedFingerprint
+) extends AnnotatedFingerprint:
+  override def toString: String = s"AnnotatedFingerprint($annotationName, isModule=$isModule)"

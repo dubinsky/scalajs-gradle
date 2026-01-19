@@ -1,19 +1,20 @@
 package org.podval.tools.test.run
 
 import org.gradle.api.logging.LogLevel
-import org.podval.tools.platform.Output
-import org.podval.tools.test.taskdef.{Running, TaskDefs}
+import org.podval.tools.test.taskdef.{Selectors, TaskDefs}
 import org.podval.tools.platform.Scala212Collections.arrayForEach
 import sbt.testing.{Logger, Task}
 import scala.util.control.NonFatal
 
 final private class RunTestClass(
   val testResultProcessor: TestResultProcessorEx,
-  frameworkUsesTestSelectorAsNested: Boolean,
-  parentId: AnyRef,
-  val running: Running,
+  val frameworkUsesTestSelectorAsNested: Boolean,
+  val parentId: AnyRef,
+  val selectors: Selectors,
   task: Task
 ):
+  override def toString: String = s"RunTestClass($className, $selectors)"
+
   def dryRun: Boolean = task.isInstanceOf[DryRunSbtTask]
   def className: String = task.taskDef.fullyQualifiedName
   val testId: AnyRef = testResultProcessor.generateId()
@@ -29,31 +30,23 @@ final private class RunTestClass(
   def started(
     parentId: AnyRef,
     testId: AnyRef,
-    running: Running,
+    selectors: Selectors,
     startTime: Long
-  ): Unit =
-    val runningEffective: Running =
-      if !frameworkUsesTestSelectorAsNested
-      then running
-      else running.reconstructNestedTestSelector
-    
-    testResultProcessor.started(
-      parentId,
-      testId,
-      testClassName = runningEffective.suiteId.getOrElse(className),
-      testName = runningEffective.testName,
-      startTime
-    )
+  ): Unit = testResultProcessor.started(
+    parentId,
+    startTime,
+    selectors.testDescriptor(testId, className)
+  )
 
   def run(): Unit =
     started(
       parentId = parentId,
       testId = testId,
-      running = running,
+      selectors = selectors,
       startTime = testResultProcessor.getCurrentTime
     )
 
-    debug(s"RunTestClassProcessor.run(${TaskDefs.toString(task.taskDef)})")
+    debug(s"RunTestClass.run(${TaskDefs.toString(task.taskDef)})")
 
     val logger: Logger = new Logger:
       private def log(logLevel: LogLevel, message: String): Unit = testResultProcessor.output(
@@ -76,14 +69,14 @@ final private class RunTestClass(
       )
       arrayForEach(nestedTasks, (nestedTask: Task) =>
         require(nestedTask.taskDef.fullyQualifiedName == className)
-        debug(s"RunTestClassProcessor: nested task ${TaskDefs.toString(nestedTask.taskDef)}")
+        debug(s"RunTestClass: nested task ${TaskDefs.toString(nestedTask.taskDef)}")
       )
       arrayForEach(nestedTasks, (nestedTask: Task) =>
         RunTestClass(
           testResultProcessor,
           frameworkUsesTestSelectorAsNested,
           parentId = testId,
-          running = running.forNestedTask(nestedTask),
+          selectors = selectors.forNestedTask(nestedTask),
           task = nestedTask
         ).run()
       )
@@ -92,6 +85,5 @@ final private class RunTestClass(
     finally
       testResultProcessor.completed(
         testId = testId,
-        endTime = testResultProcessor.getCurrentTime,
         result = null
       )

@@ -36,7 +36,8 @@ object JUnit4JvmFixture extends Fixture(
       Seq(
         forClass("JUnit4Nesting",
           // nested test cases are attributed to the nested suite
-          testCount(0)
+          // Since Gradle 9.3.0, nesting test classes are missing from the report; see EventHandler for details
+          absentClass //testCount(0)
         ),
         forClass("JUnit4Nested",
           passed("success"),

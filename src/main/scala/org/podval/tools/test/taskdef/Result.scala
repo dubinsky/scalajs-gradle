@@ -2,21 +2,21 @@ package org.podval.tools.test.taskdef
 
 import sbt.testing.{OptionalThrowable, Status}
 
-sealed trait Handling derives CanEqual
+sealed trait Result derives CanEqual
 
-object Handling:
-  case object Success extends Handling
+object Result:
+  case object Success extends Result
 
-  case object Failed extends Handling
+  case object Failed extends Result
 
-  final case class Failure(throwable: Throwable) extends Handling
+  final case class Failure(throwable: Throwable) extends Result
 
-  final case class Skipped(hasThrowable: Boolean) extends Handling
+  final case class Skipped(hasThrowable: Boolean) extends Result
   
-  def forEvent(
+  def apply(
     status: Status,
     optionalThrowable: OptionalThrowable
-  ): Handling =
+  ): Result =
     // Note: Can't use `Option.when()` here: it does not exist in Scala 2.21.
     val throwable: Option[Throwable] = if optionalThrowable.isEmpty then None else Some(optionalThrowable.get)
     

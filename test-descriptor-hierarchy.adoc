@@ -20,7 +20,7 @@ org.gradle.api.tasks.testing.TestDescriptor
       org.gradle.api.internal.tasks.testing.DefaultTestSuiteDescriptor
         // above is used by org.gradle.api.internal.tasks.testing.testng.TestNGTestResultProcessorAdapter
         org.gradle.api.internal.tasks.testing.processors.TestMainAction.RootTestSuiteDescriptor
-        org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor.WorkerTestSuiteDescriptor
+        org.gradle.api.internal.tasks.testing.worker.WorkerTestDefinitionProcessor.WorkerTestSuiteDescriptor
         org.gradle.api.internal.tasks.testing.DefaultNestedTestSuiteDescriptor
           // above is used in org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestExecutionListener
         org.gradle.api.internal.tasks.testing.DefaultTestClassDescriptor

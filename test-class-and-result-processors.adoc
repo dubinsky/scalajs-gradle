@@ -1,27 +1,27 @@
-== TestClassProcessor
+== TestDefinitionProcessor
 
 [source]
 ----
 org.podval.tools.test.task.DefaultTestExecuter.execute:
-  org.gradle.api.internal.tasks.testing.processors.PatternMatchTestClassProcessor
-  org.gradle.api.internal.tasks.testing.processors.RunPreviousFailedFirstTestClassProcessor
-  org.gradle.api.internal.tasks.testing.processors.MaxNParallelTestClassProcessor
-  org.gradle.api.internal.tasks.testing.processors.RestartEveryNTestClassProcessor
+  org.gradle.api.internal.tasks.testing.processors.PatternMatchTestDefinitionProcessor
+  org.gradle.api.internal.tasks.testing.processors.RunPreviousFailedFirstTestDefinitionProcessor
+  org.gradle.api.internal.tasks.testing.processors.MaxNParallelTestDefinitionProcessor
+  org.gradle.api.internal.tasks.testing.processors.RestartEveryNTestDefinitionProcessor
 
-org.podval.tools.test.task.TestFramework.createTestExecuter.createTestClassProcessor:
-  org.podval.tools.test.processors.TaskDefTestEncodingTestClassProcessor                    or NonForkingTestClassProcessor
-  org.gradle.api.internal.tasks.testing.worker.ForkingTestClassProcessor
+org.podval.tools.test.task.TestFramework.createTestExecuter.createTestDefinitionProcessor:
+  org.podval.tools.test.processors.TaskDefTestEncodingTestDefinitionProcessor                    or NonForkingTestDefinitionProcessor
+  org.gradle.api.internal.tasks.testing.worker.ForkingTestDefinitionProcessor
 
 ...
 
-  org.gradle.api.internal.tasks.testing.worker.WorkerTestClassProcessor
+  org.gradle.api.internal.tasks.testing.worker.WorkerTestDefinitionProcessor
 ----
 
 == TestResultProcessor
 
 [source]
 ----
-org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor:
+org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor:
   org.gradle.api.internal.tasks.testing.results.AttachParentTestResultProcessor
   org.gradle.api.internal.tasks.testing.processors.CaptureTestOutputTestResultProcessor
 

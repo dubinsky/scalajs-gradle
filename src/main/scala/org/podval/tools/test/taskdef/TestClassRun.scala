@@ -1,18 +1,22 @@
 package org.podval.tools.test.taskdef
 
-import org.gradle.api.internal.tasks.testing.TestClassRunInfo
+import org.gradle.api.internal.tasks.testing.TestDefinition
+import org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher
 import org.podval.tools.test.framework.Framework
 import org.podval.tools.platform.Scala212Collections.arrayMkString
-import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint, TaskDef}
+import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint}
 
 final class TestClassRun(
   val framework: Framework.Loaded,
-  override val getTestClassName: String,
+  val className: String,
   val fingerprint: Fingerprint,
   val explicitlySpecified: Boolean,
   val testNames: Array[String],
   val testWildcards: Array[String]
-) extends TestClassRunInfo
+) extends TestDefinition:
+  override def getId: String = className
+  override def getDisplayName: String = s"test class $className'"
+  override def matches(matcher: TestSelectionMatcher): Boolean = matcher.mayIncludeClass(getId)
 
 object TestClassRun:
   // I do not want to go into quoting,
@@ -43,7 +47,7 @@ object TestClassRun:
 
     Array(
       value.framework.name,
-      value.getTestClassName,
+      value.className,
       fingerprintStrings(0),
       fingerprintStrings(1),
       fingerprintStrings(2),
@@ -58,7 +62,7 @@ object TestClassRun:
   final def read(string: String): TestClassRun = fromStrings(string.split(separator, -1))
   private def fromStrings(strings: Array[String]): TestClassRun = TestClassRun(
     framework = Framework.forName(strings(0)).load,
-    getTestClassName = strings(1),
+    className = strings(1),
     fingerprint =
       val isAnnotated: Boolean = toBoolean(strings(2))
       val name: String = strings(3)
@@ -78,6 +82,9 @@ object TestClassRun:
     testWildcards = readStrings(strings(8))
   )
 
+  private def toString(boolean: Boolean): String = boolean.toString
+  private def toBoolean(string: String): Boolean = string == "true"
+
   private def writeStrings(strings: Array[String]): String = arrayMkString(strings, stringsSeparator)
   private def readStrings(string: String): Array[String] =
     // Now that we split with "-1",
@@ -86,6 +93,3 @@ object TestClassRun:
     if strings.length == 1 && strings(0).isEmpty
     then Array.empty
     else strings
-
-  private def toString(boolean: Boolean): String = boolean.toString
-  private def toBoolean(string: String): Boolean = string == "true"

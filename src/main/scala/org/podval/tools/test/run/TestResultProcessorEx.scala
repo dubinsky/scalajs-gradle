@@ -1,7 +1,7 @@
 package org.podval.tools.test.run
 
-import org.gradle.api.internal.tasks.testing.{DefaultTestClassDescriptor, DefaultTestMethodDescriptor,
-  DefaultTestOutputEvent, TestCompleteEvent, TestResultProcessor, TestStartEvent}
+import org.gradle.api.internal.tasks.testing.{DefaultTestOutputEvent, TestCompleteEvent, TestDescriptorInternal,
+  TestResultProcessor, TestStartEvent}
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.testing.TestOutputEvent
 import org.gradle.api.tasks.testing.TestResult.ResultType
@@ -22,24 +22,19 @@ final class TestResultProcessorEx(
 
   def started(
     parentId: AnyRef,
-    testId: AnyRef,
-    testClassName: String,
-    testName: Option[String],
-    startTime: Long
+    startTime: Long,
+    testDescriptorInternal: TestDescriptorInternal
   ): Unit = testResultProcessor.started(
-    testName match
-      case None           => DefaultTestClassDescriptor (testId, testClassName)
-      case Some(testName) => DefaultTestMethodDescriptor(testId, testClassName, testName),
+    testDescriptorInternal,
     TestStartEvent(startTime, parentId)
   )
 
   def completed(
     testId: AnyRef,
-    endTime: Long,
     result: ResultType
   ): Unit = testResultProcessor.completed(
     testId,
-    TestCompleteEvent(endTime, result)
+    TestCompleteEvent(getCurrentTime, result)
   )
 
   def failure(
@@ -58,7 +53,7 @@ final class TestResultProcessorEx(
   ): Unit = if output.isVisible(logLevel) then testResultProcessor.output(
     testId,
     DefaultTestOutputEvent(
-      clock.getCurrentTime,
+      getCurrentTime,
       if Output.isError(logLevel)
       then TestOutputEvent.Destination.StdErr
       else TestOutputEvent.Destination.StdOut,

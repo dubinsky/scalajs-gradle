@@ -8,7 +8,7 @@ object TaskDefs:
     (left.fullyQualifiedName == right.fullyQualifiedName) &&
     (left.explicitlySpecified == right.explicitlySpecified) &&
     Fingerprints.equal(left.fingerprint, right.fingerprint) &&
-    arrayZipForAll(left.selectors, right.selectors, Selectors.equal)
+    arrayZipForAll(left.selectors, right.selectors, Selectors.selectorsEqual)
 
   def toString(taskDef: TaskDef): String =
     def className(isModule: Boolean): String = taskDef.fullyQualifiedName + (if isModule then "$" else "")
