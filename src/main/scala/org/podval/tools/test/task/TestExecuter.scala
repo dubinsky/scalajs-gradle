@@ -2,8 +2,8 @@ package org.podval.tools.test.task
 
 import org.gradle.api.Action
 import org.gradle.api.internal.classpath.ModuleRegistry
-import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestClassProcessor, TestResultProcessor,
-  WorkerTestClassProcessorFactory}
+import org.gradle.api.internal.tasks.testing.{JvmTestExecutionSpec, TestDefinition, TestDefinitionProcessor,
+  TestResultProcessor, WorkerTestDefinitionProcessorFactory}
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
 import org.gradle.api.internal.tasks.testing.worker.ForkedTestClasspath
 import org.gradle.internal.actor.ActorFactory
@@ -11,8 +11,8 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.process.JavaForkOptions
 import org.gradle.process.internal.worker.{WorkerProcessBuilder, WorkerProcessFactory}
-import org.podval.tools.test.run.{FixRootTestSuiteOutputTestResultProcessor, RunTestClassProcessorFactory,
-  SourceMappingTestResultProcessor, TracingTestResultProcessor, WriteTestClassProcessor}
+import org.podval.tools.test.run.{FixRootTestSuiteOutputTestResultProcessor, RunTestDefinitionProcessorFactory,
+  SourceMappingTestResultProcessor, TracingTestResultProcessor, WriteTestDefinitionProcessor}
 
 class TestExecuter(
   testsCanNotBeForked: Boolean,
@@ -50,25 +50,25 @@ class TestExecuter(
 
     super.execute(testExecutionSpec, testResultProcessorEffective)
 
-  override protected def createTestClassProcessor(
+  override protected def createTestDefinitionProcessor(
     workerLeaseService: WorkerLeaseService,
     workerProcessFactory: WorkerProcessFactory,
-    workerTestClassProcessorFactory: WorkerTestClassProcessorFactory,
+    workerTestDefinitionProcessorFactory: WorkerTestDefinitionProcessorFactory[TestDefinition],
     javaForkOptions: JavaForkOptions,
     classpath: ForkedTestClasspath,
     workerConfigurationAction: Action[WorkerProcessBuilder]
-  ): TestClassProcessor = 
+  ): TestDefinitionProcessor[TestDefinition] = 
     if testsCanNotBeForked then
-      workerTestClassProcessorFactory.asInstanceOf[RunTestClassProcessorFactory].createNonForking(clock)
+      workerTestDefinitionProcessorFactory.asInstanceOf[RunTestDefinitionProcessorFactory[TestDefinition]].createNonForking(clock)
     else
-      // WriteTestClassProcessor is at the end of the TestClassProcessor chain created in DefaultTestExecuter,
-      // right before the ForkingTestClassProcessor,
-      // so that PatternMatchTestClassProcessor and RunPreviousFailedFirstTestClassProcessor can do their jobs.
-      WriteTestClassProcessor(
-        super.createTestClassProcessor(
+      // WriteTestDefinitionProcessor is at the end of the TestDefinitionProcessor chain created in DefaultTestExecuter,
+      // right before the ForkingTestDefinitionProcessor,
+      // so that PatternMatchTestDefinitionProcessor and RunPreviousFailedFirstTestDefinitionProcessor can do their jobs.
+      WriteTestDefinitionProcessor(
+        super.createTestDefinitionProcessor(
           workerLeaseService,
           workerProcessFactory,
-          workerTestClassProcessorFactory,
+          workerTestDefinitionProcessorFactory,
           javaForkOptions,
           classpath,
           workerConfigurationAction

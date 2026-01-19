@@ -5,7 +5,7 @@
 :icons: font
 // INCLUDED ATTRIBUTES
 :version-plugin: 0.9.16
-:version-gradle: 9.2.1
+:version-gradle: 9.3.0
 :version-scala: 3.8.0
 :version-scala-213: 2.13.18
 :version-scala-212: 2.12.21
@@ -32,7 +32,7 @@
 :version-framework-weaver: 0.11.3
 :version-framework-zio-test: 2.1.24
 :attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.2.1
+:attribute-gradleVersionForBadge: 9.3.0
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -152,6 +152,14 @@ $ ./graldew -PscalaVersion={version-scala}
 ----
 
 Plugin assumes that the project uses the explicit approach; no assumptions are made about the name of the property.
+
+Note: Starting with Scala 3.8.0, the following has to be configured in the
+Gradle build file:
+
+[source,groovy]
+----
+tasks.withType(ScalaCompile).configureEach {scalaCompileOptions.additionalParameters = ['-release:17'] }
+----
 
 === Building for Specific Scala Version
 Plugin does not support building for multiple Scala versions
@@ -2165,7 +2173,7 @@ It would have been nice if this fact was documented somewhere :(
 I coded an event queue with its own thread, but then discovered that:
 
 - Gradle provides a mechanism that ensures that all the calls are made from the same thread: `Actor.createActor.getProxy`;
-- when tests are forked, `MaxNParallelTestClassProcessor` is used, which already does that, so I do not need to;
+- when tests are forked, `MaxNParallelTestDefinitionProcessor` is used, which already does that, so I do not need to;
 - when running on `Scala.js` everything is single-threaded anyway.
 
 === Test Ids
@@ -2193,7 +2201,7 @@ Gradle uses test ids that are composite of two Longs.
 AbstractTestTask installs `StateTrackingTestResultProcessor`
 which keeps track of all tests that are executing in any `TestWorker`.
 That means that test ids must be scoped per `TestWorker`.
-Each `TestWorker` has an `idGenerator` which it uses to generate `WorkerTestClassProcessor.workerSuiteId`;
+Each `TestWorker` has an `idGenerator` which it uses to generate `WorkerTestDefinitionProcessor.workerSuiteId`;
 that same `idGenerator` can be used to generate sequential ids
 for the tests in the worker,
 satisfying the uniqueness requirements - and resulting in the test ids always being
@@ -2204,7 +2212,7 @@ Because tests are scoped by the workers, it does not seem possible to group test
 Since I can not use the real `rootTestSuiteId` that `DefaultTestExecuter`
 supplies to the `TestMainAction` - because it is a `String` -
 and I am not keen on second-guessing what it is anyway,
-I use a `RunTestClassProcessor.rootTestSuiteIdPlaceholder`
+I use a `RunTestDefinitionProcessor.rootTestSuiteIdPlaceholder`
 and change it to the real one in `FixRootTestSuiteOutputTestResultProcessor`.
 
 === Test Output
@@ -2372,7 +2380,7 @@ https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main
 `TestExecuter` makes sure that the tests are not forked,
 and `TestTask` overrides
 `org.gradle.api.tasks.testing.Test.getMaxParallelForks()`
-to return `1` on `Scala.js` to prevent `MaxNParallelTestClassProcessor`
+to return `1` on `Scala.js` to prevent `MaxNParallelTestDefinitionProcessor`
 from forking.
 
 On JVM, exceptions are serialized in Gradle's `org.gradle.internal.serialize.ExceptionPlaceholder`, which contains lots of details;

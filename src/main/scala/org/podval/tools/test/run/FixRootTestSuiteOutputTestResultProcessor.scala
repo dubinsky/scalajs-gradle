@@ -24,7 +24,7 @@ class FixRootTestSuiteOutputTestResultProcessor(
   override def output(testId: AnyRef, event: TestOutputEvent): Unit =
     given CanEqual[CompositeId, CompositeId] = CanEqual.derived
     val testIdEffective: AnyRef =
-      if testId.asInstanceOf[CompositeId] != RunTestClassProcessor.rootTestSuiteIdPlaceholder
+      if testId.asInstanceOf[CompositeId] != RunTestDefinitionProcessor.rootTestSuiteIdPlaceholder
       then testId
       else rootId.get
     delegate.output(testIdEffective, event)

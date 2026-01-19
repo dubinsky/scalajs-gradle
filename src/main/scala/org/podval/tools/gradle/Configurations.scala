@@ -7,12 +7,12 @@ import org.gradle.api.plugins.{JavaPluginExtension, JvmTestSuitePlugin}
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.plugins.scala.ScalaBasePlugin
 import org.gradle.api.tasks.SourceSet
-import org.gradle.util.internal.GUtil
+import org.gradle.util.internal.TextUtil
 
 object Configurations:
   def scalaCompilerPluginsName: String = ScalaBasePlugin.SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME
 
-  def testScalaCompilerPluginsName: String = GUtil.toLowerCamelCase(s"test $scalaCompilerPluginsName")
+  def testScalaCompilerPluginsName: String = TextUtil.toLowerCamelCase(s"test $scalaCompilerPluginsName")
 
   private def sourceSet(project: Project, sourceSetName: String): SourceSet = Extensions
     .getByType(project, classOf[JavaPluginExtension])

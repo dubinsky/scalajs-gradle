@@ -32,7 +32,8 @@ object ScalaTestFixture extends Fixture(
       Seq(
         forClass("ScalaTestNesting",
           // nested test cases are attributed to the nested suite
-          testCount(0)
+          // Since Gradle 9.3.0, nesting test classes are missing from the report; see EventHandler for details
+          absentClass // testCount(0)
         ),
         forClass("ScalaTestNested",
           passed("success should pass"),

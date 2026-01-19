@@ -1,27 +1,27 @@
 package org.podval.tools.test.run
 
-import org.gradle.api.internal.tasks.testing.{TestClassProcessor, TestClassRunInfo, TestResultProcessor}
+import org.gradle.api.internal.tasks.testing.{TestDefinition, TestDefinitionProcessor, TestResultProcessor}
 import org.gradle.api.logging.LogLevel
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
 import org.podval.tools.platform.Output
 import org.podval.tools.test.framework.Framework
-import org.podval.tools.test.taskdef.{Running, TaskDefs, TestClassRun}
-import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
-import sbt.testing.{Runner, Task, TaskDef}
+import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
+import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach, arrayMap}
+import sbt.testing.{Runner, Task, TaskDef, TestSelector, TestWildcardSelector}
 
-object RunTestClassProcessor:
+object RunTestDefinitionProcessor:
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
 
-final class RunTestClassProcessor(
+final class RunTestDefinitionProcessor[D <: TestDefinition](
   includeTags: Array[String],
   excludeTags: Array[String],
   output: Output,
   dryRun: Boolean,
   idGenerator: IdGenerator[?],
   clock: Clock
-) extends TestClassProcessor:
+) extends TestDefinitionProcessor[D]:
 
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
 
@@ -50,7 +50,7 @@ final class RunTestClassProcessor(
   override def stop(): Unit = arrayForEach(runners, (frameworkName, runner: Runner) =>
     val summary: String = runner.done
     if !summary.isBlank then testResultProcessor.output(
-      testId = RunTestClassProcessor.rootTestSuiteIdPlaceholder,
+      testId = RunTestDefinitionProcessor.rootTestSuiteIdPlaceholder,
       annotation = "test framework summary",
       logLevel = LogLevel.INFO,
       message = s"[$frameworkName]\n$summary"
@@ -63,15 +63,21 @@ final class RunTestClassProcessor(
     stoppedNow = true
     stop()
 
-  override def processTestClass(testClassRunInfo: TestClassRunInfo): Unit = if !stoppedNow then
-    val testClassRun: TestClassRun = testClassRunInfo.asInstanceOf[TestClassRun]
-    val running: Running = Running.forTestClassRun(testClassRun)
+  override def processTestDefinition(testDefinition: D): Unit = if !stoppedNow then
+    val testClassRun: TestClassRun = testDefinition.asInstanceOf[TestClassRun]
+    val selectors: Selectors =
+      if testClassRun.testNames.length == 0 && testClassRun.testWildcards.length == 0
+      then Selectors.Suite
+      else Selectors.Tests(
+        arrayMap(testClassRun.testNames, TestSelector(_)),
+        arrayMap(testClassRun.testWildcards, TestWildcardSelector(_))
+      )
 
     val taskDef: TaskDef = TaskDef(
-      testClassRun.getTestClassName,
+      testClassRun.className,
       testClassRun.fingerprint,
       testClassRun.explicitlySpecified,
-      running.selectors
+      selectors.selectors
     )
 
     val tasks: Array[Task] =
@@ -87,6 +93,6 @@ final class RunTestClassProcessor(
       testResultProcessor = testResultProcessor,
       frameworkUsesTestSelectorAsNested = testClassRun.framework.framework.usesTestSelectorAsNested,
       parentId = null,
-      running = running,
+      selectors = selectors,
       task = task
     ).run()

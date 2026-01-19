@@ -1,7 +1,7 @@
 package org.podval.tools.test.detect
 
 import org.gradle.api.internal.file.RelativeFile
-import org.gradle.api.internal.tasks.testing.TestClassProcessor
+import org.gradle.api.internal.tasks.testing.{ClassTestDefinition, TestDefinition, TestDefinitionProcessor}
 import org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector
 import org.gradle.internal.Factory
 import org.podval.tools.platform.Output
@@ -27,8 +27,10 @@ final class SbtTestFrameworkDetector(
   private var testClasspath: Option[List[File]] = None
   override def setTestClasspath(value: java.util.List[File]): Unit = testClasspath = Some(value.asScala.toList)
 
-  private var testClassProcessor: Option[TestClassProcessor] = None
-  override def startDetection(value: TestClassProcessor): Unit = testClassProcessor = Some(value)
+  private var testDefinitionProcessor: Option[TestDefinitionProcessor[TestDefinition]] = None
+
+  override def startDetection(value: TestDefinitionProcessor[? >: ClassTestDefinition]): Unit =
+    testDefinitionProcessor = Some(value.asInstanceOf[TestDefinitionProcessor[TestDefinition]])
 
   private lazy val detectors: Seq[FingerprintDetector] =
     for
@@ -98,7 +100,7 @@ final class SbtTestFrameworkDetector(
 
           TestClassRun(
             framework = detector.framework,
-            getTestClassName = className,
+            className = className,
             fingerprint = detector.fingerprint,
             explicitlySpecified = testFilterMatch.explicitlySpecified,
             testNames = testNames,
@@ -114,7 +116,7 @@ final class SbtTestFrameworkDetector(
         detectors = testClassVisitor.getApplicableDetectors
       ))
 
-    testClassRun.foreach(testClassProcessor.get.processTestClass)
+    testClassRun.foreach(testDefinitionProcessor.get.processTestDefinition)
     testClassRun.isDefined
   
   private def processClassFile(classFile: File): TestClassVisitor =

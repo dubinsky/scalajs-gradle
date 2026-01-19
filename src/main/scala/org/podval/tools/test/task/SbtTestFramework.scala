@@ -12,7 +12,7 @@ import org.podval.tools.gradle.GradleClasspath
 import org.podval.tools.platform.{Files, Output, Reflection}
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
-import org.podval.tools.test.run.RunTestClassProcessorFactory
+import org.podval.tools.test.run.RunTestDefinitionProcessorFactory
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava, SetHasAsScala}
 import java.io.File
 import java.net.URL
@@ -27,6 +27,7 @@ class SbtTestFramework(
   output: () => Output,
   testEnvironment: () => TestEnvironment[?]
 ) extends TestFramework:
+  override def getDisplayName: String = "SBT Test Framework"
 
   override def getOptions: SbtTestFrameworkOptions = options
 
@@ -66,7 +67,7 @@ class SbtTestFramework(
       )
     )
 
-  override def getProcessorFactory: RunTestClassProcessorFactory = RunTestClassProcessorFactory(
+  override def getProcessorFactory: RunTestDefinitionProcessorFactory[?] = RunTestDefinitionProcessorFactory(
     includeTags = options.getIncludeCategories.asScala.toArray,
     excludeTags = options.getExcludeCategories.asScala.toArray,
     output = output(),
