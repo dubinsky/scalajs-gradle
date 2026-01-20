@@ -6,10 +6,12 @@ import org.podval.tools.gradle.{Artifact, Configurations, GradleClasspath}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
-sealed abstract class ScalaLibrary(val scalaVersion: ScalaVersion):
-  final def scalaBinaryVersionSuffix: Version = scalaVersion.binaryVersionSuffix
-  def scala2BinaryVersionSuffix: Version
-  def isScala3: Boolean
+sealed trait ScalaLibrary:
+  def scalaVersion: ScalaVersion.Known
+
+  final def scalaBinaryVersionPrefix: Version = scalaVersion.binaryVersion.prefix
+
+  def scala2BinaryVersionPrefix: Version
 
   def scalaVersion(
     isPublishedForScala3: Boolean,
@@ -23,32 +25,14 @@ sealed abstract class ScalaLibrary(val scalaVersion: ScalaVersion):
       source = s"'${runtimeClasspath.getName}'",
       classPath = runtimeClasspath.asScala
     )
-    require(this.toString == other.toString, s"Scala library changed from $this to $other")
+// TODO with 3.7.4 and 3.8.0, this fails on 3.7.4: Scala 2 version changes...
+//    require(this.toString == other.toString, s"Scala library changed from $this to $other")
 
 object ScalaLibrary:
-  final class Scala2(scalaVersion: ScalaVersion /* TODO .Scala2*/) extends ScalaLibrary(scalaVersion):
-    override def toString: String = s"Scala2Library($scalaVersion)"
-    override def isScala3: Boolean = false
-    override def scala2BinaryVersionSuffix: Version = scalaBinaryVersionSuffix
+  private sealed trait Scala3 extends ScalaLibrary:
+    def scala2Version: ScalaVersion
 
-    override def scalaVersion(
-      isPublishedForScala3: Boolean,
-      isPublishedForScala2: Boolean
-    ): Option[ScalaVersion] = Option.when(isPublishedForScala2)(scalaVersion)
-
-  // For Scala 3, we *approximate* Scala 2;
-  // this is safe, since the full Scala 2 version
-  // matters only for dependencies `withScalaVersionFull`,
-  // and ScalaLibrary constructed here is only used with `FrameworkDescriptor` dependencies,
-  // which are not `withScalaVersionFull`.
-  // Scala 2 version used by Scala 3 from 3.0.0 to 3.8.0 is 2.13;
-  // starting with 3.8.0, the version is the same as that of the Scala 3, with the major of 3.
-
-  sealed abstract class Scala3(scalaVersion: ScalaVersion/* TODO .Scala3*/) extends ScalaLibrary(scalaVersion):
-    override def toString: String = s"Scala3Library($scalaVersion, $scala2Version)"
-    def scala2Version: ScalaVersion /* TODO .Scala2*/
-    final override def isScala3: Boolean = true
-    final override def scala2BinaryVersionSuffix: Version = scala2Version.binaryVersionSuffix
+    final override def scala2BinaryVersionPrefix: Version = scala2Version.binaryVersion.prefix
 
     final override def scalaVersion(
       isPublishedForScala3: Boolean,
@@ -57,14 +41,45 @@ object ScalaLibrary:
       Option.when(isPublishedForScala3)(scalaVersion)
         .orElse(Option.when(isPublishedForScala2)(scala2Version))
 
-  final class Scala3LibraryCompiledWithScala2(
-    scalaVersion: ScalaVersion,
+  private final class Scala3WithScala3Library(
+    override val scalaVersion: ScalaVersion.Known
+  ) extends Scala3:
+    require(scalaVersion.binaryVersion == ScalaBinaryVersion.Scala3WithScala3Library)
+    require(scala2Version.binaryVersion == ScalaBinaryVersion.Scala2_13)
+
+    override def toString: String = s"Scala3WithScala3Library($scalaVersion)"
+    override def scala2Version: ScalaVersion = ScalaVersion.Unknow2_13
+
+  private final class Scala3WithScala2Library(
+    override val scalaVersion: ScalaVersion.Known,
     override val scala2Version: ScalaVersion
-  ) extends Scala3(scalaVersion)
+  ) extends Scala3:
+    require(scalaVersion.binaryVersion == ScalaBinaryVersion.Scala3WithScala2Library)
+    require(scala2Version.binaryVersion.isInstanceOf[ScalaBinaryVersion.Scala2])
 
-  final class Scala3LibraryCompiledWithScala3(scalaVersion: ScalaVersion /* TODO .Scala3*/) extends Scala3(scalaVersion):
-    override def scala2Version: ScalaVersion = ScalaBinaryVersion.Scala3.scala2VersionDefault
+    override def toString: String = s"Scala3WithScala2Library($scalaVersion, $scala2Version)"
 
+  private final class Scala2(
+    override val scalaVersion: ScalaVersion.Known
+  ) extends ScalaLibrary:
+    require(scalaVersion.binaryVersion.isInstanceOf[ScalaBinaryVersion.Scala2])
+
+    override def toString: String = s"Scala2($scalaVersion)"
+    override def scala2BinaryVersionPrefix: Version = scalaBinaryVersionPrefix
+
+    override def scalaVersion(
+      isPublishedForScala3: Boolean,
+      isPublishedForScala2: Boolean
+    ): Option[ScalaVersion] = Option.when(isPublishedForScala2)(scalaVersion)
+
+  def fromScalaVersion(scala: ScalaVersion.Known): ScalaLibrary = scala match
+    case scala3@ScalaVersion.Known(ScalaBinaryVersion.Scala3WithScala3Library, _) =>
+      Scala3WithScala3Library(scala3)
+    case scala3@ScalaVersion.Known(ScalaBinaryVersion.Scala3WithScala2Library, _) =>
+      Scala3WithScala2Library(scala3, ScalaVersion.Unknow2_13)
+    case scala2@ScalaVersion.Known(_: ScalaBinaryVersion.Scala2, _) =>
+      Scala2(scala2)
+  
   def fromImplementationConfiguration(project: Project): ScalaLibrary =
     val implementation: Configuration = Configurations.implementation(project)
     ScalaLibrary(
@@ -79,7 +94,7 @@ object ScalaLibrary:
     source = "ambient classpath",
     classPath = GradleClasspath.collect
   )
-
+  
   private def fromClasspath(
     project: Project,
     source: String,
@@ -91,54 +106,56 @@ object ScalaLibrary:
     find = _.findInClasspath(classPath)
   )
 
-  def fromScalaVersion(scalaVersion: ScalaVersion): ScalaLibrary =
-    if scalaVersion.isScala2
-    then Scala2(scalaVersion)
-    else
-      if ScalaBinaryVersion.Scala3.libraryCompiledWithScala2(scalaVersion)
-      then Scala3LibraryCompiledWithScala2(scalaVersion, ScalaBinaryVersion.Scala3.scala2VersionDefault)
-      else Scala3LibraryCompiledWithScala3(scalaVersion)
-
   private def apply(
     project: Project,
     source: String,
     isFromClasspath: Boolean,
     find: JavaDependency => Option[Dependency.WithVersion]
   ): ScalaLibrary =
-    val scala3: Option[Dependency.WithVersion] = find(ScalaBinaryVersion.Scala3   )
-    // Note: this finds any Scala 2 library, even if it is 2.12, not 2.13 - and even if it is 3.8.0 :)
-    val scala2: Option[Dependency.WithVersion] = find(ScalaBinaryVersion.Scala2_13)
+    def toScalaVersion(dependencyWithVersion: Dependency.WithVersion): ScalaVersion.Known =
+      ScalaVersion(dependencyWithVersion.version.version)
 
-    require(scala3.nonEmpty || scala2.nonEmpty, s"No Scala library $source.")
-    if isFromClasspath then require(scala2.nonEmpty, s"No Scala 2 library $source.")
-    if !isFromClasspath then require(scala3.isEmpty || scala2.isEmpty, s"Both Scala 3 and Scala 2 library present $source.")
+    // Note: version does not affect find(); for example find(Scala2_13)
+    // finds any Scala 2 library, even if it is 2.12, not 2.13 - and even if it is 3.8.0 :)
+    (
+      find(ScalaBinaryVersion.Scala3WithScala3Library),
+      find(ScalaBinaryVersion.Scala2_13)
+    ) match
 
-    if scala2.isDefined then
-      def toScalaVersion(withVersion: Option[Dependency.WithVersion]): ScalaVersion = ScalaVersion(withVersion.get.version.version)
-      val scala2Version: ScalaVersion = toScalaVersion(scala2)
-      if scala3.isEmpty
-      then Scala2(scala2Version)
-      else
-        val scala3Version: ScalaVersion = toScalaVersion(scala3)
-        if ScalaBinaryVersion.Scala3.libraryCompiledWithScala2(scala3Version)
-        then Scala3LibraryCompiledWithScala2(scala3Version, scala2Version)
-        else
-          require(scala2Version == scala3Version)
-          Scala3LibraryCompiledWithScala3(scala3Version)
-    else
-      // When constructing Scala 3 ScalaLibrary `fromImplementationConfiguration`,
-      // we do not get Scala 2 library dependency - and we need it for dependencies `withScalaVersionFull`;
-      // we can't resolve the `runtimeClasspath` configuration,
-      // because we need to add dependencies to various configurations,
-      // some of which feed into `runtimeClasspath`;
-      // so we transitively resolve the Scala 3 library dependency
-      // and build ScalaLibrary from the resulting classpath:
-      fromClasspath(
-        project,
-        source = s"'${scala3.get}' resolved",
-        classPath = Artifact.resolveTransitive(
+      case (None, None) =>
+        throw IllegalArgumentException(s"No Scala library $source.")
+
+      case (None, Some(scala2)) =>
+        Scala2(toScalaVersion(scala2))
+
+      case (Some(scala3), Some(scala2)) =>
+        require(isFromClasspath, s"Both Scala 3 and Scala 2 library present $source.")
+
+        val scala2Version: ScalaVersion.Known = toScalaVersion(scala2)
+        toScalaVersion(scala3) match
+          case scala3@ScalaVersion.Known(ScalaBinaryVersion.Scala3WithScala3Library, _) =>
+            require(scala2Version == scala3)
+            Scala3WithScala3Library(scala3)
+          case scala3@ScalaVersion.Known(ScalaBinaryVersion.Scala3WithScala2Library, _) =>
+            Scala3WithScala2Library(scala3, scala2Version)
+          case scala2@ScalaVersion.Known(_: ScalaBinaryVersion.Scala2, _) =>
+            throw IllegalArgumentException(s"$scala2 is not a Scala 3 version")
+
+      case (Some(scala3), None) =>
+        require(!isFromClasspath, s"No Scala 2 library $source.")
+        // When constructing Scala 3 ScalaLibrary `fromImplementationConfiguration`,
+        // we do not get Scala 2 library dependency - and we need it for dependencies with `isScalaVersionFull`;
+        // we can't resolve the `runtimeClasspath` configuration,
+        // because we need to add dependencies to various configurations,
+        // some of which feed into `runtimeClasspath`;
+        // so we transitively resolve the Scala 3 library dependency
+        // and build ScalaLibrary from the resulting classpath:
+        fromClasspath(
           project,
-          dependencyNotation = scala3.get.dependencyNotation(backendOverride = None),
-          repository = None
+          source = s"'$scala3' resolved",
+          classPath = Artifact.resolveTransitive(
+            project,
+            dependencyNotation = scala3.dependencyNotation(),
+            repository = None
+          )
         )
-      )

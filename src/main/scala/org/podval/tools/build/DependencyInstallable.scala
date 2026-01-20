@@ -91,7 +91,7 @@ trait DependencyInstallable[T] extends Dependency.WithScalaVersion:
     val artifact: File = Artifact
       .resolve(
         project,
-        withVersion.dependencyNotation(backendOverride = None),
+        withVersion.dependencyNotation(),
         repository
       )
       .getOrElse(output.abort(s"No artifact found for: $withVersion"))

@@ -16,9 +16,6 @@ object ScalaJSBackend extends NonJvmBackend(
   pluginDependenciesConfigurationName = "scalajs",
   areCompilerPluginsBuiltIntoScala3 = true
 ):
-  override def isJs    : Boolean = true
-  override def isNative: Boolean = false
-
   override protected def linkTaskClass    : Class[ScalaJSLinkTask.Main] = classOf[ScalaJSLinkTask.Main]
   override protected def testLinkTaskClass: Class[ScalaJSLinkTask.Test] = classOf[ScalaJSLinkTask.Test]
   override protected def runTaskClass     : Class[ScalaJSRunTask .Main] = classOf[ScalaJSRunTask .Main]
@@ -35,7 +32,7 @@ object ScalaJSBackend extends NonJvmBackend(
   override protected def testBridge: ScalaDependency =
     scalaDependency("scalajs-test-bridge", "Test Bridge for Node.js").scala2.jvm
 
-  override protected def library(isScala3: Boolean): ScalaDependency =
+  override protected def library(scalaLibrary: ScalaLibrary): ScalaDependency =
     scalaDependency("scalajs-library", "Library").scala2.jvm
 
   override protected def withBackendVersion: Array[ScalaDependency] = Array.empty
@@ -67,21 +64,23 @@ object ScalaJSBackend extends NonJvmBackend(
   override protected def junit4: JUnit4ScalaJS.type = JUnit4ScalaJS
 
   override protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String] =
-    if scalaLibrary.isScala3
-    then Seq("-scalajs")
-    else Seq.empty
+    scalaLibrary.scalaVersion.binaryVersion match
+      case _: ScalaBinaryVersion.Scala3 => Seq("-scalajs")
+      case _ => Seq.empty
 
   override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] =
-    if scalaLibrary.isScala3
-    then Array(scala3Library.required(scalaLibrary.scalaVersion.version))
-    else Array.empty
+    scalaLibrary.scalaVersion.binaryVersion match
+      case _: ScalaBinaryVersion.Scala3 => Array(scala3Library(scalaLibrary.scalaVersion.version))
+      case _ => Array.empty
 
   // There is no Scala 2 equivalent.
-  private def scala3Library: ScalaDependency = scalaDependency("scala3-library", "Scala 3 library in Scala.js")
-    .withGroup(ScalaBinaryVersion.group)
-    .withVersionDefault(ScalaBinaryVersion.Scala3.versionDefault)
-    .scala3
-  
+  private def scala3Library(version: Version): DependencyRequirement =
+    scalaDependency("scala3-library", "Scala 3 library in Scala.js")
+      .withGroup(ScalaBinaryVersion.group)
+      .withVersionDefault(versionDefault)
+      .scala3
+      .required(version)
+
   override def apply(
     project: Project, 
     jvmPluginServices: JvmPluginServices,

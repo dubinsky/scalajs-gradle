@@ -23,10 +23,6 @@ abstract class ScalaBackend(
   val testsCanNotBeForked: Boolean,
   val expandClasspathForTestEnvironment: Boolean
 ) derives CanEqual:
-  def isJvm   : Boolean
-  def isJs    : Boolean
-  def isNative: Boolean
-
   final override def toString: String = name
   
   final def fullName: String = s"$name ($sourceRoot)"
@@ -52,7 +48,7 @@ abstract class ScalaBackend(
   ): Unit =
     Archive.configureJarTask(
       project, 
-      archiveAppendix = artifactNameSuffix(projectScalaLibrary.scalaVersion.binaryVersionSuffix)
+      archiveAppendix = artifactNameSuffix(projectScalaLibrary.scalaVersion.binaryVersion.prefix)
     )
 
     dependencyRequirements(

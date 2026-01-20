@@ -24,7 +24,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def checkRun: Boolean = false
   protected def features: Seq[Feature]
   protected def fixtures: Seq[Fixture]
-  protected def scalaVersions: Seq[ScalaVersion] = ScalaBinaryVersion.all.map(_.scalaVersionDefault)
+  protected def scalaVersions: Seq[ScalaVersion.Known] = ScalaBinaryVersion.all.map(_.scalaVersionDefault)
   protected def backends: Set[ScalaBackend] = ScalaBackend.all
   
   final protected def groupTestByFixtureAndCombined(): Unit =
@@ -94,7 +94,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     feature: Feature,
     fixtures: Seq[Fixture]
   ): Unit =
-    for scalaVersion: ScalaVersion <- scalaVersions do
+    for scalaVersion: ScalaVersion.Known <- scalaVersions do
       val scalaVersionString: String = s"in Scala v$scalaVersion"
       describe(scalaVersionString):
         forBackends(
@@ -115,7 +115,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    scalaVersion: ScalaVersion
+    scalaVersion: ScalaVersion.Known
   ): Unit =
     val backendsSupported: Set[ScalaBackend] = backends.filter(fixturesSupported(fixtures, _, scalaVersion).nonEmpty)
 
@@ -178,7 +178,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    scalaVersion: ScalaVersion,
+    scalaVersion: ScalaVersion.Known,
     backend: ScalaBackend
   ): Unit =
     def createProject: TestProject =
@@ -213,7 +213,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     projectName: Seq[String],
     feature: Feature,
     fixtures: Seq[Fixture],
-    scalaVersion: ScalaVersion,
+    scalaVersion: ScalaVersion.Known,
     backends: Set[ScalaBackend]
   ): Unit =
     def createProject: TestProject =
@@ -250,7 +250,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   
   private def frameworkDependencies(
     fixtures: Seq[Fixture],
-    scalaVersion: ScalaVersion,
+    scalaVersion: ScalaVersion.Known,
     backend: ScalaBackend
   ): Seq[String] = fixtures.map(_
     .framework

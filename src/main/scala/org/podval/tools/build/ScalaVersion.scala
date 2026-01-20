@@ -1,44 +1,50 @@
 package org.podval.tools.build
 
-sealed abstract class ScalaVersion(val version: Version) derives CanEqual:
-  require(binaryVersion.is(version))
-
-  final override def toString: String = version.toString
-
+sealed trait ScalaVersion derives CanEqual:
   def binaryVersion: ScalaBinaryVersion
-  
-  final override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
-    case that: ScalaVersion => this.version == that.version
-    case _ => false
-
-  final def versionSuffix(isFull: Boolean): Version = if isFull then version else binaryVersionSuffix
-  final def binaryVersionSuffix: Version = binaryVersion.prefix
-
-  final def isScala3: Boolean = !isScala2
-  def isScala2  : Boolean
-  final def isScala212: Boolean = isScala2 && !isScala213
-  def isScala213: Boolean
+  def version: Version
 
 object ScalaVersion:
-  final class Scala3(version: Version) extends ScalaVersion(version):
-    override def binaryVersion: ScalaBinaryVersion = ScalaBinaryVersion.Scala3
-    override def isScala2: Boolean = false
-    override def isScala213: Boolean = false
+  final case class Known(
+    override val binaryVersion: ScalaBinaryVersion,
+    override val version: Version
+  ) extends ScalaVersion:
+    require(binaryVersion.is(version))
 
-  sealed abstract class Scala2(version: Version) extends ScalaVersion(version):
-    final override def isScala2: Boolean = true
+    override def toString: String = version.toString
 
-  final class Scala2_13(version: Version) extends Scala2(version):
+    override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
+      case that: ScalaVersion => this.version == that.version
+      case _ => false
+
+  def apply(string: String): Known = apply(Version(string))
+
+  def apply(version: Version): Known = Known(
+    version = version,
+    binaryVersion = ScalaBinaryVersion
+      .all
+      .find(_.is(version))
+      .getOrElse(throw IllegalArgumentException(s"Unrecognized Scala version $version"))
+  )
+
+  // ScalaLibrary.fromScalaVersion() for Scala 3 before Scala 3.8.0,
+  // we know that Scala 2 version is 2.13.?, but we do not know the full version -
+  // and we do not need it, since the full Scala 2 version
+  // matters only for dependencies with `isScalaVersionFull`,
+  // ScalaLibrary.fromScalaVersion() is only used with `FrameworkDescriptor` dependencies,
+  // which are not `isScalaVersionFull` (only Scala compiler plugins are).
+  case object Unknow2_13 extends ScalaVersion:
     override def binaryVersion: ScalaBinaryVersion = ScalaBinaryVersion.Scala2_13
-    override def isScala213: Boolean = true
 
-  final class Scala2_12(version: Version) extends Scala2(version):
-    override def binaryVersion: ScalaBinaryVersion = ScalaBinaryVersion.Scala2_12
-    override def isScala213: Boolean = false
+    override def toString: String = s"Unknown $binaryVersion Scala version"
 
-  def apply(string: String): ScalaVersion = ScalaVersion(Version(string))
+    override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
+      case that: AnyRef => that.eq(this)
+      case _ => false
 
-  def apply(version: Version): ScalaVersion =
-    if ScalaBinaryVersion.Scala3.is(version) then Scala3(version)
-    else if ScalaBinaryVersion.Scala2_13.is(version) then Scala2_13(version)
-    else Scala2_12(version)
+    override def version: Version = throw IllegalArgumentException(
+      s"""$this: full version is not know;
+         |ScalaLibrary was constructed from a Scala 3 version,
+         |not from a classpath nor Gradle configuration
+         |""".stripMargin
+    )

@@ -2,7 +2,7 @@ package org.podval.tools.backend
 
 import groovy.lang.Closure
 import org.gradle.api.Project
-import org.podval.tools.build.{ScalaBackend, ScalaDependency, ScalaLibrary, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaDependency, ScalaLibrary, Version}
 import org.podval.tools.gradle.Extensions
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.Framework
@@ -26,18 +26,21 @@ abstract class BackendExtension @Inject(
   final def getBackendVersion: String = nonJvm.backendVersion(project, getScalaLibrary).toString
   final def getNonJvmJUnit4present: Boolean = nonJvm.junit4present(project)
   
-  final def isScala3: Boolean = getScalaLibrary.isScala3
+  final def isScala3: Boolean = getScalaLibrary.scalaVersion.binaryVersion match
+    case _: ScalaBinaryVersion.Scala3 => true
+    case _ => false
+
   final def getScalaVersion: String = getScalaLibrary.scalaVersion.toString
-  final def getScalaBinaryVersion: Version = getScalaLibrary.scalaBinaryVersionSuffix
-  final def getScala2BinaryVersion: Version = getScalaLibrary.scala2BinaryVersionSuffix
+  final def getScalaBinaryVersion: Version = getScalaLibrary.scalaBinaryVersionPrefix
+  final def getScala2BinaryVersion: Version = getScalaLibrary.scala2BinaryVersionPrefix
 
   final lazy val getScalaLibrary: ScalaLibrary =
     val result: ScalaLibrary = ScalaLibrary.fromImplementationConfiguration(project)
     require(result.scalaVersion == getScalaVersionFromScalaExtension)
     result
 
-  final def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaBinaryVersionSuffix
-  final def getPluginScala2BinaryVersion: Version = getPluginScalaLibrary.scala2BinaryVersionSuffix
+  final def getPluginScalaBinaryVersion: Version = getPluginScalaLibrary.scalaBinaryVersionPrefix
+  final def getPluginScala2BinaryVersion: Version = getPluginScalaLibrary.scala2BinaryVersionPrefix
   final lazy val getPluginScalaLibrary: ScalaLibrary = ScalaLibrary.fromAmbientClasspath(project)
 
   final def testFramework(frameworkClass: Class[? <: Framework]): String =

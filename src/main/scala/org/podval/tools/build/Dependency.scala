@@ -83,20 +83,19 @@ object Dependency:
 
     def artifactNameSuffix(backendOverride: Option[ScalaBackend]): String
 
-    final def dependencyNotation(version: Version.Pre, backendOverride: Option[ScalaBackend]): String = dependency
-      .dependencyNotation(artifactNameSuffix(backendOverride), version)
+    final def dependencyNotation(version: Version.Pre, backendOverride: Option[ScalaBackend]): String =
+      dependency.dependencyNotation(artifactNameSuffix(backendOverride), version)
 
-    final def fileName(version: Version.Pre): String = dependency
-      .fileName(artifactNameSuffix(backendOverride = None), version)
+    final def fileName(version: Version.Pre): String =
+      dependency.fileName(artifactNameSuffix(backendOverride = None), version)
 
   final class WithVersion(
     withScalaVersion: Dependency.WithScalaVersion,
     val version: Version.Pre
   ):
-    override def toString: String = dependencyNotation(backendOverride = None)
+    override def toString: String = dependencyNotation()
 
-    def dependencyNotation(backendOverride: Option[ScalaBackend]): String = withScalaVersion
-      .dependencyNotation(version, backendOverride)
+    def fileName: String = withScalaVersion.fileName(version)
 
-    def fileName: String = withScalaVersion
-      .fileName(version)
+    def dependencyNotation(backendOverride: Option[ScalaBackend] = None): String =
+      withScalaVersion.dependencyNotation(version, backendOverride)

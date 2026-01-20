@@ -24,8 +24,7 @@ object ScalaCheck extends ScalaFramework(
   artifact = "scalacheck",
   versionDefault = Version("1.19.0"),
   className = "org.scalacheck.ScalaCheckFramework",
-  sharedPackages = List("org.scalacheck"),
-  tagOptions = None
+  sharedPackages = List("org.scalacheck")
 ):
   override def isBackendSupported(backend: ScalaBackend): Boolean = true
 

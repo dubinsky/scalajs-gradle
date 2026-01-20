@@ -12,16 +12,16 @@ import java.io.File
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.3.0")
+  private val gradleVersion: Version = Version("9.3.1")
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.16"),
+    "plugin" -> Version("0.9.17"),
 
     "gradle" -> gradleVersion,
     
-    "scala"     -> ScalaBinaryVersion.Scala3   .scalaVersionDefault.version,
-    "scala-213" -> ScalaBinaryVersion.Scala2_13.scalaVersionDefault.version,
-    "scala-212" -> ScalaBinaryVersion.Scala2_12.scalaVersionDefault.version,
+    "scala"     -> ScalaBinaryVersion.Scala3WithScala3Library.versionDefault,
+    "scala-213" -> ScalaBinaryVersion.Scala2_13              .versionDefault,
+    "scala-212" -> ScalaBinaryVersion.Scala2_12              .versionDefault,
 
     "sbt-test-interface"           -> JvmBackend.sbtTestInterfaceVersion,
 

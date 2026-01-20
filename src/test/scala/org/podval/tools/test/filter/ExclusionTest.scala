@@ -2,9 +2,9 @@ package org.podval.tools.test.filter
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor3, TableFor4}
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor3}
 
-class ExclusionTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
+class ExclusionTest extends AnyFlatSpec, Matchers, TableDrivenPropertyChecks:
   val data: TableFor3[String, String, Boolean] = Table(
     ("input", "className", "expected"),
     (".", "FooTest", false),

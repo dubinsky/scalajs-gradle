@@ -13,10 +13,6 @@ object JvmBackend extends ScalaBackend(
   testsCanNotBeForked = false,
   expandClasspathForTestEnvironment = true
 ) with TestEnvironment.Creator[JvmBackend.type]:
-  override def isJvm   : Boolean = true
-  override def isJs    : Boolean = false
-  override def isNative: Boolean = false
-
   override protected def testTaskClass: Class[JvmTestTask] = classOf[JvmTestTask]
   
   override def registerTasks(project: Project): Unit =
