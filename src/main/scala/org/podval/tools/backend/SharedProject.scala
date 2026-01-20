@@ -19,4 +19,3 @@ final class SharedProject(
 
   override def afterEvaluate(): Unit =
     ()
-    

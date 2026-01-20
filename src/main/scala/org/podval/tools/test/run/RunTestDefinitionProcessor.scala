@@ -8,8 +8,8 @@ import org.gradle.internal.time.Clock
 import org.podval.tools.platform.Output
 import org.podval.tools.test.framework.Framework
 import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
-import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach, arrayMap}
-import sbt.testing.{Runner, Task, TaskDef, TestSelector, TestWildcardSelector}
+import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
+import sbt.testing.{Runner, Task, TaskDef}
 
 object RunTestDefinitionProcessor:
   val rootTestSuiteIdPlaceholder: CompositeId = CompositeId(0L, 0L)
@@ -65,14 +65,7 @@ final class RunTestDefinitionProcessor[D <: TestDefinition](
 
   override def processTestDefinition(testDefinition: D): Unit = if !stoppedNow then
     val testClassRun: TestClassRun = testDefinition.asInstanceOf[TestClassRun]
-    val selectors: Selectors =
-      if testClassRun.testNames.length == 0 && testClassRun.testWildcards.length == 0
-      then Selectors.Suite
-      else Selectors.Tests(
-        arrayMap(testClassRun.testNames, TestSelector(_)),
-        arrayMap(testClassRun.testWildcards, TestWildcardSelector(_))
-      )
-
+    val selectors: Selectors = Selectors(testClassRun.testNames, testClassRun.testWildcards)
     val taskDef: TaskDef = TaskDef(
       testClassRun.className,
       testClassRun.fingerprint,

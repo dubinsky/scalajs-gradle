@@ -114,9 +114,9 @@ final private class EventHandler(runTestClass: RunTestClass):
     val result: Result = Result(event.status, event.throwable)
     val eventFor: Selectors = toSelectors(event.selector)
 
-    if runTestClass.selectors.isTest then
+    if !runTestClass.selectors.isSuite then
       // running individual test case (ScalaCheck packages test methods into nested NestedTest tasks).
-      require(runTestClass.selectors.sameAs(eventFor))
+      require(Selectors.equal(runTestClass.selectors.selector, eventFor.selector))
       result match
         case Result.Failure(throwable) => testResultProcessor.failure(runTestClass.testId, throwable)
         case _ =>
@@ -126,8 +126,8 @@ final private class EventHandler(runTestClass: RunTestClass):
       // - started/completed Gradle events are emitted in run();
       // - Gradle calculates the overall result from the outcomes of the individual tests.
       if
-        eventFor.isTest &&
-        arrayFind(skippedTests, Selectors.selectorsEqual(_, eventFor.selector)).isEmpty
+        !eventFor.isSuite &&
+        arrayFind(skippedTests, Selectors.equal(_, eventFor.selector)).isEmpty
       then
         def startedThen(action: (TestResultProcessorEx, AnyRef) => Unit): Unit =
           val nestedClassTestId: Option[AnyRef] = handleNestedClass(eventFor)

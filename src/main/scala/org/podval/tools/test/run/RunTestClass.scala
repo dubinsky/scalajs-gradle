@@ -3,7 +3,7 @@ package org.podval.tools.test.run
 import org.gradle.api.logging.LogLevel
 import org.podval.tools.test.taskdef.{Selectors, TaskDefs}
 import org.podval.tools.platform.Scala212Collections.arrayForEach
-import sbt.testing.{Logger, Task}
+import sbt.testing.{Logger, Selector, SuiteSelector, Task}
 import scala.util.control.NonFatal
 
 final private class RunTestClass(
@@ -72,12 +72,18 @@ final private class RunTestClass(
         debug(s"RunTestClass: nested task ${TaskDefs.toString(nestedTask.taskDef)}")
       )
       arrayForEach(nestedTasks, (nestedTask: Task) =>
+        require(selectors.isSuite, s"${selectors.selector} can not have nested tests!")
+        val nestedTaskSelectors: Array[Selector] = nestedTask.taskDef.selectors
+        require(nestedTaskSelectors.length == 1, "Only one selector can be nested!")
+
         RunTestClass(
           testResultProcessor,
           frameworkUsesTestSelectorAsNested,
           parentId = testId,
-          selectors = selectors.forNestedTask(nestedTask),
-          task = nestedTask
+          task = nestedTask,
+          selectors = nestedTaskSelectors(0) match
+            case suiteSelector: SuiteSelector => throw IllegalArgumentException(s"$suiteSelector can not be nested")
+            case selector => Selectors(selector)
         ).run()
       )
     catch case throwable@(_: NoClassDefFoundError | _: IllegalAccessError | NonFatal(_)) =>

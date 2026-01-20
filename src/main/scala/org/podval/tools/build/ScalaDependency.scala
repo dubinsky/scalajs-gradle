@@ -19,13 +19,7 @@ trait ScalaDependency extends Dependency:
       (artifact == ScalaDependency.this.artifact) &&
       (artifactSuffix == scalaBackend(backendOverride = None).artifactSuffix)
     if !matches then None else scalaVersion.map(ScalaVersion(_)).map(withScalaVersion)
-
-  final def artifactNameSuffix(
-    backendOverride: Option[ScalaBackend],
-    scalaVersion: ScalaVersion
-  ): String =
-    scalaBackend(backendOverride).artifactNameSuffix(scalaVersion.versionSuffix(isScalaVersionFull))
-
+  
   final override def withScalaVersion(scalaLibrary: ScalaLibrary): ScalaDependency.WithScalaVersion = withScalaVersion(
     scalaLibrary.scalaVersion(isPublishedForScala3, isPublishedForScala2)
       .getOrElse(throw GradleException(s"Dependency $this is not published for $scalaLibrary."))
@@ -93,4 +87,9 @@ object ScalaDependency:
     scalaVersion: ScalaVersion
   ) extends Dependency.WithScalaVersion:
     override def artifactNameSuffix(backendOverride: Option[ScalaBackend]): String = dependency
-      .artifactNameSuffix(backendOverride, scalaVersion)
+      .scalaBackend(backendOverride)
+      .artifactNameSuffix(
+        if dependency.isScalaVersionFull
+        then scalaVersion.version
+        else scalaVersion.binaryVersion.prefix
+      )

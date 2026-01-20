@@ -8,7 +8,7 @@ import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
 object NodeDependency extends NonScalaDependency with DependencyInstallable[Node]:
-  override def versionDefault: Version = Version("24.9.0")
+  override def versionDefault: Version = Version("25.6.0")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
   override def description: String = "Node.js"
@@ -56,9 +56,9 @@ object NodeDependency extends NonScalaDependency with DependencyInstallable[Node
 
   //https://github.com/nodejs/node/pull/5995
   private def hasWindowsZip(version: Version): Boolean =
-    val major: Int = version.major
-    val minor: Int = version.minor
-    val patch: Int = version.patch
+    val major: Int = version.int(0)
+    val minor: Int = version.int(1)
+    val patch: Int = version.int(2)
 
     ((major == 4) && (minor >= 5)) || // >= 4.5.0..6
     ((major == 6) && ((minor > 2) || ((patch == 2) && (patch >= 1)))) || // >= 6.2.1..7

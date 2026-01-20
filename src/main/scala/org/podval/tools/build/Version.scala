@@ -2,27 +2,32 @@ package org.podval.tools.build
 
 import org.gradle.api.provider.Property
 
-final class Version private(val segments: Array[String]) extends Version.Pre:
+import scala.annotation.tailrec
+
+final class Version private(val segments: Array[String]) extends Version.Pre with Ordered[Version]:
   override def toString: String = segments.mkString(".")
   override def version: Version = this
 
   def length: Int = segments.length
   def take(n: Int): Version = new Version(segments.take(n))
 
-  def startsWith(suffix: Version): Boolean =
-    (length >= suffix.length) &&
-    0.until(suffix.length).forall(index => segments(index) == suffix.segments(index))
+  def int(index: Int): Int = segments(index).toInt
 
-  private def segment(index: Int): Int = segments(index).toInt
-  def major: Int = segment(0)
-  def minor: Int = segment(1)
-  def patch: Int = segment(2)
+  def startsWith(prefix: Version): Boolean =
+    (length >= prefix.length) &&
+    0.until(prefix.length).forall(index => segments(index) == prefix.segments(index))
 
-  def after(that: Version): Boolean =
-    (this.major > that.major) ||
-    (this.major == that.major && this.major > that.minor) ||
-    (this.major == that.major && this.major == that.minor && this.patch > that.patch)
-    
+  override def compare(that: Version): Int =
+    @tailrec def compare(index: Int): Int = (this.length == index, that.length == index) match
+      case (true , true ) =>  0
+      case (true , false) => -1
+      case (false, true ) =>  1
+      case _ => Ordering.Int.compare(this.int(index), that.int(index)) match
+        case 0 => compare(index+1)
+        case result => result
+
+    compare(0)
+
 object Version:
   abstract class Pre derives CanEqual:
     def version: Version

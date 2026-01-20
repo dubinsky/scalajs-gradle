@@ -1,6 +1,7 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaLibrary, Version}
+import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, Version}
+import org.podval.tools.scalanative.ScalaNativeBackend
 
 // http://etorreborre.github.io/specs2/
 // https://github.com/etorreborre/specs2
@@ -47,7 +48,10 @@ object Specs2 extends ScalaFramework(
   val versionDefaultScala2: Version = Version("4.23.0")
 
   override def versionDefaultOverride(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Option[Version] =
-    if !scalaLibrary.isScala3 || backend.isNative
+    val isScala2: Boolean = scalaLibrary.scalaVersion.binaryVersion match
+      case _: ScalaBinaryVersion.Scala2 => true
+      case _ => false
+    if isScala2 || backend == ScalaNativeBackend
     then Some(versionDefaultScala2)
     else None
 

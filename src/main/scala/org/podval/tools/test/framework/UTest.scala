@@ -29,8 +29,7 @@ object UTest extends ScalaFramework(
     "utest.runner.Framework", // returns correct summary, but writes progress to standard out
   // we are better off with the one that returns the actual summary:
   // anyway, `MUnit` and `ZIO Test` also write progress to standard out ;)
-  sharedPackages = List("utest.runner"),
-  tagOptions = None
+  sharedPackages = List("utest.runner")
 ):
   override def isBackendSupported(backend: ScalaBackend): Boolean = true
 
