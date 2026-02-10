@@ -1,7 +1,7 @@
 package org.podval.tools.nonjvm
 
 import org.gradle.api.logging.LogLevel
-import org.podval.tools.platform.Output
+import org.podval.tools.build.Output
 
 abstract class Build[L](output: Output):
   private def annotation: String = getClass.getName

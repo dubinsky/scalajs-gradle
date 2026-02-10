@@ -1,7 +1,7 @@
 package org.podval.tools.scalanative
 
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.{Input, Optional, OutputDirectory, OutputFile}
+import org.gradle.api.tasks.{CacheableTask, Input, Optional, OutputDirectory, OutputFile}
 import org.podval.tools.nonjvm.LinkTask
 import java.io.File
 import java.nio.file.Path
@@ -42,9 +42,11 @@ trait ScalaNativeLinkTask extends LinkTask[ScalaNativeBackend.type]:
     )
 
 object ScalaNativeLinkTask:
+  @CacheableTask
   abstract class Main extends LinkTask.Main[ScalaNativeBackend.type] with ScalaNativeLinkTask:
     @Input @Optional def getMainClass: Property[String]
     override protected def mainClass: Option[String] = Option(getMainClass.getOrNull)
 
+  @CacheableTask
   abstract class Test extends LinkTask.Test[ScalaNativeBackend.type] with ScalaNativeLinkTask:
     override protected def mainClass: Option[String] = None

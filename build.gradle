@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.53.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '0.9.16'
+  id 'org.podval.tools.scalajs' version '0.9.18'
   id 'com.gradle.plugin-publish' version '2.0.0'
 }
 
@@ -15,6 +15,11 @@ scala.scalaVersion = version_scala
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
 dependencies {
+  // plugin development plugin added by the plugin publishing plugin
+  // supposedly adds gradleApi dependency to the 'api' configuration,
+  // but with Gradle 9.4.0-rc-1 I got ClassNotFound without this explicit dependency:
+  implementation gradleApi()
+
   // for TestClassVisitor
   implementation 'org.ow2.asm:asm:9.9.1'
 
@@ -41,8 +46,8 @@ dependencies {
   compileOnly "org.scalatest:scalatest_3:$version_framework_scalatest"
   compileOnly "org.specs2:specs2-core_3:$version_framework_specs2"
   compileOnly "com.lihaoyi:utest_3:$version_framework_utest"
-  compileOnly "org.typelevel:weaver-cats_3:$version_framework_weaver"
-  compileOnly "dev.zio:zio-test-sbt_3:$version_framework_zio_test"
+  compileOnly "org.typelevel:weaver-cats_3:$version_framework_weaver_test"
+  compileOnly "dev.zio:zio-test-sbt_3:$version_framework_ziotest"
 
   // test framework used to test this project
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"

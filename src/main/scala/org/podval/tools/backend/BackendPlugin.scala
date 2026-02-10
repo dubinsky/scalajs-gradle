@@ -3,10 +3,9 @@ package org.podval.tools.backend
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.plugins.scala.ScalaPlugin
 import org.gradle.api.{Plugin, Project}
-import org.podval.tools.build.ScalaBackend
-import org.podval.tools.gradle.Projects
+import org.podval.tools.build.Backend
 import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.platform.{IntelliJIdea, Strings}
+import org.podval.tools.util.{Projects, Strings}
 import javax.inject.Inject
 
 final class BackendPlugin @Inject(
@@ -46,12 +45,12 @@ final class BackendPlugin @Inject(
     
     backendProject.apply()
 
-  private def getBackend: ScalaBackend = Projects
-    .findProperty(project, ScalaBackend.property)
+  private def getBackend: Backend = Projects
+    .findProperty(project, Backend.property)
     .map: (backendName: String) =>
-      ScalaBackend
+      Backend
         .all
-        .find((backend: ScalaBackend) =>
+        .find((backend: Backend) =>
           backendName.toLowerCase == backend.name      .toLowerCase ||
           backendName.toLowerCase == backend.sourceRoot.toLowerCase
         )
@@ -63,7 +62,7 @@ final class BackendPlugin @Inject(
 
   private def mkMessage(message: String): String =
     s"""$message;
-       |to use one backend, set property '${ScalaBackend.property}' to one of
-       |${Strings.toString(ScalaBackend.all, _.fullName)};
+       |to use one backend, set property '${Backend.property}' to one of
+       |${Strings.toString(Backend.all, _.fullName)};
        |to use multiple backends, create at least one of the subprojects
-       |${Strings.toString(ScalaBackend.all, _.sourceRoot)}""".stripMargin
+       |${Strings.toString(Backend.all, _.sourceRoot)}""".stripMargin

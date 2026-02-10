@@ -2,7 +2,7 @@ package org.podval.tools.node
 
 import org.gradle.api.logging.{Logger, Logging}
 import org.gradle.process.ExecSpec
-import org.podval.tools.platform.{Exec, Runner}
+import org.podval.tools.build.Runner
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 

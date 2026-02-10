@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, Version}
+import org.podval.tools.build.{ScalaTestFramework, Version}
 
 // https://github.com/com-lihaoyi/utest
 // https://github.com/com-lihaoyi/utest/blob/master/utest/src/utest/runner/Framework.scala
@@ -18,9 +18,9 @@ import org.podval.tools.build.{ScalaBackend, Version}
 // also:
 //   org.scala-lang:scala3-library_sjs1_3
 //   org.scala-js:scalajs-library_2.13
-object UTest extends ScalaFramework(
-  name = "utest",
-  description = "UTest",
+object UTest extends ScalaTestFramework(
+  name = "UTest",
+  nameSbt = "utest",
   group = "com.lihaoyi",
   artifact = "utest",
   versionDefault = Version("0.9.5"),
@@ -30,6 +30,4 @@ object UTest extends ScalaFramework(
   // we are better off with the one that returns the actual summary:
   // anyway, `MUnit` and `ZIO Test` also write progress to standard out ;)
   sharedPackages = List("utest.runner")
-):
-  override def isBackendSupported(backend: ScalaBackend): Boolean = true
-
+)

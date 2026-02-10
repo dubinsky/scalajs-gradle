@@ -3,22 +3,20 @@ package org.podval.tools.nonjvm
 import org.gradle.api.Project
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.TaskProvider
-import org.podval.tools.build.{DependencyRequirement, ScalaBackend, ScalaDependency, ScalaLibrary, ScalaBinaryVersion,
-  Version}
-import org.podval.tools.gradle.{Archive, Configurations, GradleClasspath, ScalaCompiles, Tasks}
-import org.podval.tools.test.framework.NonJvmJUnit4Framework
-import org.podval.tools.platform.Scala212Collections.{arrayConcat, arrayMap}
-import org.podval.tools.task.TaskWithSourceSet
+import org.podval.tools.build.{Backend, DependencyRequirement, JarTask, ScalaBinaryVersion, ScalaDependency, ScalaLibrary, Version}
+import org.podval.tools.util.{Classpath, Configurations, Tasks}
+import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class NonJvmBackend(
   name: String,
-  val group: String,
-  val versionDefault: Version,
+  group: String,
+  final val versionDefault: Version,
   sourceRoot: String,
   artifactSuffix: String,
   pluginDependenciesConfigurationName: String,
   areCompilerPluginsBuiltIntoScala3: Boolean
-) extends ScalaBackend(
+) extends Backend(
   name = name,
   sourceRoot = sourceRoot,
   artifactSuffix = Some(artifactSuffix),
@@ -42,18 +40,20 @@ abstract class NonJvmBackend(
   protected def withBackendVersion: Array[ScalaDependency]
   protected def withDefaultVersion: Array[ScalaDependency]
 
-  final protected def scalaDependency(
+  final def scalaDependency(
+    what: String,
+    group: String = this.group,
     artifact: String,
-    what: String
+    versionDefault: Version = this.versionDefault
   ): ScalaDependency = ScalaDependency(
-    artifactId = artifact,
-    what = what,
     backend = this,
-    groupId = group,
-    version = versionDefault
+    name = s"$name $what",
+    group = group,
+    versionDefault = versionDefault,
+    artifact = artifact
   )
 
-  protected def junit4: NonJvmJUnit4Framework
+  protected def junit4: NonJvmJUnit4TestFramework
 
   protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement]
 
@@ -67,9 +67,10 @@ abstract class NonJvmBackend(
     libraryDependency
       .findInConfiguration(Configurations.implementation(project))
       .map(_.version.version)
-      .getOrElse(libraryDependency.versionDefaultFor(this, scalaLibrary))
+      .getOrElse(libraryDependency.versionDefault)
 
   final def junit4present(project: Project): Boolean = junit4
+    .dependency
     .findInConfiguration(Configurations.testImplementation(project))
     .isDefined
 
@@ -80,8 +81,9 @@ abstract class NonJvmBackend(
   ): Unit =
     super.apply(project, jvmPluginServices, isRunningInIntelliJ)
 
-    Archive.configureAppendix(project, sourceRoot)
-    TaskWithSourceSet.configureTasks(project)
+    LinkTask.configureTasks(project)
+
+    JarTask.configureTasks(project, this)
 
     // Create Plugin Dependencies Configuration.
     Configurations.create(
@@ -107,8 +109,10 @@ abstract class NonJvmBackend(
     pluginScalaLibrary: ScalaLibrary
   ): Unit =
     super.afterEvaluate(project, projectScalaLibrary, pluginScalaLibrary)
+
     ScalaCompiles.configure(project, scalaCompileParameters(projectScalaLibrary))
-    GradleClasspath.addTo(project, pluginDependenciesConfigurationName)
+
+    Classpath.addTo(Configurations.configuration(project, pluginDependenciesConfigurationName).asScala)
     projectScalaLibrary.verify(project)
 
   // TODO look into link tasks self-registering run/test counterparts - rules?
@@ -152,7 +156,7 @@ abstract class NonJvmBackend(
       dependsOn = Some(linkTest)
     )
 
-  final override protected def dependencyRequirements(
+  final override protected def requirements(
     project: Project,
     projectScalaLibrary: ScalaLibrary,
     pluginScalaLibrary: ScalaLibrary
@@ -166,29 +170,29 @@ abstract class NonJvmBackend(
     def one(configurationName: String, dependency: ScalaDependency) = DependencyRequirement.Many(
       configurationName = configurationName,
       scalaLibrary = projectScalaLibrary,
-      dependencyRequirements = Array(dependency.required(backendVersion))
+      requirements = Array(dependency.require(backendVersion))
     )
 
     Seq(
       DependencyRequirement.Many(
         configurationName = pluginDependenciesConfigurationName,
         scalaLibrary = pluginScalaLibrary,
-        dependencyRequirements = arrayConcat(
+        requirements = arrayConcat(
           arrayMap(Array(linker, testAdapter),
-            _.jvm.required(backendVersion)),
+            _.jvm.require(backendVersion)),
           arrayMap(pluginDependencies,
-            _.jvm.required())
+            _.jvm.require())
         )
       ),
       DependencyRequirement.Many(
         configurationName = Configurations.implementationName(project),
         scalaLibrary = projectScalaLibrary,
-        dependencyRequirements = arrayConcat(
+        requirements = arrayConcat(
           arrayConcat(
             arrayMap(arrayConcat(Array(library(projectScalaLibrary)), withBackendVersion),
-              _.required(backendVersion)),
+              _.require(backendVersion)),
             arrayMap(withDefaultVersion,
-              _.required())
+              _.require())
           ),
           implementation(projectScalaLibrary)
         )

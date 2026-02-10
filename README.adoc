@@ -4,35 +4,35 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.17
-:version-gradle: 9.3.1
-:version-scala: 3.8.1
+:attribute-gradleVersionForBadge: 9.4.0--rc--2
+:attribute-pluginBackendProperty: org.podval.tools.backend
+:version-gradle: 9.4.0-rc-2
+:version-plugin: 0.9.19
+:version-scalanative: 0.5.10
+:version-scalajs: 1.20.2
+:version-framework-specs2-scala2: 4.23.0
+:version-scala: 3.8.2
 :version-scala-213: 2.13.18
 :version-scala-212: 2.12.21
 :version-sbt-test-interface: 1.0
-:version-scalanative: 0.5.10
-:version-scalajs: 1.20.2
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.1
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 25.6.0
+:version-node: 25.6.1
 :version-junit: 4.13.2
-:version-framework-junit4-jvm: 0.13.3
-:version-framework-junit4-scalajs: 1.20.2
-:version-framework-junit4-scalanative: 0.5.10
-:version-framework-airspec: 2026.1.0
+:version-framework-junit4: 0.13.3
+:version-framework-junit4-scala-js: 1.20.2
+:version-framework-junit4-scala-native: 0.5.10
+:version-framework-airspec: 2026.1.4
 :version-framework-hedgehog: 0.13.0
-:version-framework-munit: 1.2.2
+:version-framework-munit: 1.2.3
 :version-framework-scalacheck: 1.19.0
 :version-framework-scalaprops: 0.10.0
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.7.0
-:version-framework-specs2-scala2: 4.23.0
 :version-framework-utest: 0.9.5
-:version-framework-weaver: 0.11.3
-:version-framework-zio-test: 2.1.24
-:attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.3.1
+:version-framework-weaver-test: 0.11.3
+:version-framework-ziotest: 2.1.24
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -301,7 +301,7 @@ in some cases - better than the dedicated test-framework-specific plugins ;)
 [#single-backend]
 === Single Backend: Scala.js or Scala Native
 Sources under `src` are processed with one specific backend;
-backend used is selected by the project property `{attribute-pluginScalaBackendProperty}`.
+backend used is selected by the project property `{attribute-pluginBackendProperty}`.
 
 The value of this property is treated as case-insensitive.
 
@@ -320,7 +320,7 @@ put the following into the `gradle.properties` file of the project:
 
 [source,properties,subs="+attributes"]
 ----
-{attribute-pluginScalaBackendProperty}=js
+{attribute-pluginBackendProperty}=js
 ----
 
 [#mixed-backends]
@@ -1402,19 +1402,19 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |JUnit4
 |com.github.sbt:junit-interface
 |jvm
-|{version-framework-junit4-jvm}
+|{version-framework-junit4}
 |Java
 
 |JUnit4 for Scala.js
 |org.scala-js:scalajs-junit-test-runtime
 |js
-|{version-framework-junit4-scalajs}
+|{version-framework-junit4-scala-js}
 |Scala 2
 
 |JUni4 for Scala Native
 |org.scala-native:junit-runtime
 |native
-|{version-framework-junit4-scalanative}
+|{version-framework-junit4-scala-native}
 |
 
 |AirSpec
@@ -1468,13 +1468,13 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |Weaver Test
 |org.typelevel:weaver-cats
 |jvm
-|{version-framework-weaver}
+|{version-framework-weaver-test}
 |support for Scala Native and Scala.js is currently broken
 
 |ZIO Test
 |dev.zio:zio-test-sbt
 |jvm, js, native
-|{version-framework-zio-test}
+|{version-framework-ziotest}
 |
 
 |===
@@ -1514,9 +1514,9 @@ dependencies {
   }
   testImplementation "com.lihaoyi:utest${scalaBackend.suffix}:{version-framework-utest}"
   if (scalaBackend.backend.jvm) {
-    testImplementation "org.typelevel:weaver-cats:{version-framework-weaver}"
+    testImplementation "org.typelevel:weaver-cats:{version-framework-weaver-test}"
   }
-  testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}:{version-framework-zio-test}"
+  testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}:{version-framework-ziotest}"
 }
 ----
 
@@ -1526,6 +1526,9 @@ that fit the Scala version and backend using this method:
 
 [source,groovy,subs="+attributes"]
 ----
+import org.podval.tools.jvm.JUnit4Jvm
+import org.podval.tools.scalajs.JUnit4ScalaJS
+import org.podval.tools.scalanative.JUnit4ScalaNative
 import org.podval.tools.test.framework.*
 
 dependencies {
@@ -1555,9 +1558,9 @@ dependencies {
   }
   testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
   if (scalaBackend.backend.jvm) {
-    testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver}')
+    testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver-test}')
   }
-  testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-zio-test}')
+  testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-ziotest}')
 }
 ----
 
@@ -1567,6 +1570,9 @@ you are using was released, above can be simplified further:
 
 [source,groovy,subs="+attributes"]
 ----
+import org.podval.tools.jvm.JUnit4Jvm
+import org.podval.tools.scalajs.JUnit4ScalaJS
+import org.podval.tools.scalanative.JUnit4ScalaNative
 import org.podval.tools.test.framework.*
 
 dependencies {
@@ -2014,7 +2020,7 @@ If that version is 2.12, any use of 2.13-exclusive features breaks the code,
 so I wrote it defensively,
 to support 2.12 even though the code was compiled by Scala 3.
 Essentially, I use arrays and my own implementations of the array operations
-(see link:src/main/scala/org/podval/tools/util/Scala212Collections.scala[Scala212Collections]).
+(see link:src/main/scala/org/podval/tools/platform/Scala212Collections.scala[Scala212Collections]).
 
 Some of the issues:
 
@@ -2032,7 +2038,7 @@ Scala 2.13 library is on the classpath, even if the project uses Scala 2.12...
 I'd rather uglify my code a little than fight with the classpath though ;)
 
 === AsciiDoc
-GitHub stupidly disables AsciDoc includes in README;
+GitHub stupidly disables AsciiDoc includes in README;
 see https://github.com/github/markup/issues/1095[the discussion].
 
 One include (of the `versions.adoc` in `README.adoc`)
@@ -2439,7 +2445,7 @@ see:
 To stop tests from being forked - which is needed to run tests
 on Scala.js or Scala Native -
 I had to fork `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter`
-(see link:src/main/scala/org/podval/tools/test/task/DefaultTestExecuter.scala[DefaultTestExecuter]).
+(see link:src/main/scala/org/podval/tools/test/run/DefaultTestExecuter.scala[DefaultTestExecuter]).
 This is suboptimal, since I now have to track changes to the forked class.
 My proposal to expose an extension point that would allow to avoid
 forking Gradle code was rejected:
@@ -2451,9 +2457,9 @@ here are examples of resulting ugliness:
 
 - to add to the implementation class path of `WorkerProcessBuilder`,
 I had to use reflection in
-link:src/main/scala/org/podval/tools/test/task/SbtTestFramework.scala[SbtTestFramework];
+link:src/main/scala/org/podval/tools/test/detect/SbtTestFramework.scala[SbtTestFramework];
 - to set test framework on the test task, I had to use reflection
-in link:src/main/scala/org/podval/tools/test/task/TestTask.scala[TestTask];
+in link:src/main/scala/org/podval/tools/build/TestTask.scala[TestTask];
 - to set options on the test framework, I copied
 `org.gradle.api.tasks.testing.Test.options`: it is private and too short to bother with reflection;
 - to call `ForkedTestClasspath.getApplicationClasspath()` I had to use reflection,
@@ -2726,7 +2732,7 @@ _AirSpec: Missing dependency on Scala.js: org.scala-js:scalajs-java-logging_
 Thank you to https://github.com/xerial[xerial] for addressing the issue.
 * _https://github.com/wvlet/airframe/pull/4012[pull/4012]_
 _Mention Gradle multi-backend Scala plugin._
-Than you to https://github.com/xerial[xerial] for approving.
+Thank you to https://github.com/xerial[xerial] for approving.
 
 - https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog]:
 * https://github.com/hedgehogqa/scala-hedgehog/issues/296[issues/296]

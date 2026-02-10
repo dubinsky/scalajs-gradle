@@ -1,8 +1,8 @@
 package org.podval.tools.test.testproject
 
 import org.gradle.testkit.runner.GradleRunner
-import org.podval.tools.build.ScalaBackend
-import org.podval.tools.platform.Files
+import org.podval.tools.build.Backend
+import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 
@@ -15,7 +15,7 @@ final class TestProject(projectName: Seq[String]):
     Seq("build", "test-projects") ++ projectName ++ Seq(projectNameString)*
   )
 
-  def writer(backend: Option[ScalaBackend]): TestProjectWriter = TestProjectWriter(backend match
+  def writer(backend: Option[Backend]): TestProjectWriter = TestProjectWriter(backend match
     case None => projectDir
     case Some(backend) => File(projectDir, backend.sourceRoot)
   )

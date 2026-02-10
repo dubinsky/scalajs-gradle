@@ -5,7 +5,6 @@ import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.podval.tools.build.{DependencyRequirement, ScalaBinaryVersion, ScalaDependency, ScalaLibrary, Version}
 import org.podval.tools.node.NodeExtension
 import org.podval.tools.nonjvm.NonJvmBackend
-import org.podval.tools.test.framework.JUnit4ScalaJS
 
 object ScalaJSBackend extends NonJvmBackend(
   name = "Scala.js",
@@ -22,44 +21,62 @@ object ScalaJSBackend extends NonJvmBackend(
   override protected def testTaskClass    : Class[ScalaJSRunTask .Test] = classOf[ScalaJSRunTask .Test]
 
   override protected def compilerPlugin: ScalaDependency =
-    scalaDependency("scalajs-compiler", "Compiler Plugin for Scala 2").scala2
+    scalaDependency(artifact = "scalajs-compiler", what = "Compiler Plugin for Scala 2").scala2
+  
   override protected def junit4Plugin: ScalaDependency =
-    scalaDependency("scalajs-junit-test-plugin", "JUnit4 Compiler Plugin for Scala 2").scala2
+    scalaDependency(artifact = "scalajs-junit-test-plugin", what = "JUnit4 Compiler Plugin for Scala 2").scala2
+  
   override protected def linker: ScalaDependency =
-    scalaDependency("scalajs-linker", "Linker").scala2
+    scalaDependency(artifact = "scalajs-linker", what = "Linker").scala2
+  
   override protected def testAdapter: ScalaDependency =
-    scalaDependency("scalajs-sbt-test-adapter", "Test Adapter for Node.js").scala2
+    scalaDependency(artifact = "scalajs-sbt-test-adapter", what = "Test Adapter for Node.js").scala2
+  
   override protected def testBridge: ScalaDependency =
-    scalaDependency("scalajs-test-bridge", "Test Bridge for Node.js").scala2.jvm
+    scalaDependency(artifact = "scalajs-test-bridge", what = "Test Bridge for Node.js").scala2.jvm
 
   override protected def library(scalaLibrary: ScalaLibrary): ScalaDependency =
-    scalaDependency("scalajs-library", "Library").scala2.jvm
+    scalaDependency(artifact = "scalajs-library", what = "Library").scala2.jvm
 
   override protected def withBackendVersion: Array[ScalaDependency] = Array.empty
 
-  val jsDomNodeVersion: Version = Version("1.1.1")
-  override protected def pluginDependencies: Array[ScalaDependency] = Array(
-    scalaDependency("scalajs-env-jsdom-nodejs", "Node.js JavaScript environment with JSDOM")
-      .withVersionDefault(jsDomNodeVersion)
-      .scala2
+  val jsDomNode: ScalaDependency = scalaDependency(
+    artifact = "scalajs-env-jsdom-nodejs",
+    what = "Node.js JavaScript environment with JSDOM",
+    versionDefault = Version("1.1.1")
   )
-  
-  val domVersion: Version = Version("2.8.1")
-  override protected def withDefaultVersion: Array[ScalaDependency] = Array(
-    scalaDependency("scalajs-dom", "Library for DOM manipulations")
-      .withVersionDefault(domVersion)
+    .scala2
+
+  override protected def pluginDependencies: Array[ScalaDependency] = Array(
+    jsDomNode
   )
 
-  //def javaLogging: ScalaDependency = scalaDependency("scalajs-java-logging", "Port of the java.util.logging API of JDK 8 for Scala.js")
-  //  .withVersionDefault(Version("1.0.0")
-  //  .scala2
+  val dom: ScalaDependency = scalaDependency(
+    artifact = "scalajs-dom",
+    what = "Library for DOM manipulations",
+    versionDefault = Version("2.8.1")
+  )
+
+  override protected def withDefaultVersion: Array[ScalaDependency] = Array(
+    dom
+  )
+
+  //def javaLogging: ScalaDependency =
+  // scalaDependency(
+  //   artifact = "scalajs-java-logging",
+  //   what = "Port of the java.util.logging API of JDK 8 for Scala.js"),
+  //   versionDefault = Version("1.0.0")
+  // )
+  //   .scala2
   
-  val playwrightVersion: Version = Version("0.1.18")
-  //def playwright: ScalaDependency = scalaDependency("scala-js-env-playwright", "Playwright JavaScript environment")
-  //  .withGroup("io.github.gmkumar2005")
-  //  .withVersionDefault(playwrightVersion)
-  //  .scala2
-  //  .jvm
+  val playwright: ScalaDependency = scalaDependency(
+    group = "io.github.gmkumar2005",
+    artifact = "scala-js-env-playwright",
+    what = "Playwright JavaScript environment",
+    versionDefault = Version("0.1.18")
+  )
+    .scala2
+    .jvm
 
   override protected def junit4: JUnit4ScalaJS.type = JUnit4ScalaJS
 
@@ -70,16 +87,16 @@ object ScalaJSBackend extends NonJvmBackend(
 
   override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] =
     scalaLibrary.scalaVersion.binaryVersion match
-      case _: ScalaBinaryVersion.Scala3 => Array(scala3Library(scalaLibrary.scalaVersion.version))
+      case _: ScalaBinaryVersion.Scala3 => Array(scala3Library.require(scalaLibrary.scalaVersion.version))
       case _ => Array.empty
 
   // There is no Scala 2 equivalent.
-  private def scala3Library(version: Version): DependencyRequirement =
-    scalaDependency("scala3-library", "Scala 3 library in Scala.js")
-      .withGroup(ScalaBinaryVersion.group)
-      .withVersionDefault(versionDefault)
-      .scala3
-      .required(version)
+  private def scala3Library: ScalaDependency = scalaDependency(
+    group = ScalaBinaryVersion.group,
+    artifact = "scala3-library",
+    what = "Scala 3 library in Scala.js",
+  )
+    .scala3
 
   override def apply(
     project: Project, 

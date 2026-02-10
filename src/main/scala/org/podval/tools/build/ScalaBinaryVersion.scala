@@ -1,19 +1,23 @@
 package org.podval.tools.build
 
-sealed trait ScalaBinaryVersion extends JavaDependency derives CanEqual:
-  final override def group: String = ScalaBinaryVersion.group
-
-  final override def toString: String = prefix.toString
-
-  def prefix: Version
+sealed abstract class ScalaBinaryVersion(
+  name: String,
+  artifact: String,
+  scalaVersion: Option[Version],
+  val prefix: Version,
+  versionDefault: Version
+) extends JavaDependency(
+  name = name,
+  group = ScalaBinaryVersion.group,
+  versionDefault = versionDefault,
+  artifact = artifact,
+  scalaVersion = scalaVersion
+) derives CanEqual:
+  final val scalaVersionDefault: ScalaVersion.Known = ScalaVersion.Known(this, versionDefault)
 
   final def is(version: Version): Boolean = version.startsWith(prefix) && isInRange(version)
 
   def isInRange(version: Version): Boolean
-
-  final override def versionDefault: Version = scalaVersionDefault.version
-
-  def scalaVersionDefault: ScalaVersion.Known
 
 object ScalaBinaryVersion:
   val group: String = "org.scala-lang"
@@ -25,30 +29,46 @@ object ScalaBinaryVersion:
     Scala2_12
   )
 
-  sealed trait Scala3 extends ScalaBinaryVersion:
-    final override def artifact: String = "scala3-library_3"
-    final override def description: String = "Scala 3 Library."
-    final override val prefix: Version = Version("3")
+  sealed abstract class Scala3(
+    versionDefault: Version
+  ) extends ScalaBinaryVersion(
+    artifact = "scala3-library",
+    scalaVersion = Some(Version("3")),
+    name = "Scala 3 Library.",
+    prefix = Version("3"),
+    versionDefault = versionDefault
+  )
 
   private val versionScala3LibraryCompiledWithScala3: Version = Version("3.8.0")
 
-  case object Scala3WithScala3Library extends Scala3:
+  case object Scala3WithScala3Library extends Scala3(
+    versionDefault = Version("3.8.2")
+  ):
     override def isInRange(version: Version): Boolean = version >= versionScala3LibraryCompiledWithScala3
-    override val scalaVersionDefault: ScalaVersion.Known = ScalaVersion("3.8.1")
 
-  case object Scala3WithScala2Library extends Scala3:
+  case object Scala3WithScala2Library extends Scala3(
+    versionDefault = Version("3.7.4")
+  ):
     override def isInRange(version: Version): Boolean = version < versionScala3LibraryCompiledWithScala3
-    override val scalaVersionDefault: ScalaVersion.Known = ScalaVersion("3.7.4")
 
-  sealed trait Scala2 extends ScalaBinaryVersion:
-    final override def artifact: String = "scala-library"
-    final override def description: String = "Scala 2 Library."
+  sealed abstract class Scala2(
+    prefix: Version,
+    versionDefault: Version
+  ) extends ScalaBinaryVersion(
+    artifact = "scala-library",
+    scalaVersion = None,
+    name = "Scala 2 Library.",
+    prefix = prefix,
+    versionDefault = versionDefault
+  ):
     final override def isInRange(version: Version): Boolean = true
 
-  case object Scala2_13 extends Scala2:
-    override val prefix: Version = Version("2.13")
-    override val scalaVersionDefault: ScalaVersion.Known = ScalaVersion("2.13.18")
+  case object Scala2_13 extends Scala2(
+    prefix = Version("2.13"),
+    versionDefault = Version("2.13.18")
+  )
 
-  case object Scala2_12 extends Scala2:
-    override val prefix: Version = Version("2.12")
-    override val scalaVersionDefault: ScalaVersion.Known = ScalaVersion("2.12.21")
+  case object Scala2_12 extends Scala2(
+    prefix = Version("2.12"),
+    versionDefault = Version("2.12.21")
+  )

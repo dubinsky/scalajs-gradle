@@ -1,6 +1,6 @@
 package org.podval.tools.test.filter
 
-import org.podval.tools.platform.Strings
+import org.podval.tools.util.Strings
 import scala.annotation.tailrec
 import java.util.regex.Pattern
 

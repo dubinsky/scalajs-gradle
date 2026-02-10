@@ -2,10 +2,10 @@ package org.podval.tools.scalajs
 
 //import jsenv.playwright.PWEnv
 import org.gradle.process.ExecOperations
+import org.podval.tools.build.{Output, Runner, TestEnvironment}
 import org.podval.tools.node.NodeProject
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
-import org.podval.tools.platform.{Files, Output, Runner}
-import org.podval.tools.test.task.TestEnvironment
+import org.podval.tools.util.Files
 import org.scalajs.jsenv.{Input, JSEnv, JSRun, RunConfig}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.jsenv.nodejs.NodeJSEnv

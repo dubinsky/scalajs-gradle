@@ -5,9 +5,8 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.process.ExecOperations
-import org.podval.tools.build.Version
-import org.podval.tools.gradle.{Extensions, Projects, Tasks}
-import org.podval.tools.platform.{Output, Runner}
+import org.podval.tools.build.{Output, Runner, Version}
+import org.podval.tools.util.{Extensions, Projects, Tasks}
 import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
 import java.io.File
 import javax.inject.Inject
@@ -42,14 +41,14 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
 
   // configure tasks, install Node (if needed) and set up Node project (if needed).
   project.afterEvaluate: (project: Project) =>
-    TaskWithNodeProject.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
+    NodeProjectTask.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
 
     val output: Output = Output(
       logLevelEnabled = LogLevel.LIFECYCLE,
       isRunningInIntelliJ = false,
       logSource = "Node.js extension"
     )
-    NodeDependency
+    NodeInstaller
       .getInstalledOrInstall(
         version = version,
         project = project,
