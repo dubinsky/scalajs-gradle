@@ -81,21 +81,19 @@ class SbtTestFramework(
   //
   // If I add the plugin jar to the *implementation* classpath everything works (but feels unclean).
   private def classPathAdditions(
-    gradleModules: List[String],
-    externalModules: List[String],
+    modules: List[String],
     jars: List[String]
   ): List[URL] =
-    jars.map(GradleClasspath.findOn) ++
-    (
-      gradleModules.map(moduleRegistry.getModule) ++
-      externalModules.map(moduleRegistry.getExternalModule)
-    ).flatMap(_.getImplementationClasspath.getAsURLs.asScala)
+    jars
+      .map(GradleClasspath.findOn) ++
+    modules
+      .map(moduleRegistry.getModule)
+      .flatMap(_.getImplementationClasspath.getAsURLs.asScala)
 
-  private val implementationClasspathAdditions: List[URL] = classPathAdditions(
-    gradleModules = List(),
-    // To have the freedom to place the code where I want without trying to segregate forkable code from un-forkable
-    // and avoid initialization issues, I need to add some Gradle modules.
-    externalModules = List(
+  private def implementationClasspathAdditions: List[URL] = classPathAdditions(
+    modules = List(
+      // To have the freedom to place the code where I want without trying to segregate forkable code from un-forkable
+      // and avoid initialization issues, I need to add some Gradle modules.
       //"gradle-core-api"
     ),
     jars = List(
@@ -113,9 +111,8 @@ class SbtTestFramework(
     )
   )
 
-  private val applicationClasspathAdditions: List[URL] = classPathAdditions(
-    gradleModules = List(),
-    externalModules = List(
+  private def applicationClasspathAdditions: List[URL] = classPathAdditions(
+    modules = List(
       // Without this, starting with Gradle 7.6 I get:
       // java.lang.NoClassDefFoundError: org/codehaus/groovy/runtime/callsite/CallSite
       "groovy"
@@ -140,20 +137,21 @@ class SbtTestFramework(
       // "test-interface"; jar itself is already on the classpath
       "sbt.testing",
 
-      // "groovy" external module added to the applicationClasspath
+      // "groovy" module added to the applicationClasspath
       "org.codehaus.groovy"
     )
+
+  private def getImplementationClasspath(builder: DefaultWorkerProcessBuilder): List[URL] = Reflection
+    .Get[java.util.List[URL], DefaultWorkerProcessBuilder]("implementationClassPath")(builder)
+    .asScala
+    .toList
 
   override def getWorkerConfigurationAction: Action[WorkerProcessBuilder] = (builderInterface: WorkerProcessBuilder) =>
     val builder: DefaultWorkerProcessBuilder = builderInterface.asInstanceOf[DefaultWorkerProcessBuilder]
 
-    builder.setImplementationClasspath((
-      Reflection
-        .Get[java.util.List[URL], DefaultWorkerProcessBuilder]("implementationClassPath")(builder)
-        .asScala
-        .toList ++
-      implementationClasspathAdditions
-    ).asJava)
+    builder.setImplementationClasspath(
+      (getImplementationClasspath(builder) ++ implementationClasspathAdditions).asJava
+    )
 
     builder.applicationClasspath(
       applicationClasspathAdditions.map(Files.url2file).asJava

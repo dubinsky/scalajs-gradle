@@ -4,35 +4,35 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:version-plugin: 0.9.17
-:version-gradle: 9.3.1
+:attribute-gradleVersionForBadge: 9.4.0--rc--1
+:attribute-pluginScalaProperty: org.podval.tools.backend
+:version-gradle: 9.4.0-rc-1
+:version-plugin: 0.9.19
+:version-scalanative: 0.5.10
+:version-scalajs: 1.20.2
+:version-framework-specs2-scala2: 4.23.0
 :version-scala: 3.8.1
 :version-scala-213: 2.13.18
 :version-scala-212: 2.12.21
 :version-sbt-test-interface: 1.0
-:version-scalanative: 0.5.10
-:version-scalajs: 1.20.2
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.1
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 25.6.0
+:version-node: 25.6.1
 :version-junit: 4.13.2
 :version-framework-junit4-jvm: 0.13.3
 :version-framework-junit4-scalajs: 1.20.2
 :version-framework-junit4-scalanative: 0.5.10
-:version-framework-airspec: 2026.1.0
+:version-framework-airspec: 2026.1.1
 :version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.2.2
 :version-framework-scalacheck: 1.19.0
 :version-framework-scalaprops: 0.10.0
 :version-framework-scalatest: 3.2.19
 :version-framework-specs2: 5.7.0
-:version-framework-specs2-scala2: 4.23.0
 :version-framework-utest: 0.9.5
 :version-framework-weaver: 0.11.3
 :version-framework-zio-test: 2.1.24
-:attribute-pluginScalaBackendProperty: org.podval.tools.backend
-:attribute-gradleVersionForBadge: 9.3.1
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -301,7 +301,7 @@ in some cases - better than the dedicated test-framework-specific plugins ;)
 [#single-backend]
 === Single Backend: Scala.js or Scala Native
 Sources under `src` are processed with one specific backend;
-backend used is selected by the project property `{attribute-pluginScalaBackendProperty}`.
+backend used is selected by the project property `{attribute-pluginBackendProperty}`.
 
 The value of this property is treated as case-insensitive.
 
@@ -320,7 +320,7 @@ put the following into the `gradle.properties` file of the project:
 
 [source,properties,subs="+attributes"]
 ----
-{attribute-pluginScalaBackendProperty}=js
+{attribute-pluginBackendProperty}=js
 ----
 
 [#mixed-backends]

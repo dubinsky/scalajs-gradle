@@ -12,15 +12,16 @@ import org.gradle.internal.time.Clock
 import org.gradle.internal.work.WorkerLeaseService
 import org.gradle.internal.{Actions, Cast}
 import org.gradle.util.internal.ConfigureUtil
-import org.podval.tools.build.{BackendTask, ScalaBackend}
+import org.podval.tools.build.Backend
 import org.podval.tools.gradle.Tasks
 import org.podval.tools.platform.Reflection
 import org.podval.tools.task.TaskWithOutput
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
-abstract class TestTask[B <: ScalaBackend] extends Test
-  with BackendTask[B]
+// TODO add ScalaLibrary/ScalaVersion here and use it in loading frameworks
+abstract class TestTask[B <: Backend] extends Test
+  with Backend.Task[B]
   with TaskWithOutput:
 
   protected def testEnvironmentCreator: TestEnvironment.Creator[B]
@@ -60,7 +61,7 @@ abstract class TestTask[B <: ScalaBackend] extends Test
   // best be done with this here, before `super.createTestExecuter()` is called.
   @TaskAction final override def executeTests(): Unit =
     require(getTestFramework.isInstanceOf[SbtTestFramework],
-      s"Only `useSbt` Gradle test framework is supported by this plugin - not $testFramework!")
+      s"Only `useSbt` Gradle test framework is supported by this plugin - not $getTestFramework!")
     require(isScanForTestClasses,
       "File-name based test scan is not supported by this plugin, `isScanForTestClasses` must be `true`!")
 

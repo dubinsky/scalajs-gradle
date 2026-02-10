@@ -2,12 +2,12 @@ package org.podval.tools.nonjvm
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
-import org.podval.tools.build.BackendTask
+import org.podval.tools.build.Backend
 import org.podval.tools.task.{TaskThatDependsOn, TaskWithOutput, TaskWithRunner}
 import org.podval.tools.test.task.{TestEnvironment, TestTask}
 import scala.reflect.ClassTag
 
-trait RunTask[B <: NonJvmBackend, L <: LinkTask[B] : ClassTag] extends BackendTask[B]
+trait RunTask[B <: NonJvmBackend, L <: LinkTask[B] : ClassTag] extends Backend.Task[B]
   with TaskThatDependsOn[L]
   with TaskWithOutput:
   

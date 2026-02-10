@@ -2,14 +2,14 @@ package org.podval.tools.nonjvm
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
-import org.podval.tools.build.BackendTask
+import org.podval.tools.build.Backend
 import org.podval.tools.gradle.Projects
 import org.podval.tools.platform.Files
 import org.podval.tools.task.{TaskWithOutput, TaskWithSourceSet}
 import java.io.File
 
 abstract class LinkTask[B <: NonJvmBackend] extends DefaultTask
-  with BackendTask[B]
+  with Backend.Task[B]
   with TaskWithSourceSet
   with TaskWithOutput:
   

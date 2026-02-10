@@ -49,7 +49,7 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
       isRunningInIntelliJ = false,
       logSource = "Node.js extension"
     )
-    NodeDependency
+    NodeInstaller
       .getInstalledOrInstall(
         version = version,
         project = project,

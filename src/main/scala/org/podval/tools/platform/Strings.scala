@@ -18,6 +18,8 @@ object Strings:
 
   def toString[T](backends: Iterable[T], f: T => String): String = backends.map(f).mkString(", ")
 
+  def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
+
   def splice(
     in: Seq[String],
     boundary: String,

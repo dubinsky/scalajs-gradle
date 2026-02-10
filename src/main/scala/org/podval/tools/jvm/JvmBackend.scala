@@ -1,12 +1,12 @@
 package org.podval.tools.jvm
 
 import org.gradle.api.Project
-import org.podval.tools.build.{DependencyRequirement, JavaDependency, ScalaBackend, ScalaLibrary, Version}
+import org.podval.tools.build.{Backend, JavaDependency, Requirement, ScalaLibrary, Version}
 import org.podval.tools.gradle.Configurations
 import org.podval.tools.test.framework.Framework
 import org.podval.tools.test.task.TestEnvironment
 
-object JvmBackend extends ScalaBackend(
+object JvmBackend extends Backend(
   name = "JVM",
   sourceRoot = "jvm",
   artifactSuffix = None,
@@ -18,26 +18,26 @@ object JvmBackend extends ScalaBackend(
   override def registerTasks(project: Project): Unit =
     registerTestTask(project, dependsOn = None)
 
-  override protected def dependencyRequirements(
+  override protected def requirements(
     project: Project,
     projectScalaLibrary: ScalaLibrary,
     pluginScalaLibrary: ScalaLibrary
-  ): Seq[DependencyRequirement.Many] = Seq(
-    DependencyRequirement.Many(
+  ): Seq[Requirement.Many] = Seq(
+    Requirement.Many(
       configurationName = Configurations.testRuntimeOnlyName(project),
       scalaLibrary = projectScalaLibrary,
-      dependencyRequirements = Array(
-        sbtTestInterface.required()
+      requirements = Array(
+        SbtTestInterface.require()
       )
     )
   )
 
-  val sbtTestInterfaceVersion: Version = Version("1.0")
-  private def sbtTestInterface: JavaDependency = new JavaDependency:
-    override val group: String = "org.scala-sbt"
-    override val artifact: String = "test-interface"
-    override val versionDefault: Version = sbtTestInterfaceVersion
-    override val description: String = "SBT testing interface; some test frameworks (ScalaTest :)) do not bring it in."
+  object SbtTestInterface extends JavaDependency(
+    name = "SBT testing interface; some test frameworks (ScalaTest :)) do not bring it in.",
+    group = "org.scala-sbt",
+    versionDefault = Version("1.0"),
+    artifact = "test-interface"
+  )
 
   override def testEnvironment: TestEnvironment[JvmBackend.type] = new TestEnvironment[JvmBackend.type](
     backend = this,

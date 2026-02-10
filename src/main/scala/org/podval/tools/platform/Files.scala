@@ -1,5 +1,7 @@
 package org.podval.tools.platform
 
+import org.gradle.api.Project
+import org.gradle.api.file.FileTree
 import org.slf4j.{Logger, LoggerFactory}
 import scala.io.Source
 import java.io.{BufferedWriter, File, FileWriter}
@@ -40,4 +42,34 @@ object Files:
   def listDirectories(directory: File): Seq[File] = Option(directory.listFiles)
     .map(_.toSeq.filter(_.isDirectory))
     .getOrElse(Seq.empty)
-  
+
+  def write(
+    file: File,
+    content: Seq[String]
+  ): Unit = write(
+    file.getAbsoluteFile, 
+    Strings.toString(content)
+  )
+    
+  def splice(
+    file: File,
+    boundary: String,
+    patch: Seq[String]
+  ): Unit = write(
+    file,
+    Strings.splice(
+      in = read(file.getAbsoluteFile),
+      boundary = boundary,
+      patch = patch
+    )
+  )
+
+  def unpack(
+    project: Project,
+    artifact: File,
+    into: File
+  ): Unit =
+    val isZip: Boolean = artifact.getName.endsWith(".zip")
+    val from: FileTree = (if isZip then project.zipTree else project.tarTree)(artifact)
+    into.mkdir()
+    project.copy(_.from(from).into(into): Unit)

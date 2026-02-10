@@ -3,17 +3,16 @@ package org.podval.tools.gradle
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.repositories.{ArtifactRepository, IvyArtifactRepository, IvyPatternRepositoryLayout}
-import org.gradle.api.file.FileTree
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
-object Artifact:
-  final class Repository(
-    val url: String,
-    val artifactPattern: String,
-    val ivy: String
-  )
+final class Repository(
+  val url: String,
+  val artifactPattern: String,
+  val ivy: String
+)
 
+object Repository:
   def resolve(
     project: Project,
     dependencyNotation: String,
@@ -87,13 +86,3 @@ object Artifact:
       if allRepositories != null then
         project.getRepositories.clear()
         project.getRepositories.addAll(allRepositories)
-
-  def unpack(
-    project: Project,
-    artifact: File,
-    into: File
-  ): Unit =
-    val isZip: Boolean = artifact.getName.endsWith(".zip")
-    val from: FileTree = (if isZip then project.zipTree else project.tarTree)(artifact)
-    into.mkdir()
-    project.copy(_.from(from).into(into): Unit)

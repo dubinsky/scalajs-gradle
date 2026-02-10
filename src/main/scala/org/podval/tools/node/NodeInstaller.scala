@@ -1,17 +1,18 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.{DependencyInstallable, NonScalaDependency, Version}
-import org.podval.tools.gradle.Artifact
+import org.podval.tools.build.{Installer, Version}
+import org.podval.tools.gradle.Repository
 import org.podval.tools.platform.{Architecture, Exec, Os, Strings}
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
-object NodeDependency extends NonScalaDependency with DependencyInstallable[Node]:
-  override def versionDefault: Version = Version("25.6.0")
+object NodeInstaller extends Installer[Node]:
+  override def versionDefault: Version = Version("25.6.1")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
-  override def description: String = "Node.js"
+  override def backendSuffix: Option[String] = None
+  override def name: String = "Node.js"
   override def extension(version: Version): Option[String] = Some(if isZip(version) then "zip" else "tar.gz")
   
   override def classifier(version: Version): Option[String] =
@@ -22,7 +23,7 @@ object NodeDependency extends NonScalaDependency with DependencyInstallable[Node
   
   override def cacheDirectory: String = "nodejs"
 
-  override def repository: Option[Artifact.Repository] = Some(Artifact.Repository(
+  override def repository: Option[Repository] = Some(Repository(
     url = "https://nodejs.org/dist",
     artifactPattern = "v[revision]/[artifact](-v[revision]-[classifier]).[ext]",
     ivy = "v[revision]/ivy.xml"
@@ -66,11 +67,9 @@ object NodeDependency extends NonScalaDependency with DependencyInstallable[Node
   
   override def isZip(version: Version): Boolean = isWindows && hasWindowsZip(version)
   
-  override def archiveSubdirectoryPath(version: Version): Seq[String] =
-    val classifierStr: String = Strings.prefix("-", dependency.classifier(version))
-    Seq(
-      s"${dependency.artifact}-v$version$classifierStr"
-    )
+  override def archiveSubdirectoryPath(version: Version): Seq[String] = Seq(
+    s"$artifact-v$version${Strings.prefix("-", classifier(version))}"
+  )
 
   override def installation(root: File): Node =
     val bin: File = if !isWindows then File(root, "bin") else root

@@ -46,7 +46,7 @@ object TestClassRun:
       )
 
     Array(
-      value.framework.name,
+      value.framework.nameSbt,
       value.className,
       fingerprintStrings(0),
       fingerprintStrings(1),
@@ -61,7 +61,7 @@ object TestClassRun:
   // (https://github.com/scala-js/scala-js/pull/5132#discussion_r1967584316)
   final def read(string: String): TestClassRun = fromStrings(string.split(separator, -1))
   private def fromStrings(strings: Array[String]): TestClassRun = TestClassRun(
-    framework = Framework.forName(strings(0)).load,
+    framework = Framework.forNameSbt(strings(0)).load,
     className = strings(1),
     fingerprint =
       val isAnnotated: Boolean = toBoolean(strings(2))

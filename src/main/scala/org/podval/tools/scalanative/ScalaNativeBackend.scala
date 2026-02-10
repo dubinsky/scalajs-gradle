@@ -1,6 +1,6 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaLibrary, ScalaBinaryVersion, Version}
+import org.podval.tools.build.{Requirement, ScalaDependency, ScalaLibrary, ScalaBinaryVersion, Version}
 import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.test.framework.JUnit4ScalaNative
 
@@ -19,32 +19,38 @@ object ScalaNativeBackend extends NonJvmBackend(
   override protected def testTaskClass    : Class[ScalaNativeRunTask .Test] = classOf[ScalaNativeRunTask .Test]
 
   override protected def compilerPlugin: ScalaDependency =
-    scalaDependency("nscplugin", "Compiler Plugin")
+    scalaDependency(artifact = "nscplugin", what = "Compiler Plugin")
+  
   override protected def junit4Plugin: ScalaDependency =
-    scalaDependency("junit-plugin", "JUnit4 Compiler Plugin for generating bootstrappers")
+    scalaDependency(artifact = "junit-plugin", what = "JUnit4 Compiler Plugin for generating bootstrappers")
+  
   override protected def linker: ScalaDependency =
-    scalaDependency("tools", "Build Tools, including Linker")
+    scalaDependency(artifact = "tools", what = "Build Tools, including Linker")
+  
   override protected def testAdapter: ScalaDependency =
-    scalaDependency("test-runner", "Test Runner")
+    scalaDependency(artifact = "test-runner", what = "Test Runner")
+    
   override protected def testBridge: ScalaDependency =
-    scalaDependency("test-interface", "SBT Test Interface")
+    scalaDependency(artifact = "test-interface", what = "SBT Test Interface")
 
   override protected def library(scalaLibrary: ScalaLibrary): ScalaDependency = (
     scalaLibrary.scalaVersion.binaryVersion match
-      case _: ScalaBinaryVersion.Scala3 => scalaDependency("scala3lib", "Scala 3 Library").scala3
-      case _                      => scalaDependency("scalalib" , "Scala 2 Library").scala2
-  ).withVersionCompound
+      case _: ScalaBinaryVersion.Scala3 =>
+        scalaDependency(artifact = "scala3lib", what = "Scala 3 Library").scala3
+      case _ =>
+        scalaDependency(artifact = "scalalib", what = "Scala 2 Library").scala2
+  ).versionCompound
 
   override protected def pluginDependencies: Array[ScalaDependency] = Array.empty
   override protected def withDefaultVersion: Array[ScalaDependency] = Array.empty
 
   override protected def withBackendVersion: Array[ScalaDependency] = Array(
-    scalaDependency("nativelib" , "Native Library" ),
-    scalaDependency("clib"      , "C Library"      ),
-    scalaDependency("posixlib"  , "Posix Library"  ),
-    scalaDependency("windowslib", "Windows Library"),
-    scalaDependency("javalib"   , "Java Library"   ),
-    scalaDependency("auxlib"    , "Aux Library"    )
+    scalaDependency(artifact = "nativelib", what = "Native Library"),
+    scalaDependency(artifact = "clib", what = "C Library"),
+    scalaDependency(artifact = "posixlib", what = "Posix Library"),
+    scalaDependency(artifact = "windowslib", what = "Windows Library"),
+    scalaDependency(artifact = "javalib", what = "Java Library"),
+    scalaDependency(artifact = "auxlib", what = "Aux Library")
   )
 
   override protected def junit4: JUnit4ScalaNative.type = JUnit4ScalaNative
@@ -54,7 +60,7 @@ object ScalaNativeBackend extends NonJvmBackend(
       case ScalaBinaryVersion.Scala2_13 => Seq("-Ytasty-reader")
       case _ => Seq.empty
   
-  override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] = Array.empty
+  override protected def implementation(scalaLibrary: ScalaLibrary): Array[Requirement] = Array.empty
 
   // // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
   // // When using Scala 3 exclude Scala 2.13 standard native libraries,

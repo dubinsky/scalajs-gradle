@@ -2,7 +2,7 @@ package org.podval.tools.build
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.gradle.{Artifact, Configurations, GradleClasspath}
+import org.podval.tools.gradle.{Configurations, GradleClasspath, Repository}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
@@ -110,10 +110,10 @@ object ScalaLibrary:
     project: Project,
     source: String,
     isFromClasspath: Boolean,
-    find: JavaDependency => Option[Dependency.WithVersion]
+    find: JavaDependency => Option[WithVersion]
   ): ScalaLibrary =
-    def toScalaVersion(dependencyWithVersion: Dependency.WithVersion): ScalaVersion.Known =
-      ScalaVersion(dependencyWithVersion.version.version)
+    def toScalaVersion(withVersion: WithVersion): ScalaVersion.Known =
+      ScalaVersion(withVersion.version.nonCompound)
 
     // Note: version does not affect find(); for example find(Scala2_13)
     // finds any Scala 2 library, even if it is 2.12, not 2.13 - and even if it is 3.8.0 :)
@@ -153,9 +153,9 @@ object ScalaLibrary:
         fromClasspath(
           project,
           source = s"'$scala3' resolved",
-          classPath = Artifact.resolveTransitive(
+          classPath = Repository.resolveTransitive(
             project,
-            dependencyNotation = scala3.dependencyNotation(),
+            dependencyNotation = scala3.dependencyNotation,
             repository = None
           )
         )

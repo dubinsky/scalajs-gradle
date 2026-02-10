@@ -2,7 +2,7 @@ package org.podval.tools.test.testproject
 
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.tasks.testing.TestResult.ResultType
-import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion}
+import org.podval.tools.build.{Backend, ScalaBinaryVersion, ScalaLibrary, ScalaVersion}
 import org.scalatest.funspec.AnyFunSpec
 import scala.jdk.CollectionConverters.*
 import ForClass.{ClassExpectation, MethodExpectation}
@@ -25,7 +25,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   protected def features: Seq[Feature]
   protected def fixtures: Seq[Fixture]
   protected def scalaVersions: Seq[ScalaVersion.Known] = ScalaBinaryVersion.all.map(_.scalaVersionDefault)
-  protected def backends: Set[ScalaBackend] = ScalaBackend.all
+  protected def backends: Set[Backend] = Backend.all
   
   final protected def groupTestByFixtureAndCombined(): Unit =
     if testByFixture || fixtures.size == 1 then
@@ -40,23 +40,23 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         for feature: Feature <- features do
           describe(feature.name):
             for fixture: Fixture <- fixtures do
-              describe(fixture.framework.description):
+              describe(fixture.framework.name):
                 forScalaVersions(
                   projectName = Seq(
                     feature.name,
-                    fixture.framework.description
+                    fixture.framework.name
                   ),
                   feature,
                   Seq(fixture),
                 )
       else
         for fixture: Fixture <- fixtures do
-          describe(fixture.framework.description):
+          describe(fixture.framework.name):
             for feature: Feature <- features do
               describe(feature.name):
                 forScalaVersions(
                   projectName = Seq(
-                    fixture.framework.description,
+                    fixture.framework.name,
                     feature.name
                   ),
                   feature,
@@ -106,7 +106,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
 
   private def fixturesSupported(
     fixtures: Seq[Fixture],
-    backend: ScalaBackend,
+    backend: Backend,
     scalaVersion: ScalaVersion
   ): Seq[Fixture] = fixtures
     .filter(_.framework.isBackendSupported(backend, scalaVersion))
@@ -117,11 +117,11 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion.Known
   ): Unit =
-    val backendsSupported: Set[ScalaBackend] = backends.filter(fixturesSupported(fixtures, _, scalaVersion).nonEmpty)
+    val backendsSupported: Set[Backend] = backends.filter(fixturesSupported(fixtures, _, scalaVersion).nonEmpty)
 
     if backendsSupported.nonEmpty then
       if backendsSupported.size == 1 || testByBackend then
-        for backend: ScalaBackend <- backendsSupported do
+        for backend: Backend <- backendsSupported do
           val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend, scalaVersion)
           if fixturesSupported.nonEmpty then
             val backendString: String = s"on ${backend.name}"
@@ -179,7 +179,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     feature: Feature,
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion.Known,
-    backend: ScalaBackend
+    backend: Backend
   ): Unit =
     def createProject: TestProject =
       val project: TestProject = TestProject(projectName)
@@ -191,7 +191,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         buildFragments = Seq(testTask(feature, fixtures))
       )
       val writer: TestProjectWriter = project.writer(backend = None)
-      writer.writeProperties(Seq(ScalaBackend.property -> backend.name))
+      writer.writeProperties(Seq(Backend.property -> backend.name))
       writer.writeSources(fixtures)
       project
 
@@ -214,7 +214,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     feature: Feature,
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion.Known,
-    backends: Set[ScalaBackend]
+    backends: Set[Backend]
   ): Unit =
     def createProject: TestProject =
       val project: TestProject = TestProject(projectName)
@@ -225,7 +225,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
         testImplementation = Seq.empty,
         buildFragments = Seq.empty
       )
-      for backend: ScalaBackend <- backends do
+      for backend: Backend <- backends do
         val writer: TestProjectWriter = project.writer(backend = Some(backend))
         val fixturesSupported: Seq[Fixture] = this.fixturesSupported(fixtures, backend, scalaVersion)
         writer.writeBuild(Seq(
@@ -242,7 +242,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     val project: Memo[TestProject] = Memo(createProject)
     val testResultsRetriever: Memo[TestResultsRetriever] = project.map(_.test(fixtures.flatMap(_.commandLineIncludeTestNames)))
 
-    for backend: ScalaBackend <- backends do test(
+    for backend: Backend <- backends do test(
       testResultsRetriever.map(_.testResults(backend = Some(backend))),
       s"${backend.sourceRoot} tests",
       checks = fixturesSupported(fixtures, backend, scalaVersion).flatMap(_.checks(feature))
@@ -251,13 +251,15 @@ abstract class GroupingFunSpec extends AnyFunSpec:
   private def frameworkDependencies(
     fixtures: Seq[Fixture],
     scalaVersion: ScalaVersion.Known,
-    backend: ScalaBackend
+    backend: Backend
   ): Seq[String] = fixtures.map(_
     .framework
-    .dependencyNotation(
+    .withVersion(
+      backend = backend,
       scalaLibrary = ScalaLibrary.fromScalaVersion(scalaVersion),
-      backendOverride = Some(backend)
+      version = None
     )
+    .dependencyNotation
   )
   
   private def testTask(

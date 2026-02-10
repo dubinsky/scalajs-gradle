@@ -15,11 +15,11 @@ abstract class FingerprintDetector(
 
   final override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
     case that: FingerprintDetector =>
-      this.framework.name == that.framework.name &&
+      this.framework.nameSbt == that.framework.nameSbt &&
       Fingerprints.equal(this.fingerprint, that.fingerprint)
     case _ => false
 
-  final override def hashCode: Int = 37*framework.name.hashCode + fingerprint.hashCode
+  final override def hashCode: Int = 37*framework.nameSbt.hashCode + fingerprint.hashCode
       
   def isModule: Boolean
 

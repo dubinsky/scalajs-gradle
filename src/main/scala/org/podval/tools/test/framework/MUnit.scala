@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, Version}
+import org.podval.tools.build.Version
 
 // https://scalameta.org/munit/
 // https://github.com/scalameta/munit/blob/main/munit/jvm/src/main/scala/munit/Framework.scala
@@ -27,19 +27,17 @@ import org.podval.tools.build.{ScalaBackend, Version}
 //   org.scala-js:scalajs-library_2.13
 //   org.scala-lang:scala-library:2.13.x
 object MUnit extends ScalaFramework(
-  name = "munit",
-  description = "MUnit",
+  name = "MUnit",
+  nameSbt = "munit",
   group = "org.scalameta",
   artifact = "munit",
   versionDefault = Version("1.2.2"),
   className = "munit.Framework",
   sharedPackages = List("munit"),
   tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),
-  usesTestSelectorAsNested = true
-):
-  override def isBackendSupported(backend: ScalaBackend): Boolean = true
-
-  override def additionalOptions: Array[String] = Array(
+  usesTestSelectorAsNested = true,
+  additionalOptions = Array(
     "--logger=sbt", // use SBT loggers
     "--summary=1" // enable one-line summary
   )
+)

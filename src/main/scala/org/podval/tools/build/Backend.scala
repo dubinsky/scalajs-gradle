@@ -1,22 +1,23 @@
 package org.podval.tools.build
 
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
-import org.gradle.api.Project
+import org.gradle.api.{Project, Task as GTask}
 import org.gradle.api.tasks.TaskProvider
 import org.podval.tools.gradle.{Archive, Tasks}
 import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.platform.Strings
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
-import org.podval.tools.task.{TaskWithDependencyInstallable, TaskWithOutput}
+import org.podval.tools.task.{TaskWithInstaller, TaskWithOutput}
 import org.podval.tools.test.task.TestTask
 
-object ScalaBackend:
+object Backend:
+  trait Task[B <: Backend] extends GTask
+
   val property: String = "org.podval.tools.backend"
 
-  def all: Set[ScalaBackend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
+  def all: Set[Backend] = Set(JvmBackend, ScalaJSBackend, ScalaNativeBackend)
 
-abstract class ScalaBackend(
+abstract class Backend(
   val name: String,
   val sourceRoot: String,
   val artifactSuffix: Option[String],
@@ -24,11 +25,8 @@ abstract class ScalaBackend(
   val expandClasspathForTestEnvironment: Boolean
 ) derives CanEqual:
   final override def toString: String = name
-  
+
   final def fullName: String = s"$name ($sourceRoot)"
-  
-  final def artifactNameSuffix(versionSuffix: Version): String =
-    s"${Strings.prefix("_", artifactSuffix)}_$versionSuffix"
 
   protected def testTaskClass: Class[? <: TestTask[this.type]]
 
@@ -37,7 +35,7 @@ abstract class ScalaBackend(
     jvmPluginServices: JvmPluginServices,
     isRunningInIntelliJ: Boolean
   ): Unit =
-    TaskWithDependencyInstallable.configureTasks(project)
+    TaskWithInstaller.configureTasks(project)
     TaskWithOutput.configureTasks(project, isRunningInIntelliJ)
     TestTask.configureTasks(project, testTaskClass)
 
@@ -48,24 +46,24 @@ abstract class ScalaBackend(
   ): Unit =
     Archive.configureJarTask(
       project, 
-      archiveAppendix = artifactNameSuffix(projectScalaLibrary.scalaVersion.binaryVersion.prefix)
+      archiveAppendix = Artifact.suffix(this, projectScalaLibrary)
     )
 
-    dependencyRequirements(
+    requirements(
       project,
       projectScalaLibrary = projectScalaLibrary,
       pluginScalaLibrary  = pluginScalaLibrary
     ).foreach(_.apply(project))
   
-  protected def dependencyRequirements(
+  protected def requirements(
     project: Project,
     projectScalaLibrary: ScalaLibrary,
     pluginScalaLibrary: ScalaLibrary
-  ): Seq[DependencyRequirement.Many]
+  ): Seq[Requirement.Many]
 
   def registerTasks(project: Project): Unit
 
-  final protected def registerTask[T <: BackendTask[this.type]](
+  final protected def registerTask[T <: Backend.Task[this.type]](
     project: Project,
     taskClass: Class[T],
     taskName: String,

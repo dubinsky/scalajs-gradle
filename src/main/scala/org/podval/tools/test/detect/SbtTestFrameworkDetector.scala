@@ -72,7 +72,7 @@ final class SbtTestFrameworkDetector(
     junit4: Framework,
     bootstrapperClassNameSuffix: String
   ): Option[BootstrapperDetector] = annotatedDetectors
-    .find(_.framework.name == junit4.name)
+    .find(_.framework.nameSbt == junit4.nameSbt)
     .map(BootstrapperDetector(_, bootstrapperClassNameSuffix))
 
   private lazy val bootstrapperDetectors: Seq[BootstrapperDetector] = Seq(

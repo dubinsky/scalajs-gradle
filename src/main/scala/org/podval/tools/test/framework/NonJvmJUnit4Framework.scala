@@ -1,19 +1,29 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaDependency, Version}
+import org.podval.tools.build.{Backend, ScalaDependency}
 import org.podval.tools.nonjvm.NonJvmBackend
 
 abstract class NonJvmJUnit4Framework(
-  final override val artifact: String,
-  final override val name: String,
-  final override val className: String,
-  final override val sharedPackages: List[String]
-) extends Framework with ScalaDependency:
-  def supportedBackend: NonJvmBackend
+  backend: NonJvmBackend,
+  transform: ScalaDependency => ScalaDependency,
+  artifact: String,
+  nameSbt: String,
+  className: String,
+  sharedPackages: List[String]
+) extends Framework(
+  name = s"JUnit4 for ${backend.name}",
+  nameSbt = nameSbt,
+  className = className,
+  sharedPackages = sharedPackages,
+  tagOptions = None,
+  usesTestSelectorAsNested = JUnit4Jvm.usesTestSelectorAsNested,
+  additionalOptions = Array.empty
+):
+  final override def isBackendSupported(backend: Backend): Boolean = backend == this.backend
 
-  final override def isBackendSupported(backend: ScalaBackend): Boolean = backend == supportedBackend
-  final override def group: String = supportedBackend.group
-  final override def versionDefault: Version = supportedBackend.versionDefault
-  final override def description: String = s"JUnit4 for ${supportedBackend.name}"
-  final override def tagOptions: Option[TagOptions] = None
-  final override def usesTestSelectorAsNested: Boolean = JUnit4Jvm.usesTestSelectorAsNested
+  final override def dependency: ScalaDependency = transform(
+    backend.scalaDependency(
+      what = "JUnit4", 
+      artifact = artifact
+    )
+  )

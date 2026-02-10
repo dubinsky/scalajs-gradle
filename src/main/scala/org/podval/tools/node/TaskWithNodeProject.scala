@@ -5,7 +5,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Internal
 import org.podval.tools.build.Version
 import org.podval.tools.gradle.Tasks
-import org.podval.tools.task.{TaskWithDependencyInstallable, TaskWithRunner}
+import org.podval.tools.task.{TaskWithInstaller, TaskWithRunner}
 import java.io.File
 
 object TaskWithNodeProject:
@@ -21,12 +21,12 @@ object TaskWithNodeProject:
       task.getNodeProjectRoot.set(nodeProjectRoot)
     )
     
-trait TaskWithNodeProject extends TaskWithDependencyInstallable[Node] with TaskWithRunner:
-  final override protected def dependencyInstallable: NodeDependency.type = NodeDependency
+trait TaskWithNodeProject extends TaskWithInstaller[Node] with TaskWithRunner:
+  final override protected def installer: NodeInstaller.type = NodeInstaller
 
   @Internal def getNodeProjectRoot: Property[File]
   
-  final def nodeProject: NodeProject = dependencyInstalled
+  final def nodeProject: NodeProject = installation
     .nodeProject(
       root = getNodeProjectRoot.get,
       runner = runner

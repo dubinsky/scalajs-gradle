@@ -1,13 +1,13 @@
 package org.podval.tools.backend
 
 import org.gradle.api.{Project, Task}
-import org.podval.tools.build.ScalaBackend
+import org.podval.tools.build.Backend
 import org.podval.tools.gradle.Tasks
 import org.podval.tools.platform.Strings
 
 final class SharedProject(
   project: Project,
-  val backends: Set[ScalaBackend]
+  val backends: Set[Backend]
 ) extends SingleProject(
   project
 ):

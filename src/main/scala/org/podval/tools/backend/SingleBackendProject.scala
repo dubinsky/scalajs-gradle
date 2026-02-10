@@ -2,14 +2,14 @@ package org.podval.tools.backend
 
 import org.gradle.api.Project
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
-import org.podval.tools.build.ScalaBackend
+import org.podval.tools.build.Backend
 import org.podval.tools.gradle.Sources
 import org.podval.tools.platform.{IntelliJIdea, Strings}
 
 final class SingleBackendProject(
   project: Project,
   jvmPluginServices: JvmPluginServices,
-  backend: ScalaBackend,
+  backend: Backend,
   sharedProjects: Set[SharedProject]
 ) extends SingleProject(
   project

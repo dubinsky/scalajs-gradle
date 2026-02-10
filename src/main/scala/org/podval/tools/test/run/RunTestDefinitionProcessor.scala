@@ -38,13 +38,13 @@ final class RunTestDefinitionProcessor[D <: TestDefinition](
   private var runners: Array[(String, Runner)] = Array.empty
 
   private def getRunner(framework: Framework.Loaded): Runner = synchronized:
-    arrayFind(runners, _._1 == framework.name).map(_._2).getOrElse:
+    arrayFind(runners, _._1 == framework.nameSbt).map(_._2).getOrElse:
       val args: Array[String] = arrayConcat(
         framework.framework.additionalOptions,
         framework.framework.tagOptions.map(_.args(includeTags, excludeTags)).getOrElse(Array.empty)
       )
       val runner: Runner = framework.runner(args)
-      runners = arrayAppend(runners, (framework.name, runner))
+      runners = arrayAppend(runners, (framework.nameSbt, runner))
       runner
 
   override def stop(): Unit = arrayForEach(runners, (frameworkName, runner: Runner) =>

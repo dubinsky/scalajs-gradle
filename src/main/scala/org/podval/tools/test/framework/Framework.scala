@@ -1,19 +1,46 @@
 package org.podval.tools.test.framework
 
 import org.gradle.api.GradleException
-import org.podval.tools.build.Dependency
+import org.podval.tools.build.{Backend, JvmDependency, ScalaLibrary, ScalaVersion, Version, WithVersion}
 import org.podval.tools.platform.Scala212Collections.arrayFind
 import sbt.testing.{Fingerprint, Runner, Framework as FrameworkSBT}
 
 // Based on sbt.TestFramework.
-trait Framework extends Dependency derives CanEqual:
-  override def toString: String = description
-  def name: String
-  def className: String
-  def sharedPackages: List[String] // TODO remove?
-  def tagOptions: Option[TagOptions]
-  def usesTestSelectorAsNested: Boolean
-  def additionalOptions: Array[String] = Array.empty
+abstract class Framework(
+  val name: String,
+  val nameSbt: String, // Name as reported by the framework
+  val className: String,
+  val sharedPackages: List[String],
+  val tagOptions: Option[TagOptions],
+  val usesTestSelectorAsNested: Boolean,
+  val additionalOptions: Array[String]
+) derives CanEqual:
+  final override def toString: String = name
+
+  // Note: `scalaVersion` is needed only to accommodate AirSpec.
+  def isBackendSupported(backend: Backend, scalaVersion: ScalaVersion): Boolean = isBackendSupported(backend)
+
+  def isBackendSupported(backend: Backend): Boolean = true
+
+  // Note: `backend` and `scalaLibrary` parameter is needed only to accommodate specs2 -
+  // so if the need goes away, this can be simplified ;)
+  def versionDefault(backend: Backend, scalaLibrary: ScalaLibrary): Option[Version] = None
+
+  def dependency: JvmDependency
+
+  final def withVersion(
+    backend: Backend,
+    scalaLibrary: ScalaLibrary,
+    version: Option[Version]
+  ): WithVersion =
+    val dependencyForBackend: JvmDependency = dependency.forBackend(Some(backend))
+    dependencyForBackend
+      .withVersion(
+        scalaLibrary,
+        version
+          .orElse(versionDefault(dependencyForBackend.backend, scalaLibrary))
+          .getOrElse(dependencyForBackend.versionDefault)
+      )
 
   final def load: Framework.Loaded = tryLoad.getOrElse(throw GradleException(s"Failed to load test framework $this!"))
 
@@ -33,9 +60,9 @@ object Framework:
     val framework: Framework,
     frameworkSBT: FrameworkSBT
   ):
-    require(framework.name == frameworkSBT.name)
+    require(framework.nameSbt == nameSbt)
 
-    def name: String = frameworkSBT.name
+    def nameSbt: String = frameworkSBT.name
 
     def fingerprints: Array[Fingerprint] = frameworkSBT.fingerprints
 
@@ -48,8 +75,13 @@ object Framework:
   object Loaded:
     def apply(frameworkSBT: FrameworkSBT): Loaded = new Loaded(
       frameworkSBT = frameworkSBT,
-      framework = forName(frameworkSBT.name)
+      framework = forNameSbt(frameworkSBT.name)
     )
+
+  def forNameSbt(nameSbt: String): Framework = find(_.nameSbt == nameSbt, nameSbt)
+
+  def find(p: Framework => Boolean, what: String): Framework =
+    arrayFind(all, p).getOrElse(throw GradleException(s"Test framework for '$what' not found"))
 
   val all: Array[Framework] = Array(
     JUnit4Jvm,
@@ -66,8 +98,3 @@ object Framework:
     WeaverTest,
     ZioTest
   )
-
-  def forName(name: String): Framework = find(_.name == name, name)
-
-  def find(p: Framework => Boolean, what: String): Framework =
-    arrayFind(all, p).getOrElse(throw GradleException(s"Test framework for '$what' not found"))
