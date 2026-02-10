@@ -1,7 +1,7 @@
 package org.podval.tools.test.detect
 
-import org.podval.tools.test.framework.Framework
-import org.podval.tools.test.taskdef.Fingerprints
+import org.podval.tools.build.TestFramework
+import org.podval.tools.test.run.Fingerprints
 import sbt.testing.Fingerprint
 
 object FingerprintDetector:
@@ -9,17 +9,17 @@ object FingerprintDetector:
 
 abstract class FingerprintDetector(
   val fingerprint: Fingerprint,
-  val framework: Framework.Loaded
+  val framework: TestFramework.Loaded
 ):
   final override def toString: String = Fingerprints.toString(fingerprint)
 
   final override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
     case that: FingerprintDetector =>
-      this.framework.name == that.framework.name &&
+      this.framework.nameSbt == that.framework.nameSbt &&
       Fingerprints.equal(this.fingerprint, that.fingerprint)
     case _ => false
 
-  final override def hashCode: Int = 37*framework.name.hashCode + fingerprint.hashCode
+  final override def hashCode: Int = 37*framework.nameSbt.hashCode + fingerprint.hashCode
       
   def isModule: Boolean
 

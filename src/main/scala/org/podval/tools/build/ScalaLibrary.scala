@@ -2,7 +2,7 @@ package org.podval.tools.build
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.podval.tools.gradle.{Artifact, Configurations, GradleClasspath}
+import org.podval.tools.util.{Classpath, Configurations, Files}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import java.io.File
 
@@ -92,7 +92,10 @@ object ScalaLibrary:
   def fromAmbientClasspath(project: Project): ScalaLibrary = fromClasspath(
     project,
     source = "ambient classpath",
-    classPath = GradleClasspath.collect
+    classPath = Classpath
+      .get
+      .filter(_.getProtocol == "file")
+      .map(Files.url2file)
   )
   
   private def fromClasspath(
@@ -110,10 +113,10 @@ object ScalaLibrary:
     project: Project,
     source: String,
     isFromClasspath: Boolean,
-    find: JavaDependency => Option[Dependency.WithVersion]
+    find: JavaDependency => Option[DependencyVersion]
   ): ScalaLibrary =
-    def toScalaVersion(dependencyWithVersion: Dependency.WithVersion): ScalaVersion.Known =
-      ScalaVersion(dependencyWithVersion.version.version)
+    def toScalaVersion(withVersion: DependencyVersion): ScalaVersion.Known =
+      ScalaVersion(withVersion.version.nonCompound)
 
     // Note: version does not affect find(); for example find(Scala2_13)
     // finds any Scala 2 library, even if it is 2.12, not 2.13 - and even if it is 3.8.0 :)
@@ -150,12 +153,14 @@ object ScalaLibrary:
         // some of which feed into `runtimeClasspath`;
         // so we transitively resolve the Scala 3 library dependency
         // and build ScalaLibrary from the resulting classpath:
+        val classPath: Iterable[File] = scala3.resolve(
+          project,
+          transitive = true,
+          resolve = (configuration: Configuration) => configuration.asScala
+        )
+        project.getLogger.info(s"Resolved $scala3: $classPath", null, null, null)
         fromClasspath(
           project,
           source = s"'$scala3' resolved",
-          classPath = Artifact.resolveTransitive(
-            project,
-            dependencyNotation = scala3.dependencyNotation(),
-            repository = None
-          )
+          classPath = classPath
         )

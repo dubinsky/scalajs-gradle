@@ -16,9 +16,7 @@ object ScalaVersion:
     override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
       case that: ScalaVersion => this.version == that.version
       case _ => false
-
-  def apply(string: String): Known = apply(Version(string))
-
+  
   def apply(version: Version): Known = Known(
     version = version,
     binaryVersion = ScalaBinaryVersion

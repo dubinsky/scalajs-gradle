@@ -2,7 +2,6 @@ package org.podval.tools.test.run
 
 import org.gradle.api.internal.tasks.testing.{ClassTestDefinition, TestDefinition, TestDefinitionProcessor,
   TestResultProcessor}
-import org.podval.tools.test.taskdef.TestClassRun
 
 class WriteTestDefinitionProcessor[D <: TestDefinition](delegate: TestDefinitionProcessor[D]) extends TestDefinitionProcessor[D]:
   override def startProcessing(testResultProcessor: TestResultProcessor): Unit = delegate.startProcessing(testResultProcessor)

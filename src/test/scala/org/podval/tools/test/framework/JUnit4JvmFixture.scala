@@ -1,10 +1,11 @@
 package org.podval.tools.test.framework
 
+import org.podval.tools.jvm.JUnit4Jvm
 import org.podval.tools.test.testproject.ForClass.*
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object JUnit4JvmFixture extends Fixture(
-  framework = org.podval.tools.test.framework.JUnit4Jvm,
+  framework = JUnit4Jvm,
   testSources = Seq(SourceFile("JUnit4JvmTest",
     s"""import org.junit.Assert.{assertArrayEquals, assertEquals, assertFalse, assertNotNull, assertNotSame, assertNull,
        |  assertSame, assertTrue}

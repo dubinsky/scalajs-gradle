@@ -1,11 +1,9 @@
 package org.podval.tools.nonjvm
 
-import org.podval.tools.build.ScalaBackend
-import org.podval.tools.test.framework.Framework
-import org.podval.tools.test.task.{SourceMapper, TestEnvironment}
+import org.podval.tools.build.{SourceMapper, TestEnvironment, TestFramework}
 import sbt.testing.Framework as FrameworkSBT
 
-final class NonJvmTestEnvironment[B <: ScalaBackend, A](
+final class NonJvmTestEnvironment[B <: NonJvmBackend, A](
   backend: B,
   testAdapter: A,
   loadFrameworksFromTestAdapter: (A, List[List[String]]) => List[Option[FrameworkSBT]],
@@ -17,9 +15,9 @@ final class NonJvmTestEnvironment[B <: ScalaBackend, A](
 ):
   override def close(): Unit = closeTestAdapter(testAdapter)
 
-  override protected def loadFrameworks: List[Framework.Loaded] = loadFrameworksFromTestAdapter(
+  override protected def loadFrameworks: List[TestFramework.Loaded] = loadFrameworksFromTestAdapter(
     testAdapter,
-    frameworks.map((framework: Framework) => List(framework.className))
+    frameworks.map((framework: TestFramework) => List(framework.className))
   )
     .flatten
-    .map(Framework.Loaded.apply)
+    .map((frameworkSBT: FrameworkSBT) => TestFramework.forNameSbt(frameworkSBT.name).loaded(frameworkSBT))

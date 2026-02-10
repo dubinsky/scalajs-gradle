@@ -5,10 +5,8 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.internal.id.CompositeIdGenerator.CompositeId
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
-import org.podval.tools.platform.Output
-import org.podval.tools.test.framework.Framework
-import org.podval.tools.test.taskdef.{Selectors, TaskDefs, TestClassRun}
-import org.podval.tools.platform.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
+import org.podval.tools.build.{Output, TestFramework}
+import org.podval.tools.util.Scala212Collections.{arrayAppend, arrayConcat, arrayFind, arrayForEach}
 import sbt.testing.{Runner, Task, TaskDef}
 
 object RunTestDefinitionProcessor:
@@ -37,14 +35,14 @@ final class RunTestDefinitionProcessor[D <: TestDefinition](
 
   private var runners: Array[(String, Runner)] = Array.empty
 
-  private def getRunner(framework: Framework.Loaded): Runner = synchronized:
-    arrayFind(runners, _._1 == framework.name).map(_._2).getOrElse:
+  private def getRunner(framework: TestFramework.Loaded): Runner = synchronized:
+    arrayFind(runners, _._1 == framework.nameSbt).map(_._2).getOrElse:
       val args: Array[String] = arrayConcat(
         framework.framework.additionalOptions,
         framework.framework.tagOptions.map(_.args(includeTags, excludeTags)).getOrElse(Array.empty)
       )
       val runner: Runner = framework.runner(args)
-      runners = arrayAppend(runners, (framework.name, runner))
+      runners = arrayAppend(runners, (framework.nameSbt, runner))
       runner
 
   override def stop(): Unit = arrayForEach(runners, (frameworkName, runner: Runner) =>

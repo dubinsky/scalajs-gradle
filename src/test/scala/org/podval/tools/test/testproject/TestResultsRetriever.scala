@@ -3,13 +3,13 @@ package org.podval.tools.test.testproject
 import org.gradle.api.Action
 import org.gradle.api.internal.tasks.testing.junit.result.{TestClassResult, TestMethodResult}
 import org.gradle.api.internal.tasks.testing.report.generic.TestTreeModelResultsProvider
-import org.podval.tools.build.ScalaBackend
-import org.podval.tools.platform.Files
+import org.podval.tools.build.Backend
+import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
 
 final class TestResultsRetriever(projectDir: File):
-  def testResults(backend: Option[ScalaBackend]): List[TestClassResult] =
+  def testResults(backend: Option[Backend]): List[TestClassResult] =
     val binaryTestReportDir: File = Files.fileSeq(
       projectDir,
       backend.toSeq.map(_.sourceRoot) ++ Seq("build", "test-results", "test", "binary")

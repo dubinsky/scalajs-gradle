@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, ScalaLibrary, Version}
+import org.podval.tools.build.{Backend, ScalaBinaryVersion, ScalaLibrary, ScalaTestFramework, TagOptions, Version}
 import org.podval.tools.scalanative.ScalaNativeBackend
 
 // http://etorreborre.github.io/specs2/
@@ -32,33 +32,30 @@ import org.podval.tools.scalanative.ScalaNativeBackend
 // also:
 //   org.scala-lang:scala-library:2.13.x
 
-object Specs2 extends ScalaFramework(
-  name = "specs2",
-  description = "Specs2",
+object Specs2 extends ScalaTestFramework(
+  name = "Specs2",
+  nameSbt = "specs2",
   group = "org.specs2",
   artifact = "specs2-core",
   versionDefault = Version("5.7.0"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
-  tagOptions = TagOptions.ListWithoutEq("include", "exclude")
-):
-  override def isBackendSupported(backend: ScalaBackend): Boolean = true
-
-  // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
-  val versionDefaultScala2: Version = Version("4.23.0")
-
-  override def versionDefaultOverride(backend: ScalaBackend, scalaLibrary: ScalaLibrary): Option[Version] =
-    val isScala2: Boolean = scalaLibrary.scalaVersion.binaryVersion match
-      case _: ScalaBinaryVersion.Scala2 => true
-      case _ => false
-    if isScala2 || backend == ScalaNativeBackend
-    then Some(versionDefaultScala2)
-    else None
-
-  override def additionalOptions: Array[String] = Array(
+  tagOptions = TagOptions.ListWithoutEq("include", "exclude"),
+  additionalOptions = Array(
     // specs2 writes "stats" into a "$project/target/specs2-reports/stats", which makes sense for sbt
     // (on JVM; on non-JVM, it writes them into a memory store);
     // changing it to something that makes sense for Gradle;
     // location is hard-coded and thus not affected by changes to the project layout:
     "stats.outdir", "build/reports/tests/specs2-reports/stats"
   )
+):
+  // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
+  val versionDefaultScala2: Version = Version("4.23.0")
+
+  override def versionDefault(backend: Backend, scalaLibrary: ScalaLibrary): Option[Version] =
+    val isScala2: Boolean = scalaLibrary.scalaVersion.binaryVersion match
+      case _: ScalaBinaryVersion.Scala2 => true
+      case _ => false
+    if isScala2 || backend == ScalaNativeBackend
+    then Some(versionDefaultScala2)
+    else None

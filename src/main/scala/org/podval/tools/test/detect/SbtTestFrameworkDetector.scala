@@ -4,11 +4,12 @@ import org.gradle.api.internal.file.RelativeFile
 import org.gradle.api.internal.tasks.testing.{ClassTestDefinition, TestDefinition, TestDefinitionProcessor}
 import org.gradle.api.internal.tasks.testing.detection.TestFrameworkDetector
 import org.gradle.internal.Factory
-import org.podval.tools.platform.Output
+import org.podval.tools.build.{Output, TestEnvironment, TestFramework}
+import org.podval.tools.nonjvm.NonJvmJUnit4TestFramework
+import org.podval.tools.scalajs.JUnit4ScalaJS
+import org.podval.tools.scalanative.JUnit4ScalaNative
 import org.podval.tools.test.filter.{SuiteTestFilterMatch, TestFilter, TestFilterMatch, TestsTestFilterMatch}
-import org.podval.tools.test.framework.{Framework, JUnit4ScalaJS, JUnit4ScalaNative}
-import org.podval.tools.test.task.TestEnvironment
-import org.podval.tools.test.taskdef.TestClassRun
+import org.podval.tools.test.run.TestClassRun
 import sbt.testing.{AnnotatedFingerprint, Fingerprint, SubclassFingerprint}
 import scala.jdk.CollectionConverters.ListHasAsScala
 import java.io.File
@@ -34,7 +35,7 @@ final class SbtTestFrameworkDetector(
 
   private lazy val detectors: Seq[FingerprintDetector] =
     for
-      framework: Framework.Loaded <- testEnvironment.loadFrameworks(testClasspath.get)
+      framework: TestFramework.Loaded <- testEnvironment.loadFrameworks(testClasspath.get)
       fingerprint: Fingerprint <- framework.fingerprints
     yield fingerprint match
       case subclassFingerprint : SubclassFingerprint  => SubclassFingerprintDetector (subclassFingerprint , framework)
@@ -69,10 +70,10 @@ final class SbtTestFrameworkDetector(
       testClassVisitor.addDetector(annotatedFingerprintDetector)
 
   private def bootstrapperDetector(
-    junit4: Framework,
+    junit4: NonJvmJUnit4TestFramework,
     bootstrapperClassNameSuffix: String
   ): Option[BootstrapperDetector] = annotatedDetectors
-    .find(_.framework.name == junit4.name)
+    .find(_.framework.nameSbt == junit4.nameSbt)
     .map(BootstrapperDetector(_, bootstrapperClassNameSuffix))
 
   private lazy val bootstrapperDetectors: Seq[BootstrapperDetector] = Seq(

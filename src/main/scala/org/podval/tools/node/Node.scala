@@ -1,7 +1,6 @@
 package org.podval.tools.node
 
-import org.podval.tools.build.Version
-import org.podval.tools.platform.{Exec, Runner}
+import org.podval.tools.build.{Runner, Version}
 import java.io.File
 
 final class Node(

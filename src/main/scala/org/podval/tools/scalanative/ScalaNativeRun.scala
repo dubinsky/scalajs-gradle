@@ -1,8 +1,7 @@
 package org.podval.tools.scalanative
 
+import org.podval.tools.build.{Output, Runner, TestEnvironment}
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
-import org.podval.tools.platform.{Output, Runner}
-import org.podval.tools.test.task.TestEnvironment
 import java.io.File
 import scala.scalanative.testinterface.adapter.TestAdapter
 

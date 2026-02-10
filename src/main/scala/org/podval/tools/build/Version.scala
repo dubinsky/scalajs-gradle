@@ -1,12 +1,13 @@
 package org.podval.tools.build
 
 import org.gradle.api.provider.Property
-
+import org.podval.tools.util.Strings
 import scala.annotation.tailrec
 
 final class Version private(val segments: Array[String]) extends Version.Pre with Ordered[Version]:
   override def toString: String = segments.mkString(".")
   override def version: Version = this
+  override def nonCompound: Version = this
 
   def length: Int = segments.length
   def take(n: Int): Version = new Version(segments.take(n))
@@ -31,6 +32,7 @@ final class Version private(val segments: Array[String]) extends Version.Pre wit
 object Version:
   abstract class Pre derives CanEqual:
     def version: Version
+    def nonCompound: Version
 
     final override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
       case that: Pre => this.toString == that.toString
@@ -40,18 +42,21 @@ object Version:
   
   def apply(string: String): Version = new Version(string.split("\\."))
 
-  private final class WithScalaVersion(
+  private final class Compound(
     scalaVersion: ScalaVersion,
     override val version: Version
   ) extends Pre:
     override def toString: String = s"$scalaVersion+$version"
+    override def nonCompound: Nothing = throw IllegalArgumentException(s"Version $this is compound but non-compound version is required")
 
   def compose(isVersionCompound: Boolean, scalaVersion: ScalaVersion, version: Version): Pre =
-    if !isVersionCompound then version else WithScalaVersion(scalaVersion, version)
+    if !isVersionCompound
+    then version
+    else Compound(scalaVersion, version)
   
   def parse(isVersionCompound: Boolean, string: String): Option[Pre] =
-    Option.when(isVersionCompound == string.contains('+')):
-      if !isVersionCompound then Version(string) else WithScalaVersion(
-        ScalaVersion(string.takeWhile(_ != '+')),
-        Version     (string.dropWhile(_ != '+').tail)
-      )
+    val (before: String, after: Option[String]) = Strings.split(string, '+')
+    Option.when(isVersionCompound == after.isDefined):
+      after match
+        case None => Version(before)
+        case Some(after) => Compound(ScalaVersion(Version(before)), Version(after))

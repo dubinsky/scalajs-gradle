@@ -5,7 +5,7 @@ import org.gradle.api.internal.tasks.testing.worker.WorkerTestDefinitionProcesso
 import org.gradle.internal.actor.ActorFactory
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
 import org.gradle.internal.time.Clock
-import org.podval.tools.platform.Output
+import org.podval.tools.build.Output
 
 // This class gets serialized into the worker when tests are forked;
 // thus it, its parameters, and everything reachable from it must be serializable,

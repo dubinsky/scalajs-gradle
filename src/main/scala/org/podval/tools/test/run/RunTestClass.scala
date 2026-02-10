@@ -1,8 +1,7 @@
 package org.podval.tools.test.run
 
 import org.gradle.api.logging.LogLevel
-import org.podval.tools.test.taskdef.{Selectors, TaskDefs}
-import org.podval.tools.platform.Scala212Collections.arrayForEach
+import org.podval.tools.util.Scala212Collections.arrayForEach
 import sbt.testing.{Logger, Selector, SuiteSelector, Task}
 import scala.util.control.NonFatal
 

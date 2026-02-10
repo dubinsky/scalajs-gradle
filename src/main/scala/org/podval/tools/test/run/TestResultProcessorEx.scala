@@ -7,7 +7,7 @@ import org.gradle.api.tasks.testing.TestOutputEvent
 import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.internal.id.IdGenerator
 import org.gradle.internal.time.Clock
-import org.podval.tools.platform.Output
+import org.podval.tools.build.Output
 import org.podval.tools.test.exception.ExceptionConverter
 
 final class TestResultProcessorEx(

@@ -1,8 +1,8 @@
 package org.podval.tools.scalanative
 
 import org.gradle.api.logging.LogLevel
+import org.podval.tools.build.Output
 import org.podval.tools.nonjvm.Build
-import org.podval.tools.platform.Output
 import scala.scalanative.build.Logger as LoggerN
 
 // see scala.scalanative.sbtplugin.ScalaNativePluginInternal

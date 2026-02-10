@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-
+
+It's been months since any bugs were reported or any features added.
+
+Switch in Scala 3.8.0 to the standard library being compiled by Scala 3
+required some changes to the plugin.
+
+Ongoing changes since then are:
+- code cleanup
+- dependency updates
+- adapting to changes in Gradle code that the plugin uses.
+
+
+## [0.9.19] - 2026-03-01
+- chore: Gradle 9.4.0-rc-2;
+- chore: Scala 3.8.2;
+- chore: dependency updates;
+- cleanup;
+
+## [0.9.18] - 2026-02-11
+- chore: Gradle 9.4.0-rc-1;
+- chore: dependency updates;
+- cleanup;
+
 ## [0.9.17] - 2026-02-09
 - chore: Scala 3.8.1;
 - chore: Scala Native 0.5.10;

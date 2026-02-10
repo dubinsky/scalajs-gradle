@@ -2,8 +2,8 @@ package org.podval.tools.scalajs
 
 import com.google.debugging.sourcemap.SourceMapConsumerV3
 import com.google.debugging.sourcemap.proto.Mapping.OriginalMapping
-import org.podval.tools.platform.Files
-import org.podval.tools.test.task.SourceMapper
+import org.podval.tools.build.SourceMapper
+import org.podval.tools.util.Files
 import java.io.File
 
 final class ClosureCompilerSourceMapper(sourceMapFile: File) extends SourceMapper:

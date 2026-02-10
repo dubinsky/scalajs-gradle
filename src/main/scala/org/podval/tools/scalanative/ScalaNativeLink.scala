@@ -1,7 +1,7 @@
 package org.podval.tools.scalanative
 
+import org.podval.tools.build.Output
 import org.podval.tools.nonjvm.Link
-import org.podval.tools.platform.Output
 import scala.scalanative.build.{Build, BuildTarget, Config, Discover, NativeConfig, GC as GCN, LTO as LTON, Mode as ModeN}
 import scala.scalanative.util.Scope
 import java.nio.file.Path

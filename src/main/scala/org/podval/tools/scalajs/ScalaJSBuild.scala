@@ -1,8 +1,8 @@
 package org.podval.tools.scalajs
 
 import org.gradle.api.logging.LogLevel
+import org.podval.tools.build.Output
 import org.podval.tools.nonjvm.Build
-import org.podval.tools.platform.Output
 import org.scalajs.logging.{Level as LevelJS, Logger as LoggerJS}
 
 open class ScalaJSBuild(output: Output) extends Build[LoggerJS](output):

@@ -2,6 +2,7 @@ package org.podval.tools.test.filter
 
 // Based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher;
 // see https://github.com/gradle/gradle/blob/master/platforms/software/testing-base-infrastructure/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java
+// TODO look at the latest Gradle code
 final class TestFilter(
   includes: TestFilterPatterns,
   excludes: TestFilterPatterns,

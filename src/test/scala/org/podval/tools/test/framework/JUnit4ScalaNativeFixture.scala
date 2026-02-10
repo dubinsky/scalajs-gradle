@@ -1,10 +1,11 @@
 package org.podval.tools.test.framework
 
+import org.podval.tools.scalanative.JUnit4ScalaNative
 import org.podval.tools.test.testproject.ForClass.*
 import org.podval.tools.test.testproject.{Feature, Fixture, ForClass, SourceFile}
 
 object JUnit4ScalaNativeFixture extends Fixture(
-  framework = org.podval.tools.test.framework.JUnit4ScalaNative,
+  framework = JUnit4ScalaNative,
   testSources = Seq(SourceFile("JUnit4ScalaNativeTest",
     s"""import org.junit.Assert.{assertArrayEquals, assertEquals, assertFalse, assertNotNull, assertNotSame, assertNull,
        |  assertSame, assertTrue}

@@ -1,6 +1,6 @@
 package org.podval.tools.scalanative
 
-import org.podval.tools.platform.Named
+import org.podval.tools.nonjvm.Named
 
 enum GC(name: String) extends Named(name) derives CanEqual:
   case None   extends GC("none")

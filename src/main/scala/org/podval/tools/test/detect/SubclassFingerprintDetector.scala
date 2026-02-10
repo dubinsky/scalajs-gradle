@@ -1,11 +1,11 @@
 package org.podval.tools.test.detect
 
-import org.podval.tools.test.framework.Framework
+import org.podval.tools.build.TestFramework
 import sbt.testing.SubclassFingerprint
 
-final class SubclassFingerprintDetector(
+private final class SubclassFingerprintDetector(
   fingerprint: SubclassFingerprint,
-  framework: Framework.Loaded
+  framework: TestFramework.Loaded
 ) extends FingerprintDetector(
   fingerprint,
   framework

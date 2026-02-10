@@ -1,76 +1,68 @@
 package org.podval.tools.backend
 
-import org.podval.tools.build.{ScalaBackend, ScalaBinaryVersion, Version}
-import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.node.NodeDependency
-import org.podval.tools.platform.{Files, Strings}
+import org.podval.tools.build.{Backend, Dependency, ScalaBinaryVersion, TestFramework, Version}
+import org.podval.tools.jvm.{JvmBackend, JUnit4Underlying}
+import org.podval.tools.node.NodeInstaller
 import org.podval.tools.scalajs.ScalaJSBackend
 import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.test.framework
+import org.podval.tools.util.Files
 import java.io.File
 
 // This writes versions of everything into an AsciiDoc file that the documentation uses;
 // this way, the versions are guaranteed to be consistent - if this was run ;)
 object VersionsWriter:
-  private val gradleVersion: Version = Version("9.3.1")
+  def main(args: Array[String]): Unit =
+    Files.write(
+      File("gradle.properties"),
+      Seq(s"${Backend.property} = ${JvmBackend.name}") ++
+      versions.map((name, version) => s"version_${name.replace('-', '_')} = $version")
+    )
+
+    Files.splice(
+      file = File("README.adoc"),
+      boundary = "// INCLUDED ATTRIBUTES",
+      patch =
+        attributes.map((name, value) => s":attribute-$name: $value") ++
+        versions.map((name, version) => s":version-$name: $version")
+    )
+
+  private val gradleVersion: Version = Version("9.4.0-rc-2")
+  private val pluginVersion: Version = Version("0.9.19")
+
+  private def attributes: Seq[(String, String)] = Seq(
+    "gradleVersionForBadge"    -> gradleVersion.toString.replace("-", "--"),
+    "pluginBackendProperty"    -> Backend.property
+  )
 
   private val versions: Seq[(String, Version)] = Seq(
-    "plugin" -> Version("0.9.17"),
+    "gradle"                   -> gradleVersion,
+    "plugin"                   -> pluginVersion,
+    "scalanative"              -> ScalaNativeBackend.versionDefault,
+    "scalajs"                  -> ScalaJSBackend    .versionDefault,
+    "framework-specs2-scala2"  -> framework.Specs2  .versionDefaultScala2
+  ) ++
+    (dependencies ++ testFrameworks).map((name, dependency) => name -> dependency.versionDefault)
 
-    "gradle" -> gradleVersion,
-    
-    "scala"     -> ScalaBinaryVersion.Scala3WithScala3Library.versionDefault,
-    "scala-213" -> ScalaBinaryVersion.Scala2_13              .versionDefault,
-    "scala-212" -> ScalaBinaryVersion.Scala2_12              .versionDefault,
+  private def dependencies: Seq[(String, Dependency)] = Seq(
+    "scala"                    -> ScalaBinaryVersion.Scala3WithScala3Library,
+    "scala-213"                -> ScalaBinaryVersion.Scala2_13,
+    "scala-212"                -> ScalaBinaryVersion.Scala2_12,
 
-    "sbt-test-interface"           -> JvmBackend.sbtTestInterfaceVersion,
+    "sbt-test-interface"       -> JvmBackend.SbtTestInterface,
 
-    "scalanative"                  -> ScalaNativeBackend.versionDefault,
+    "scalajs-dom"              -> ScalaJSBackend.dom,
+    "scalajs-env-jsdom-nodejs" -> ScalaJSBackend.jsDomNode,
+    "scala-js-env-playwright"  -> ScalaJSBackend.playwright,
 
-    "scalajs"                      -> ScalaJSBackend    .versionDefault,
+    "node"                     -> NodeInstaller,
 
-    "scalajs-dom"                  -> ScalaJSBackend.domVersion,
-    "scalajs-env-jsdom-nodejs"     -> ScalaJSBackend.jsDomNodeVersion,
-    "scala-js-env-playwright"      -> ScalaJSBackend.playwrightVersion,
-
-    "node"                         -> NodeDependency.dependency     .versionDefault,
-
-    "junit"                        -> framework.JUnit4Jvm.Underlying.versionDefault,
-    "framework-junit4-jvm"         -> framework.JUnit4Jvm           .versionDefault,
-    "framework-junit4-scalajs"     -> framework.JUnit4ScalaJS       .versionDefault,
-    "framework-junit4-scalanative" -> framework.JUnit4ScalaNative   .versionDefault,
-    "framework-airspec"            -> framework.AirSpec             .versionDefault,
-    "framework-hedgehog"           -> framework.Hedgehog            .versionDefault,
-    "framework-munit"              -> framework.MUnit               .versionDefault,
-    "framework-scalacheck"         -> framework.ScalaCheck          .versionDefault,
-    "framework-scalaprops"         -> framework.Scalaprops          .versionDefault,
-    "framework-scalatest"          -> framework.ScalaTest           .versionDefault,
-    "framework-specs2"             -> framework.Specs2              .versionDefault,
-    "framework-specs2-scala2"      -> framework.Specs2              .versionDefaultScala2,
-    "framework-utest"              -> framework.UTest               .versionDefault,
-    "framework-weaver"             -> framework.WeaverTest          .versionDefault,
-    "framework-zio-test"           -> framework.ZioTest             .versionDefault
+    "junit"                    -> JUnit4Underlying
   )
 
-  private val attributes: Seq[(String, String)] = Seq(
-    "pluginScalaBackendProperty"  -> ScalaBackend.property,
-    "gradleVersionForBadge" -> gradleVersion.toString.replace("-", "--")
-  )
-  
-  def main(args: Array[String]): Unit =
-    def toString(strings: Seq[String]): String = strings.mkString("", "\n", "\n")
-
-    Files.write(File("gradle.properties").getAbsoluteFile, toString(
-      Seq(s"${ScalaBackend.property} = ${JvmBackend.name}") ++
-      versions.map((name, value) => s"version_${name.replace('-', '_')} = ${value.toString}")
-    ))
-
-    val readmeFile: File = File("README.adoc").getAbsoluteFile
-
-    Files.write(readmeFile, toString(Strings.splice(
-      in = Files.read(readmeFile),
-      boundary = "// INCLUDED ATTRIBUTES",
-      patch = 
-        versions.map((name, version) => s":version-$name: ${version.toString}") ++
-        attributes.map((name, value) => s":attribute-$name: $value")
-    )))
+  private def testFrameworks: List[(String, Dependency)] = TestFramework
+    .all
+    .toList
+    .map(framework => s"framework-${framework.name.toLowerCase.replace(" ", "-").replace(".", "-")}" ->
+      framework.dependency
+    )
