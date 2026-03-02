@@ -1,6 +1,7 @@
 package org.podval.tools.test.run
 
-import org.gradle.api.internal.tasks.testing.{TestDefinition, TestDefinitionProcessor, WorkerTestDefinitionProcessorFactory}
+import org.gradle.api.internal.tasks.testing.{TestDefinition, TestDefinitionProcessor,
+  WorkerTestDefinitionProcessorFactory}
 import org.gradle.api.internal.tasks.testing.worker.WorkerTestDefinitionProcessor
 import org.gradle.internal.actor.ActorFactory
 import org.gradle.internal.id.{CompositeIdGenerator, IdGenerator, LongIdGenerator}
@@ -15,7 +16,8 @@ final class RunTestDefinitionProcessorFactory[D <: TestDefinition](
   includeTags: Array[String],
   excludeTags: Array[String],
   output: Output,
-  dryRun: Boolean
+  dryRun: Boolean,
+  isJvm: Boolean
 ) extends WorkerTestDefinitionProcessorFactory[D] with Serializable:
 
   private def create(
@@ -27,7 +29,8 @@ final class RunTestDefinitionProcessorFactory[D <: TestDefinition](
     output = output,
     dryRun = dryRun,
     idGenerator = idGenerator,
-    clock = clock
+    clock = clock,
+    isJvm = isJvm
   )
   
   override def create(
