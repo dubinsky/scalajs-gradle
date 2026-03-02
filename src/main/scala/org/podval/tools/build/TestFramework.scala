@@ -22,9 +22,13 @@ abstract class TestFramework(
 
   def isBackendSupported(backend: Backend): Boolean = true
 
-  // Note: `backend` and `scalaLibrary` parameter is needed only to accommodate specs2 -
+  // Note: `backend` and `scalaLibrary` parameters are needed only to accommodate specs2 -
   // so if the need goes away, this can be simplified ;)
   def versionDefault(backend: Backend, scalaLibrary: ScalaLibrary): Option[Version] = None
+
+  // Note: `isJvm` parameter is needed only to accommodate MUnit,
+  // which at 1.2.4 throws an exception if a JVM-specific parameter is supplied on Scala.js or Scala Native.
+  def additionalOptions(isJvm: Boolean): Array[String] = additionalOptions
 
   def dependency: JvmDependency
 

@@ -6,18 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-
+## [1.0.0] - 2026-03-09
 
-It's been months since any bugs were reported or any features added.
+It's been months since:
+- new features were requested, planned or added;
+- bugs were reported or fixed.
 
-Switch in Scala 3.8.0 to the standard library being compiled by Scala 3
-required some changes to the plugin.
+Changes since then were:
+- code cleanup;
+- dependency updates;
+- support for latest Gradle (currently 9.4.0);
+- support for Scala 3.8.0 with standard library compiled by Scala 3;
+- support for JVM-only options for MUnit 1.2.4.
 
-Ongoing changes since then are:
-- code cleanup
-- dependency updates
-- adapting to changes in Gradle code that the plugin uses.
-
+It's time to declare v1.0.0 :)
 
 ## [0.9.19] - 2026-03-01
 - chore: Gradle 9.4.0-rc-2;

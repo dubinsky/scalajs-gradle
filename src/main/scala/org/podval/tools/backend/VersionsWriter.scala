@@ -27,22 +27,36 @@ object VersionsWriter:
         versions.map((name, version) => s":version-$name: $version")
     )
 
-  private val gradleVersion: Version = Version("9.4.0-rc-2")
-  private val pluginVersion: Version = Version("0.9.19")
+  private val gradleVersion: Version = Version("9.4.0")
+  private val pluginVersion: Version = Version("1.0.0")
 
   private def attributes: Seq[(String, String)] = Seq(
     "gradleVersionForBadge"    -> gradleVersion.toString.replace("-", "--"),
     "pluginBackendProperty"    -> Backend.property
   )
 
-  private val versions: Seq[(String, Version)] = Seq(
-    "gradle"                   -> gradleVersion,
-    "plugin"                   -> pluginVersion,
-    "scalanative"              -> ScalaNativeBackend.versionDefault,
-    "scalajs"                  -> ScalaJSBackend    .versionDefault,
-    "framework-specs2-scala2"  -> framework.Specs2  .versionDefaultScala2
-  ) ++
-    (dependencies ++ testFrameworks).map((name, dependency) => name -> dependency.versionDefault)
+  private val versions: Seq[(String, Version)] =
+    def testFrameworks: List[(String, Dependency)] = TestFramework
+      .all
+      .toList
+      .map(framework =>
+        val name: String = framework
+          .name
+          .toLowerCase
+          .replace(" ", "-")
+          .replace(".", "-")
+
+        s"framework-$name" -> framework.dependency
+      )
+
+    Seq(
+      "gradle"                  -> gradleVersion,
+      "plugin"                  -> pluginVersion,
+      "scalanative"             -> ScalaNativeBackend.versionDefault,
+      "scalajs"                 -> ScalaJSBackend    .versionDefault,
+      "framework-specs2-scala2" -> framework.Specs2  .versionDefaultScala2
+    ) ++
+      (dependencies ++ testFrameworks).map((name, dependency) => name -> dependency.versionDefault)
 
   private def dependencies: Seq[(String, Dependency)] = Seq(
     "scala"                    -> ScalaBinaryVersion.Scala3WithScala3Library,
@@ -59,10 +73,3 @@ object VersionsWriter:
 
     "junit"                    -> JUnit4Underlying
   )
-
-  private def testFrameworks: List[(String, Dependency)] = TestFramework
-    .all
-    .toList
-    .map(framework => s"framework-${framework.name.toLowerCase.replace(" ", "-").replace(".", "-")}" ->
-      framework.dependency
-    )

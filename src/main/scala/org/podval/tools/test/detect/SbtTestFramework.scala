@@ -10,6 +10,7 @@ import org.gradle.api.tasks.testing.junit.JUnitOptions
 import org.gradle.internal.Factory
 import org.gradle.process.internal.worker.{DefaultWorkerProcessBuilder, WorkerProcessBuilder}
 import org.podval.tools.build.{Output, TestEnvironment}
+import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.test.detect.SbtTestFrameworkDetector
 import org.podval.tools.test.filter.TestFilter
 import org.podval.tools.test.run.RunTestDefinitionProcessorFactory
@@ -75,7 +76,8 @@ class SbtTestFramework(
     includeTags = options.getIncludeCategories.asScala.toArray,
     excludeTags = options.getExcludeCategories.asScala.toArray,
     output = output(),
-    dryRun = dryRun.get
+    dryRun = dryRun.get,
+    isJvm = testEnvironment().backend == JvmBackend
   )
 
   // I need to make sure that the plugin classes themselves are on the worker's classpath(s).

@@ -18,7 +18,8 @@ final class RunTestDefinitionProcessor[D <: TestDefinition](
   output: Output,
   dryRun: Boolean,
   idGenerator: IdGenerator[?],
-  clock: Clock
+  clock: Clock,
+  isJvm: Boolean
 ) extends TestDefinitionProcessor[D]:
 
   private var testResultProcessorOpt: Option[TestResultProcessor] = None
@@ -38,7 +39,7 @@ final class RunTestDefinitionProcessor[D <: TestDefinition](
   private def getRunner(framework: TestFramework.Loaded): Runner = synchronized:
     arrayFind(runners, _._1 == framework.nameSbt).map(_._2).getOrElse:
       val args: Array[String] = arrayConcat(
-        framework.framework.additionalOptions,
+        framework.framework.additionalOptions(isJvm),
         framework.framework.tagOptions.map(_.args(includeTags, excludeTags)).getOrElse(Array.empty)
       )
       val runner: Runner = framework.runner(args)
