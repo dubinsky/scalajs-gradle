@@ -4,35 +4,35 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:attribute-gradleVersionForBadge: 9.4.0
+:attribute-gradleVersionForBadge: 9.5.0--rc--2
 :attribute-pluginBackendProperty: org.podval.tools.backend
-:version-gradle: 9.4.0
-:version-plugin: 1.0.0
-:version-scalanative: 0.5.10
-:version-scalajs: 1.20.2
+:version-gradle: 9.5.0-rc-2
+:version-plugin: 1.0.1
+:version-scalanative: 0.5.11
+:version-scalajs: 1.21.0
 :version-framework-specs2-scala2: 4.23.0
-:version-scala: 3.8.2
+:version-scala: 3.8.3
 :version-scala-213: 2.13.18
 :version-scala-212: 2.12.21
 :version-sbt-test-interface: 1.0
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.1
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 25.8.0
+:version-node: 25.8.1
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
-:version-framework-junit4-scala-js: 1.20.2
-:version-framework-junit4-scala-native: 0.5.10
-:version-framework-airspec: 2026.1.4
+:version-framework-junit4-scala-js: 1.21.0
+:version-framework-junit4-scala-native: 0.5.11
+:version-framework-airspec: 2026.1.5
 :version-framework-hedgehog: 0.13.0
-:version-framework-munit: 1.2.4
+:version-framework-munit: 1.3.0
 :version-framework-scalacheck: 1.19.0
-:version-framework-scalaprops: 0.10.0
-:version-framework-scalatest: 3.2.19
-:version-framework-specs2: 5.7.0
+:version-framework-scalaprops: 0.10.1
+:version-framework-scalatest: 3.2.20
+:version-framework-specs2: 5.9.0
 :version-framework-utest: 0.9.5
-:version-framework-weaver-test: 0.11.3
-:version-framework-ziotest: 2.1.24
+:version-framework-weaver-test: 0.12.0
+:version-framework-ziotest: 2.1.25
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]
@@ -1457,7 +1457,7 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |org.specs2:specs2-core
 |jvm, js, native
 |{version-framework-specs2}
-|latest that supports Scala 2 or Scala Native: {version-framework-specs2-scala2}
+|latest that supports Scala 2: {version-framework-specs2-scala2}
 
 |uTest
 |com.lihaoyi:utest
@@ -1467,9 +1467,9 @@ Framework-specific information for the frameworks that _are_ supported follows.
 
 |Weaver Test
 |org.typelevel:weaver-cats
-|jvm
+|jvm, js, native
 |{version-framework-weaver-test}
-|support for Scala Native and Scala.js is currently broken
+|
 
 |ZIO Test
 |dev.zio:zio-test-sbt
@@ -1507,15 +1507,13 @@ dependencies {
     testImplementation "com.github.scalaprops:scalaprops:{version-framework-scalaprops}"
   }
   testImplementation "org.scalatest:scalatest${scalaBackend.suffix}:{version-framework-scalatest}"
-  if (!scalaBackend.scala3 || scalaBackend.backend.native) {
+  if (!scalaBackend.scala3) {
     testImplementation "org.specs2:specs2-core${scalaBackend.suffix}:{version-framework-specs2-scala2}"
   } else {
     testImplementation "org.specs2:specs2-core${scalaBackend.suffix}:{version-framework-specs2}"
   }
   testImplementation "com.lihaoyi:utest${scalaBackend.suffix}:{version-framework-utest}"
-  if (scalaBackend.backend.jvm) {
-    testImplementation "org.typelevel:weaver-cats:{version-framework-weaver-test}"
-  }
+  testImplementation "org.typelevel:weaver-cats:{version-framework-weaver-test}"
   testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}:{version-framework-ziotest}"
 }
 ----
@@ -1551,15 +1549,13 @@ dependencies {
     testImplementation scalaBackend.testFramework(Scalaprops, '{version-framework-scalaprops}')
   }
   testImplementation scalaBackend.testFramework(ScalaTest, '{version-framework-scalatest}')
- if (!scalaBackend.scala3 || scalaBackend.backend.native) {
+ if (!scalaBackend.scala3) {
     testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2-scala2}')
   } else {
     testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
   }
   testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
-  if (scalaBackend.backend.jvm) {
-    testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver-test}')
-  }
+  testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver-test}')
   testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-ziotest}')
 }
 ----
@@ -1597,9 +1593,7 @@ dependencies {
   testImplementation scalaBackend.testFramework(ScalaTest)
   testImplementation scalaBackend.testFramework(Specs2)
   testImplementation scalaBackend.testFramework(UTest)
-  if (scalaBackend.backend.jvm) {
-    testImplementation scalaBackend.testFramework(WeaverTest)
-  }
+  testImplementation scalaBackend.testFramework(WeaverTest)
   testImplementation scalaBackend.testFramework(ZioTest)
 }
 ----
@@ -2689,6 +2683,10 @@ for accepting my contribution.
 * https://github.com/scalameta/munit/pull/968[pull/968]
 _Mention Gradle plugin for Scala.js and Scala Native._
 Thank you to https://github.com/tgodzik[tgodzik] for approving.
+* https://github.com/scalameta/munit/issues/1075[issues/1075]
+Long options broken on js-native.
+Thank you to https://github.com/kitbellew[kitbellew]
+for clarification on the change of approach to the framework options.
 
 - https://etorreborre.github.io/specs2[specs2]:
 * _https://github.com/etorreborre/specs2/pull/1327[pull/1327]_
@@ -2701,6 +2699,8 @@ Thank you to https://github.com/etorreborre[etorreborre]
 for clarifications.
 * https://github.com/etorreborre/specs2/issues/1353[issues/1353]
 _Mention Gradle plugin for Scala.js and Scala Native - or not ;)_
+Thank you to https://github.com/etorreborre[etorreborre]
+for mentioning my plugin.
 
 - https://github.com/com-lihaoyi/utest[uTest]:
 * _https://github.com/com-lihaoyi/utest/pull/383[pull/383]_
@@ -2802,3 +2802,7 @@ I want to thank the authors, contributors, and maintainers of:
 - https://etorreborre.github.io/specs2[specs2];
 - https://github.com/com-lihaoyi/utest[uTest];
 - https://github.com/zio/zio[ZIO Test];
+- https://github.com/typelevel/weaver-test[Weaver Test];
+- https://wvlet.org/airframe/docs/airspec[AirSpec];
+- https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog];
+- https://github.com/scalaprops/scalaprops[scalaprops];

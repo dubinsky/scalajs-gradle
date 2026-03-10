@@ -35,9 +35,7 @@ object MUnit extends ScalaTestFramework(
   sharedPackages = List("munit"),
   tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),
   usesTestSelectorAsNested = true,
-  // TODO 1.2.4 broke the options below;
-  // update to whatever version fixes it.
-  versionDefault = Version("1.2.4"),
+  versionDefault = Version("1.3.0"),
   additionalOptions = Array(
     "--logger=sbt", // use SBT loggers
     "--summary=1" // enable one-line summary

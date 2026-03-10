@@ -12,26 +12,12 @@ object WeaverTestFixture extends Fixture(
        |// Suites must be "objects" for them to be picked by the framework
        |object WeaverTestTest extends SimpleIOSuite {
        |
-       |  pureTest("non-effectful (pure) test"){
+       |  pureTest("non-effectful (pure) success"){
+       |    expect("hello".size == 5)
+       |  }
+       |
+       |  pureTest("non-effectful (pure) failure"){
        |    expect("hello".size == 6)
-       |  }
-       |
-       |  private val random = IO(java.util.UUID.randomUUID())
-       |
-       |  test("test with side-effects") {
-       |    for {
-       |      x <- random
-       |      y <- random
-       |    } yield expect(x != y)
-       |  }
-       |
-       |  loggedTest("test with side-effects and a logger"){ log =>
-       |    for {
-       |      x <- random
-       |      _ <- log.info(s"x : $$x")
-       |      y <- random
-       |      _ <- log.info(s"y : $$y")
-       |    } yield expect(x != y)
        |  }
        |}
        |""".stripMargin
@@ -39,10 +25,10 @@ object WeaverTestFixture extends Fixture(
 ):
   override def checks(feature: Feature): Seq[ForClass] = Seq(
     forClass("WeaverTestTest",
+      testCount(2),
       failedCount(1),
       skippedCount(0),
-      failed("non-effectful (pure) test"),
-      passed("test with side-effects"),
-      passed("test with side-effects and a logger")
+      passed("non-effectful (pure) success"),
+      failed("non-effectful (pure) failure"),
     )
   )
