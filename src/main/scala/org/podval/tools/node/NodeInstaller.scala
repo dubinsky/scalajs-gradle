@@ -7,7 +7,7 @@ import java.nio.file.{Files, Path, Paths}
 
 // Describes Node distribution's packaging and structure.
 object NodeInstaller extends Installer[Node]:
-  override def versionDefault: Version = Version("25.8.0")
+  override def versionDefault: Version = Version("25.8.1")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
   override def backendSuffix: Option[String] = None

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-03-
+- chore: dependency updates;
+- chore: Gradle 9.4.1;
+- feat: Scala Native and Scala.js support enabled for Weaver Test
+
 ## [1.0.0] - 2026-03-09
 
 It's been months since:

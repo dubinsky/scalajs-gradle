@@ -4,10 +4,10 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:attribute-gradleVersionForBadge: 9.4.0
+:attribute-gradleVersionForBadge: 9.4.1
 :attribute-pluginBackendProperty: org.podval.tools.backend
-:version-gradle: 9.4.0
-:version-plugin: 1.0.0
+:version-gradle: 9.4.1
+:version-plugin: 1.0.1
 :version-scalanative: 0.5.10
 :version-scalajs: 1.20.2
 :version-framework-specs2-scala2: 4.23.0
@@ -18,7 +18,7 @@
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.1
 :version-scala-js-env-playwright: 0.1.18
-:version-node: 25.8.0
+:version-node: 25.8.1
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
 :version-framework-junit4-scala-js: 1.20.2
@@ -28,10 +28,10 @@
 :version-framework-munit: 1.2.4
 :version-framework-scalacheck: 1.19.0
 :version-framework-scalaprops: 0.10.0
-:version-framework-scalatest: 3.2.19
-:version-framework-specs2: 5.7.0
+:version-framework-scalatest: 3.2.20
+:version-framework-specs2: 5.8.0
 :version-framework-utest: 0.9.5
-:version-framework-weaver-test: 0.11.3
+:version-framework-weaver-test: 0.12.0
 :version-framework-ziotest: 2.1.24
 // INCLUDED ATTRIBUTES
 
@@ -1467,9 +1467,9 @@ Framework-specific information for the frameworks that _are_ supported follows.
 
 |Weaver Test
 |org.typelevel:weaver-cats
-|jvm
+|jvm, js, native
 |{version-framework-weaver-test}
-|support for Scala Native and Scala.js is currently broken
+|
 
 |ZIO Test
 |dev.zio:zio-test-sbt
@@ -1513,9 +1513,7 @@ dependencies {
     testImplementation "org.specs2:specs2-core${scalaBackend.suffix}:{version-framework-specs2}"
   }
   testImplementation "com.lihaoyi:utest${scalaBackend.suffix}:{version-framework-utest}"
-  if (scalaBackend.backend.jvm) {
-    testImplementation "org.typelevel:weaver-cats:{version-framework-weaver-test}"
-  }
+  testImplementation "org.typelevel:weaver-cats:{version-framework-weaver-test}"
   testImplementation "dev.zio:zio-test-sbt${scalaBackend.suffix}:{version-framework-ziotest}"
 }
 ----
@@ -1557,9 +1555,7 @@ dependencies {
     testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
   }
   testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
-  if (scalaBackend.backend.jvm) {
-    testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver-test}')
-  }
+  testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver-test}')
   testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-ziotest}')
 }
 ----
@@ -1597,9 +1593,7 @@ dependencies {
   testImplementation scalaBackend.testFramework(ScalaTest)
   testImplementation scalaBackend.testFramework(Specs2)
   testImplementation scalaBackend.testFramework(UTest)
-  if (scalaBackend.backend.jvm) {
-    testImplementation scalaBackend.testFramework(WeaverTest)
-  }
+  testImplementation scalaBackend.testFramework(WeaverTest)
   testImplementation scalaBackend.testFramework(ZioTest)
 }
 ----
@@ -2802,3 +2796,7 @@ I want to thank the authors, contributors, and maintainers of:
 - https://etorreborre.github.io/specs2[specs2];
 - https://github.com/com-lihaoyi/utest[uTest];
 - https://github.com/zio/zio[ZIO Test];
+- https://github.com/typelevel/weaver-test[Weaver Test];
+- https://wvlet.org/airframe/docs/airspec[AirSpec];
+- https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog];
+- https://github.com/scalaprops/scalaprops[scalaprops];

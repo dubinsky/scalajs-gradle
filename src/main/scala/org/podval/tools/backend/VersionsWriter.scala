@@ -27,8 +27,8 @@ object VersionsWriter:
         versions.map((name, version) => s":version-$name: $version")
     )
 
-  private val gradleVersion: Version = Version("9.4.0")
-  private val pluginVersion: Version = Version("1.0.0")
+  private val gradleVersion: Version = Version("9.4.1")
+  private val pluginVersion: Version = Version("1.0.1")
 
   private def attributes: Seq[(String, String)] = Seq(
     "gradleVersionForBadge"    -> gradleVersion.toString.replace("-", "--"),
