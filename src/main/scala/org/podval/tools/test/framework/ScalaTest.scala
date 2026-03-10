@@ -58,7 +58,7 @@ object ScalaTest extends ScalaTestFramework(
   nameSbt = "ScalaTest",
   group = "org.scalatest",
   artifact = "scalatest",
-  versionDefault = Version("3.2.19"),
+  versionDefault = Version("3.2.20"),
   className = "org.scalatest.tools.Framework",
   sharedPackages = List("org.scalatest"),
   tagOptions = TagOptions.OptionPerValue("-n", "-l")

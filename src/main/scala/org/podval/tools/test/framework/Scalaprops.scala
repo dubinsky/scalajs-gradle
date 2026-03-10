@@ -9,7 +9,7 @@ object Scalaprops extends ScalaTestFramework(
   nameSbt = "Scalaprops",
   group = "com.github.scalaprops",
   artifact = "scalaprops",
-  versionDefault = Version("0.10.0"),
+  versionDefault = Version("0.10.1"),
   className = "scalaprops.ScalapropsFramework",
   sharedPackages = List("scalaprops")
 ):

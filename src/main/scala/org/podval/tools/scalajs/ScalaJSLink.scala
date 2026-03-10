@@ -70,6 +70,9 @@ final class ScalaJSLink(
   override def link(): Unit =
     validateLink(moduleSplitStyle)
 
+    // TODO method withClosureCompiler in class ConfigExt is deprecated since 1.21.0:
+    //  Support for the Google Closure Compiler is deprecated.
+    //  It is off by default, and will eventually be removed.
     val fullOptimization: Boolean = optimization == Optimization.Full
 
     val moduleSplitStyleSJS: ModuleSplitStyleSJS = moduleSplitStyle match
@@ -121,7 +124,7 @@ final class ScalaJSLink(
       val report: Report = Await.result(atMost = Duration.Inf, awaitable = PathIRContainer
         .fromClasspath(runtimeClasspath.map(_.toPath))
         .map(_._1)
-        .flatMap((irContainers: Seq[IRContainer]) => StandardImpl.irFileCache.newCache.cached(irContainers))
+        .flatMap((irContainers: Seq[IRContainer]) => StandardImpl.irFileCache().newCache.cached(irContainers))
         .flatMap((irFiles: Seq[IRFile]) => StandardImpl.linker(linkerConfig).link(
           irFiles = irFiles,
           moduleInitializers = moduleInitializersSJS,

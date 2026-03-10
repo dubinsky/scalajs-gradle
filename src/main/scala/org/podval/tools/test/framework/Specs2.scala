@@ -1,7 +1,6 @@
 package org.podval.tools.test.framework
 
 import org.podval.tools.build.{Backend, ScalaBinaryVersion, ScalaLibrary, ScalaTestFramework, TagOptions, Version}
-import org.podval.tools.scalanative.ScalaNativeBackend
 
 // http://etorreborre.github.io/specs2/
 // https://github.com/etorreborre/specs2
@@ -37,7 +36,7 @@ object Specs2 extends ScalaTestFramework(
   nameSbt = "specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.7.0"),
+  versionDefault = Version("5.9.0"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptions = TagOptions.ListWithoutEq("include", "exclude"),
@@ -49,13 +48,13 @@ object Specs2 extends ScalaTestFramework(
     "stats.outdir", "build/reports/tests/specs2-reports/stats"
   )
 ):
-  // Latest version that supports Scala 2 *and* Scala Native; v5 doesn't support either...
+  // Latest version that supports Scala 2; v5 doesn't support it...
   val versionDefaultScala2: Version = Version("4.23.0")
 
-  override def versionDefault(backend: Backend, scalaLibrary: ScalaLibrary): Option[Version] =
+  override def versionDefault(scalaLibrary: ScalaLibrary): Option[Version] =
     val isScala2: Boolean = scalaLibrary.scalaVersion.binaryVersion match
       case _: ScalaBinaryVersion.Scala2 => true
       case _ => false
-    if isScala2 || backend == ScalaNativeBackend
+    if isScala2
     then Some(versionDefaultScala2)
     else None
