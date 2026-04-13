@@ -19,6 +19,8 @@ sealed abstract class ScalaBinaryVersion(
 
   def isInRange(version: Version): Boolean
 
+  def isScala3: Boolean
+
 object ScalaBinaryVersion:
   val group: String = "org.scala-lang"
 
@@ -37,7 +39,8 @@ object ScalaBinaryVersion:
     name = "Scala 3 Library.",
     prefix = Version("3"),
     versionDefault = versionDefault
-  )
+  ):
+    final override def isScala3: Boolean = true
 
   private val versionScala3LibraryCompiledWithScala3: Version = Version("3.8.0")
 
@@ -62,6 +65,7 @@ object ScalaBinaryVersion:
     versionDefault = versionDefault
   ):
     final override def isInRange(version: Version): Boolean = true
+    final override def isScala3: Boolean = false
 
   case object Scala2_13 extends Scala2(
     prefix = Version("2.13"),

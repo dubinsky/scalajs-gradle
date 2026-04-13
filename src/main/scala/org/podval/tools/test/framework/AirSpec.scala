@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{Backend, ScalaBinaryVersion, ScalaTestFramework, ScalaVersion, Version}
+import org.podval.tools.build.{Backend, ScalaTestFramework, Version}
 import org.podval.tools.scalanative.ScalaNativeBackend
 
 object AirSpec extends ScalaTestFramework(
@@ -8,13 +8,11 @@ object AirSpec extends ScalaTestFramework(
   nameSbt = "airspec",
   group = "org.wvlet.airframe",
   artifact = "airspec",
-  versionDefault = Version("2026.1.5"),
+  versionDefault = Version("2026.1.6"),
   className = "wvlet.airspec.Framework",
   sharedPackages = List("wvlet.airspec")
 ):
   // Note: Scala Native is supported only on Scala 3
-  override def isBackendSupported(backend: Backend, scalaVersion: ScalaVersion): Boolean = backend match
-    case ScalaNativeBackend => scalaVersion.binaryVersion match
-      case _: ScalaBinaryVersion.Scala3 => true
-      case _ => false
+  override def isBackendSupported(backend: Backend, isScala3: Boolean): Boolean = backend match
+    case ScalaNativeBackend => isScala3
     case _ => true

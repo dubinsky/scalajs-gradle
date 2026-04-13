@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{Backend, ScalaBinaryVersion, ScalaLibrary, ScalaTestFramework, TagOptions, Version}
+import org.podval.tools.build.{ScalaTestFramework, TagOptions, Version}
 
 // http://etorreborre.github.io/specs2/
 // https://github.com/etorreborre/specs2
@@ -51,10 +51,5 @@ object Specs2 extends ScalaTestFramework(
   // Latest version that supports Scala 2; v5 doesn't support it...
   val versionDefaultScala2: Version = Version("4.23.0")
 
-  override def versionDefault(scalaLibrary: ScalaLibrary): Option[Version] =
-    val isScala2: Boolean = scalaLibrary.scalaVersion.binaryVersion match
-      case _: ScalaBinaryVersion.Scala2 => true
-      case _ => false
-    if isScala2
-    then Some(versionDefaultScala2)
-    else None
+  override def versionDefault(isScala3: Boolean): Option[Version] =
+    if isScala3 then None else Some(versionDefaultScala2)

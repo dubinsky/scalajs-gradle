@@ -109,7 +109,7 @@ abstract class GroupingFunSpec extends AnyFunSpec:
     backend: Backend,
     scalaVersion: ScalaVersion
   ): Seq[Fixture] = fixtures
-    .filter(_.framework.isBackendSupported(backend, scalaVersion))
+    .filter(_.framework.isBackendSupported(backend, scalaVersion.binaryVersion.isScala3))
 
   private def forBackends(
     projectName: Seq[String],
