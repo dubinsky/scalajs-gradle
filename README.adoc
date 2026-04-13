@@ -4,10 +4,10 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:attribute-gradleVersionForBadge: 9.5.0--rc--2
+:attribute-gradleVersionForBadge: 9.5.0
 :attribute-pluginBackendProperty: org.podval.tools.backend
-:version-gradle: 9.5.0-rc-2
-:version-plugin: 1.0.1
+:version-gradle: 9.5.0
+:version-plugin: 1.0.2
 :version-scalanative: 0.5.11
 :version-scalajs: 1.21.0
 :version-framework-specs2-scala2: 4.23.0
@@ -23,7 +23,7 @@
 :version-framework-junit4: 0.13.3
 :version-framework-junit4-scala-js: 1.21.0
 :version-framework-junit4-scala-native: 0.5.11
-:version-framework-airspec: 2026.1.5
+:version-framework-airspec: 2026.1.6
 :version-framework-hedgehog: 0.13.0
 :version-framework-munit: 1.3.0
 :version-framework-scalacheck: 1.19.0
@@ -32,7 +32,7 @@
 :version-framework-specs2: 5.9.0
 :version-framework-utest: 0.9.5
 :version-framework-weaver-test: 0.12.0
-:version-framework-ziotest: 2.1.25
+:version-framework-ziotest: 2.1.26
 // INCLUDED ATTRIBUTES
 
 image:https://github.com/dubinsky/scalajs-gradle/actions/workflows/CI.yaml/badge.svg[]

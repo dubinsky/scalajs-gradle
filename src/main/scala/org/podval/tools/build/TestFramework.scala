@@ -17,14 +17,14 @@ abstract class TestFramework(
 ) derives CanEqual:
   final override def toString: String = name
 
-  // Note: `scalaVersion` is needed only to accommodate AirSpec.
-  def isBackendSupported(backend: Backend, scalaVersion: ScalaVersion): Boolean = isBackendSupported(backend)
-
   def isBackendSupported(backend: Backend): Boolean = true
 
+  // Note: `scalaVersion` is needed only to accommodate AirSpec.
+  def isBackendSupported(backend: Backend, isScala3: Boolean): Boolean = isBackendSupported(backend)
+  
   // Note: `scalaLibrary` parameter is needed only to accommodate specs2 -
   // so if the need goes away, this can be simplified ;)
-  def versionDefault(scalaLibrary: ScalaLibrary): Option[Version] = None
+  def versionDefault(isScala3: Boolean): Option[Version] = None
 
   // Note: `isJvm` parameter is needed only to accommodate MUnit,
   // which as of v1.2.4 throws an exception if a JVM-specific parameter is supplied on Scala.js or Scala Native.
@@ -42,7 +42,7 @@ abstract class TestFramework(
       .withVersion(
         scalaLibrary,
         version
-          .orElse(versionDefault(scalaLibrary))
+          .orElse(versionDefault(scalaLibrary.scalaVersion.binaryVersion.isScala3))
           .getOrElse(dependencyForBackend.versionDefault)
       )
 
