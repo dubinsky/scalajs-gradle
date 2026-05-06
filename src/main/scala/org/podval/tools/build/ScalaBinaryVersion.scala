@@ -45,7 +45,7 @@ object ScalaBinaryVersion:
   private val versionScala3LibraryCompiledWithScala3: Version = Version("3.8.0")
 
   case object Scala3WithScala3Library extends Scala3(
-    versionDefault = Version("3.8.3")
+    versionDefault = Version("3.8.4")
   ):
     override def isInRange(version: Version): Boolean = version >= versionScala3LibraryCompiledWithScala3
 

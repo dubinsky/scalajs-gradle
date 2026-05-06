@@ -19,10 +19,11 @@ abstract class TestFramework(
 
   def isBackendSupported(backend: Backend): Boolean = true
 
-  // Note: `scalaVersion` is needed only to accommodate AirSpec.
+  // Note: `isScala3` parameter is needed only to accommodate AirSpec,
+  // so if the need goes away, this can be simplified ;)
   def isBackendSupported(backend: Backend, isScala3: Boolean): Boolean = isBackendSupported(backend)
   
-  // Note: `scalaLibrary` parameter is needed only to accommodate specs2 -
+  // Note: `isScala3` parameter is needed only to accommodate specs2,
   // so if the need goes away, this can be simplified ;)
   def versionDefault(isScala3: Boolean): Option[Version] = None
 
