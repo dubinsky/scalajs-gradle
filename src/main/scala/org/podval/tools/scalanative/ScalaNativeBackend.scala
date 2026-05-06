@@ -6,7 +6,7 @@ import org.podval.tools.nonjvm.NonJvmBackend
 object ScalaNativeBackend extends NonJvmBackend(
   name = "Scala Native",
   group = "org.scala-native",
-  versionDefault = Version("0.5.11"),
+  versionDefault = Version("0.5.12"),
   sourceRoot = "native",
   artifactSuffix = "native0.5",
   pluginDependenciesConfigurationName = "scalanative",

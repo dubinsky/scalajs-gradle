@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.54.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '1.0.1'
+  id 'org.podval.tools.scalajs' version '1.0.2'
   id 'com.gradle.plugin-publish' version '2.1.1'
 }
 
@@ -21,7 +21,7 @@ dependencies {
   implementation gradleApi()
 
   // for TestClassVisitor
-  implementation 'org.ow2.asm:asm:9.9.1'
+  implementation 'org.ow2.asm:asm:9.10.1'
 
   // for running tests
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"

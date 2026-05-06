@@ -35,7 +35,7 @@ object MUnit extends ScalaTestFramework(
   sharedPackages = List("munit"),
   tagOptions = TagOptions.ListWithEq("--include-tags", "--exclude-tags"),
   usesTestSelectorAsNested = true,
-  versionDefault = Version("1.3.0"),
+  versionDefault = Version("1.3.2"),
   additionalOptions = Array(
     "--logger=sbt", // use SBT loggers
     "--summary=1" // enable one-line summary
