@@ -6,7 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.3] - 2026-
+## [1.0.4] - 2026-
+- chore: Scala.js 1.22.0;
+  - `experimentalUseWebAssembly` is now `useWebAssembly`;
+  - added `useJSPI`;
+  - WASM requires `ES2022`;
+- chore: Gradle 9.6.0;
+- chore: Gradle 9.6.1;
+- chore: Node.js 26.5.0;
+- chore: dependency updates;
+
+## [1.0.3] - 2026-06-08
+- chore: Gradle 9.5.1;
+- chore: Scala 3.8.4;
 - chore: dependency updates;
 
 ## [1.0.2] - 2026-05-06

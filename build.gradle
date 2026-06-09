@@ -2,7 +2,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.54.0'
   id 'scala'
   id 'signing'
-  id 'org.podval.tools.scalajs' version '1.0.2'
+  id 'org.podval.tools.scalajs' version '1.0.3'
   id 'com.gradle.plugin-publish' version '2.1.1'
 }
 
