@@ -36,7 +36,7 @@ object Specs2 extends ScalaTestFramework(
   nameSbt = "specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.9.0"),
+  versionDefault = Version("5.9.1"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptions = TagOptions.ListWithoutEq("include", "exclude"),

@@ -24,8 +24,11 @@ trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
   @Input def getOptimization: Property[String]
   Optimization.convention(getOptimization)
   
-  @Input def getExperimentalUseWebAssembly: Property[Boolean]
-  ExperimentalUseWebAssembly.convention(getExperimentalUseWebAssembly)
+  @Input def getUseWebAssembly: Property[Boolean]
+  UseWebAssembly.convention(getUseWebAssembly)
+
+  @Input def getUseJSPI: Property[Boolean]
+  UseJSPI.convention(getUseJSPI)
 
   @Input def getEsVersion: Property[String]
   ESVersion.convention(getEsVersion)
@@ -39,7 +42,8 @@ trait ScalaJSLinkTask extends LinkTask[ScalaJSBackend.type]:
     reportBinFile = getReportBinFile,
     reportTextFile = getReportTextFile,
     moduleKind = ModuleKind(getModuleKind),
-    useWebAssembly = ExperimentalUseWebAssembly(getExperimentalUseWebAssembly),
+    useWebAssembly = UseWebAssembly(getUseWebAssembly),
+    useJSPI = UseJSPI(getUseJSPI),
     esVersion = ESVersion(getEsVersion),
     optimization = Optimization(getOptimization),
     moduleSplitStyle = ModuleSplitStyle(getModuleSplitStyle),

@@ -6,8 +6,7 @@ import org.podval.tools.util.Files
 import org.scalajs.jsenv.Input
 import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
 import org.scalajs.linker.interface.{IRContainer, IRFile, LinkingException, Report, Semantics, StandardConfig,
-  ESVersion as ESVersionSJS, ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS,
-  ModuleSplitStyle as ModuleSplitStyleSJS}
+  ESVersion as ESVersionSJS, ModuleInitializer as ModuleInitializerSJS, ModuleKind as ModuleKindSJS, ModuleSplitStyle as ModuleSplitStyleSJS}
 import org.scalajs.testing.adapter.TestAdapterInitializer
 import scala.concurrent.Await
 import java.io.File
@@ -21,6 +20,7 @@ final class ScalaJSLink(
   reportTextFile: File,
   moduleKind: ModuleKind,
   val useWebAssembly: Boolean,
+  useJSPI: Boolean,
   runtimeClasspath: Seq[File],
   optimization: Optimization,
   moduleSplitStyle: ModuleSplitStyle,
@@ -68,7 +68,20 @@ final class ScalaJSLink(
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
 
   override def link(): Unit =
-    validateLink(moduleSplitStyle)
+    // TODO move into constructor?
+
+    if moduleKind == ModuleKind.NoModule && moduleSplitStyle != ModuleSplitStyle.FewestModules then
+      abort(s"moduleKind = 'NoModule'` requires `moduleSplitStyle = 'FewestModules'`")
+
+    if useWebAssembly then
+      if moduleSplitStyle != ModuleSplitStyle.FewestModules then
+        abort(s"`useWebAssembly = true` requires `moduleSplitStyle = 'FewestModules'`; see https://www.scala-js.org/doc/project/webassembly.html")
+
+      if moduleKind != ModuleKind.ESModule then
+        abort(s"`useWebAssembly = true` requires `moduleKind = 'ESModule'`; see https://www.scala-js.org/doc/project/webassembly.html")
+
+      if esVersion.year < 2022 then
+        abort(s"`useWebAssembly = true` requires `esVersion` of at least '2022'`; see https://www.scala-js.org/doc/project/webassembly.html")
 
     // TODO method withClosureCompiler in class ConfigExt is deprecated since 1.21.0:
     //  Support for the Google Closure Compiler is deprecated.
@@ -88,6 +101,11 @@ final class ScalaJSLink(
       case ESVersion.ES2019 => ESVersionSJS.ES2019
       case ESVersion.ES2020 => ESVersionSJS.ES2020
       case ESVersion.ES2021 => ESVersionSJS.ES2021
+      case ESVersion.ES2022 => ESVersionSJS.ES2022
+      case ESVersion.ES2023 => ESVersionSJS.ES2023
+      case ESVersion.ES2024 => ESVersionSJS.ES2024
+      case ESVersion.ES2025 => ESVersionSJS.ES2025
+      case ESVersion.ES2026 => ESVersionSJS.ES2026
 
     val linkerConfig: StandardConfig = StandardConfig()
       .withCheckIR(fullOptimization)
@@ -95,9 +113,12 @@ final class ScalaJSLink(
       .withModuleKind(moduleKindSJS)
       .withClosureCompiler(fullOptimization && (moduleKind != ModuleKind.ESModule))
       .withModuleSplitStyle(moduleSplitStyleSJS)
-      .withExperimentalUseWebAssembly(useWebAssembly)
+      .withESFeatures(_
+        .withESVersion(esVersionSJS)
+        .withUseWebAssembly(useWebAssembly)
+      )
+      .withWasmFeatures(_.withUseJSPI(useJSPI))
       .withPrettyPrint(prettyPrint)
-      .withESFeatures(_.withESVersion(esVersionSJS))
 
     val moduleInitializersSJS: Seq[ModuleInitializerSJS] = moduleInitializers
       .map(_.map(ScalaJSLink.toSJS))
@@ -139,16 +160,6 @@ final class ScalaJSLink(
       case e: LinkingException =>
         //e.printStackTrace()
         abort(s"ScalaJS link error: $e.getMessage}")
-
-  private def validateLink(moduleSplitStyle: ModuleSplitStyle): Unit =
-    if useWebAssembly && moduleKind != ModuleKind.ESModule then
-      abort(s"`experimentalUseWebAssembly = true` requires `moduleKind = 'ESModule'`; see https://www.scala-js.org/doc/project/webassembly.html")
-
-    if useWebAssembly && moduleSplitStyle != ModuleSplitStyle.FewestModules then
-      abort(s"`experimentalUseWebAssembly = true` requires `moduleSplitStyle = 'FewestModules'`; see https://www.scala-js.org/doc/project/webassembly.html")
-
-    if moduleKind == ModuleKind.NoModule && moduleSplitStyle != ModuleSplitStyle.FewestModules then
-      abort(s"moduleKind = 'NoModule'` requires `moduleSplitStyle = 'FewestModules'`")
 
 object ScalaJSLink:
   private def toSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
