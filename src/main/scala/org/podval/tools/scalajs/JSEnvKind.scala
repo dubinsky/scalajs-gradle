@@ -5,6 +5,7 @@ import org.podval.tools.nonjvm.Named
 enum JSEnvKind(name: String) extends Named(name) derives CanEqual:
   case NodeJS      extends JSEnvKind("Node.js")
   case JSDOMNodeJS extends JSEnvKind("Node.js+DOM")
+  // TODO remove
   case Playwright  extends JSEnvKind("Playwright")
 
 object JSEnvKind extends Named.Companion[JSEnvKind]("JSEnv"):

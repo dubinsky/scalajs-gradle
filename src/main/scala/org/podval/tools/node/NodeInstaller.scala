@@ -50,7 +50,7 @@ object NodeInstaller extends Installer[Node]:
     name.toLowerCase match
       case "x86_64"  => "x64"
       case "amd64"   => "x64"
-      case "aarch64" => "x64"
+      case "aarch64" => "arm64"
       case "ppc64"   => "ppc64"
       case "ppc64le" => "ppc64le"
       case "s390x"   => "s390x"
@@ -68,7 +68,7 @@ object NodeInstaller extends Installer[Node]:
     val patch: Int = version.int(2)
 
     ((major == 4) && (minor >= 5)) || // >= 4.5.0..6
-    ((major == 6) && ((minor > 2) || ((patch == 2) && (patch >= 1)))) || // >= 6.2.1..7
+    ((major == 6) && ((minor > 2) || ((minor == 2) && (patch >= 1)))) || // >= 6.2.1..7
      (major >  6) // 7..
   
   override def isZip(version: Version): Boolean = isWindows && hasWindowsZip(version)
