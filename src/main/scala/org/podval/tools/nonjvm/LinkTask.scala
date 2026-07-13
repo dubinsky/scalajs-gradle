@@ -21,7 +21,7 @@ abstract class LinkTask[B <: NonJvmBackend] extends DefaultTask
   @TaskAction final def execute(): Unit = link.link()
   def link: Link[B]
 
-  private val buildDirectory: File = Projects.buildDirectoryFile(getProject)
+  private val buildDirectory: File = Projects.buildDirectoryFile(getProject) // TODO use @Input/@Internal property
   final protected def outputDirectory: File = Files.file(buildDirectory, "tmp", getName)
   final protected def outputFile(name: String): File = File(outputDirectory, name)
 

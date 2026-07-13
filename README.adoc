@@ -654,14 +654,14 @@ Configurable properties with their defaults are:
 link {
   optimization     = 'Fast'          // one of: 'Fast', 'Full'
   moduleKind       = 'NoModule'      // one of: 'NoModule', 'ESModule', 'CommonJSModule'
-  moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules'
+  moduleSplitStyle = 'FewestModules' // one of: 'FewestModules', 'SmallestModules', 'SmallModulesFor'
   // when using `specs2` testing framework, '2018' and later is required:
   // it supports regular expressions used in many matchers using strings
-  esVersion        = '2015'          // one of '2015', '2016', '2017', '2018', '2019', '2020', '2021'
+  esVersion        = '2015'          // one of '2015'..'2026'
   smallModulesFor  = []              // list of packages; relevant only when moduleSplitStyle = 'SmallModulesFor'
   prettyPrint      = false
-  useWebAssembly = false
-  useJSPI = false
+  useWebAssembly   = false           // emit WebAssembly (see below for constraints)
+  useJSPI          = false           // enable js.async / js.await (needs a JSPI-capable JS engine)
 }
 ----
 
@@ -670,6 +670,15 @@ Setting `optimization` to `Full` enables:
 - `Semantics.optimized`;
 - `checkIR`;
 - Closure Compiler (if `moduleKind` is set to `ESModule`).
+
+When `useWebAssembly = true`, the following are required (see https://www.scala-js.org/doc/project/webassembly.html):
+
+- `moduleKind = 'ESModule'`
+- `moduleSplitStyle = 'FewestModules'`
+- `esVersion` of at least `'2022'`
+
+`useJSPI` enables Scala.js JSPI (`js.async` / `js.await`) and needs a JS engine that supports JSPI.
+Environment variables `SCALAJS_USE_WEBASSEMBLY` and `SCALAJS_USE_JSPI` can override the defaults.
 
 For `ScalaJSLinkMainTask` tasks, a list of module initializers may also be configured:
 

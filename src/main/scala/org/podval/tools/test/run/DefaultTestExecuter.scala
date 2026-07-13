@@ -88,7 +88,6 @@ open class DefaultTestExecuter(
       if testExecutionSpec.isScanForTestClasses
       then testExecutionSpec.getCandidateClassFiles
       else FileCollectionFactory.emptyTree
-      testExecutionSpec.getCandidateClassFiles
 
     val testDefinitionDirs: java.util.Set[File] = testExecutionSpec.getCandidateTestDefinitionDirs
 

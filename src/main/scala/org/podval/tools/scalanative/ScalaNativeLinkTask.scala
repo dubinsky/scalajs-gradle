@@ -33,7 +33,7 @@ trait ScalaNativeLinkTask extends LinkTask[ScalaNativeBackend.type]:
       optimize = Optimize(getOptimize),
       mode = Mode(getMode),
       baseDir = getNativeDirectory.toPath,
-      projectName = getProject.getName,
+      projectName = getProject.getName, // TODO use @Input/@Internal property
       mainClass = mainClass,
       isTest = isTest,
       classpath = runtimeClasspath.map(_.toPath),

@@ -71,7 +71,7 @@ final class ScalaJSLink(
     // TODO move into constructor?
 
     if moduleKind == ModuleKind.NoModule && moduleSplitStyle != ModuleSplitStyle.FewestModules then
-      abort(s"moduleKind = 'NoModule'` requires `moduleSplitStyle = 'FewestModules'`")
+      abort(s"`moduleKind = 'NoModule'` requires `moduleSplitStyle = 'FewestModules'`")
 
     if useWebAssembly then
       if moduleSplitStyle != ModuleSplitStyle.FewestModules then
@@ -81,7 +81,7 @@ final class ScalaJSLink(
         abort(s"`useWebAssembly = true` requires `moduleKind = 'ESModule'`; see https://www.scala-js.org/doc/project/webassembly.html")
 
       if esVersion.year < 2022 then
-        abort(s"`useWebAssembly = true` requires `esVersion` of at least '2022'`; see https://www.scala-js.org/doc/project/webassembly.html")
+        abort(s"`useWebAssembly = true` requires `esVersion` of at least '2022'; see https://www.scala-js.org/doc/project/webassembly.html")
 
     // TODO method withClosureCompiler in class ConfigExt is deprecated since 1.21.0:
     //  Support for the Google Closure Compiler is deprecated.
@@ -159,7 +159,7 @@ final class ScalaJSLink(
     catch
       case e: LinkingException =>
         //e.printStackTrace()
-        abort(s"ScalaJS link error: $e.getMessage}")
+        abort(s"ScalaJS link error: ${e.getMessage}")
 
 object ScalaJSLink:
   private def toSJS(moduleInitializer: ModuleInitializer): ModuleInitializerSJS =
