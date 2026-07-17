@@ -10,13 +10,9 @@ trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBac
   @Input def getJsEnv: Property[String]
   JSEnvKind.convention(getJsEnv)
 
-  @Input def getBrowserName: Property[String]
-  BrowserName.convention(getBrowserName)
-
   final override protected def run: ScalaJSRun = ScalaJSRun(
     jsEnvKind = JSEnvKind(getJsEnv),
     nodeProject = nodeProject,
-    browserName = BrowserName(getBrowserName),
     link = linkTask.link,
     output = output
   )

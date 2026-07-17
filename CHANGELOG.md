@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: Gradle 9.6.1;
 - chore: Node.js 26.5.0;
 - chore: dependency updates;
+- chore: handled a couple of suggestions from Grok...;
+- cleanup: remove support for obsolete versions of Node.js (< 8);
+- cleanup: remove support for the dead PlayWright;
 
 ## [1.0.3] - 2026-06-08
 - chore: Gradle 9.5.1;

@@ -34,8 +34,6 @@ final class ScalaJSLink(
   def module(jsEnvKind: JSEnvKind): (Report.Module, Path, Input) =
     if jsEnvKind == JSEnvKind.JSDOMNodeJS && moduleKind != ModuleKind.NoModule then
       abort(s"`jsEnv = 'Node.js+DOM' requires `moduleKind = 'NoModule'`")
-    if jsEnvKind == JSEnvKind.Playwright && moduleKind != ModuleKind.ESModule then
-      abort(s"`jsEnv = 'Playwright'` requires `moduleKind = 'ESModule'`; see https://github.com/gmkumar2005/scala-js-env-playwright")
 
     val module: Report.Module = Report
       .deserialize(Files.readBytes(reportBinFile))

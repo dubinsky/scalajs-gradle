@@ -60,24 +60,7 @@ object ScalaJSBackend extends NonJvmBackend(
   override protected def withDefaultVersion: Array[ScalaDependency] = Array(
     dom
   )
-
-  //def javaLogging: ScalaDependency =
-  // scalaDependency(
-  //   artifact = "scalajs-java-logging",
-  //   what = "Port of the java.util.logging API of JDK 8 for Scala.js"),
-  //   versionDefault = Version("1.0.0")
-  // )
-  //   .scala2
   
-  val playwright: ScalaDependency = scalaDependency(
-    group = "io.github.gmkumar2005",
-    artifact = "scala-js-env-playwright",
-    what = "Playwright JavaScript environment",
-    versionDefault = Version("0.1.18")
-  )
-    .scala2
-    .jvm
-
   override protected def junit4: JUnit4ScalaJS.type = JUnit4ScalaJS
 
   override protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String] =
