@@ -17,7 +17,6 @@
 :version-sbt-test-interface: 1.0
 :version-scalajs-dom: 2.8.1
 :version-scalajs-env-jsdom-nodejs: 1.1.1
-:version-scala-js-env-playwright: 0.1.18
 :version-node: 26.5.0
 :version-junit: 4.13.2
 :version-framework-junit4: 0.13.3
@@ -728,9 +727,6 @@ https://github.com/gmkumar2005/scala-js-env-playwright[Playwright]
 is not supported: the project publishes artifacts
 https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[only]
 for Scala 2.12.
-
-If Playwright _was_ supported, property `browserName` would choose the browser:
-'chromium', 'chrome', 'firefox', 'webkit'.
 
 === Node.js
 

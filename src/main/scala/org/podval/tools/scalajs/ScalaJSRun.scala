@@ -1,7 +1,5 @@
 package org.podval.tools.scalajs
 
-//import jsenv.playwright.PWEnv
-import org.gradle.process.ExecOperations
 import org.podval.tools.build.{Output, Runner, TestEnvironment}
 import org.podval.tools.node.NodeProject
 import org.podval.tools.nonjvm.{NonJvmTestEnvironment, Run}
@@ -19,7 +17,6 @@ import scala.concurrent.duration.Duration
 final class ScalaJSRun(
   val jsEnvKind: JSEnvKind,
   nodeProject: NodeProject,
-  browserName: BrowserName,
   link: ScalaJSLink,
   output: Output
 ) extends ScalaJSBuild(output) with Run[ScalaJSBackend.type]:
@@ -104,15 +101,3 @@ final class ScalaJSRun(
              |""".stripMargin
         )
         JSDOMNodeJSEnv(config)
-
-      case JSEnvKind.Playwright =>
-        throw new IllegalArgumentException(s"Playwright JavaScript environment is not supported until io.github.gmkumar2005:scala-js-env-playwrights_2.13 artifacts start being published.")
-//        val config: PWEnv.Config = PWEnv.Config()
-//        ScalaJSRunConfig.logger.debug(s"$logSource: jsEnv=PWEnv($config), browserName=$browserName")
-//        PWEnv(
-//          browserName = browserName.name,
-////          headless = ???,
-////          showLogs = ???,
-////          debug = ???,
-//          pwConfig = config
-//        )

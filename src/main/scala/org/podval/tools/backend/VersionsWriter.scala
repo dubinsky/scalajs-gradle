@@ -67,7 +67,6 @@ object VersionsWriter:
 
     "scalajs-dom"              -> ScalaJSBackend.dom,
     "scalajs-env-jsdom-nodejs" -> ScalaJSBackend.jsDomNode,
-    "scala-js-env-playwright"  -> ScalaJSBackend.playwright,
 
     "node"                     -> NodeInstaller,
 
