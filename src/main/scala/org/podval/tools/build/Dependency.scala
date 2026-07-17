@@ -22,9 +22,9 @@ trait Dependency:
 
   def backendSuffix: Option[String]
 
-  def classifier(version: Version): Option[String]
+  def classifier: Option[String]
 
-  def extension (version: Version): Option[String]
+  def extension: Option[String]
 
   def repository: Option[Dependency.Repository] = None
 

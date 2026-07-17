@@ -17,6 +17,9 @@ trait RunTask[B <: NonJvmBackend, L <: LinkTask[B] : ClassTag] extends Backend.T
     .orElse(findDependsOnTask)
     .getOrElse(throw GradleException(s"Task $getName must depend on a task of type ${dependencyTaskClass.getName}!"))
 
+  // TODO Gradle Warning:
+  //  Invocation of Task.dependsOn at execution time has been deprecated. 
+  //  This will fail with an error in Gradle 10.
   private def findDependsOnTaskProvider: Option[TaskProvider[L]] = getDependsOn
     .asScala
     .filter(_.isInstanceOf[TaskProvider[?]])
