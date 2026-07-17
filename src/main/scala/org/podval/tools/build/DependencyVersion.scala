@@ -21,8 +21,8 @@ final class DependencyVersion(
     backend = dependency.backendSuffix,
     scalaVersion = scalaVersion.map(_.toString),
     version = Some(version.toString),
-    classifier = dependency.classifier(version.version),
-    extension = dependency.extension(version.version)
+    classifier = dependency.classifier,
+    extension = dependency.extension
   )
 
   def resolve[R](

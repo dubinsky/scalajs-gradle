@@ -17,9 +17,9 @@ trait JvmDependency extends Dependency:
 
   def withVersion(scalaLibrary: ScalaLibrary, version: Version): DependencyVersion
 
-  final override def classifier(version: Version): Option[String] = None
+  final override def classifier: Option[String] = None
 
-  final override def extension (version: Version): Option[String] = None
+  final override def extension: Option[String] = None
 
   final override def backendSuffix: Option[String] = backend.artifactSuffix
 
@@ -46,13 +46,13 @@ trait JvmDependency extends Dependency:
     .flatMap(Version.parse(isVersionCompound, _))
     .flatMap: (version: Version.Pre) =>
       val scalaVersion: Option[Version] = artifact.scalaVersion.map(Version(_))
-      val extension: Option[String] = this.extension(version.version)
+      val extension: Option[String] = this.extension
       val found: Boolean =
         isScalaVersion(scalaVersion) &&
         artifact.group.fold(true)(_ == group) &&
         (artifact.name == this.artifact) &&
         (artifact.backend == backend.artifactSuffix) &&
-        (artifact.classifier == classifier(version.version)) &&
+        (artifact.classifier == classifier) &&
         ((artifact.extension == extension) || (extension.isEmpty && artifact.extension.contains("jar")))
 
       Option.when(found)(fromVersion(scalaVersion = scalaVersion, version = version))
