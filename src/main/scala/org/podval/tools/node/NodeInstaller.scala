@@ -10,7 +10,7 @@ object NodeInstaller extends Installer[Node]:
   private val os: Os = Os.get
   private val isWindows: Boolean = os == Os.Windows
 
-  override def versionDefault: Version = Version("26.5.0")
+  override def versionDefault: Version = Version("26.7.0")
   override def group: String = "org.nodejs"
   override def artifact: String = "node"
   override def backendSuffix: Option[String] = None
