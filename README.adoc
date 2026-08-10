@@ -7,7 +7,7 @@
 :attribute-gradleVersionForBadge: 9.7.0
 :attribute-pluginBackendProperty: org.podval.tools.backend
 :version-gradle: 9.7.0
-:version-plugin: 1.0.4
+:version-plugin: 1.0.5
 :version-scalanative: 0.5.12
 :version-scalajs: 1.22.0
 :version-framework-specs2-scala2: 4.23.0
