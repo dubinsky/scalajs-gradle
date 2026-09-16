@@ -4,11 +4,16 @@ pluginManagement {
     mavenCentral()
     gradlePluginPortal()
   }
+  // String path: a File would call Settings.includeBuild (not a plugin build).
+  final String conventionsDir =
+    providers.gradleProperty('podvalGradleDir').getOrElse('../podval-gradle')
+  if (file(conventionsDir).isDirectory() && file("${conventionsDir}/settings.gradle").isFile()) {
+    includeBuild conventionsDir
+  }
 }
 
 plugins {
-  // Enables automatic provisioning of missing JVM toolchains (e.g. Java 21).
-  id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+  id 'org.podval.conventions.settings' version '0.1.0'
 }
 
 dependencyResolutionManagement {

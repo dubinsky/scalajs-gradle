@@ -1,7 +1,8 @@
 plugins {
-  id 'io.github.ben-manes.versions' version '0.63.1'
   id 'scala'
   id 'signing'
+  id 'org.podval.conventions'
+  id 'org.podval.conventions.publish'
   id 'org.podval.tools.scalajs' version '1.0.4'
   id 'com.gradle.plugin-publish' version '2.2.1'
 }
@@ -10,7 +11,6 @@ group = 'org.podval.tools'
 version = version_plugin
 description = 'Gradle plugin for cross-compiling to JVM, Scala.js and Scala Native'
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 scala.scalaVersion = version_scala
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
@@ -52,100 +52,19 @@ dependencies {
   testImplementation "org.scalatest:scalatest_3:$version_framework_scalatest"
 }
 
-def isNonStable = { String version ->
-  boolean stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
-  String regex = /^[0-9,.v-]+(-r)?$/
-  return !stableKeyword && !(version ==~ regex)
+podvalPublish {
+  gitHubRepository = 'dubinsky/scalajs-gradle'
 }
-
-tasks.named("dependencyUpdates").configure {
-  rejectVersionIf {
-    isNonStable(it.candidate.version)
-  }
-}
-
-tasks.withType(ScalaCompile).configureEach {
-  scalaCompileOptions.with {
-    additionalParameters = [
-      '-release:17',
-      '-new-syntax',
-      '-feature',
-      '-language:strictEquality',
-      '-source:future'
-    ]
-  }
-}
-
-jar {
-  manifest {
-    attributes(
-      'Implementation-Title'  : project.description,
-      'Implementation-Version': project.version
-    )
-  }
-}
-
-final String gitHubRepository = 'dubinsky/scalajs-gradle'
-final String gitHubRepositoryUrl = "https://github.com/$gitHubRepository"
-final String orgName = 'Podval Group'
-final String orgUrl = 'https://www.podval.org'
 
 publishing {
   publications {
     library(MavenPublication) {
       from components.java
-//      artifact sourcesJar
-//      artifact scaladocJar
-//      artifact javadocJar
-
-      pom {
-        name = project.name
-        description = project.description
-        url = gitHubRepositoryUrl
-        scm {
-          url = gitHubRepositoryUrl
-          connection = "scm:git:git://github.com/${gitHubRepository}.git"
-          developerConnection = "scm:git:ssh://github.com/${gitHubRepository}.git"
-        }
-        licenses {
-          license {
-            name = 'The Apache Software License, Version 2.0'
-            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-            distribution = 'repo'
-            comments = 'A business-friendly OSS license'
-          }
-        }
-        organization {
-          name = orgName
-          url = orgUrl
-        }
-        developers {
-          developer {
-            id = 'dub'
-            name = 'Leonid Dubinsky'
-            email = 'dub@podval.org'
-            url = 'https://dub.podval.org'
-            organization = orgName
-            organizationUrl = orgUrl
-            timezone = '-5'
-          }
-        }
-      }
     }
   }
 }
 
-signing {
-  sign publishing.publications.library
-  useInMemoryPgpKeys(
-    findProperty('signingKey').toString(),
-    findProperty('signingPassword').toString()
-  )
-}
-
 gradlePlugin {
-  website = gitHubRepositoryUrl
-  vcsUrl  = "${gitHubRepositoryUrl}.git"
   plugins {
     scalajs {
       id = 'org.podval.tools.scalajs'
