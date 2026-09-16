@@ -22,7 +22,7 @@ object ScalaCheck extends ScalaTestFramework(
   nameSbt = "ScalaCheck",
   group = "org.scalacheck",
   artifact = "scalacheck",
-  versionDefault = Version("1.19.0"),
+  versionDefault = Version("1.20.0"),
   className = "org.scalacheck.ScalaCheckFramework",
   sharedPackages = List("org.scalacheck")
 )

@@ -1,9 +1,9 @@
 plugins {
-  id 'io.github.ben-manes.versions' version '0.61.0'
+  id 'io.github.ben-manes.versions' version '0.63.1'
   id 'scala'
   id 'signing'
   id 'org.podval.tools.scalajs' version '1.0.4'
-  id 'com.gradle.plugin-publish' version '2.1.1'
+  id 'com.gradle.plugin-publish' version '2.2.1'
 }
 
 group = 'org.podval.tools'
