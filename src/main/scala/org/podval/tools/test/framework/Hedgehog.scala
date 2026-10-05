@@ -7,7 +7,7 @@ object Hedgehog extends ScalaTestFramework(
   nameSbt = "Hedgehog",
   group = "qa.hedgehog",
   artifact = "hedgehog-sbt",
-  versionDefault = Version("0.14.0"),
+  versionDefault = Version("0.15.0"),
   className = "hedgehog.sbt.Framework",
   sharedPackages = List("hedgehog")
 )

@@ -27,7 +27,7 @@ object VersionsWriter:
         versions.map((name, version) => s":version-$name: $version")
     )
 
-  private val gradleVersion: Version = Version("9.7.1")
+  private val gradleVersion: Version = Version("9.8.0")
   private val pluginVersion: Version = Version("1.0.5")
 
   private def attributes: Seq[(String, String)] = Seq(

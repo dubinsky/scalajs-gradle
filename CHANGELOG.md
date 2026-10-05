@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.5] - 2026-
 - chore: Scala 3.9.0;
+- chore: Scala 3.10.0;
 - chore: Gradle 9.7.1;
+- chore: Gradle 9.8.0;
 - chore: dependency updates;
 
 ## [1.0.4] - 2026-08-10
