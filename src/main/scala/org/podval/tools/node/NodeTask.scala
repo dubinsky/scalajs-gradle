@@ -1,9 +1,8 @@
 package org.podval.tools.node
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.{CacheableTask, Input, TaskAction}
+import org.gradle.api.tasks.{Input, TaskAction}
 
-@CacheableTask
 abstract class NodeTask extends DefaultTask with NodeProjectTask:
   // setArguments() can not be declared here, and is instead declared in subclasses,
   // since it is annotated - and annotation arguments must be constant...
@@ -13,7 +12,6 @@ abstract class NodeTask extends DefaultTask with NodeProjectTask:
   final protected def argumentsList: List[String] = arguments.split(" ").toList
 
 object NodeTask:
-  @CacheableTask
   abstract class NodeRunTask extends NodeTask:
     @TaskAction final def execute(): Unit = nodeProject.node(argumentsList, log = true)
 
@@ -23,7 +21,6 @@ object NodeTask:
     )
     def setArguments(arguments: String): Unit = argumentsInternal(arguments)
 
-  @CacheableTask
   abstract class NpmRunTask extends NodeTask:
     @TaskAction final def execute(): Unit = nodeProject.npm(argumentsList, log = true)
 

@@ -2,7 +2,12 @@ package org.podval.tools.util
 
 import scala.reflect.ClassTag
 
-// Array operations that avoid issues with missing classes/methods while running on Scala 2.12.
+// Array operations for code that runs in the test worker, on the project's Scala library.
+// That library may be Scala 2.12, whose scala-library does not have the Scala 3 Array methods.
+// Configuration-time code (org.podval.tools.build, backend, nonjvm, node, scalajs, scalanative)
+// runs on the plugin classloader and does not use this object.
+// The worker code is org.podval.tools.test.run, org.podval.tools.test.detect,
+// and the TestFramework / TagOptions helpers those packages call.
 object Scala212Collections:
   def arrayMap[A, B: ClassTag](array: Array[A], f: A => B): Array[B] =
     val result: Array[B] = new Array[B](array.length)

@@ -9,7 +9,10 @@ class VersionTest extends AnyFlatSpec, Matchers, TableDrivenPropertyChecks:
     ("left", "right", "expected"),
     ("3.8.0", "3.8.0", 0),
     ("3.8", "3.8.0", -1),
-    ("3.8", "3", 1)
+    ("3.8", "3", 1),
+    ("3.8.0-RC1", "3.8.0", -1),
+    ("3.8.0", "3.8.0-RC1", 1),
+    ("3.10.0-RC1", "3.8.0", 1)
   )
 
   "Version.compare" should "work" in :

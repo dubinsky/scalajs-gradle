@@ -7,7 +7,7 @@
 :attribute-gradleVersionForBadge: 9.8.0
 :attribute-pluginBackendProperty: org.podval.tools.backend
 :version-gradle: 9.8.0
-:version-plugin: 2.0.0
+:version-plugin: 2.1.0
 :version-scalanative: 0.5.12
 :version-scalajs: 1.22.0
 :version-framework-specs2-scala2: 4.23.0
@@ -108,6 +108,18 @@ plugins {
 Plugin will automatically apply the `Scala` plugin to the project, so there is no need to manually list `id 'scala'` in
 the `plugins` block - but there is no harm in it either.
 
+The same project plugin is also published as `org.podval.tools.scala`.
+
+A settings plugin, `org.podval.tools.scala.settings`, selects the default backend and can include backend projects.
+Apply it in `settings.gradle`:
+
+[source,groovy,subs="+attributes"]
+----
+plugins {
+  id 'org.podval.tools.scala.settings' version '{version-plugin}'
+}
+----
+
 === Scala Version
 Project using the plugin has to specify a version of `Scala` for the Scala Gradle plugin to use.
 
@@ -131,7 +143,7 @@ The latter approach:
 
 - is cleaner;
 - is the future: the old, inference-based approach is going away (slowly; deprecated in Gradle 9);
-- allows the Scala version to be consistent across the modules of a multi-module project by using `gradle.properies`
+- allows the Scala version to be consistent across the modules of a multi-module project by using a `gradle.properties`
   file:
 
 [source,properties,subs="+attributes"]
@@ -142,17 +154,14 @@ scalaVersion={version-scala}
 - allows the Scala version to be overridden from the command line:
 [source,shell,subs="+attributes"]
 ----
-$ ./graldew -PscalaVersion={version-scala}
+$ ./gradlew -PscalaVersion={version-scala}
 ----
 
 Plugin assumes that the project uses the explicit approach; no assumptions are made about the name of the property.
 
-Note: Starting with Scala 3.8.0, the following has to be configured in the Gradle build file:
-
-[source,groovy]
-----
-tasks.withType(ScalaCompile).configureEach {scalaCompileOptions.additionalParameters = ['-release:17'] }
-----
+Starting with Scala 3.8.0, the Scala library is built for Java 17.
+When the project uses Scala 3.8 or newer, the plugin adds `-release:17` to each `ScalaCompile` task that does not
+already set `-release` or `-java-output-version`.
 
 === Building for Specific Scala Version
 Plugin does not support building for multiple Scala versions _at the same time_ using only Gradle (unlike the
@@ -220,7 +229,13 @@ As usual, artifact names have suffixes corresponding to the Scala version: `_3`,
 For the artifacts compiled by the non-JVM backends, before the Scala version another suffix indicating the backend is
 inserted: for `Scala.js` - `_sjs1`, for `Scala Native` - `_native0.5`.
 
-For details on what dependencies are relevant for which backend , see: <<scalajs-dependencies, Scala.js Dependencies>>,
+A release such as `3.10.0` or `2.13.18` uses that binary suffix.
+Any other version uses the full Scala version: `3.8.0-RC1` becomes `_3.8.0-RC1`, and `_sjs1_3.8.0-RC1` or
+`_native0.5_3.8.0-RC1` on the other backends.
+The same string is the Scala suffix in dependency notation.
+`scalaBinaryVersion` stays the binary prefix.
+
+For details on what dependencies are relevant for which backend, see: <<scalajs-dependencies, Scala.js Dependencies>>,
 <<scalanative-dependencies, Scala Native Dependencies>>, <<test-frameworks-dependencies, Test Frameworks Dependencies>>.
 
 [#scala-backend-extension]
@@ -242,6 +257,7 @@ Extension exposes:
 - `useArtifactSuffix`, default `true`, controls the suffix of the artifacts this project produces.
   Assign it in the build script body.
   An `afterEvaluate` block is too late.
+  The property is finalized when it is read, so assigning it from `afterEvaluate` fails.
   When the property is omitted or `true`, the main jar, the sources jar, and the javadoc jar use `suffix`, and a Maven
   publication whose `artifactId` is still the project name is published with that suffix.
   When it is `false`, those jars and that `artifactId` use the project name and no suffix.
@@ -261,6 +277,50 @@ Transformer can indicate that a particular dependency is:
 - only available for Scala 2: `scala2()`;
 - only available for JVM: `jvm()`;
 - a Scala compiler plugin: `scalaCompilerPlugin()`;
+- a compound version such as `3.10.0+1.22.0`: `versionCompound()`;
+
+=== Kotlin
+
+The snippets above are Groovy.
+The same configuration in the Kotlin DSL:
+
+[source,kotlin,subs="+attributes"]
+----
+plugins {
+  id("org.podval.tools.scalajs") version "{version-plugin}"
+}
+
+scala {
+  scalaVersion.set(scalaVersion)
+}
+----
+
+[source,kotlin]
+----
+// settings.gradle.kts
+scalaBackend.backend.set("js")
+scalaBackend.includeBackendProjects()
+----
+
+[source,kotlin,subs="+attributes"]
+----
+scalaBackend {
+  useArtifactSuffix.set(false)
+}
+
+link {
+  moduleKind.set("CommonJSModule")
+}
+
+node {
+  version.set("{version-node}")
+  modules.set(listOf("jsdom"))
+}
+
+dependencies {
+  testImplementation(scalaBackend.testFramework(MUnit::class.java))
+}
+----
 
 [#application-scenarios]
 == Scala Backends
@@ -292,15 +352,31 @@ Sources under `src` are processed with one specific backend; backend used is sel
 
 The value of this property is treated as case-insensitive.
 
-This property must be set in the `gradle.properties` file of the project that applies the plugin: setting it in
-`build.gradle` won't work.
+Set this property in `gradle.properties`, or pass it with `-P`.
+Setting it in `build.gradle` won't work.
 
 If this property is set to `Scala.js` or `js`, `Scala.js` backend is used.
 
-If this property is set to `Scala Native` or `native`, `Scala.js` backend is used.
+If this property is set to `Scala Native` or `native`, the `Scala Native` backend is used.
 
 If this property is set to `JVM` or not set at all, `JVM` backend is used, making this setup equivalent to the
 <<jvm-only>> one.
+
+The same choice can be made on the settings extension `scalaBackend`, in `settings.gradle`.
+A project property, including one passed with `-P`, overrides that value.
+`build.gradle` cannot choose the backend: the plugin selects task classes while it is applied, before the rest of the
+build script runs.
+
+[source,groovy,subs="+attributes"]
+----
+plugins {
+  id 'org.podval.tools.scala.settings' version '{version-plugin}'
+}
+
+scalaBackend {
+  backend = 'js'
+}
+----
 
 For example, to use `Scala.js` backend for the project, put the following into the `gradle.properties` file of the
 project:
@@ -319,6 +395,24 @@ This mode is triggered when at least one of the directories containing backend-s
 All backends do not have to be used all the time; with only one backend used, this setup is equivalent to the
 <<single-backend>> one (and if that backend is `jvm` - to the <<jvm-only>> one).
 Backend-specific directories must also be included as _projects_ in the `settings.gradle` file.
+
+After the projects that own those directories are included, `scalaBackend.includeBackendProjects()` includes each child
+directory named `js`, `jvm`, `native`, `shared`, or a partial share such as `js-native`.
+It does not rename projects.
+Call it at the end of `settings.gradle`.
+
+[source,groovy,subs="+attributes"]
+----
+plugins {
+  id 'org.podval.tools.scala.settings' version '{version-plugin}'
+}
+
+include 'core'
+
+scalaBackend.includeBackendProjects()
+----
+
+When `core/js` exists, that call includes `:core:js`.
 
 To share sources (include them in the backend-specific compilation _together_ with the backend-specific sources) between
 _all_ the backends, place them in the directory `shared` - or directly in the `src` directory of the overall
@@ -396,9 +490,13 @@ project <7>
      +--- build.gradle <3>
      \--- src <6>
 ----
-<1> settings file where backend-specific and shared subprojects are included <2> build script of the overall project <3>
-build scripts of the backend-specific projects <4> sources shared between all backends <5> sources shared between some
-backends <6> sources specific to a backend <7> there are no sources in the overall project
+<1> settings file where backend-specific and shared subprojects are included
+<2> build script of the overall project
+<3> build scripts of the backend-specific projects
+<4> sources shared between all backends
+<5> sources shared between some backends
+<6> sources specific to a backend
+<7> there are no sources in the overall project
 
 == JVM
 
@@ -661,7 +759,19 @@ depends on the `link` task.
 
 Additional tasks of type
 link:src/main/scala/org/podval/tools/scalajs/ScalaJSRunTask.scala[org.podval.tools.scalajs.ScalaJSRunTask.Main] can be
-added manually; their dependency on a corresponding `ScalaJSLinkTask.Main` task must be set manually too.
+added manually.
+Set `linkTask` to the link task that produces the JavaScript.
+The plugin does not look through `dependsOn` while the task runs.
+
+[source,groovy]
+----
+tasks.register('runDebug', org.podval.tools.scalajs.ScalaJSRunTask.Main) {
+  linkTask = tasks.named('link')
+}
+----
+
+`link` and `test` are cacheable.
+`run` is not.
 
 === JavaScript Environment
 Both `run` and `test` tasks have a property `jsEnv` that selects a JavaScript environment to use:
@@ -696,20 +806,25 @@ node {
 }
 ----
 
-If Node.js version is not specified, plugin uses "ambient" Node.js - the one installed on the machine where it is
-running, or, if none is available, installs the default version ({version-node}).
-If Node.js version is specified, plugin installs the specified version.
+If the Node.js version is not specified, the plugin uses the Node.js already installed on the machine, or, if none is
+available, installs the default version ({version-node}).
+If a version is specified, the plugin installs that version.
+That choice is made when `nodeSetup` runs, not during configuration.
 
-Node.js is installed under `~/.gradle/nodejs`.
+The `nodeSetup` task installs Node.js and runs `npm init` and `npm install`.
+`run`, `test`, `node`, and `npm` depend on `nodeSetup`.
+`link` does not.
+`node` and `npm` are not cacheable.
+`package.json` and `node_modules` stay in the project root.
+
+Node.js distributions are installed under `~/.gradle/nodejs`.
 
 If you are using `Node.js+DOM` JavaScript environment (`org.scala-js:scalajs-env-jsdom-nodejs`), you need 'jsdom'
 module.
 
 To get better traces, one can add `source-map-support` module.
 
-Node.js modules for the project are installed in the `node_modules` directory in the project root.
-
-If `package.json` file does not exist, plugin runs `npm init private`.
+If `package.json` does not exist, `nodeSetup` runs `npm init private`.
 
 Plugin adds tasks `node` and `npm` for executing `node` and `npm` commands using the same version of Node.js that is
 used by the plugin; those tasks can be used from the command line like this:
@@ -886,7 +1001,7 @@ dependencies {
 To support Scala Native, Scala compiler needs to be configured to produce both the `class` _and_ `nir` files.
 
 
-Scala.js compiler plugin dependency needs to be declared:
+The Scala Native compiler plugin dependency needs to be declared:
 
 [source,groovy,subs="+attributes"]
 ----
@@ -903,7 +1018,7 @@ If the project uses JUnit 4 for Scala Native, a JUnit Scala compiler plugin is a
 [source,groovy,subs="+attributes"]
 ----
 dependencies {
-  testScalajsCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:{version-scalajs}"
+  testScalaCompilerPlugins "org.scala-native:junit-plugin_$scalaVersion:{version-scalanative}"
 }
 ----
 
@@ -914,12 +1029,12 @@ There is no need to add `-Xplugin:` Scala compiler parameters for the compiler p
 === Linking
 
 For linking of the main code, plugin adds `link` task of type
-link:src/main/scala/org/podval/tools/scalanative/ScalaNativeLinkTask.scala[org.podval.tools.scalanative.ScalaNativeLinkTask.Main];
-all tasks of this type automatically depend on the `classes` task.
+link:src/main/scala/org/podval/tools/scalanative/ScalaNativeLinkTask.scala[org.podval.tools.scalanative.ScalaNativeLinkTask.Main]
+; all tasks of this type automatically depend on the `classes` task.
 
 For linking of the test code, plugin adds `testLink` task of type
-link:src/main/scala/org/podval/tools/scalanative/ScalaNativeLinkTask.scala[org.podval.tools.scalanative.ScalaNativeLinkTask.Test];
-all tasks of this type automatically depend on the `testClasses` task.
+link:src/main/scala/org/podval/tools/scalanative/ScalaNativeLinkTask.scala[org.podval.tools.scalanative.ScalaNativeLinkTask.Test]
+; all tasks of this type automatically depend on the `testClasses` task.
 
 Link tasks exposes a property `NativeDirectory` that points to a directory with the Scala Native Linker output, so that
 it can be copied where needed.
@@ -932,7 +1047,7 @@ Configurable properties with their defaults are:
 link {
   mode     = 'debug' // one of: 'debug', 'release-fast', 'release-size', 'release-full'
   lto      = 'none'  // one of: 'none', 'thin', 'full'
-  gx       = 'immix' // one of: 'none', 'boehm', 'immix', 'commix'
+  gc       = 'immix' // one of: 'none', 'boehm', 'immix', 'commix'
   optimize = false
 }
 ----
@@ -954,7 +1069,19 @@ depends on the `link` task.
 
 Additional tasks of type
 link:src/main/scala/org/podval/tools/scalanative/ScalaNativeRunTask.scala[org.podval.tools.scalanative.ScalaNativeRunTask.Main]
-can be added manually; their dependency on a corresponding `ScalaNativeLinkTask.Main` task must be set manually too.
+can be added manually.
+Set `linkTask` to the link task that produces the binary.
+The plugin does not look through `dependsOn` while the task runs.
+
+[source,groovy]
+----
+tasks.register('runDebug', org.podval.tools.scalanative.ScalaNativeRunTask.Main) {
+  linkTask = tasks.named('link')
+}
+----
+
+`link` and `test` are cacheable.
+`run` is not.
 
 == Testing
 
@@ -986,7 +1113,8 @@ The `test` task added by the plugin does it automatically; for manually added ta
 manually.
 
 For Scala Native the type of the test task is
-link:src/main/scala/org/podval/tools/scalanative/ScalaNativeRunTask.scala[org.podval.tools.scalanative.ScalaNativeRunTask.Test].
+link:src/main/scala/org/podval/tools/scalanative/ScalaNativeRunTask.scala[org.podval.tools.scalanative.ScalaNativeRunTask.Test]
+.
 Such test tasks have to depend on a `ScalaNativeLinkTask.Test` task.
 The `test` task added by the plugin does it automatically; for manually added tasks this dependency has to be added
 manually.
@@ -1533,7 +1661,7 @@ the Gradle build script.
 - assumptions: if falsified, result in a test being skipped: `org.junit.Assume.assumeTrue(false)`;
 
 ==== Test Tagging
-Tag tests with classes or traits that do not have to be derived from anything `JUnit4`-specific; in the Gradle build
+Tag tests with classes or traits that do not have to be derived from anything `JUnit4` -specific; in the Gradle build
 file, `excludeCategories` and `includeCategories` list fully-qualified names of tagging classes or traits:
 [source, scala]
 ----
@@ -1640,10 +1768,10 @@ overridden in the Gradle build script):
 By default, `MUnit` does not produce summary of the test run; plugin supplies an appropriate arguments to enable it.
 
 ==== Test Tagging
-MUnit is based on JUnit4, so it supports the `Category`-based exclusion and inclusion; since on Scala.js MUnit uses
+MUnit is based on JUnit4, so it supports the `Category` -based exclusion and inclusion; since on Scala.js MUnit uses
 `JUnit4 for Scala.js`, which does not support this mechanism, MUnit does not support it either.
 
-Plugin does not use `Category`-based mechanism; MUnit provides a different, `Tag`-based mechanism, and that is what
+Plugin does not use `Category` -based mechanism; MUnit provides a different, `Tag` -based mechanism, and that is what
 plugin uses.
 
 Tag tests with values that are instances of `munit.Tag`:
@@ -1767,7 +1895,8 @@ object UTestNesting extends TestSuite {
 - test filtering: treats specific test case inclusions as wildcards, and instead of running just the named test cases
   runs all whose names contain the specified string, because the only test case name-based filtering that ZIO Test
   supports is "search terms", which
-  https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/FilteredSpec.scala#L32[work as wildcards];
+  https://github.com/zio/zio/blob/series/2.x/test/shared/src/main/scala/zio/test/FilteredSpec.scala#L32[work as wildcards]
+  ;
 - ignoring a test: `test("ignored") { ... } @@ zio.test.TestAspect.ignore`;
 - assumption: `test("assumption") { ... } @@ zio.test.TestAspect.ifProp("property")(string => false)`
 
@@ -1837,10 +1966,10 @@ Unfortunately, when such a project is imported into IntelliJ Idea it triggers an
 https://youtrack.jetbrains.com/issue/IDEABKL-6745/Cannot-define-two-identical-content-roots-in-different-module-within-a-single-project[issue]
 of "Duplicate Content Roots".
 
-So, when running in IntelliJ Idea, plugin does not add shared directories to the source sets they belong to at
-application time, allowing the project to be safely imported into IntelliJ Idea; instead, plugin configures tasks that
-need shared sources to add them before execution, and remove them after the execution (the latter might not be
-necessary).
+So, when running in IntelliJ Idea, the plugin does not add shared directories to the source sets during configuration,
+which lets the project be imported without duplicate content roots.
+Tasks that need those sources add them in `doFirst`.
+The add is idempotent.
 
 Of course, with the shared sources not added to the source sets of the backend-specific projects, those sources are not
 known to the IDE: one cannot click through from the use to definition and back etc. To fix this, when running in
@@ -1901,7 +2030,10 @@ Scala 3 library to the worker's implementation classpath in `TestFramework`.
 If that version is 2.12, any use of 2.13-exclusive features breaks the code, so I wrote it defensively, to support 2.12
 even though the code was compiled by Scala 3.
 Essentially, I use arrays and my own implementations of the array operations (see
-link:src/main/scala/org/podval/tools/platform/Scala212Collections.scala[Scala212Collections]).
+link:src/main/scala/org/podval/tools/util/Scala212Collections.scala[Scala212Collections]).
+That helper is for code that runs in the test worker (`test.run`, `test.detect`, and `TestFramework` / `TagOptions`),
+because the project's Scala library may be 2.12.
+Configuration-time code does not use it.
 
 Some of the issues:
 
@@ -2107,8 +2239,8 @@ unnecessary work-around).
 I do not know if this "bug" still exists (or ever existed) in sbt; I do know that with some work real test summary _can_
 be returned as it is supposed to even on JVM: witness `ScalaCheck` and `Scalatest`.
 
-- `JUnit4` and `MUnit` on JVM return empty summary, and, if enabled with "--summary=1", writes the real summary
-  (`All tests passed/Some tests failed: _ failed, _ ignored, _ total, _._s`) to standard out - citing the
+- `JUnit4` and `MUnit` on JVM return empty summary, and, if enabled with "--summary=1", writes the real summary (`All
+  tests passed/Some tests failed: _ failed, _ ignored, _ total, _._s`) to standard out - citing the
   https://github.com/sbt/junit-interface/blob/develop/src/main/java/com/novocode/junit/JUnitRunner.java#L126["bug"];
 
 - `JUnit4 for Scala.js`, `JUnit4 for Scala Native`, and `MUnit` on Scala.js or Scala Native return empty summary;
@@ -2136,8 +2268,8 @@ be returned as it is supposed to even on JVM: witness `ScalaCheck` and `Scalates
 * on Scala.js and Scala Native: returns some with the list of failed tests and `_ test completed, _ failed`;
 
 - `ZIO Test`:
-* on JVM - returns a dummy summary "Completed tests" and writes the real summary
-  (`_ tests passed. _ tests failed. _ tests ignored.`) to standard out - citing the
+* on JVM - returns a dummy summary "Completed tests" and writes the real summary (`_ tests passed. _ tests failed. _
+  tests ignored.`) to standard out - citing the
   https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestRunnerJVM.scala#L67["bug"];
 * on Scala.js and Scala Native - calculates the totals, then promptly discards them and returns as a summary list of
   failure details for failed tests (if any);
@@ -2151,11 +2283,11 @@ As a result, Gradle does not show any test output, progress reports or summaries
 logging enabled (`./gradlew -i`) it shows them all.
 
 IntelliJ Idea, in
-https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLoggerInit.gradle[IjTestEventLoggerInit.gradle],
-disables output logging by the Gradle test output listener by setting `testLogging.showStandardStreams` to `false` and,
-in
-https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLogger.gradle[IjTestEventLogger.gradle],
-installs its own test output listener.
+https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLoggerInit.gradle[IjTestEventLoggerInit.gradle]
+, disables output logging by the Gradle test output listener by setting `testLogging.showStandardStreams` to `false`
+and, in
+https://github.com/JetBrains/intellij-community/blob/master/plugins/gradle/tooling-extension-impl/resources/org/jetbrains/plugins/gradle/tooling/internal/init/IjTestEventLogger.gradle[IjTestEventLogger.gradle]
+, installs its own test output listener.
 This listener does not batch, indent, or adds anything to the output.
 
 IntelliJ's TestOutputListener writes the output to the console regardless of the Gradle log level.
@@ -2192,7 +2324,8 @@ depends on the test framework:
 === Testing Scala.js and Scala Native
 
 Scala.js and Scala Native tests must be run in the same JVM where their frameworks were instantiated (see
-https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal],
+https://github.com/scala-js/scala-js/blob/main/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L676[org.scalajs.sbtplugin.ScalaJSPluginInternal]
+,
 https://github.com/scala-native/scala-native/blob/main/sbt-scala-native/src/main/scala/scala/scalanative/sbtplugin/ScalaNativePluginInternal.scala[scala.scalanative.sbtplugin.ScalaNativePluginInternal]
 ).
 `TestExecuter` makes sure that the tests are not forked, and `TestTask` overrides
@@ -2243,6 +2376,11 @@ see:
 - https://github.com/scala-js/scala-js/issues/4191[scala-js/issues/4191]
 
 === Gradle Internals
+The test runner tracks Gradle's internal test SPI.
+The class-name filter follows `ClassTestSelectionMatcher` as of Gradle 9.8.0.
+Only the frameworks in <<test-frameworks>> can be selected.
+There is no classpath lookup of extra frameworks.
+
 To stop tests from being forked - which is needed to run tests on Scala.js or Scala Native - I had to fork
 `org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter` (see
 link:src/main/scala/org/podval/tools/test/run/DefaultTestExecuter.scala[DefaultTestExecuter]).

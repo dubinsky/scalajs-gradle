@@ -1,8 +1,7 @@
 package org.podval.tools.test.filter
 
-// Based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher;
-// see https://github.com/gradle/gradle/blob/master/platforms/software/testing-base-infrastructure/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java
-// TODO look at the latest Gradle code
+// Include/exclude combination follows Gradle's ClassTestSelectionMatcher (Gradle 9.8).
+// An empty include set matches everything. Excluding any method of a class drops the class.
 final class TestFilter(
   includes: TestFilterPatterns,
   excludes: TestFilterPatterns,

@@ -9,26 +9,27 @@ import org.podval.tools.test.framework
 import org.podval.tools.util.Files
 import java.io.File
 
-// This writes versions of everything into an AsciiDoc file that the documentation uses;
-// this way, the versions are guaranteed to be consistent - if this was run ;)
+// Writes dependency versions into gradle.properties and the README attribute block.
+// VersionsWriterTest fails when those files drift from this generator.
 object VersionsWriter:
-  def main(args: Array[String]): Unit =
-    Files.write(
-      File("gradle.properties"),
-      Seq(s"${Backend.property} = ${JvmBackend.name}") ++
-      versions.map((name, version) => s"version_${name.replace('-', '_')} = $version")
-    )
+  val gradlePropertiesFile: File = File("gradle.properties")
+  val readmeFile: File = File("README.adoc")
+  val readmeBoundary: String = "// INCLUDED ATTRIBUTES"
 
-    Files.splice(
-      file = File("README.adoc"),
-      boundary = "// INCLUDED ATTRIBUTES",
-      patch =
-        attributes.map((name, value) => s":attribute-$name: $value") ++
-        versions.map((name, version) => s":version-$name: $version")
-    )
+  def main(args: Array[String]): Unit =
+    Files.write(gradlePropertiesFile, gradlePropertiesLines)
+    Files.splice(readmeFile, readmeBoundary, readmeAttributeLines)
+
+  def gradlePropertiesLines: Seq[String] =
+    Seq(s"${Backend.property} = ${JvmBackend.name}") ++
+      versions.map((name, version) => s"version_${name.replace('-', '_')} = $version")
+
+  def readmeAttributeLines: Seq[String] =
+    attributes.map((name, value) => s":attribute-$name: $value") ++
+      versions.map((name, version) => s":version-$name: $version")
 
   private val gradleVersion: Version = Version("9.8.0")
-  private val pluginVersion: Version = Version("2.0.0")
+  private val pluginVersion: Version = Version("2.1.0")
 
   private def attributes: Seq[(String, String)] = Seq(
     "gradleVersionForBadge"    -> gradleVersion.toString.replace("-", "--"),

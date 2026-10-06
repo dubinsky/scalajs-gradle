@@ -47,8 +47,7 @@ object Artifact:
     backend: Backend,
     scalaLibrary: ScalaLibrary
   ): String =
-    // TODO name a release candidate with the full Scala version (`_3.8.0-RC1`), as sbt does.
-    s"${prefix("_", backend.artifactSuffix)}_${scalaLibrary.scalaBinaryVersionPrefix}"
+    s"${prefix("_", backend.artifactSuffix)}_${scalaLibrary.scalaVersion.crossVersion}"
 
   def configureMavenPublications(
     project: Project,

@@ -24,7 +24,7 @@ object NodeInstaller extends Installer[Node]:
     ivy = "v[revision]/ivy.xml"
   ))
 
-  override val classifier: Option[String] =
+  override lazy val classifier: Option[String] =
     val osName: String = os match
       case Os.Windows => "win"
       case Os.Mac     => "darwin"

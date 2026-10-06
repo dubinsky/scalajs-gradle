@@ -4,7 +4,17 @@ sealed trait ScalaVersion derives CanEqual:
   def binaryVersion: ScalaBinaryVersion
   def version: Version
 
+  // sbt's binary cross version: the binary prefix for a release, the full version otherwise.
+  def crossVersion: Version =
+    if ScalaVersion.isRelease(version.toString)
+    then binaryVersion.prefix
+    else version
+
 object ScalaVersion:
+  private val release: scala.util.matching.Regex = """\d+\.\d+\.\d+""".r
+
+  def isRelease(version: String): Boolean = release.matches(version)
+
   final case class Known(
     override val binaryVersion: ScalaBinaryVersion,
     override val version: Version
@@ -39,6 +49,8 @@ object ScalaVersion:
     override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
       case that: AnyRef => that.eq(this)
       case _ => false
+
+    override def crossVersion: Version = binaryVersion.prefix
 
     override def version: Version = throw IllegalArgumentException(
       s"""$this: full version is not know;

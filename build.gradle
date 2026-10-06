@@ -64,6 +64,12 @@ publishing {
   }
 }
 
+ext.scalaTags = [
+  'scala', 'scalajs', 'scalanative', 'crosscompile',
+  'sbt', 'testing',
+  'airspec', 'hedgehog', 'junit4', 'munit', 'scalacheck', 'scalaprops', 'scalatest', 'specs2', 'utest', 'weaver', 'ziotest'
+]
+
 gradlePlugin {
   plugins {
     scalajs {
@@ -71,10 +77,21 @@ gradlePlugin {
       implementationClass = 'org.podval.tools.backend.BackendPlugin'
       displayName = project.description
       description = project.description
-      tags = [
-        'scala', 'scalajs', 'scalanative', 'crosscompile',
-        'sbt', 'testing',
-        'airspec', 'hedgehog', 'junit4', 'munit', 'scalacheck', 'scalaprops', 'scalatest', 'specs2', 'utest', 'weaver', 'ziotest']
+      tags = scalaTags
+    }
+    scala {
+      id = 'org.podval.tools.scala'
+      implementationClass = 'org.podval.tools.backend.BackendPlugin'
+      displayName = project.description
+      description = project.description
+      tags = scalaTags
+    }
+    scalaSettings {
+      id = 'org.podval.tools.scala.settings'
+      implementationClass = 'org.podval.tools.backend.ScalaSettingsPlugin'
+      displayName = 'Settings for the multi-backend Scala plugin'
+      description = 'Includes backend and shared projects, and selects the Scala backend.'
+      tags = scalaTags
     }
   }
 }

@@ -21,6 +21,9 @@ abstract class BackendExtension @Inject(
 
   def getUseArtifactSuffix: Property[Boolean]
   getUseArtifactSuffix.convention(true)
+  // The build script body runs before afterEvaluate, which is when the value is read.
+  // A later assignment fails instead of being ignored.
+  getUseArtifactSuffix.finalizeValueOnRead()
 
   private def nonJvmBackend: NonJvmBackend = getBackend match
     case nonJvm: NonJvmBackend => nonJvm

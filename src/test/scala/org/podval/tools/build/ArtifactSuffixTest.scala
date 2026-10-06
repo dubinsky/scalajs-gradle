@@ -26,7 +26,10 @@ class ArtifactSuffixTest extends AnyFlatSpec, Matchers, TableDrivenPropertyCheck
     (ScalaJSBackend, scala212, "_sjs1_2.12"),
     (ScalaNativeBackend, scala3, "_native0.5_3"),
     (ScalaNativeBackend, scala213, "_native0.5_2.13"),
-    (ScalaNativeBackend, scala212, "_native0.5_2.12")
+    (ScalaNativeBackend, scala212, "_native0.5_2.12"),
+    (JvmBackend, ScalaVersion(Version("3.8.0-RC1")), "_3.8.0-RC1"),
+    (ScalaJSBackend, ScalaVersion(Version("3.10.0-RC1")), "_sjs1_3.10.0-RC1"),
+    (ScalaNativeBackend, ScalaVersion(Version("2.13.0-RC1")), "_native0.5_2.13.0-RC1")
   )
 
   "Artifact.suffix" should "follow the backend and the Scala binary version" in :

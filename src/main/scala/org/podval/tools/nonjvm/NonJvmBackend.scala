@@ -1,13 +1,22 @@
 package org.podval.tools.nonjvm
 
-import org.gradle.api.Project
+import org.gradle.api.{Action, Project, Task}
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.TaskProvider
 import org.podval.tools.build.{Backend, DependencyRequirement, ScalaBinaryVersion, ScalaDependency,
   ScalaLibrary, Version}
 import org.podval.tools.util.{Classpath, Configurations, Tasks}
-import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
 import scala.jdk.CollectionConverters.IterableHasAsScala
+
+object NonJvmBackend:
+  // The link task type parameter is not known statically at the registration site.
+  private def assignLinkTask(run: TaskProvider[?], link: TaskProvider[?]): Unit =
+    run.configure(new Action[Task]:
+      override def execute(task: Task): Unit =
+        task.asInstanceOf[RunTask[NonJvmBackend, LinkTask[NonJvmBackend]]]
+          .getLinkTask
+          .set(link.asInstanceOf[TaskProvider[LinkTask[NonJvmBackend]]])
+    )
 
 abstract class NonJvmBackend(
   name: String,
@@ -115,7 +124,6 @@ abstract class NonJvmBackend(
     Classpath.addTo(Configurations.configuration(project, pluginDependenciesConfigurationName).asScala)
     projectScalaLibrary.verify(project)
 
-  // TODO look into link tasks self-registering run/test counterparts - rules?
   final override def registerTasks(project: Project): Unit =
     def linkTaskName(isTest: Boolean): String = Tasks.taskName(project, "link", isTest)
 
@@ -130,7 +138,7 @@ abstract class NonJvmBackend(
     )
 
     // Register 'run' task.
-    registerTask(
+    val run: TaskProvider[?] = registerTask(
       project,
       taskClass = runTaskClass,
       taskName = "run",
@@ -139,6 +147,7 @@ abstract class NonJvmBackend(
       group = Tasks.otherGroup,
       dependsOn = Some(link)
     )
+    NonJvmBackend.assignLinkTask(run, link)
 
     // Register 'testLink' task.
     val linkTest: TaskProvider[?] = registerTask(
@@ -151,10 +160,11 @@ abstract class NonJvmBackend(
     )
 
     // Replace 'test' task.
-    registerTestTask(
+    val test: TaskProvider[?] = registerTestTask(
       project,
       dependsOn = Some(linkTest)
     )
+    NonJvmBackend.assignLinkTask(test, linkTest)
 
   final override protected def requirements(
     project: Project,
@@ -177,25 +187,17 @@ abstract class NonJvmBackend(
       DependencyRequirement.Many(
         configurationName = pluginDependenciesConfigurationName,
         scalaLibrary = pluginScalaLibrary,
-        requirements = arrayConcat(
-          arrayMap(Array(linker, testAdapter),
-            _.jvm.require(backendVersion)),
-          arrayMap(pluginDependencies,
-            _.jvm.require())
-        )
+        requirements =
+          Array(linker, testAdapter).map(_.jvm.require(backendVersion)) ++
+          pluginDependencies.map(_.jvm.require())
       ),
       DependencyRequirement.Many(
         configurationName = Configurations.implementationName(project),
         scalaLibrary = projectScalaLibrary,
-        requirements = arrayConcat(
-          arrayConcat(
-            arrayMap(arrayConcat(Array(library(projectScalaLibrary)), withBackendVersion),
-              _.require(backendVersion)),
-            arrayMap(withDefaultVersion,
-              _.require())
-          ),
+        requirements =
+          (library(projectScalaLibrary) +: withBackendVersion).map(_.require(backendVersion)) ++
+          withDefaultVersion.map(_.require()) ++
           implementation(projectScalaLibrary)
-        )
       ),
       one(Configurations.testRuntimeOnlyName(project), testBridge)
     ) ++

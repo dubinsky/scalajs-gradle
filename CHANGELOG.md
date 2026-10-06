@@ -6,7 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-
+- Scala 3.8 and newer compiles get `-release:17` when the `ScalaCompile` task does not already set `-release` or
+  `-java-output-version`.
+- `run`, `node`, and `npm` are no longer cacheable.
+  `link` and `test` stay cacheable.
+- A custom `run` task takes its link task from the `linkTask` property, set at configuration time.
+- `scalaBackend.useArtifactSuffix` is finalized on read.
+  Set it in the build script body.
+- A Scala version that is not `digits.digits.digits` uses the full version in artifact suffixes and in dependency
+  notation.
+  `3.8.0-RC1` becomes `_3.8.0-RC1` (and `_sjs1_3.8.0-RC1` / `_native0.5_3.8.0-RC1`).
+  `scalaBinaryVersion` stays the binary prefix.
+- `nodeSetup` installs Node.js and the requested npm modules when it runs.
+  `run`, `test`, `node`, and `npm` depend on it.
+  `link` does not.
+- Settings plugin `org.podval.tools.scala.settings`.
+  `scalaBackend.backend` in `settings.gradle` is the default backend.
+  The project property `org.podval.tools.backend`, including `-P`, overrides it.
+  `scalaBackend.includeBackendProjects()` includes `js`, `jvm`, `native`, `shared`, and partial-share directories under
+  projects that are already included.
+- Project plugin id `org.podval.tools.scala` is an alias of `org.podval.tools.scalajs`.
+- The test class filter follows Gradle's `ClassTestSelectionMatcher` (Gradle 9.8.0).
+
+## [2.0.0] - 2026-10-05
 Breaking: the artifact suffix is published by default.
 
 - Maven coordinates include the artifact suffix unless `scalaBackend.useArtifactSuffix` is `false`.

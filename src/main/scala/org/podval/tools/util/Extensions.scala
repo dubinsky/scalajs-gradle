@@ -7,21 +7,30 @@ object Extensions:
   private def getExtensions(extensionAware: ExtensionAware): ExtensionContainer = extensionAware.getExtensions
 
   def create[T](
-    project: Project,
+    extensionAware: ExtensionAware,
     name: String,
     clazz: Class[T],
     constructionArguments: Any*
-  ): T = getExtensions(project).create(
+  ): T = getExtensions(extensionAware).create(
     name,
     clazz,
     constructionArguments *
   )
 
+  def add[T](
+    extensionAware: ExtensionAware,
+    name: String,
+    extension: T
+  ): Unit = getExtensions(extensionAware).add(
+    name,
+    extension
+  )
+
   def getByName[T](
-    project: Project,
+    extensionAware: ExtensionAware,
     name: String
   ): T =
-    getExtensions(project).getByName(name).asInstanceOf[T]
+    getExtensions(extensionAware).getByName(name).asInstanceOf[T]
 
   def getByType[T](
     extensionAware: ExtensionAware,
@@ -30,8 +39,8 @@ object Extensions:
     getExtensions(extensionAware).getByType(clazz)
 
   def findByType[T](
-    project: Project,
+    extensionAware: ExtensionAware,
     clazz: Class[T]
   ): Option[T] =
-    Option(getExtensions(project).findByType(clazz))
+    Option(getExtensions(extensionAware).findByType(clazz))
 

@@ -11,7 +11,6 @@ trait ScalaNativeRunTask[L <: ScalaNativeLinkTask : ClassTag] extends RunTask[Sc
   )
 
 object ScalaNativeRunTask:
-  @CacheableTask
   abstract class Main extends RunTask.Main[ScalaNativeBackend.type, ScalaNativeLinkTask.Main] with ScalaNativeRunTask[ScalaNativeLinkTask.Main]
 
   @CacheableTask

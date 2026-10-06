@@ -5,7 +5,7 @@ import org.gradle.api.plugins.scala.ScalaPlugin
 import org.gradle.api.{Plugin, Project}
 import org.podval.tools.build.Backend
 import org.podval.tools.jvm.JvmBackend
-import org.podval.tools.util.{Projects, Strings}
+import org.podval.tools.util.{Extensions, Projects, Strings}
 import javax.inject.Inject
 
 final class BackendPlugin @Inject(
@@ -45,9 +45,15 @@ final class BackendPlugin @Inject(
     
     backendProject.apply()
 
+  // The project property, including -P, wins over the settings extension.
   private def getBackend: Backend = Projects
     .findProperty(project, Backend.property)
-    .map: (backendName: String) =>
+    .orElse:
+      Extensions
+        .findByType(project.getGradle, classOf[ScalaSettingsExtension])
+        .map(_.getBackend.getOrNull)
+        .flatMap(name => Option(name).filter(_.nonEmpty))
+    .map: (backendName: String) => 
       Backend
         .all
         .find((backend: Backend) =>

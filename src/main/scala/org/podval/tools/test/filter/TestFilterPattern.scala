@@ -1,73 +1,83 @@
 package org.podval.tools.test.filter
 
 import org.podval.tools.util.Strings
-import scala.annotation.tailrec
 import java.util.regex.Pattern
 
-// Based on org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher.TestPattern;
-// see https://github.com/gradle/gradle/blob/master/platforms/software/testing-base-infrastructure/src/main/java/org/gradle/api/internal/tasks/testing/filter/TestSelectionMatcher.java#L140
+// Class-name half of org.gradle.api.internal.tasks.testing.filter.ClassTestSelectionMatcher
+// (Gradle 9.8, ClassTestPattern). Method selectors are this plugin's addition:
+// the sbt test interface wants a method name or a prefix, which Gradle does not.
 final class TestFilterPattern(pattern: String):
   override def toString: String = pattern
 
-  private def isUpperCase(string: String) = string.nonEmpty && Character.isUpperCase(string.head)
-  
-  // TODO rework using map/zip
-  private val patternPrepared: Pattern =
-    val builder: StringBuilder = StringBuilder()
-    def appendWildcard(): Unit = builder.append(".*") // replace wildcard '*' with '.*'
-    for s: String <- pattern.split("\\*", -1) do
-      if s.isEmpty then appendWildcard() else
-        if builder.nonEmpty then appendWildcard()
-        builder.append(Pattern.quote(s)) //quote everything else
-    Pattern.compile(builder.toString)
+  private val star: Int = pattern.indexOf('*')
+  private val bracket: Int = pattern.indexOf('[')
 
-  private def forMethod: Option[TestFilterPatternMatch] =
-    val ss: Seq[String] = pattern.split("\\.", -1).toSeq
+  private val segments: Seq[String] =
+    if star >= 0 then TestFilterPattern.splitPreserveAllTokens(pattern.substring(0, star), '.')
+    else if bracket < 0 then TestFilterPattern.splitPreserveAllTokens(pattern, '.')
+    else
+      val cut: Seq[String] = TestFilterPattern.splitPreserveAllTokens(pattern.substring(0, bracket), '.')
+      if cut.isEmpty then Seq(pattern.substring(bracket))
+      else cut.init :+ (cut.last + pattern.substring(bracket))
+
+  private val simpleName: Boolean = pattern.nonEmpty && Character.isUpperCase(pattern.head)
+
+  private def targetClassName(className: String): String =
+    if !simpleName then className
+    else Strings.split(className, '.')._2.filterNot(_.isEmpty).getOrElse(className)
+
+  def matchClass(className: String): Option[TestFilterPatternMatch] =
+    if !mayIncludeClass(className) then None
+    else TestFilterPatternMatch.forMethod(methodSegment)
+
+  private def mayIncludeClass(className: String): Boolean =
+    if segments.isEmpty then true else
+      // Java String.split drops trailing empty segments, matching Gradle's ClassTestPattern.
+      val classSegments: Seq[String] = targetClassName(className).split("\\.").toSeq
+      if classSegments.length < segments.length - 1 then false
+      else matches(segments, classSegments)
+
+  private def matches(patternSegments: Seq[String], classSegments: Seq[String]): Boolean =
+    patternSegments match
+      case Seq() => false
+      case patternHead +: patternTail =>
+        val classHead: String = classSegments.head
+        val atLastClass: Boolean = classSegments.length == 1
+        val penultimate: Boolean =
+          patternTail.length == 1 && atLastClass && TestFilterPattern.classNameMatch(classHead, patternHead)
+        val last: Boolean =
+          patternTail.isEmpty && TestFilterPattern.lastElementMatch(classHead, patternHead, star >= 0)
+        if penultimate || last then true
+        else if classHead != patternHead then false
+        else matches(patternTail, classSegments.tail)
+
+  // The final dotted piece, when it is a method rather than a class.
+  private def methodSegment: Option[String] =
+    val pieces: Seq[String] = pattern.split("\\.", -1).toSeq
     val hasMethod: Boolean =
-      ss.nonEmpty && 
-      ss.last.nonEmpty && 
-      !isUpperCase(ss.last) && 
-      (ss.init.exists(isUpperCase) || ss.init.exists(_.contains('*')))
-    TestFilterPatternMatch.forMethod(Option.when(hasMethod)(ss.last))
-    
-  def matchClass(classNameStr: String): Option[TestFilterPatternMatch] =
-    val targetClassName: String =
-      val withPackage: Boolean = !isUpperCase(pattern)
-      if withPackage then classNameStr else Strings
-        .split(classNameStr, '.')
-        ._2
-        .filterNot(_.isEmpty)
-        .getOrElse(classNameStr)
+      pieces.nonEmpty &&
+      pieces.last.nonEmpty &&
+      !TestFilterPattern.isUpperCase(pieces.last) &&
+      (pieces.init.exists(TestFilterPattern.isUpperCase) || pieces.init.exists(_.contains('*')))
+    Option.when(hasMethod)(pieces.last)
 
-    val patternMatches: Boolean = patternPrepared.matcher(targetClassName).matches()
-    // TODO [filter] patternPrepared does not take method into account?
-    // if !patternMatches then None else
-      val segments: Seq[String] = pattern.takeWhile(_ != '*').split("\\.", -1).toSeq
-      val patternStartsWithWildcard: Boolean = segments.isEmpty // TODO [filter] pattern.startsWith("*")
-      if patternStartsWithWildcard then Some(TestFilterPatternMatch.Suite) else
-        val className: Seq[String] = targetClassName.split("\\.").toSeq
-        val classNameIsShorterThanPattern: Boolean = className.length < segments.length - 1 // TODO [filter] -1?!
-        if classNameIsShorterThanPattern then None else matches(segments, className)
+object TestFilterPattern:
+  private def isUpperCase(string: String): Boolean = string.nonEmpty && Character.isUpperCase(string.head)
 
-  @tailrec
-  private def matches(
-    segments: Seq[String],
-    className: Seq[String]
-  ): Option[TestFilterPatternMatch] = if segments.isEmpty then None else
-    val patternHasWildcards: Boolean = pattern.contains('*')
-    val classElement: String = className.head
-    val patternElement: String = segments.head
-    // Foo can match both Foo and Foo$NestedClass (https://github.com/gradle/gradle/issues/5763)
-    val classMatches: Boolean = classElement == patternElement.takeWhile(_ != '$')
+  // Apache StringUtils.splitPreserveAllTokens: an empty input is an empty array.
+  // Java's String.split turns "" into Array("").
+  private def splitPreserveAllTokens(text: String, separator: Char): Seq[String] =
+    if text.isEmpty then Seq.empty
+    else text.split(Pattern.quote(separator.toString), -1).toSeq
 
-    val lastClassNameElementMatchesPenultimatePatternElement: Boolean = 
-      className.length == 1 && segments.length == 2 && classMatches
-    
-    val lastClassNameElementMatchesLastPatternElement: Boolean =
-      // TODO [filter] why does this condition break things if we are dealing with the last class name element?
-      //  className.length == 1 &&
-      segments.length == 1 && (classMatches || (patternHasWildcards && classElement.startsWith(patternElement)))
+  // A pattern element that contains '$' also matches the name before that '$'.
+  // Enclosing$Nested matches Enclosing. Enclosing does not match Enclosing$Nested.
+  private def classNameMatch(classElement: String, patternElement: String): Boolean =
+    if classElement == patternElement then true
+    else if patternElement.contains("$") then
+      classElement == patternElement.takeWhile(_ != '$')
+    else false
 
-    if lastClassNameElementMatchesPenultimatePatternElement then forMethod else
-      if lastClassNameElementMatchesLastPatternElement then forMethod else
-        if classElement != patternElement then None else matches(segments.tail, className.tail)
+  private def lastElementMatch(classElement: String, patternElement: String, wildcard: Boolean): Boolean =
+    val exact: Boolean = classNameMatch(classElement, patternElement)
+    exact || (wildcard && classElement.startsWith(patternElement))

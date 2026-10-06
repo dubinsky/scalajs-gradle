@@ -19,13 +19,29 @@ final class Version private(val segments: Array[String]) extends Version.Pre wit
     0.until(prefix.length).forall(index => segments(index) == prefix.segments(index))
 
   override def compare(that: Version): Int =
+    // A segment may be "0-RC1". The numeric part orders first.
+    // A bare number is newer than the same number with a pre-release suffix.
+    def segmentKey(segment: String): (Int, String) =
+      val digits: String = segment.takeWhile(_.isDigit)
+      val number: Int = if digits.isEmpty then -1 else digits.toInt
+      (number, segment.substring(digits.length))
+
     @tailrec def compare(index: Int): Int = (this.length == index, that.length == index) match
       case (true , true ) =>  0
       case (true , false) => -1
       case (false, true ) =>  1
-      case _ => Ordering.Int.compare(this.int(index), that.int(index)) match
-        case 0 => compare(index+1)
-        case result => result
+      case _ =>
+        val (leftNumber, leftRest) = segmentKey(segments(index))
+        val (rightNumber, rightRest) = segmentKey(that.segments(index))
+        Ordering.Int.compare(leftNumber, rightNumber) match
+          case 0 =>
+            val restOrder: Int =
+              if leftRest.isEmpty && rightRest.isEmpty then 0
+              else if leftRest.isEmpty then 1
+              else if rightRest.isEmpty then -1
+              else leftRest.compareTo(rightRest)
+            if restOrder == 0 then compare(index + 1) else restOrder
+          case result => result
 
     compare(0)
 

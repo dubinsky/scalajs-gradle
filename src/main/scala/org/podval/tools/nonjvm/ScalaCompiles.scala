@@ -3,13 +3,34 @@ package org.podval.tools.nonjvm
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.scala.ScalaCompile
-import org.podval.tools.util.Configurations
+import org.podval.tools.util.{Configurations, Tasks}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, ListHasAsScala, SeqHasAsJava}
 import java.io.File
 
 object ScalaCompiles:
   private val logger: Logger = LoggerFactory.getLogger(getClass)
+
+  // Scala 3.8+ publishes a standard library built with JDK 17.
+  // The compiler requires an explicit release when the running JDK is newer.
+  val javaReleaseParameter: String = "-release:17"
+
+  def javaReleaseToAdd(parameters: Seq[String], scala3LibraryCompiledByScala3: Boolean): Option[String] =
+    if !scala3LibraryCompiledByScala3 then None
+    else if parameters.exists(isJavaRelease) then None
+    else Some(javaReleaseParameter)
+
+  private def isJavaRelease(parameter: String): Boolean =
+    parameter.startsWith("-release") || parameter.startsWith("-java-output-version")
+
+  def configureJavaRelease(project: Project, scala3LibraryCompiledByScala3: Boolean): Unit =
+    Tasks.configureEach(
+      project,
+      classOf[ScalaCompile],
+      (scalaCompile: ScalaCompile) =>
+        javaReleaseToAdd(parametersOf(scalaCompile), scala3LibraryCompiledByScala3)
+          .foreach(parameter => ensureParameters(scalaCompile, Seq(parameter)))
+    )
 
   def configure(project: Project, scalaCompileParameters: Seq[String]): Unit =
     val mainScalaCompile: ScalaCompile = getTask(project, isTest = false)
@@ -28,10 +49,13 @@ object ScalaCompiles:
      .withType(classOf[ScalaCompile])
      .findByName(taskName)
 
-  private def ensureParameters(scalaCompile: ScalaCompile, toAdd: Seq[String]): Unit =
-    val parameters: List[String] = Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // nullable
+  private def parametersOf(scalaCompile: ScalaCompile): List[String] =
+    Option(scalaCompile.getScalaCompileOptions.getAdditionalParameters) // nullable
       .map(_.asScala.toList)
       .getOrElse(List.empty)
+
+  private def ensureParameters(scalaCompile: ScalaCompile, toAdd: Seq[String]): Unit =
+    val parameters: List[String] = parametersOf(scalaCompile)
 
     val parametersNew: List[String] = toAdd.foldLeft(parameters) {
       case (parameters, parameter) =>

@@ -1,13 +1,11 @@
 package org.podval.tools.node
 
 import org.gradle.api.Project
-import org.gradle.api.logging.LogLevel
 import org.gradle.api.provider.{ListProperty, Property}
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.process.ExecOperations
-import org.podval.tools.build.{Output, Runner, Version}
+import org.podval.tools.build.Version
 import org.podval.tools.util.{Extensions, Projects, Tasks}
-import scala.jdk.CollectionConverters.{ListHasAsScala, SeqHasAsJava}
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 import javax.inject.Inject
 
@@ -17,13 +15,23 @@ object NodeExtension:
   private def nodeProjectRoot(project: Project): File = Projects.projectDir(project)
 
 // Note: Gradle extensions must be abstract.
-abstract class NodeExtension @Inject(project: Project, execOperations: ExecOperations):
+abstract class NodeExtension @Inject(project: Project):
   def getVersion: Property[String]
   private def version: Option[Version] = Version(getVersion)
 
   def getModules: ListProperty[String]
   getModules.convention(List.empty.asJava)
-  private def modules: List[String] = getModules.get.asScala.toList
+
+  private val setup: TaskProvider[NodeSetupTask] = Tasks.register(
+    project,
+    classOf[NodeSetupTask],
+    "nodeSetup",
+    "Installs Node.js and the npm modules requested by the node extension.",
+    Tasks.buildGroup
+  )
+
+  project.getTasks.withType(classOf[NodeProjectTask]).configureEach: (task: NodeProjectTask) =>
+    if task.getName != setup.getName then task.dependsOn(setup)
 
   // Add the utility tasks.
   private def register[T <: NodeTask](
@@ -39,28 +47,7 @@ abstract class NodeExtension @Inject(project: Project, execOperations: ExecOpera
   register("node", classOf[NodeTask.NodeRunTask])
   register("npm" , classOf[NodeTask.NpmRunTask ])
 
-  // configure tasks, install Node (if needed) and set up Node project (if needed).
+  // Copy the extension values onto the tasks. Installation runs in nodeSetup.
   project.afterEvaluate: (project: Project) =>
     NodeProjectTask.configureTasks(project, version, NodeExtension.nodeProjectRoot(project))
-
-    val output: Output = Output(
-      logLevelEnabled = LogLevel.LIFECYCLE,
-      isRunningInIntelliJ = false,
-      logSource = "Node.js extension"
-    )
-    NodeInstaller
-      .getInstalledOrInstall(
-        version = version,
-        project = project,
-        output = output
-      )
-      .nodeProject(
-        root = NodeExtension.nodeProjectRoot(project),
-        runner = Runner(
-          execOperations,
-          output
-        )
-      )
-      .setUp(
-        installModules = modules
-      )
+    setup.configure(_.getModules.set(getModules))

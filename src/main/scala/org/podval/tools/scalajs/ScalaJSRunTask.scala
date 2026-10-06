@@ -18,7 +18,6 @@ trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBac
   )
 
 object ScalaJSRunTask:
-  @CacheableTask
   abstract class Main extends RunTask.Main[ScalaJSBackend.type, ScalaJSLinkTask.Main] with ScalaJSRunTask[ScalaJSLinkTask.Main]
 
   @CacheableTask
