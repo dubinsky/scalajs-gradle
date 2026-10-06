@@ -75,8 +75,7 @@ class ArtifactSuffixTest extends AnyFlatSpec, Matchers, TableDrivenPropertyCheck
 
       writer.writeProperties(Seq(Backend.property -> backend.name))
 
-      project.build("jar")
+      project.build("clean", "jar")
 
       val libs: File = File(project.projectDir, "build/libs")
-      withClue(s"build/libs contains ${Option(libs.list()).fold("nothing")(_.mkString(", "))} "):
-        File(libs, jarFile) should exist
+      Option(libs.list()).map(_.toSeq).getOrElse(Seq.empty) shouldBe Seq(jarFile)
