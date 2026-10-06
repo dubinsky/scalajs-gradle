@@ -28,7 +28,7 @@ object VersionsWriter:
     )
 
   private val gradleVersion: Version = Version("9.8.0")
-  private val pluginVersion: Version = Version("1.0.5")
+  private val pluginVersion: Version = Version("2.0.0")
 
   private def attributes: Seq[(String, String)] = Seq(
     "gradleVersionForBadge"    -> gradleVersion.toString.replace("-", "--"),

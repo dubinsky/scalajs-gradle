@@ -1,10 +1,27 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.0.0] - 2026-
+Breaking: the artifact suffix is published by default.
+
+- Maven coordinates include the artifact suffix unless `scalaBackend.useArtifactSuffix` is `false`.
+  The main jar, sources jar, javadoc jar, POM `artifactId`, and Gradle Module Metadata use the project name plus the
+  suffix (`_3`, `_2.13`, `_2.12`, `_sjs1_3`, `_native0.5_3`, and the other backend and Scala forms).
+- Set `scalaBackend.useArtifactSuffix = false` in the build script body to publish and package under the project name
+  with no suffix.
+  An `afterEvaluate` block is too late.
+- `scalaBackend.suffix` is unchanged.
+  It is still the dependency-notation suffix and does not follow `useArtifactSuffix`.
+- Sources and javadoc jars gain that suffix when the flag is on.
+  On Scala.js and Scala Native, classified jars no longer use a `js` or `native` appendix, whether the flag is on or
+  off.
+- This repository's own publish still applies plugin 1.0.4, which does not rewrite `artifactId`, so the coordinates stay
+  `org.podval.tools.scalajs`.
 
 ## [1.0.5] - 2026-
 - chore: Scala 3.9.0;
@@ -128,8 +145,8 @@ It's time to declare v1.0.0 :)
 - cleanup;
 
 ## [0.9.9] - 2025-09-05
-- fix: [108](https://github.com/dubinsky/scalajs-gradle/pull/108)
-  from [FlorianKirmaier](https://github.com/FlorianKirmaier) - thank you!
+- fix: [108](https://github.com/dubinsky/scalajs-gradle/pull/108) from
+  [FlorianKirmaier](https://github.com/FlorianKirmaier) - thank you!
 - fix: run GitHub workflow on pull requests;
 
 ## [0.9.8] - 2025-09-05
@@ -344,15 +361,17 @@ It's time to declare v1.0.0 :)
 - chore: cleanup;
 - chore: dependency updates;
 - chore: Scala.js dependency update;
-- chore: moved `build`, `node` and `platform` packages and some utility classes back here from OpenTorah: 
-  the classes are only used here; if need be, I can package them into an artifact and publish them from here...
-- cleanup: apply DependencyRequirement to configuration only, not to classpath, so not force resolution of the configurations!
+- chore: moved `build`, `node` and `platform` packages and some utility classes back here from OpenTorah: the classes
+  are only used here; if need be, I can package them into an artifact and publish them from here...
+- cleanup: apply DependencyRequirement to configuration only, not to classpath, so not force resolution of the
+  configurations!
 - cleanup: split Scala.js dependencies;
 - cleanup: add Scala.js dependencies to the plugin classpath in the plugin itself, not in the LinkTask;
 - cleanup: add Zinc dependencies to the plugin classpath in the plugin itself, not in the TestTask;
 - cleanup: no need to delay calculation of `analysisFile`;
 - cleanup: ScalaJSTask.scalaJs;
-- cleanup: set LinkTask.runtimeClassPath in the plugin to eliminate a `Task.getProject` call during task execution - the last such call!
+- cleanup: set LinkTask.runtimeClassPath in the plugin to eliminate a `Task.getProject` call during task execution - the
+  last such call!
 - chore: Gradle update;
 - cleanup: Node setup;
 - cleanup: split the plugin class into `ScalaDelegate` and `ScalaJSDelegate`;
@@ -384,7 +403,7 @@ It's time to declare v1.0.0 :)
 - chore: latest OpenTorah with Gradle cleanup
 
 ## [0.4.14] - 2025-01-07
-- fix: OS detection fails in macOS  https://github.com/opentorah/opentorah/issues/341
+- fix: OS detection fails in macOS https://github.com/opentorah/opentorah/issues/341
 
 ## [0.4.13] - 2024-12-22
 - chore: Gradle 8.12 adjustments and forced update to sbt/zinc
@@ -402,7 +421,7 @@ It's time to declare v1.0.0 :)
 - chore: update test framework versions
 - chore: update ScalaJs
 - chore: update Scala to 3.4.2
-- chore: update Scala version used in tests  (some frameworks require it)
+- chore: update Scala version used in tests (some frameworks require it)
 - chore: Gradle 8.7 adjustments
 - chore: Gradle 8.8
 - chore: tracking OpenTorah Dependency changes
@@ -454,10 +473,13 @@ It's time to declare v1.0.0 :)
 - build: automated test-projects tests
 - fix: set `NODE_PATH` to point to `node_module` under the project root so that ScalaJS tests run
 - feat: introduced `TestTask.useSbt` amd moved include/exclude tags into the `TestFrameworkOptions` closure
-- cleanup: add `test-interface` to the `testImplementation` configuration when running plain Scala; then, there is no need to add the jar in the `TestFramework`'s `Action`
+- cleanup: add `test-interface` to the `testImplementation` configuration when running plain Scala; then, there is no
+  need to add the jar in the `TestFramework`'s `Action`
 - cleanup: package structure
-- cleanup: set test ids in the `TestClassProcessor`; use a placeholder for `rootTestSuiteId` and fix it up in `FixUpRootTestOutputTestResultProcessor`
-- cleanup: switched from serializers to writers: deleted all serializers, serializer registry, `ForkingTestClassProcessor` and `TestWorker`
+- cleanup: set test ids in the `TestClassProcessor`; use a placeholder for `rootTestSuiteId` and fix it up in
+  `FixUpRootTestOutputTestResultProcessor`
+- cleanup: switched from serializers to writers: deleted all serializers, serializer registry,
+  `ForkingTestClassProcessor` and `TestWorker`
 - cleanup: `AnalysisDetector`/`TestClass`
 - cleanup: `sbt` configuration removed; `zinc` is used instead
 - feat: ZIOTest

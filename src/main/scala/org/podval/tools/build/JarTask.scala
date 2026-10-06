@@ -3,13 +3,12 @@ package org.podval.tools.build
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
 import org.gradle.util.internal.GUtil
-import org.podval.tools.nonjvm.NonJvmBackend
 import org.podval.tools.util.Tasks
 
 object JarTask:
-  def configureTasks(
+  def configureJarTask(
     project: Project,
-    backend: NonJvmBackend
+    artifactSuffix: String
   ): Unit = Tasks.configureEach(
     project,
     classOf[Jar],
@@ -17,35 +16,15 @@ object JarTask:
       Tasks.conventionProvider(
         project = project,
         task = jar,
+        property = _.getArchiveFileName,
+        convention = noDashInFileNameBeforeAppendix
+      )
+      Tasks.convention(
+        task = jar,
         property = _.getArchiveAppendix,
-        convention = jar =>
-          if jar.getArchiveClassifier.isPresent
-          then backend.sourceRoot
-          else null
+        convention = _ => artifactSuffix
       )
   )
-
-  def configureJarTask(
-    project: Project,
-    artifactSuffix: String
-  ): Unit =
-    Tasks.configure(
-      project,
-      classOf[Jar],
-      Tasks.jarTaskName,
-      (jar: Jar) =>
-        Tasks.conventionProvider(
-          project = project,
-          task = jar,
-          property = _.getArchiveFileName,
-          convention = noDashInFileNameBeforeAppendix
-        )
-        Tasks.convention(
-          task = jar,
-          property = _.getArchiveAppendix,
-          convention = _ => artifactSuffix
-        )
-    )
 
   // The only change: no dash before the appendix.
   // [baseName][appendix]-[version]-[classifier].[extension]

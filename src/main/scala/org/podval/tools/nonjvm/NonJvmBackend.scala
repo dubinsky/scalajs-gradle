@@ -3,7 +3,7 @@ package org.podval.tools.nonjvm
 import org.gradle.api.Project
 import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.gradle.api.tasks.TaskProvider
-import org.podval.tools.build.{Backend, DependencyRequirement, JarTask, ScalaBinaryVersion, ScalaDependency,
+import org.podval.tools.build.{Backend, DependencyRequirement, ScalaBinaryVersion, ScalaDependency,
   ScalaLibrary, Version}
 import org.podval.tools.util.{Classpath, Configurations, Tasks}
 import org.podval.tools.util.Scala212Collections.{arrayConcat, arrayMap}
@@ -83,8 +83,6 @@ abstract class NonJvmBackend(
     super.apply(project, jvmPluginServices, isRunningInIntelliJ)
 
     LinkTask.configureTasks(project)
-
-    JarTask.configureTasks(project, this)
 
     // Create Plugin Dependencies Configuration.
     Configurations.create(

@@ -51,6 +51,12 @@ abstract class Backend(
       artifactSuffix
     )
 
+    Artifact.configureMavenPublications(
+      project,
+      project.getName,
+      artifactSuffix
+    )
+
     requirements(
       project,
       projectScalaLibrary = projectScalaLibrary,
