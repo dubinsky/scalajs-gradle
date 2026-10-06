@@ -14,7 +14,6 @@ open class ScalaNativeBuild(output: Output) extends Build[LoggerN](output):
   )
 
   final override protected def backendLogger: LoggerN = new LoggerN:
-    // TODO running()/time()?
     override def trace(throwable: Throwable): Unit = logThrowable(throwable)
     override def debug(message: String): Unit = logAtLevel(LogLevel.DEBUG, message)
     override def info (message: String): Unit = logAtLevel(LogLevel.INFO , message)

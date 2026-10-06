@@ -11,7 +11,7 @@ final class ScalaNativeRun(
 ) extends ScalaNativeBuild(output) with Run[ScalaNativeBackend.type]:
   override def run(runner: Runner): Unit = runner.exec(log = true, _.setCommandLine(binaryTestFile.getAbsolutePath))
 
-  override def testEnvironment: TestEnvironment[ScalaNativeBackend.type] =
+  override def testEnvironment(isScala3: Boolean): TestEnvironment[ScalaNativeBackend.type] =
     NonJvmTestEnvironment[ScalaNativeBackend.type, TestAdapter](
       backend = ScalaNativeBackend,
       testAdapter = TestAdapter(TestAdapter
@@ -21,5 +21,6 @@ final class ScalaNativeRun(
       ),
       loadFrameworksFromTestAdapter = _.loadFrameworks(_),
       closeTestAdapter = _.close(),
-      sourceMapper = None
+      sourceMapper = None,
+      isScala3 = isScala3
     )

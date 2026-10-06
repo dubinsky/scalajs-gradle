@@ -66,8 +66,6 @@ final class ScalaJSLink(
     case ModuleKind.CommonJSModule => ModuleKindSJS.CommonJSModule
 
   override def link(): Unit =
-    // TODO move into constructor?
-
     if moduleKind == ModuleKind.NoModule && moduleSplitStyle != ModuleSplitStyle.FewestModules then
       abort(s"`moduleKind = 'NoModule'` requires `moduleSplitStyle = 'FewestModules'`")
 

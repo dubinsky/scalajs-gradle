@@ -25,8 +25,14 @@ sealed trait ScalaLibrary:
       source = s"'${runtimeClasspath.getName}'",
       classPath = runtimeClasspath.asScala
     )
-// TODO with 3.7.4 and 3.8.0, this fails on 3.7.4: Scala 2 version changes...
-//    require(this.toString == other.toString, s"Scala library changed from $this to $other")
+    // Scala 3.7 publishes against scala-library 2.13, and resolution may select a newer 2.13 patch
+    // than the one recorded while resolving scala3-library. The Scala version and the Scala 2 binary
+    // line are what dependency coordinates use.
+    require(
+      (scalaVersion == other.scalaVersion) &&
+      (scala2BinaryVersionPrefix == other.scala2BinaryVersionPrefix),
+      s"Scala library changed from $this to $other"
+    )
 
 object ScalaLibrary:
   private sealed trait Scala3 extends ScalaLibrary:

@@ -9,11 +9,12 @@ object TestEnvironment:
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   trait Creator[B <: Backend]:
-    def testEnvironment: TestEnvironment[B]
+    def testEnvironment(isScala3: Boolean): TestEnvironment[B]
 
 abstract class TestEnvironment[B <: Backend](
   val backend: B,
-  val sourceMapper: Option[SourceMapper]
+  val sourceMapper: Option[SourceMapper],
+  isScala3: Boolean
 ):
   protected def loadFrameworks: List[TestFramework.Loaded]
 
@@ -22,7 +23,7 @@ abstract class TestEnvironment[B <: Backend](
   final def frameworks: List[TestFramework] = TestFramework
     .all
     .toList
-    .filter(_.isBackendSupported(backend))
+    .filter(_.isBackendSupported(backend, isScala3))
 
   final def loadFrameworks(testClasspath: Iterable[File]): List[TestFramework.Loaded] =
     // This is the only way I know to:

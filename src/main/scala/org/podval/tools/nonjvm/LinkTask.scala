@@ -1,10 +1,10 @@
 package org.podval.tools.nonjvm
 
 import org.gradle.api.{DefaultTask, Project}
-import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.{ConfigurableFileCollection, DirectoryProperty}
 import org.gradle.api.tasks.{CacheableTask, Classpath, InputFiles, Internal, SourceSet, TaskAction}
 import org.podval.tools.build.{Backend, OutputTask}
-import org.podval.tools.util.{Configurations, Files, Projects, Tasks}
+import org.podval.tools.util.{Configurations, Files, Tasks}
 import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
 
@@ -21,8 +21,9 @@ abstract class LinkTask[B <: NonJvmBackend] extends DefaultTask
   @TaskAction final def execute(): Unit = link.link()
   def link: Link[B]
 
-  private val buildDirectory: File = Projects.buildDirectoryFile(getProject) // TODO use @Input/@Internal property
-  final protected def outputDirectory: File = Files.file(buildDirectory, "tmp", getName)
+  // Set at configuration time. Output paths are derived from this during the task action.
+  @Internal def getBuildDirectory: DirectoryProperty
+  final protected def outputDirectory: File = Files.file(getBuildDirectory.getAsFile.get, "tmp", getName)
   final protected def outputFile(name: String): File = File(outputDirectory, name)
 
 object LinkTask:
@@ -33,6 +34,7 @@ object LinkTask:
       val sourceSet: SourceSet = Configurations.sourceSet(project, task.isTest)
       task.dependsOn(project.getTasks.named(sourceSet.getClassesTaskName))
       task.getRuntimeClasspath.setFrom(sourceSet.getRuntimeClasspath)
+      task.getBuildDirectory.set(project.getLayout.getBuildDirectory)
   )
 
   @CacheableTask

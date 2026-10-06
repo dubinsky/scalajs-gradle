@@ -8,10 +8,12 @@ final class NonJvmTestEnvironment[B <: NonJvmBackend, A](
   testAdapter: A,
   loadFrameworksFromTestAdapter: (A, List[List[String]]) => List[Option[FrameworkSBT]],
   closeTestAdapter: A => Unit,
-  sourceMapper: Option[SourceMapper]
+  sourceMapper: Option[SourceMapper],
+  isScala3: Boolean
 ) extends TestEnvironment[B](
   backend = backend,
-  sourceMapper = sourceMapper
+  sourceMapper = sourceMapper,
+  isScala3 = isScala3
 ):
   override def close(): Unit = closeTestAdapter(testAdapter)
 

@@ -40,11 +40,13 @@ When I treat nested classes as *children* of the main class:
       5: success resultType=SUCCESS
       6: failure resultType=FAILURE
 
-I have to adjust the test fixtures for the nested stuff to check
-that there is no data for the nesting classes in the binary report
-instead of checking that there is and the number of tests executed is zero...
+The fixtures therefore expect no row for the nesting class in the binary report.
 
-TODO maybe there are some parameters I can set for report generation or reading?
+TestTreeModelResultsProvider.visitClasses rebuilds class/method pairs for the old
+report renderers. A leaf is filed under the ancestor whose path name equals the
+leaf's class name, and nodes above that class are dropped. That class documents
+this, and no Test task setting changes it. The IDE tree uses the parent ids from
+these events, so nested classes stay visible there.
  */
 final private class EventHandler(runTestClass: RunTestClass):
   private def testResultProcessor: TestResultProcessorEx = runTestClass.testResultProcessor

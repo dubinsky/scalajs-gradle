@@ -6,7 +6,6 @@ import org.podval.tools.util.Files
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import java.io.File
 
-// TODO abstract, calculate overall test failure, and move up to `org.podval.tools.testproject`.
 final class TestProject(projectName: Seq[String]):
   val projectNameString: String = projectName.mkString("-")
   val pluginProjectDir: File = TestProject.root

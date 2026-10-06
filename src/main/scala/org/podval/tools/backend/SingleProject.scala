@@ -9,7 +9,6 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 import java.io.File
 
 abstract class SingleProject(project: Project) extends BackendProject(project):
-  // TODO introduce version ranges?
   final def addVersionSpecificSources(scalaVersion: ScalaVersion): Unit = project.afterEvaluate: (project: Project) =>
     val version: Version = scalaVersion.version
     val versionSuffixes: Seq[String] = 1

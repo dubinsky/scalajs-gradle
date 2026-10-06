@@ -4,7 +4,8 @@ import groovy.lang.{Closure, DelegatesTo}
 import org.gradle.StartParameter
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter
-import org.gradle.api.tasks.{CacheableTask, TaskAction}
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.{CacheableTask, Input, TaskAction}
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.{Action, Project}
 import org.gradle.internal.time.Clock
@@ -17,7 +18,6 @@ import org.podval.tools.util.{Reflection, Tasks}
 
 // guide: https://docs.gradle.org/current/userguide/java_testing.html
 // configuration: https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.Test.html
-// TODO add ScalaLibrary/ScalaVersion here and use it in loading frameworks
 object TestTask:
   def configureTasks[T <: TestTask[?]](
     project: Project,
@@ -37,6 +37,9 @@ abstract class TestTask[B <: Backend] extends Test
 
   protected def testEnvironmentCreator: TestEnvironment.Creator[B]
 
+  // Set in Backend.afterEvaluate, once the project's Scala library is known.
+  @Input def getScala3: Property[Boolean]
+
   final def useSbt(@DelegatesTo(classOf[SbtTestFramework.Options]) testFrameworkConfigure: Closure[?]): Unit =
     useSbt(ConfigureUtil.configureUsing(testFrameworkConfigure))
 
@@ -49,7 +52,7 @@ abstract class TestTask[B <: Backend] extends Test
   private var testEnvironment: Option[TestEnvironment[B]] = None
 
   private def getTestEnvironment: TestEnvironment[B] =
-    if testEnvironment.isEmpty then testEnvironment = Some(testEnvironmentCreator.testEnvironment)
+    if testEnvironment.isEmpty then testEnvironment = Some(testEnvironmentCreator.testEnvironment(getScala3.get))
     testEnvironment.get
 
   private def closeTestEnvironment(): Unit =

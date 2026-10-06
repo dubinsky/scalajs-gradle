@@ -37,7 +37,9 @@ final case class ScalaDependency(
       else this.copy(backend = backend)
 
   override def isScalaVersion(scalaVersion: Option[Version]): Boolean =
-    scalaVersion.isDefined  // TODO check that it is long enough if fullScalaVersion
+    // Compiler plugins are published for the full Scala version (`_2.13.18`, `_3.8.0`).
+    // A binary suffix (`_2.13`, `_3`) does not satisfy that.
+    scalaVersion.exists(version => !fullScalaVersion || version.length >= 3)
 
   override def fromVersion(
     scalaVersion: Option[Version],

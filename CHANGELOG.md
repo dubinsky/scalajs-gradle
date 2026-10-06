@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-06
+
 - Scala 3.8 and newer compiles get `-release:17` when the `ScalaCompile` task does not already set `-release` or
   `-java-output-version`.
 - `run`, `node`, and `npm` are no longer cacheable.
@@ -27,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   projects that are already included.
 - Project plugin id `org.podval.tools.scala` is an alias of `org.podval.tools.scalajs`.
 - The test class filter follows Gradle's `ClassTestSelectionMatcher` (Gradle 9.8.0).
+- cleanup: TODOs;
 
 ## [2.0.0] - 2026-10-05
 Breaking: the artifact suffix is published by default.

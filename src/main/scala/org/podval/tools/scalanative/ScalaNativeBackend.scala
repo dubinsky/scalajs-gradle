@@ -1,5 +1,7 @@
 package org.podval.tools.scalanative
 
+import org.gradle.api.Project
+import org.gradle.api.plugins.jvm.internal.JvmPluginServices
 import org.podval.tools.build.{DependencyRequirement, ScalaDependency, ScalaLibrary, ScalaBinaryVersion, Version}
 import org.podval.tools.nonjvm.NonJvmBackend
 
@@ -12,6 +14,14 @@ object ScalaNativeBackend extends NonJvmBackend(
   pluginDependenciesConfigurationName = "scalanative",
   areCompilerPluginsBuiltIntoScala3 = false
 ):
+  override def apply(
+    project: Project,
+    jvmPluginServices: JvmPluginServices,
+    isRunningInIntelliJ: Boolean
+  ): Unit =
+    super.apply(project, jvmPluginServices, isRunningInIntelliJ)
+    ScalaNativeLinkTask.configureTasks(project)
+
   override protected def linkTaskClass    : Class[ScalaNativeLinkTask.Main] = classOf[ScalaNativeLinkTask.Main]
   override protected def testLinkTaskClass: Class[ScalaNativeLinkTask.Test] = classOf[ScalaNativeLinkTask.Test]
   override protected def runTaskClass     : Class[ScalaNativeRunTask .Main] = classOf[ScalaNativeRunTask .Main]
@@ -51,7 +61,8 @@ object ScalaNativeBackend extends NonJvmBackend(
 
   override protected def scalaCompileParameters(scalaLibrary: ScalaLibrary): Seq[String] =
     scalaLibrary.scalaVersion.binaryVersion match
-      case ScalaBinaryVersion.Scala2_13 => Seq("-Ytasty-reader") // TODO is this still needed?
+      // Lets Scala 2.13 read TASTy published by Scala 3.7 and earlier.
+      case ScalaBinaryVersion.Scala2_13 => Seq("-Ytasty-reader")
       case _ => Seq.empty
   
   override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] = Array.empty

@@ -30,23 +30,33 @@ final class Runner(
 
   def run(running: String, log: Boolean)(body: => Unit): Unit =
     out(log)(s"Running [$running].")
-    try body finally
+    try body
+    finally
       close()
-      // TODO for Native this prints before the output!
-      //out(true)(s"Done running [$running].")
+      done(running, log)
 
   @volatile private var outputStreams: List[OutputStream] = Nil
-  
-  // this one is for Scala Native and NodeProject;
+
+  private def done(running: String, log: Boolean): Unit =
+    out(log)(s"Done running [$running].")
+
+  // Scala Native and Node. Gradle runs the process after the ExecSpec action returns,
+  // so the "done" line has to wait until exec returns, once the streams have been written.
   def exec(log: Boolean, configure: ExecSpec => Unit): Unit =
-    execOperations.exec: (execSpec: ExecSpec) =>
-      configure(execSpec)
-      run(execSpec.getCommandLine.asScala.mkString(" "), log):
+    var running: String = ""
+    try
+      execOperations.exec: (execSpec: ExecSpec) =>
+        configure(execSpec)
+        running = execSpec.getCommandLine.asScala.mkString(" ")
+        out(log)(s"Running [$running].")
         val outStream: OutputStream = Runner.CallbackOutputStream(out(log))
         val errStream: OutputStream = Runner.CallbackOutputStream(err)
         outputStreams = List(outStream, errStream)
         execSpec.setStandardOutput(outStream)
         execSpec.setErrorOutput   (errStream)
+    finally
+      close()
+      if running.nonEmpty then done(running, log)
 
   /* The list of threads that are piping output to System.out and
    * System.err. This is not an AtomicReference or any other thread-safe

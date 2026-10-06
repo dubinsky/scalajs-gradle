@@ -41,7 +41,7 @@ final class ScalaJSRun(
       Await.result(awaitable = jsRun.future, atMost = Duration.Inf)
       jsRun.close()
 
-  override def testEnvironment: TestEnvironment[ScalaJSBackend.type] =
+  override def testEnvironment(isScala3: Boolean): TestEnvironment[ScalaJSBackend.type] =
     val (module: Report.Module, _: Path, input: Input) = link.module(jsEnvKind)
 
     NonJvmTestEnvironment[ScalaJSBackend.type, TestAdapter](
@@ -56,7 +56,8 @@ final class ScalaJSRun(
       sourceMapper = module
         .sourceMapName
         .map((name: String) => Files.file(link.jsDirectory, name))
-        .map(ClosureCompilerSourceMapper(_))
+        .map(ClosureCompilerSourceMapper(_)),
+      isScala3 = isScala3
     )
 
   private def jsEnv: JSEnv =

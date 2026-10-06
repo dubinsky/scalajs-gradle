@@ -37,9 +37,10 @@ object JvmBackend extends Backend(
     artifact = "test-interface"
   )
 
-  override def testEnvironment: TestEnvironment[JvmBackend.type] = new TestEnvironment[JvmBackend.type](
+  override def testEnvironment(isScala3: Boolean): TestEnvironment[JvmBackend.type] = new TestEnvironment[JvmBackend.type](
     backend = this,
-    sourceMapper = None
+    sourceMapper = None,
+    isScala3 = isScala3
   ):
     final override def close(): Unit = ()
     final override protected def loadFrameworks: List[TestFramework.Loaded] = frameworks.flatMap(_.tryLoad)

@@ -65,3 +65,18 @@ class TestFilterTest extends AnyFlatSpec, TableDrivenPropertyChecks, Matchers:
 
     forAll(data): (input, className, expected) =>
       TestFilter(Set(input), Set.empty, Set.empty).matchClass(className) shouldBe expected
+
+  it should "intersect build-script and command-line method filters" in:
+    val data: TableFor4[String, String, String, Option[TestFilterMatch]] = Table(
+      ("include", "commandLine", "className", "match"),
+      ("SomeClass.*some*", "SomeClass.someMethod", "SomeClass", Some(TestsTestFilterMatch(Set("someMethod"), Set.empty))),
+      ("SomeClass.someMethod", "SomeClass.*some*", "SomeClass", Some(TestsTestFilterMatch(Set("someMethod"), Set.empty))),
+      ("SomeClass.*someMethod*", "SomeClass.some*", "SomeClass", Some(TestsTestFilterMatch(Set.empty, Set("someMethod")))),
+      ("SomeClass.some*", "SomeClass.*someMethod*", "SomeClass", Some(TestsTestFilterMatch(Set.empty, Set("someMethod")))),
+      ("SomeClass.someMethod", "SomeClass.someMethod", "SomeClass", Some(TestsTestFilterMatch(Set("someMethod"), Set.empty))),
+      ("SomeClass.someMethod", "SomeClass.otherMethod", "SomeClass", None),
+      ("SomeClass.*foo*", "SomeClass.*bar*", "SomeClass", None)
+    )
+
+    forAll(data): (include: String, commandLine: String, className: String, expected: Option[TestFilterMatch]) =>
+      TestFilter(Set(include), Set.empty, Set(commandLine)).matchClass(className) shouldBe expected

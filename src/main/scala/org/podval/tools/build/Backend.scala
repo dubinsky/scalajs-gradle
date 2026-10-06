@@ -57,6 +57,13 @@ abstract class Backend(
       artifactSuffix
     )
 
+    val scala3: Boolean = projectScalaLibrary.scalaVersion.binaryVersion.isScala3
+    Tasks.configureEach(
+      project,
+      classOf[TestTask[?]],
+      (task: TestTask[?]) => task.getScala3.set(scala3)
+    )
+
     requirements(
       project,
       projectScalaLibrary = projectScalaLibrary,

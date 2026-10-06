@@ -21,7 +21,6 @@ object IntelliJSharedSources:
     .map(_.asInstanceOf[File])
 
   def defer(project: Project, shared: Project, add: () => Unit): Unit =
-    // TODO remove Configurations.addDependency(project, Configurations.implementationName(project), shared)
     Configurations.addDependency(project, Configurations.implementationName(project), shared)
 
     Set(
