@@ -22,8 +22,6 @@ Breaking: the artifact suffix is published by default.
   off.
 - This repository's own publish still applies plugin 1.0.4, which does not rewrite `artifactId`, so the coordinates stay
   `org.podval.tools.scalajs`.
-
-## [1.0.5] - 2026-
 - chore: Scala 3.9.0;
 - chore: Scala 3.10.0;
 - chore: Gradle 9.7.1;
