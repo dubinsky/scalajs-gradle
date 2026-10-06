@@ -3,6 +3,7 @@ package org.podval.tools.nonjvm
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{CacheableTask, Internal, TaskAction}
+import org.gradle.work.DisableCachingByDefault
 import org.podval.tools.build.{Backend, OutputTask, RunnerTask, TestEnvironment, TestTask}
 import scala.reflect.ClassTag
 
@@ -18,6 +19,7 @@ trait RunTask[B <: NonJvmBackend, L <: LinkTask[B] : ClassTag] extends Backend.T
   final protected def linkTask: L = getLinkTask.get
 
 object RunTask:
+  @DisableCachingByDefault(because = "Runs the linked program.")
   abstract class Main[B <: NonJvmBackend, L <: LinkTask.Main[B] : ClassTag] extends DefaultTask with RunTask[B, L] with RunnerTask:
     @TaskAction final def execute(): Unit = run.run(runner)
 

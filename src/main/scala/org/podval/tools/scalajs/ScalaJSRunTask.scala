@@ -2,6 +2,7 @@ package org.podval.tools.scalajs
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.{CacheableTask, Input}
+import org.gradle.work.DisableCachingByDefault
 import org.podval.tools.node.NodeProjectTask
 import org.podval.tools.nonjvm.RunTask
 import scala.reflect.ClassTag
@@ -18,6 +19,7 @@ trait ScalaJSRunTask[L <: ScalaJSLinkTask : ClassTag] extends RunTask[ScalaJSBac
   )
 
 object ScalaJSRunTask:
+  @DisableCachingByDefault(because = "Runs the linked JavaScript.")
   abstract class Main extends RunTask.Main[ScalaJSBackend.type, ScalaJSLinkTask.Main] with ScalaJSRunTask[ScalaJSLinkTask.Main]
 
   @CacheableTask

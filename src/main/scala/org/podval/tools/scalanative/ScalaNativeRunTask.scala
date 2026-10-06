@@ -1,6 +1,7 @@
 package org.podval.tools.scalanative
 
 import org.gradle.api.tasks.CacheableTask
+import org.gradle.work.DisableCachingByDefault
 import org.podval.tools.nonjvm.RunTask
 import scala.reflect.ClassTag
 
@@ -11,6 +12,7 @@ trait ScalaNativeRunTask[L <: ScalaNativeLinkTask : ClassTag] extends RunTask[Sc
   )
 
 object ScalaNativeRunTask:
+  @DisableCachingByDefault(because = "Runs the linked native binary.")
   abstract class Main extends RunTask.Main[ScalaNativeBackend.type, ScalaNativeLinkTask.Main] with ScalaNativeRunTask[ScalaNativeLinkTask.Main]
 
   @CacheableTask
