@@ -2504,7 +2504,7 @@ I want to thank all those who worked with me on these issues and fixes.
 * https://github.com/scala-native/scala-native/issues/4372[issues/4372] _Link errors with ZIO._ Thank you to
   https://github.com/WojciechMazur[WojciechMazur] for looking into the issue.
 * https://github.com/scala-native/scala-native/issues/4421[issues/4421] _Test output is lost._ Thank you to
-  https://github.com/WojciechMazur[WojciechMazur] for looking into the issue.
+  https://github.com/WojciechMazur[WojciechMazur] for looking into the issue and fixing it.
 * _https://github.com/scala-native/scala-native/pull/4427[pull/4427]_ _Remove spurious dependencies of test-runner._
   Thank you to https://github.com/ekrich[ekrich] for working with me on the typo fixes included in this pull request and
   to https://github.com/WojciechMazur[WojciechMazur] for accepting my contribution.
@@ -2607,6 +2607,22 @@ I want to thank all those who worked with me on these issues and fixes.
 - https://github.com/scalaprops/scalaprops[scalaprops]:
 * https://github.com/scalaprops/scalaprops/issues/530[issues/530] _Support for sbt.testing.Framework on Scala.js and
   Scala Native_
+
+== Won't Fix
+
+I did fix quite a number of bugs and made a number of improvements
+to various test frameworks; at this point, cosmetic fixes for the
+frameworks I do not even use are unlikely to happen, but let's at
+least list them:
+
+- use sbt loggers in ZIO Test;
+- add test summary in specs2;
+- add test summary in Weaver Test on JVM;
+- add test filtering in Weaver Test;
+- add test summary in Hedgehog;
+- add test filtering in Hedgehog;
+- add test summary in AirSpec;
+- add test filtering in AirSpec;
 
 == Credits
 

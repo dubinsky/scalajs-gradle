@@ -66,12 +66,3 @@ object ScalaNativeBackend extends NonJvmBackend(
       case _ => Seq.empty
   
   override protected def implementation(scalaLibrary: ScalaLibrary): Array[DependencyRequirement] = Array.empty
-
-  // // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
-  // // When using Scala 3 exclude Scala 2.13 standard native libraries,
-  // // when using Scala 2.13 exclude Scala 3 standard native libraries
-  // nativeStandardLibraries.map { lib =>
-  //   val scalaBinVersion = if (scalaVersion.value.startsWith("3.")) "2.13" else "3"
-  //   ExclusionRule()
-  //     .withOrganization(organization)
-  //     .withName(s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}")

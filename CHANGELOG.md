@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+- cleanup: CI;
+
 ## [2.1.0] - 2026-10-06
 
 - Scala 3.8 and newer compiles get `-release:17` when the `ScalaCompile` task does not already set `-release` or
