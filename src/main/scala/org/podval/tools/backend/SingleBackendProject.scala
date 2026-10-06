@@ -41,7 +41,8 @@ final class SingleBackendProject(
     backend.afterEvaluate(
       project,
       projectScalaLibrary = extension.getScalaLibrary,
-      pluginScalaLibrary  = extension.getPluginScalaLibrary
+      pluginScalaLibrary  = extension.getPluginScalaLibrary,
+      useArtifactSuffix   = extension.getUseArtifactSuffix.get
     )
 
   private def addSharedSources(shared: Project): Unit =

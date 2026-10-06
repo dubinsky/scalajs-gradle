@@ -50,6 +50,12 @@ final class TestProject(projectName: Seq[String]):
     .build
     .getOutput
 
+  def build(arguments: String*): String = gradleRunner
+    .withArguments(arguments.toList.asJava)
+    .forwardOutput
+    .build
+    .getOutput
+
 object TestProject:
   def root: File = Files.url2file(getClass.getResource("/org/podval/tools/test/testproject/anchor.txt"))
     .getParentFile // testproject

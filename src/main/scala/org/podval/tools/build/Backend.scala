@@ -40,12 +40,15 @@ abstract class Backend(
   def afterEvaluate(
     project: Project,
     projectScalaLibrary: ScalaLibrary,
-    pluginScalaLibrary: ScalaLibrary
+    pluginScalaLibrary: ScalaLibrary,
+    useArtifactSuffix: Boolean
   ): Unit =
+    val artifactSuffix: String =
+      if useArtifactSuffix then Artifact.suffix(this, projectScalaLibrary) else ""
+
     JarTask.configureJarTask(
-      project, 
-      this,
-      projectScalaLibrary
+      project,
+      artifactSuffix
     )
 
     requirements(

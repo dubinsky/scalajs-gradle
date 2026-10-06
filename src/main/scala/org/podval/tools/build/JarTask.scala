@@ -27,10 +27,8 @@ object JarTask:
 
   def configureJarTask(
     project: Project,
-    backend: Backend,
-    scalaLibrary: ScalaLibrary
+    artifactSuffix: String
   ): Unit =
-    val artifactSuffix: String = Artifact.suffix(backend, scalaLibrary)
     Tasks.configure(
       project,
       classOf[Jar],

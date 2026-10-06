@@ -2,6 +2,7 @@ package org.podval.tools.backend
 
 import groovy.lang.Closure
 import org.gradle.api.Project
+import org.gradle.api.provider.Property
 import org.podval.tools.build.{Artifact, Backend, DependencyVersion, ScalaBinaryVersion, ScalaDependency, ScalaLibrary,
   TestFramework, Version}
 import org.podval.tools.nonjvm.NonJvmBackend
@@ -17,7 +18,10 @@ abstract class BackendExtension @Inject(
   final def getName      : String = getBackend.name
   final def getSourceRoot: String = getBackend.sourceRoot
   final def getSuffix    : String = Artifact.suffix(getBackend, getScalaLibrary)
-  
+
+  def getUseArtifactSuffix: Property[Boolean]
+  getUseArtifactSuffix.convention(true)
+
   private def nonJvmBackend: NonJvmBackend = getBackend match
     case nonJvm: NonJvmBackend => nonJvm
     case backend => error(s"backend must be a non-JVM backend, not ${backend.name}")
