@@ -1,6 +1,5 @@
 package org.podval.tools.util
 
-import org.gradle.api.internal.tasks.JvmConstants
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.TaskProvider
@@ -10,8 +9,6 @@ object Tasks:
   def verificationGroup: String = JavaBasePlugin.VERIFICATION_GROUP // LifecycleBasePlugin.VERIFICATION_GROUP
   def buildGroup: String = "build"
   def otherGroup: String = "other"
-
-  def jarTaskName: String = JvmConstants.JAR_TASK_NAME
 
   // Test task and test source set are named the same.
   def testTaskName(project: Project): String = Configurations.testSourceSet(project).getName
@@ -48,17 +45,6 @@ object Tasks:
     .getTasks
     .withType(taskClass)
     .configureEach(action)
-
-  def configure[T <: Task](
-    project: Project,
-    taskClass: Class[T],
-    taskName: String,
-    action: Action[T]
-  ): Unit = project
-    .getTasks
-    .withType(taskClass)
-    .named(taskName)
-    .configure(action)
 
   def register[T <: Task](
     project: Project,
