@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@master
         with:
           java-version: '25'
-          distribution: 'zulu'
+          distribution: 'temurin'
 
       - name: "Build and test"
         run: ./gradlew --no-daemon build

@@ -72,8 +72,9 @@ object Artifact:
             if !publicationName.endsWith("PluginMarkerMaven") then
               suffixedPublicationNames += publicationName
 
-        // Later afterEvaluate callbacks can still overwrite the id.
-        project.getGradle.projectsEvaluated(_ =>
+        // A later afterEvaluate callback can still overwrite the id.
+        // configureArtifacts runs from projectsEvaluated, when that chance has passed.
+        def logSuffix(): Unit =
           val suffixedArtifactId: String = projectName + artifactSuffix
           suffixedPublicationNames.foreach: (publicationName: String) =>
             val publication: MavenPublication = publishing
@@ -85,7 +86,10 @@ object Artifact:
                 s"Publication '$publicationName' uses artifact suffix '$artifactSuffix'.",
                 null, null, null
               )
-        )
+
+        if project.getState.getExecuted
+        then logSuffix()
+        else project.getGradle.projectsEvaluated(_ => logSuffix())
     )
 
   def fromFile(file: File): Artifact =

@@ -97,6 +97,9 @@ final class MixedProject private(
   override def announcement: String = s"using Scala backends ${Strings.toString(backends, _.name)}"
 
   override def apply(): Unit =
+    // The root has no single backend. This extension carries useArtifactSuffix for the backend projects.
+    UseArtifactSuffix.create(project)
+
     // Disable tasks.
     Set(
       classOf[SourceTask],

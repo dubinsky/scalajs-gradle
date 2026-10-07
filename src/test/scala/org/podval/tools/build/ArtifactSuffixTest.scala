@@ -140,6 +140,72 @@ class ArtifactSuffixTest extends AnyFlatSpec, Matchers, TableDrivenPropertyCheck
       marker should include("<artifactId>org.example.dummy.gradle.plugin</artifactId>")
       marker should include(s"<artifactId>$artifactId</artifactId>")
 
+  "a mixed project" should "inherit useArtifactSuffix and let one backend override it" in :
+    val project: TestProject = TestProject(Seq("artifact-suffix", "mixed-inherit"))
+    val writer = project.writer(None)
+    writer.writeSettings(Seq(
+      Fragments.settingsManagement,
+      Fragments.rootProjectName("suffixmix"),
+      Fragments.includeScalaJsPluginBuild,
+      "include 'js'",
+      "include 'jvm'"
+    ))
+    writer.writeBuild(Seq(
+      Fragments.applyScalaJsPlugin,
+      Fragments.scalaVersion(scala3),
+      "group = 'org.example'",
+      s"version = '$version'",
+      """subprojects {
+        |  group = 'org.example'
+        |  version = rootProject.version
+        |}
+        |scalaBackend {
+        |  useArtifactSuffix = false
+        |}
+        |""".stripMargin
+    ))
+    val flags: String =
+      """tasks.register('flags') {
+        |  doLast {
+        |    println("FLAGS jvm=${scalaBackend.jvm} js=${scalaBackend.js} native=${scalaBackend.native}")
+        |  }
+        |}
+        |""".stripMargin
+    val childPlugins: String =
+      """plugins {
+        |  id 'maven-publish'
+        |}
+        |""".stripMargin
+    val publishing: String = childPlugins + libraryPublishing(custom = false) + flags
+    Files.write(File(project.projectDir, "js/build.gradle"), publishing)
+    Files.write(
+      File(project.projectDir, "jvm/build.gradle"),
+      childPlugins +
+        """scalaBackend {
+          |  useArtifactSuffix = true
+          |}
+          |""".stripMargin +
+        libraryPublishing(custom = false) +
+        flags
+    )
+
+    val output: String = project.build(
+      ":js:jar",
+      ":js:sourcesJar",
+      ":js:generatePomFileForLibraryPublication",
+      ":js:flags",
+      ":jvm:jar",
+      ":jvm:generatePomFileForLibraryPublication",
+      ":jvm:flags"
+    )
+
+    assertLibsAt(project, "js", "js-1.2.3.jar", "js-1.2.3-sources.jar")
+    assertLibsAt(project, "jvm", "jvm_3-1.2.3.jar")
+    read(project, "js/build/publications/library/pom-default.xml") should include("<artifactId>js</artifactId>")
+    read(project, "jvm/build/publications/library/pom-default.xml") should include("<artifactId>jvm_3</artifactId>")
+    output should include("FLAGS jvm=false js=true native=false")
+    output should include("FLAGS jvm=true js=false native=false")
+
   private def writeProject(
     caseName: String,
     backend: Backend,
@@ -203,7 +269,10 @@ class ArtifactSuffixTest extends AnyFlatSpec, Matchers, TableDrivenPropertyCheck
        |""".stripMargin
 
   private def assertLibs(project: TestProject, files: String*): Unit =
-    val libs: File = File(project.projectDir, "build/libs")
+    assertLibsAt(project, ".", files*)
+
+  private def assertLibsAt(project: TestProject, projectPath: String, files: String*): Unit =
+    val libs: File = File(project.projectDir, s"$projectPath/build/libs")
     Option(libs.list()).map(_.toSeq.sorted).getOrElse(Seq.empty) shouldBe files.sorted
 
   private def read(project: TestProject, path: String): String =

@@ -112,12 +112,11 @@ abstract class NonJvmBackend(
     )
 
   final override def afterEvaluate(
-    project: Project, 
-    projectScalaLibrary: ScalaLibrary, 
-    pluginScalaLibrary: ScalaLibrary,
-    useArtifactSuffix: Boolean
+    project: Project,
+    projectScalaLibrary: ScalaLibrary,
+    pluginScalaLibrary: ScalaLibrary
   ): Unit =
-    super.afterEvaluate(project, projectScalaLibrary, pluginScalaLibrary, useArtifactSuffix)
+    super.afterEvaluate(project, projectScalaLibrary, pluginScalaLibrary)
 
     ScalaCompiles.configure(project, scalaCompileParameters(projectScalaLibrary))
 

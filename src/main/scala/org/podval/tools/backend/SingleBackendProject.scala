@@ -23,10 +23,13 @@ final class SingleBackendProject(
   override def apply(): Unit =
     // Create extension.
     BackendExtension.create(project, backend, isRunningInIntelliJ)
-    
+
     // Apply the backend.
     backend.apply(project, jvmPluginServices, isRunningInIntelliJ)
     backend.registerTasks(project)
+
+    // After every build script, so the mixed project can set useArtifactSuffix and this project can override it.
+    project.getGradle.projectsEvaluated(_ => configureArtifacts())
   
   override def afterEvaluate(): Unit =
     sharedProjects.map(_.project).foreach(addSharedSources)
@@ -43,8 +46,16 @@ final class SingleBackendProject(
     backend.afterEvaluate(
       project,
       projectScalaLibrary = projectScalaLibrary,
-      pluginScalaLibrary  = extension.getPluginScalaLibrary,
-      useArtifactSuffix   = extension.getUseArtifactSuffix.get
+      pluginScalaLibrary  = extension.getPluginScalaLibrary
+    )
+
+  private def configureArtifacts(): Unit =
+    val extension: BackendExtension = BackendExtension.get(project)
+    UseArtifactSuffix.inherit(project, extension.getUseArtifactSuffix)
+    backend.configureArtifacts(
+      project,
+      projectScalaLibrary = extension.getScalaLibrary,
+      useArtifactSuffix = extension.getUseArtifactSuffix.get
     )
 
   private def addSharedSources(shared: Project): Unit =

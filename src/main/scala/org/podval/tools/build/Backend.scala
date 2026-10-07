@@ -37,10 +37,11 @@ abstract class Backend(
     OutputTask.configureTasks(project, isRunningInIntelliJ)
     TestTask.configureTasks(project, testTaskClass)
 
-  def afterEvaluate(
+  // Jar and publication names are applied from projectsEvaluated, so a mixed project can
+  // set useArtifactSuffix in its build script and a backend project can override it.
+  def configureArtifacts(
     project: Project,
     projectScalaLibrary: ScalaLibrary,
-    pluginScalaLibrary: ScalaLibrary,
     useArtifactSuffix: Boolean
   ): Unit =
     val artifactSuffix: String =
@@ -57,6 +58,11 @@ abstract class Backend(
       artifactSuffix
     )
 
+  def afterEvaluate(
+    project: Project,
+    projectScalaLibrary: ScalaLibrary,
+    pluginScalaLibrary: ScalaLibrary
+  ): Unit =
     val scala3: Boolean = projectScalaLibrary.scalaVersion.binaryVersion.isScala3
     Tasks.configureEach(
       project,

@@ -5,7 +5,10 @@ import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.podval.tools.build.{Artifact, Backend, DependencyVersion, ScalaBinaryVersion, ScalaDependency, ScalaLibrary,
   TestFramework, Version}
+import org.podval.tools.jvm.JvmBackend
 import org.podval.tools.nonjvm.NonJvmBackend
+import org.podval.tools.scalajs.ScalaJSBackend
+import org.podval.tools.scalanative.ScalaNativeBackend
 import org.podval.tools.util.Extensions
 import javax.inject.Inject
 
@@ -20,10 +23,9 @@ abstract class BackendExtension @Inject(
   final def getSuffix    : String = Artifact.suffix(getBackend, getScalaLibrary)
 
   def getUseArtifactSuffix: Property[Boolean]
-  getUseArtifactSuffix.convention(true)
-  // The build script body runs before afterEvaluate, which is when the value is read.
-  // A later assignment fails instead of being ignored.
-  getUseArtifactSuffix.finalizeValueOnRead()
+  // Read from projectsEvaluated, after every build script — including a mixed parent's —
+  // has assigned its value. An explicit value wins over the inherited convention.
+  UseArtifactSuffix.configure(getUseArtifactSuffix)
 
   private def nonJvmBackend: NonJvmBackend = getBackend match
     case nonJvm: NonJvmBackend => nonJvm
@@ -35,6 +37,11 @@ abstract class BackendExtension @Inject(
   final def isScala3: Boolean = getScalaLibrary.scalaVersion.binaryVersion match
     case _: ScalaBinaryVersion.Scala3 => true
     case _ => false
+
+  // Groovy exposes these as jvm, js, and native. Kotlin keeps the is prefix.
+  final def isJvm: Boolean = getBackend eq JvmBackend
+  final def isJs: Boolean = getBackend eq ScalaJSBackend
+  final def isNative: Boolean = getBackend eq ScalaNativeBackend
 
   final def getScalaVersion: String = getScalaLibrary.scalaVersion.toString
   final def getScalaBinaryVersion: Version = getScalaLibrary.scalaBinaryVersionPrefix
@@ -107,9 +114,9 @@ object BackendExtension:
   
   private def idConfigure: Configure = Closure.IDENTITY.asInstanceOf[Configure]
 
-  private val name: String = "scalaBackend"
+  val extensionName: String = "scalaBackend"
 
-  def get(project: Project): BackendExtension = Extensions.getByName(project, name)
+  def get(project: Project): BackendExtension = Extensions.getByName(project, extensionName)
 
   def create(
     project: Project,
@@ -117,7 +124,7 @@ object BackendExtension:
     isRunningInIntelliJ: Boolean
   ): BackendExtension = Extensions.create(
     project,
-    name,
+    extensionName,
     classOf[BackendExtension],
     backend,
     isRunningInIntelliJ

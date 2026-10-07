@@ -1,16 +1,20 @@
+= Test class and result processors
+
 == TestDefinitionProcessor
 
 [source]
 ----
-org.podval.tools.test.task.DefaultTestExecuter.execute:
+org.podval.tools.test.run.DefaultTestExecuter.execute:
   org.gradle.api.internal.tasks.testing.processors.PatternMatchTestDefinitionProcessor
   org.gradle.api.internal.tasks.testing.processors.RunPreviousFailedFirstTestDefinitionProcessor
   org.gradle.api.internal.tasks.testing.processors.MaxNParallelTestDefinitionProcessor
   org.gradle.api.internal.tasks.testing.processors.RestartEveryNTestDefinitionProcessor
 
-org.podval.tools.test.task.TestFramework.createTestExecuter.createTestDefinitionProcessor:
-  org.podval.tools.test.processors.TaskDefTestEncodingTestDefinitionProcessor                    or NonForkingTestDefinitionProcessor
-  org.gradle.api.internal.tasks.testing.worker.ForkingTestDefinitionProcessor
+org.podval.tools.build.TestTask.createTestExecuter:
+  org.podval.tools.test.run.TestExecuter.createTestDefinitionProcessor:
+    org.podval.tools.test.run.WriteTestDefinitionProcessor
+      or org.podval.tools.test.run.RunTestDefinitionProcessor
+    org.gradle.api.internal.tasks.testing.worker.ForkingTestDefinitionProcessor
 
 ...
 
@@ -27,14 +31,14 @@ org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor:
 
 ...
 
-org.podval.tools.test.task.TestFramework.createTestExecuter.execute:
-  org.podval.tools.test.results.FixUpRootTestOutputTestResultProcessor
-  org.podval.tools.test.results.SourceMappingTestResultProcessor
-  org.podval.tools.test.results.TracingTestResultProcessor
+org.podval.tools.test.run.TestExecuter.execute:
+  org.podval.tools.test.run.FixRootTestSuiteOutputTestResultProcessor
+  org.podval.tools.test.run.SourceMappingTestResultProcessor
+  org.podval.tools.test.run.TracingTestResultProcessor
 
 org.gradle.api.internal.tasks.testing.processors.TestMainAction:
   org.gradle.api.internal.tasks.testing.results.AttachParentTestResultProcessor
 
-org.gradle.api.tasks.testing.AbstracTestTask:
+org.gradle.api.tasks.testing.AbstractTestTask:
   org.gradle.api.internal.tasks.testing.results.StateTrackingTestResultProcessor
 ----
