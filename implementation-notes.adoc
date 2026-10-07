@@ -209,7 +209,7 @@ behind by the Scala.js compiler (or, on Scala 2, Scala compiler plugin that gene
 Presence of a bootstrapper `TestClass$scalajs$junit$bootstrapper$` is treated as a presence of the `@Test` annotation on
 `TestClass`, which marks it as a test belonging to the `JUnit4 for Scala.js` test framework.
 
-=== Test case selectors
+=== Test Case Selectors
 
 Gradle patterns can contain `*`.
 The plugin follows Gradle's matcher for class names.
@@ -224,7 +224,7 @@ It has no way to exclude a test case.
 
 The plugin does not know the test-case names.
 Those names depend on the framework.
-A Gradle filter therefore cannot always be written as sbt selectors.
+Therefore, a Gradle filter cannot always be written as sbt selectors.
 sbt ORs the selectors it is given.
 Two wildcard patterns that do not contain each other have no AND, so that combination selects nothing.
 How faithfully a framework honors the selectors it does receive is described with that framework in the manual.
@@ -314,8 +314,10 @@ Situation with test progress reporting is nuanced:
 
 - `ScalaCheck`, `ScalaTest`, `specs2` log the progress;
 
-- `uTest` writes to the standard out a header: "--- Running Tests ---", then: * `utest.runner.MillFramework` logs the
-  progress while * `utest.runner.Framework` writes it to standard out;
+- `uTest` writes to the standard out a header: "--- Running Tests ---", then:
+* `utest.runner.MillFramework` logs the
+  progress while
+* `utest.runner.Framework` writes it to standard out;
 
 Situation with the summary is nuanced: some test frameworks (`JUnit4`, `MUnit` on JVM, `uTest` s
 `utest.runner.MillFramework`, `ZIO Test` on JVM), instead of logging the summary as they should, write it to the
@@ -345,18 +347,22 @@ be returned as it is supposed to even on JVM: witness `ScalaCheck` and `Scalates
 
 - `specs2` returns empty summary; if there were failing tests, it logs them;
 
-- `uTest`: * `utest.runner.Framework` returns the real summary (`Tests: _, Passed: _, Failed: _`); *
-  `utest.runner.MillFramework` returns empty summary, and writes the real summary to standard out - citing the
+- `uTest`:
+* `utest.runner.Framework` returns the real summary (`Tests: _, Passed: _, Failed: _`);
+* `utest.runner.MillFramework` returns empty summary, and writes the real summary to standard out - citing the
   https://github.com/com-lihaoyi/utest/blob/master/utest/src/utest/runner/MasterRunner.scala#L64["bug"] - even on
   Scala.js and Scala Native, where the "bug" does not exist;
 
-- `Weaver Test`: * on JVM: returns empty summary; * on Scala.js and Scala Native: returns some with the list of failed
+- `Weaver Test`:
+* on JVM: returns empty summary;
+* on Scala.js and Scala Native: returns some with the list of failed
   tests and `_ test completed, _ failed`;
 
-- `ZIO Test`: * on JVM - returns a dummy summary "Completed tests" and writes the real summary
+- `ZIO Test`:
+* on JVM - returns a dummy summary "Completed tests" and writes the real summary
   (`_ tests passed. _ tests failed. _ tests ignored.`) to standard out - citing the
-  https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestRunnerJVM.scala#L67["bug"]; *
-  on Scala.js and Scala Native - calculates the totals, then promptly discards them and returns as a summary list of
+  https://github.com/zio/zio/blob/series/2.x/test-sbt/jvm/src/main/scala/zio/test/sbt/ZTestRunnerJVM.scala#L67["bug"];
+* on Scala.js and Scala Native - calculates the totals, then promptly discards them and returns as a summary list of
   failure details for failed tests (if any);
 
 Gradle's test output listener prints test name and the name of the output stream on a separate line, and indents the
@@ -556,127 +562,147 @@ Of course, those contributions benefit not just this plugin ;)
 
 I want to thank all those who worked with me on these issues and fixes.
 
-- https://www.scala-js.org[Scala.js]: * _https://github.com/scala-js/scala-js/pull/5132[pull/5132]_ _JUnit: populate
+- https://www.scala-js.org[Scala.js]:
+* _https://github.com/scala-js/scala-js/pull/5132[pull/5132]_ _JUnit: populate
   sbt.testing.Event.throwable on test failure._ Thank you to https://github.com/sjrd[sjrd] for working with me on this.
 * _https://github.com/scala-js/scala-js/pull/5134[pull/5134]_ _JUnit: populate sbt.testing.Event.duration._ Thank you to
   https://github.com/sjrd[sjrd] for working with me on this.
 
-- https://www.scala-js.org[Scala.js website]: * _https://github.com/scala-js/scala-js-website/pull/658[pull/658]_
+- https://www.scala-js.org[Scala.js website]:
+* _https://github.com/scala-js/scala-js-website/pull/658[pull/658]_
   _Mention build tools other than sbt._ Thank you to https://github.com/sjrd[sjrd] for approving.
 
-- https://github.com/scala-js/scala-js-env-jsdom-nodejs/[Scala.js JSDom Node.js Environment]: *
-  https://github.com/scala-js/scala-js-env-jsdom-nodejs/issues/57[issues/57] _Support jsdom 27.0.0+_
+- https://github.com/scala-js/scala-js-env-jsdom-nodejs/[Scala.js JSDom Node.js Environment]:
+* https://github.com/scala-js/scala-js-env-jsdom-nodejs/issues/57[issues/57] _Support jsdom 27.0.0+_
 
-- https://github.com/gmkumar2005/scala-js-env-playwright[Playwright for Scala.js]: *
-  https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[issues/17] _Publish for Scala 2.13._
+- https://github.com/gmkumar2005/scala-js-env-playwright[Playwright for Scala.js]:
+* https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[issues/17] _Publish for Scala 2.13._
 
-- https://scala-native.org[Scala Native]: * _https://github.com/scala-native/scala-native/pull/4320[pull/4320]_ _JUnit:
+- https://scala-native.org[Scala Native]:
+* _https://github.com/scala-native/scala-native/pull/4320[pull/4320]_ _JUnit:
   populate sbt.testing.Event.throwable and duration._ Thank you to https://github.com/ekrich[ekrich] for the
   encouragement, to https://github.com/LeeTibbert[LeeTibbert] for encouraging my typo fixes, and to
-  https://github.com/WojciechMazur[WojciechMazur] for accepting my contribution. *
-  https://github.com/scala-native/scala-native/issues/4323[issues/4323] _Expose a way to call Build.buildCached()
+  https://github.com/WojciechMazur[WojciechMazur] for accepting my contribution.
+* https://github.com/scala-native/scala-native/issues/4323[issues/4323] _Expose a way to call Build.buildCached()
   synchronously._ Thank you to https://github.com/WojciechMazur[WojciechMazur] for pointing me towards
   https://github.com/com-lihaoyi/mill/blob/main/libs/scalanativelib/worker/0.5/src/mill/scalanativelib/worker/ScalaNativeWorkerImpl.scala[Mill code]
-  for Scala Native and for https://github.com/scala-native/scala-native/pull/4326[adding] a method I requested. *
-  _https://github.com/scala-native/scala-native/pull/4342[pull/4342]_ _Remove spurious dependency of test-interface on
-  junit-runtime._ Thank you to https://github.com/WojciechMazur[WojciechMazur] for accepting my contribution. *
-  https://github.com/scala-native/scala-native/issues/4370[issues/4370] _Are dependency exclusions still necessary?_ *
-  _https://github.com/scala-native/scala-native/pull/4371[pull/4371]_ _Mention build tools other than sbt._ Thank you to
-  https://github.com/WojciechMazur[WojciechMazur] for approving. *
-  https://github.com/scala-native/scala-native/issues/4372[issues/4372] _Link errors with ZIO._ Thank you to
-  https://github.com/WojciechMazur[WojciechMazur] for looking into the issue. *
-  https://github.com/scala-native/scala-native/issues/4421[issues/4421] _Test output is lost._ Thank you to
-  https://github.com/WojciechMazur[WojciechMazur] for looking into the issue and fixing it. *
-  _https://github.com/scala-native/scala-native/pull/4427[pull/4427]_ _Remove spurious dependencies of test-runner._
+  for Scala Native and for https://github.com/scala-native/scala-native/pull/4326[adding] a method I requested.
+* _https://github.com/scala-native/scala-native/pull/4342[pull/4342]_ _Remove spurious dependency of test-interface on
+  junit-runtime._ Thank you to https://github.com/WojciechMazur[WojciechMazur] for accepting my contribution.
+* https://github.com/scala-native/scala-native/issues/4370[issues/4370] _Are dependency exclusions still necessary?_
+* _https://github.com/scala-native/scala-native/pull/4371[pull/4371]_ _Mention build tools other than sbt._ Thank you to
+  https://github.com/WojciechMazur[WojciechMazur] for approving.
+* https://github.com/scala-native/scala-native/issues/4372[issues/4372] _Link errors with ZIO._ Thank you to
+  https://github.com/WojciechMazur[WojciechMazur] for looking into the issue.
+* https://github.com/scala-native/scala-native/issues/4421[issues/4421] _Test output is lost._ Thank you to
+  https://github.com/WojciechMazur[WojciechMazur] for looking into the issue and fixing it.
+* _https://github.com/scala-native/scala-native/pull/4427[pull/4427]_ _Remove spurious dependencies of test-runner._
   Thank you to https://github.com/ekrich[ekrich] for working with me on the typo fixes included in this pull request and
   to https://github.com/WojciechMazur[WojciechMazur] for accepting my contribution.
 
-- https://github.com/gradle/gradle[Gradle]: * _https://github.com/gradle/gradle/pull/32656[pull/32656]_
+- https://github.com/gradle/gradle[Gradle]:
+* _https://github.com/gradle/gradle/pull/32656[pull/32656]_
   https://github.com/gradle/gradle/issues/32666[issues/32666] _Allow alternatives to ForkingTestClassProcessor._
 
-- https://github.com/JetBrains/intellij-scala[IntelliJ IDEA Scala Plugin]: *
-  https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[24127] _Scala Test Inconsistencies._ *
-  https://youtrack.jetbrains.com/issue/SCL-24128/Support-shared-sources-for-Gradle-not-just-sbt[24128] _Support shared
+- https://github.com/JetBrains/intellij-scala[IntelliJ IDEA Scala Plugin]:
+* https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies[24127] _Scala Test Inconsistencies._
+* https://youtrack.jetbrains.com/issue/SCL-24128/Support-shared-sources-for-Gradle-not-just-sbt[24128] _Support shared
   sources for Gradle, not just sbt._
 
-- https://zio.dev/[ZIO]: * https://github.com/zio/zio/issues/9629[issues/9629] _zio-test: Scala.js: no test events._
+- https://zio.dev/[ZIO]:
+* https://github.com/zio/zio/issues/9629[issues/9629] _zio-test: Scala.js: no test events._
   Thank you to https://github.com/jdegoes[jdegoes] for setting a bounty on this issue and to
-  https://github.com/kyri-petrou[kyri-petrou] for encouraging my approach to fix it. *
-  _https://github.com/zio/zio/pull/9979[pull/9979]_ _[test-sbt]: emit sbt.testing.Events on Scala.js and Scala Native._
-  Thank you to https://github.com/kyri-petrou[kyri-petrou] for accepting my contribution. *
-  _https://github.com/zio/zio/pull/9680[pull/9680]_ _test-sbt: treat TestWildcardSelector correctly._ Thank you to
-  https://github.com/kyri-petrou[kyri-petrou] for accepting my contribution. *
-  _https://github.com/zio/zio/pull/9756[pull/9756]_ _test-sbt: [bug] match tests on both short and prefixed names._
+  https://github.com/kyri-petrou[kyri-petrou] for encouraging my approach to fix it.
+* _https://github.com/zio/zio/pull/9979[pull/9979]_ _[test-sbt]: emit sbt.testing.Events on Scala.js and Scala Native._
+  Thank you to https://github.com/kyri-petrou[kyri-petrou] for accepting my contribution.
+* _https://github.com/zio/zio/pull/9680[pull/9680]_ _test-sbt: treat TestWildcardSelector correctly._ Thank you to
+  https://github.com/kyri-petrou[kyri-petrou] for accepting my contribution.
+* _https://github.com/zio/zio/pull/9756[pull/9756]_ _test-sbt: [bug] match tests on both short and prefixed names._
   Thank you to https://github.com/kyri-petrou[kyri-petrou] for working with me on this and to
-  https://github.com/hearnadam[hearnadam] for accepting my contribution. *
-  https://github.com/zio/zio/issues/10037[issues/10037] _[zio-test] Relocate/suppress output.json._ *
-  _https://github.com/zio/zio/pull/10054[pull/10054]_ _Enable build tools to relocate
+  https://github.com/hearnadam[hearnadam] for accepting my contribution.
+* https://github.com/zio/zio/issues/10037[issues/10037] _[zio-test] Relocate/suppress output.json._
+* _https://github.com/zio/zio/pull/10054[pull/10054]_ _Enable build tools to relocate
   "target/test-reports-zio/output.json"._ Thank you to https://github.com/kyri-petrou[kyri-petrou] for accepting my
-  contribution. * https://github.com/zio/zio/pull/10053[pull/10053] _Mention Gradle plugin for Scala.js and Scala
-  Native._ Thank you to https://github.com/kyri-petrou[kyri-petrou] for approving. *
-  https://github.com/zio/zio/pull/10120[pull/10120] _[test-sbt] More uniformity._ Thank you to
+  contribution.
+* https://github.com/zio/zio/pull/10053[pull/10053] _Mention Gradle plugin for Scala.js and Scala
+  Native._ Thank you to https://github.com/kyri-petrou[kyri-petrou] for approving.
+* https://github.com/zio/zio/pull/10120[pull/10120] _[test-sbt] More uniformity._ Thank you to
   https://github.com/narma[narma], https://github.com/He-Pin[He-Pin], and https://github.com/khajavi[khajavi] for
   encouragement; to https://github.com/kyri-petrou[kyri-petrou] and https://github.com/hearnadam[hearnadam] for
   reviewing and accepting my contribution.
 
-- https://scalacheck.org[ScalaCheck]: * https://github.com/typelevel/scalacheck/issues/1105[issues/1105] _sbt
-  ScalaCheckRunner: loss of test selection fidelity._ * _https://github.com/typelevel/scalacheck/pull/1107[pull/1107]_
+- https://scalacheck.org[ScalaCheck]:
+* https://github.com/typelevel/scalacheck/issues/1105[issues/1105] _sbt
+  ScalaCheckRunner: loss of test selection fidelity._
+* _https://github.com/typelevel/scalacheck/pull/1107[pull/1107]_
   _Increase Fidelity of the sbt.testing.Framework Implementation._ Thank you to https://github.com/Duhemm[Duhemm] for
-  blazing the trail and to https://github.com/satorg[satorg] for accepting my contribution. *
-  _https://github.com/typelevel/scalacheck/pull/1117[pull/1117]_ _Mention Gradle plugin for Scala.js and Scala Native._
+  blazing the trail and to https://github.com/satorg[satorg] for accepting my contribution.
+* _https://github.com/typelevel/scalacheck/pull/1117[pull/1117]_ _Mention Gradle plugin for Scala.js and Scala Native._
   Thank you to https://github.com/SethTisue[SethTisue] for approving and to https://github.com/satorg[satorg] for
   merging.
 
-- https://www.scalatest.org[ScalaTest]: * https://github.com/scalatest/scalatest/issues/2357[issues/2357] _sbt.testing:
+- https://www.scalatest.org[ScalaTest]:
+* https://github.com/scalatest/scalatest/issues/2357[issues/2357] _sbt.testing:
   Run the tests from the suites nested in the explicitly selected one._ Thank you to
   https://github.com/cheeseng[cheeseng] for helping me understand the problem with running nested ScalaTest suites using
   my plugin.
 
-- https://www.scalatest.org/[ScalaTest website]: * _https://github.com/scalatest/scalatest-website/pull/253[pull/253]_
+- https://www.scalatest.org/[ScalaTest website]:
+* _https://github.com/scalatest/scalatest-website/pull/253[pull/253]_
   _Mention Gradle plugin for Scala.js and Scala Native._
 
-- https://scalameta.org/munit[MUnit]: * _https://github.com/scalameta/munit/pull/918[pull/918]_ _Populate
+- https://scalameta.org/munit[MUnit]:
+* _https://github.com/scalameta/munit/pull/918[pull/918]_ _Populate
   sbt.testing.Event.duration on Scala.js._ Thank you to https://github.com/tgodzik[tgodzik] for accepting my
   contribution.
 * https://github.com/scalameta/munit/pull/968[pull/968] _Mention Gradle plugin for Scala.js and Scala Native._ Thank you
-  to https://github.com/tgodzik[tgodzik] for approving. * https://github.com/scalameta/munit/issues/1075[issues/1075]
+  to https://github.com/tgodzik[tgodzik] for approving.
+* https://github.com/scalameta/munit/issues/1075[issues/1075]
   Long options broken on js-native.
   Thank you to https://github.com/kitbellew[kitbellew] for clarification on the change of approach to the framework
   options.
 
-- https://etorreborre.github.io/specs2[specs2]: * _https://github.com/etorreborre/specs2/pull/1327[pull/1327]_ _Treat
+- https://etorreborre.github.io/specs2[specs2]:
+* _https://github.com/etorreborre/specs2/pull/1327[pull/1327]_ _Treat
   sbt.testing.TestWildcardSelectors correctly._ Thank you to https://github.com/etorreborre[etorreborre] for accepting
-  my contribution. * https://github.com/etorreborre/specs2/issues/1352[issues/1352] _Scala Native in v5 and website
-  issues_ Thank you to https://github.com/etorreborre[etorreborre] for clarifications. *
-  https://github.com/etorreborre/specs2/issues/1353[issues/1353] _Mention Gradle plugin for Scala.js and Scala Native -
+  my contribution.
+* https://github.com/etorreborre/specs2/issues/1352[issues/1352] _Scala Native in v5 and website
+  issues_ Thank you to https://github.com/etorreborre[etorreborre] for clarifications.
+* https://github.com/etorreborre/specs2/issues/1353[issues/1353] _Mention Gradle plugin for Scala.js and Scala Native -
   or not ;)_ Thank you to https://github.com/etorreborre[etorreborre] for mentioning my plugin.
 
-- https://github.com/com-lihaoyi/utest[uTest]: * _https://github.com/com-lihaoyi/utest/pull/383[pull/383]_ _Honour
-  useSbtLoggers for startHeader._ * _https://github.com/com-lihaoyi/utest/pull/384[pull/384]_ _Mention Gradle plugin for
+- https://github.com/com-lihaoyi/utest[uTest]:
+* _https://github.com/com-lihaoyi/utest/pull/383[pull/383]_ _Honour
+  useSbtLoggers for startHeader._
+* _https://github.com/com-lihaoyi/utest/pull/384[pull/384]_ _Mention Gradle plugin for
   Scala.js and Scala Native._ Thank you to https://github.com/lihaoyi[lihaoyi] for approving.
 
-- https://github.com/typelevel/weaver-test[Weaver Test]: * _https://github.com/typelevel/weaver-test/pull/183[pull/183]_
+- https://github.com/typelevel/weaver-test[Weaver Test]:
+* _https://github.com/typelevel/weaver-test/pull/183[pull/183]_
   _Less discarding of test failure throwables._ Thank you to https://github.com/zainab-ali[zainab-ali] for helpful
-  suggestions and to https://github.com/Baccata[Baccata] for accepting my contribution. *
-  https://github.com/typelevel/weaver-test/issues/185[issues/185] _Update Scala Native to 0.5 and munit-diff to 1.1_ *
-  _https://github.com/typelevel/weaver-test/pull/186[pull/186]_ _Do not pluralize singular failure._ Thank you to
+  suggestions and to https://github.com/Baccata[Baccata] for accepting my contribution.
+* https://github.com/typelevel/weaver-test/issues/185[issues/185] _Update Scala Native to 0.5 and munit-diff to 1.1_
+* _https://github.com/typelevel/weaver-test/pull/186[pull/186]_ _Do not pluralize singular failure._ Thank you to
   https://github.com/zainab-ali[zainab-ali] for https://github.com/typelevel/weaver-test/pull/192[fixing] the issue in a
-  much cleaner way. * _https://github.com/typelevel/weaver-test/pull/187[pull/187]_ _Mention Gradle support with the
+  much cleaner way.
+* _https://github.com/typelevel/weaver-test/pull/187[pull/187]_ _Mention Gradle support with the
   multi-backend Scala plugin._ Thank you to https://github.com/Baccata[Baccata] for approving.
 
-- https://wvlet.org/airframe/docs/airspec[AirSpec]: * https://github.com/wvlet/airframe/issues/4006[issues/4006]
+- https://wvlet.org/airframe/docs/airspec[AirSpec]:
+* https://github.com/wvlet/airframe/issues/4006[issues/4006]
   _AirSpec: Missing dependency on Scala.js: org.scala-js:scalajs-java-logging_ Thank you to
-  https://github.com/xerial[xerial] for addressing the issue. * _https://github.com/wvlet/airframe/pull/4012[pull/4012]_
+  https://github.com/xerial[xerial] for addressing the issue.
+* _https://github.com/wvlet/airframe/pull/4012[pull/4012]_
   _Mention Gradle multi-backend Scala plugin._ Thank you to https://github.com/xerial[xerial] for approving.
 
-- https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog]: *
-  https://github.com/hedgehogqa/scala-hedgehog/issues/296[issues/296] _The state of Scala Native support?_ Thank you to
-  https://github.com/kevin-lee[kevin-lee] for addressing the issue. *
-  _https://github.com/hedgehogqa/scala-hedgehog/pull/300[pull/300]_ _Mention Gradle multi-backend plugin - and fix the
+- https://hedgehogqa.github.io/scala-hedgehog/[Hedgehog]:
+* https://github.com/hedgehogqa/scala-hedgehog/issues/296[issues/296] _The state of Scala Native support?_ Thank you to
+  https://github.com/kevin-lee[kevin-lee] for addressing the issue.
+* _https://github.com/hedgehogqa/scala-hedgehog/pull/300[pull/300]_ _Mention Gradle multi-backend plugin - and fix the
   badges._ Thank you to https://github.com/kevin-lee[kevin-lee] for accepting my contribution.
 
-- https://github.com/scalaprops/scalaprops[scalaprops]: *
-  https://github.com/scalaprops/scalaprops/issues/530[issues/530] _Support for sbt.testing.Framework on Scala.js and
+- https://github.com/scalaprops/scalaprops[scalaprops]:
+* https://github.com/scalaprops/scalaprops/issues/530[issues/530] _Support for sbt.testing.Framework on Scala.js and
   Scala Native_
 
 == Won't Fix
@@ -684,14 +710,48 @@ I want to thank all those who worked with me on these issues and fixes.
 I did fix quite a number of bugs and made a number of improvements to various test frameworks; at this point, cosmetic
 fixes for the frameworks I do not even use are unlikely to happen, but let's at least list them:
 
-- use sbt loggers in ZIO Test
 - add test summary in specs2
 - add test summary in Weaver Test on JVM
 - add test filtering in Weaver Test
 - add test summary in Hedgehog
 - add test filtering in Hedgehog
 - add test summary in AirSpec
-- add test filtering in AirSpec;
+- add test filtering in AirSpec
+
+
+== Hopeless
+
+Plugin integrates with a number of external dependencies; issues with those dependencies ultimately can be resolved only by the maintainers of those dependencies. Some maintainers are either too busy with other things or just disappeared...
+
+=== Playwright for Scala.js
+
+- if my issue https://github.com/gmkumar2005/scala-js-env-playwright/issues/17 concerning publishing Scala 2.13 artifacts of the Playwright JavaScript environment for Scala.js is ever addressed, plugin could add support for it - the only additional https://www.scala-js.org/doc/project/js-environments.html[JavaScript environment] that it makes sense  to support.
+Judging by the absence of any reaction from the maintainers, it won't happen though :(
+
+=== Scalaprops
+- if the issue https://github.com/scalaprops/scalaprops/issues/530 ever gets addressed, I shall add support for scalaprops on Scala.js and Scala Native.
+Judging by the absence of any reaction from the maintainers, it won't happen though :(
+
+=== Mention Gradle
+
+Scala.js, Scala Native, and almost all test frameworks now mention support for Gradle using my plugin; I no longer expect it to be mentioned by:
+
+- ScalaTest: https://github.com/scalatest/scalatest-website/pull/253;
+- scalaprops: https://github.com/scalaprops/scalaprops;
+
+=== IntelliJ
+
+- if the issue https://youtrack.jetbrains.com/issue/SCL-4398/ScalaCheck-support is ever addressed, user experience in IntelliJ will improve for all users of ScalaCheck - with or without my Gradle plugin.
+Judging by the total lack of activity on the 13 years old issue, it won't happen though :(
+
+- if IntelliJ Scala Plugin ever starts supporting ZIO Test, user experience in IntelliJ will improve for all users of ZIO Test - with or without my Gradle plugin.
+Judging by the existence of the separate (now semi-abandoned) https://github.com/zio/zio-intellij[ZIO companion plugin for IntelliJ IDEA], it won't happen though :(
+
+- if my issue https://youtrack.jetbrains.com/issue/SCL-24127/Scala-Test-Inconsistencies concerning inconsistencies in test frameworks support in IntelliJ IDEA is ever addressed, user experience in IntelliJ will improve for all users of the frameworks involved - with or without my Gradle plugin.
+Judging by the number of the related issues and the time they are outstanding, it won't happen though :(
+
+- if work in progress https://youtrack.jetbrains.com/issue/IJPL-339/Multi-context-resolve-support-in-IJ-platform[multi-context resolve support in IJ platform] ever ships anything, it might allow me to clean out some ugly workarounds.
+This is not completely hopeless - but I am not holding my breath either ;)
 
 == Credits
 
