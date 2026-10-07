@@ -3,8 +3,12 @@ plugins {
   id 'signing'
   id 'org.podval.conventions'
   id 'org.podval.conventions.publish'
-  id 'org.podval.tools.scalajs' version '1.0.4'
+  id 'org.podval.tools.scala' version '2.2.0'
   id 'com.gradle.plugin-publish' version '2.2.1'
+}
+
+scalaBackend {
+  useArtifactSuffix = false
 }
 
 group = 'org.podval.tools'
