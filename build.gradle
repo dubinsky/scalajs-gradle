@@ -2,7 +2,7 @@ plugins {
   id 'scala'
   id 'org.podval.conventions'
   id 'org.podval.conventions.publish'
-  id 'org.podval.tools.scala' version '2.2.0'
+  id 'org.podval.tools.scala' version '2.3.0'
   id 'com.gradle.plugin-publish' version '2.2.1'
 }
 
