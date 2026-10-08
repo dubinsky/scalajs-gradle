@@ -4,9 +4,9 @@
 :toc: preamble
 :icons: font
 // INCLUDED ATTRIBUTES
-:attribute-gradleVersionForBadge: 9.8.0
+:attribute-gradleVersionForBadge: 9.8.1
 :attribute-pluginBackendProperty: org.podval.tools.backend
-:version-gradle: 9.8.0
+:version-gradle: 9.8.1
 :version-plugin: 2.3.0
 :version-scalanative: 0.5.12
 :version-scalajs: 1.22.0
@@ -376,12 +376,15 @@ The extension exposes:
   classes listed under <<test-frameworks>> (for example `org.podval.tools.test.framework.MUnit`)
 - `scalaDependency(group, artifact, version)` and `scalaDependency(group, artifact, version, transformer)`
 - `useArtifactSuffix`, default `true`, controls the suffix of the artifacts this project produces.
-  Set it in the build script.
-  The plugin reads it after every project has been evaluated, so an `afterEvaluate` block on that same project still
-  runs in time.
-  On a mixed-backend build, set it once on the mixed project.
-  Each backend project inherits the value.
-  A value in that backend project's own build script wins.
+  Set it in the build script, or in an `afterEvaluate` block written in that same build script.
+  The plugin reads it at the end of this project's configuration, after that block, and before other projects can
+  resolve this project's jar.
+  On a mixed build, set it on the mixed project, in that project's build script or in its `afterEvaluate`.
+  The parent is configured before backend children.
+  Each backend inherits the value.
+  A value in the backend project's own build script, including its `afterEvaluate`, wins.
+  An `afterEvaluate` registered from inside a build-script `afterEvaluate` does not quietly lose.
+  The flag is already finalized, and the assignment fails configuration with `IllegalStateException` (`The value for %s is final and cannot be changed any further.`).
   When the value is omitted or `true`, the main jar, the sources jar, and the javadoc jar use `suffix`, and a Maven
   publication whose `artifactId` is still the project name is published with that suffix.
   When it is `false`, those jars and that `artifactId` use the project name and no suffix.
@@ -560,8 +563,8 @@ project:
 === Mixed Backends
 Plugin supports using multiple backends in the same project with some sources shared between some of them.
 
-This mode is triggered when at least one of the directories containing backend-specific sources - `js`, `jvm`, `native`
-- exists.
+This mode is triggered when at least one of the directories containing backend-specific sources - `js`, `jvm`, `native` -
+exists.
 All backends do not have to be used all the time; with only one backend used, this setup is equivalent to the
 <<single-backend>> one (and if that backend is `jvm` - to the <<jvm-only>> one).
 Backend-specific directories must also be included as _projects_ in the `settings.gradle` file.
@@ -668,7 +671,7 @@ project <7>
 <5> sources shared between some backends
 <6> sources specific to a backend
 <7> `src` here is shared between all backends, the same role as `shared/src`.
-Use one of the two.
+    Use one of the two.
 
 Publish from the command line.
 When the build runs inside IntelliJ, the plugin adds an `implementation` dependency from each backend project to its
@@ -818,8 +821,7 @@ dependencies {
 
 Plugin does this automatically unless a dependency on `org.scala-js:scalajs-compiler` is declared explicitly.
 
-If the project uses Scala 2 _and_ JUnit 4 for Scala.js, a JUnit Scala compiler plugin is also needed
-(<<junit4-scalajs-scalanative>>):
+If the project uses Scala 2 _and_ JUnit 4 for Scala.js, a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scalanative>>):
 
 [source,groovy,subs="+attributes"]
 ----
@@ -938,9 +940,9 @@ https://phantomjs.org/[PhantomJS] is not supported: the project has been abandon
 
 https://github.com/scala-js/scala-js-env-selenium[Selenium] is not supported: the project seems to be abandoned.
 
-https://github.com/gmkumar2005/scala-js-env-playwright[Playwright]
-('io.github.gmkumar2005:scala-js-env-playwright_2.13:{version-scala-js-env-playwright}') is not supported: the project
-publishes artifacts https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[only] for Scala 2.12.
+https://github.com/gmkumar2005/scala-js-env-playwright[Playwright] ('io.github.gmkumar2005:scala-js-env-playwright_2.13:{version-scala-js-env-playwright}')
+is not supported: the project publishes artifacts https://github.com/gmkumar2005/scala-js-env-playwright/issues/17[only]
+for Scala 2.12.
 
 === Node.js
 
@@ -1128,8 +1130,7 @@ dependencies {
 
 Plugin does this automatically unless a dependency on `org.scala-native:nscplugin` is declared explicitly.
 
-If the project uses JUnit 4 for Scala Native, a JUnit Scala compiler plugin is also needed
-(<<junit4-scalajs-scalanative>>):
+If the project uses JUnit 4 for Scala Native, a JUnit Scala compiler plugin is also needed (<<junit4-scalajs-scalanative>>):
 
 [source,groovy,subs="+attributes"]
 ----
@@ -1266,7 +1267,7 @@ All these patterns work as intended.
 The following patterns specify test cases to run:
 
 - `"org.podval.tools.test.SomeTestClass.success"`: specified test case in specified class (used by IntelliJ Idea, see
-<<testing-in-intellij>>)
+  <<testing-in-intellij>>)
 - `"org.podval.tools.test.SomeTestClass.succ*"`: test cases whose names start with "succ" in specified class.
 
 How much of a test-case pattern a framework honors is described with that framework below.
@@ -1970,6 +1971,5 @@ object ZIOTestNested extends ZIOSpecDefault {
 
 == Further reading
 
-How the plugin is put together, and the history of that work, is in
-link:implementation-notes.adoc[Implementation notes].
+How the plugin is put together, and the history of that work, is in link:implementation-notes.adoc[Implementation notes].
 

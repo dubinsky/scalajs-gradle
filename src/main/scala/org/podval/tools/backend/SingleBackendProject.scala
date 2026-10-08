@@ -28,10 +28,17 @@ final class SingleBackendProject(
     backend.apply(project, jvmPluginServices, isRunningInIntelliJ)
     backend.registerTasks(project)
 
-    // After every build script, so the mixed project can set useArtifactSuffix and this project can override it.
-    project.getGradle.projectsEvaluated(_ => configureArtifacts())
+    // Publication ids only. maven-publish can still setArtifactId from afterEvaluate.
+    // Jar names are not applied here: Gradle 9.8.1 freezes a project-dependency File
+    // before this listener runs.
+    project.getGradle.projectsEvaluated(_ => configurePublishedCoordinates())
   
   override def afterEvaluate(): Unit =
+    // Next NotifyAfterEvaluate batch: after a build-script afterEvaluate on this project,
+    // and after the mixed parent (configured first) has assigned useArtifactSuffix.
+    // Before state.configured(), so a project dependency freezes the suffixed jar name.
+    project.afterEvaluate(_ => configureJarArtifacts())
+
     sharedProjects.map(_.project).foreach(addSharedSources)
 
     val extension: BackendExtension = BackendExtension.get(project)
@@ -49,14 +56,24 @@ final class SingleBackendProject(
       pluginScalaLibrary  = extension.getPluginScalaLibrary
     )
 
-  private def configureArtifacts(): Unit =
+  private def configureJarArtifacts(): Unit =
     val extension: BackendExtension = BackendExtension.get(project)
     UseArtifactSuffix.inherit(project, extension.getUseArtifactSuffix)
-    backend.configureArtifacts(
-      project,
-      projectScalaLibrary = extension.getScalaLibrary,
+    val suffix: String = backend.jarArtifactSuffix(
+      extension.getScalaLibrary,
       useArtifactSuffix = extension.getUseArtifactSuffix.get
     )
+    backend.configureJarArtifacts(project, suffix)
+
+  private def configurePublishedCoordinates(): Unit =
+    val extension: BackendExtension = BackendExtension.get(project)
+    // inherit is a no-op if the jar step already ran. Do not configure jars here.
+    UseArtifactSuffix.inherit(project, extension.getUseArtifactSuffix)
+    val suffix: String = backend.jarArtifactSuffix(
+      extension.getScalaLibrary,
+      useArtifactSuffix = extension.getUseArtifactSuffix.get
+    )
+    backend.configurePublishedCoordinates(project, suffix)
 
   private def addSharedSources(shared: Project): Unit =
     def add(): Unit = addSources: (sourceSetGetter, _, directorySetGetter) =>

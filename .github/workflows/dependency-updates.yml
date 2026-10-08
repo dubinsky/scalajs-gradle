@@ -1,107 +1,12 @@
-# Weekly dependency update check for dubinsky/scalajs-gradle.
-#
-# Alert strategy: one idempotent GitHub Issue titled "Dependency updates available".
-#   - updates found  → create or update that issue with the plain-text report
-#   - nothing outdated → close the open issue if present (no noise on clean runs)
-#
-# Required: repository Issues enabled; workflow permissions contents:read + issues:write.
-
 name: Dependency updates
-
 on:
   schedule:
-    # Monday 12:00 UTC = 08:00 America/New_York (ET, UTC-4) / 07:00 EST (UTC-5)
+    # Monday 12:00 UTC
     - cron: "0 12 * * 1"
   workflow_dispatch:
-
 permissions:
   contents: read
   issues: write
-
-concurrency:
-  group: dependency-updates
-  cancel-in-progress: true
-
 jobs:
   dependency-updates:
-    name: Check for dependency updates
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v6
-
-      - name: Set up Java (Temurin 25)
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Run dependencyUpdates
-        run: ./gradlew dependencyUpdates --no-daemon -DoutputFormatter=json,plain
-
-      - name: Parse report and notify via Issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_TITLE: Dependency updates available
-          REPORT_TXT: build/dependencyUpdates/report.txt
-          REPORT_JSON: build/dependencyUpdates/report.json
-        run: |
-          set -euo pipefail
-
-          if [[ ! -f "$REPORT_JSON" ]]; then
-            echo "::error::Missing $REPORT_JSON (expected from -DoutputFormatter=json,plain)"
-            exit 1
-          fi
-
-          COUNT="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("outdated",{}).get("count",0))' "$REPORT_JSON")"
-          echo "outdated.count=$COUNT"
-
-          # Find an open issue with the exact title (idempotent single-issue approach).
-          EXISTING="$(gh issue list --state open --json number,title \
-            --jq ".[] | select(.title == \"${ISSUE_TITLE}\") | .number" | head -n1 || true)"
-
-          if [[ "$COUNT" -gt 0 ]]; then
-            BODY_FILE="$(mktemp)"
-            {
-              echo "Automated report from [\`dependencyUpdates\`](https://github.com/ben-manes/gradle-versions-plugin) (workflow: Dependency updates)."
-              echo
-              echo "Outdated dependencies: **${COUNT}**"
-              echo
-              echo "<details><summary>Full report</summary>"
-              echo
-              echo '```'
-              if [[ -f "$REPORT_TXT" ]]; then
-                cat "$REPORT_TXT"
-              else
-                python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1])), indent=2))' "$REPORT_JSON"
-              fi
-              echo '```'
-              echo
-              echo "</details>"
-              echo
-              echo "_This issue is updated on each weekly run while updates remain; it is closed automatically when none are found._"
-            } > "$BODY_FILE"
-
-            if [[ -n "${EXISTING}" ]]; then
-              echo "Updating open issue #${EXISTING}"
-              gh issue edit "$EXISTING" --body-file "$BODY_FILE"
-            else
-              echo "Creating issue: ${ISSUE_TITLE}"
-              gh issue create --title "$ISSUE_TITLE" --body-file "$BODY_FILE"
-            fi
-          else
-            echo "No outdated dependencies."
-            if [[ -n "${EXISTING}" ]]; then
-              echo "Closing issue #${EXISTING} (clean report)"
-              gh issue close "$EXISTING" --comment "No outdated dependencies on the latest scheduled run; closing automatically."
-            fi
-          fi
-
-          # Fallback alternative (disabled): fail the job so GitHub emails workflow watchers.
-          # if [[ "$COUNT" -gt 0 ]]; then
-          #   echo "::error::${COUNT} outdated dependencies — see $REPORT_TXT"
-          #   exit 1
-          # fi
+    uses: dubinsky/podval-gradle/.github/workflows/dependency-updates.yml@0.2.0

@@ -23,8 +23,9 @@ abstract class BackendExtension @Inject(
   final def getSuffix    : String = Artifact.suffix(getBackend, getScalaLibrary)
 
   def getUseArtifactSuffix: Property[Boolean]
-  // Read from projectsEvaluated, after every build script — including a mixed parent's —
-  // has assigned its value. An explicit value wins over the inherited convention.
+  // Read from a follow-up afterEvaluate on this project, after this project's build script
+  // and its afterEvaluate. The mixed parent was configured first.
+  // An explicit value wins over the inherited convention.
   UseArtifactSuffix.configure(getUseArtifactSuffix)
 
   private def nonJvmBackend: NonJvmBackend = getBackend match

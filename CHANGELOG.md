@@ -6,8 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-## [2.3.0] - 2026-
+## [2.3.0] - 2026-10-07
 
+- Project dependencies resolve the same jar file the `jar` task writes.
+  The artifact suffix is applied before Gradle freezes that file.
+- Gradle 9.8.1.
+- A same-project build-script `afterEvaluate` can set `scalaBackend.useArtifactSuffix`.
+  A nested `afterEvaluate` that sets it fails configuration because the property is already finalized.
+  The 2.0.0 note "An `afterEvaluate` block is too late" and the 2.1.0 note "Set it in the build script body" are stale
+  on that point.
+  Those released lines are left as written.
 - cleanup;
 
 ## [2.2.0] - 2026-10-07

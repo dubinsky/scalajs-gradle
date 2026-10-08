@@ -26,7 +26,15 @@ object UseArtifactSuffix:
 
   // convention() replaces the default and leaves an explicit value in place,
   // so a backend project's own assignment wins over the mixed project.
+  // The jar step calls this, then reads the property (finalizeValueOnRead).
+  // The publication step calls it again. A second convention() throws once the value is final,
+  // so the extra key makes that call a no-op. Do not .get the parent here.
   def inherit(project: Project, own: Property[Boolean]): Unit =
-    Projects.parent(project).foreach: parent =>
-      Extensions.findByType(parent, classOf[UseArtifactSuffix]).foreach: parentExtension =>
-        own.convention(parentExtension.getUseArtifactSuffix)
+    val key: String = "org.podval.tools.useArtifactSuffix.inherited"
+    val extra = project.getExtensions.getExtraProperties
+    if extra.has(key) then ()
+    else
+      Projects.parent(project).foreach: parent =>
+        Extensions.findByType(parent, classOf[UseArtifactSuffix]).foreach: parentExtension =>
+          own.convention(parentExtension.getUseArtifactSuffix)
+      extra.set(key, java.lang.Boolean.TRUE)

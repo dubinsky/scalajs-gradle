@@ -1,6 +1,5 @@
 plugins {
   id 'scala'
-  id 'signing'
   id 'org.podval.conventions'
   id 'org.podval.conventions.publish'
   id 'org.podval.tools.scala' version '2.2.0'
@@ -16,6 +15,8 @@ version = version_plugin
 description = 'Gradle plugin for cross-compiling to JVM, Scala.js and Scala Native'
 
 scala.scalaVersion = version_scala
+// Gradle 9.8.1 still defaults Zinc to 1.12.0.
+scala.zincVersion = '1.12.1'
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
 dependencies {

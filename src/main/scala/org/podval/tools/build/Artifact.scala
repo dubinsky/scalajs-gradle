@@ -73,7 +73,7 @@ object Artifact:
               suffixedPublicationNames += publicationName
 
         // A later afterEvaluate callback can still overwrite the id.
-        // configureArtifacts runs from projectsEvaluated, when that chance has passed.
+        // configurePublishedCoordinates runs from projectsEvaluated, when that chance has passed.
         def logSuffix(): Unit =
           val suffixedArtifactId: String = projectName + artifactSuffix
           suffixedPublicationNames.foreach: (publicationName: String) =>

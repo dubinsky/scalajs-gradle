@@ -206,6 +206,221 @@ class ArtifactSuffixTest extends AnyFlatSpec, Matchers, TableDrivenPropertyCheck
     output should include("FLAGS jvm=false js=true native=false")
     output should include("FLAGS jvm=true js=false native=false")
 
+  // archiveFile.name is asserted, not only classpath containment.
+  // A flag read in the plugin's first afterEvaluate finalizes the default true,
+  // so both sides then use the suffixed name and a contains-check still passes.
+  private val downstreamCompiles = Table(
+    ("caseName", "backend", "producerFlag", "expectedJar"),
+    ("js-default", ScalaJSBackend, "", s"producer_sjs1_3-$version.jar"),
+    ("jvm-default", JvmBackend, "", s"producer_3-$version.jar"),
+    (
+      "js-off",
+      ScalaJSBackend,
+      """scalaBackend {
+        |  useArtifactSuffix = false
+        |}
+        |""".stripMargin,
+      s"producer-$version.jar"
+    ),
+    (
+      "js-after-evaluate",
+      ScalaJSBackend,
+      """afterEvaluate {
+        |  scalaBackend.useArtifactSuffix = false
+        |}
+        |""".stripMargin,
+      s"producer-$version.jar"
+    )
+  )
+
+  "a downstream project" should "compile against the jar the producer writes" in :
+    forAll(downstreamCompiles): (
+      caseName: String,
+      backend: Backend,
+      producerFlag: String,
+      expectedJar: String
+    ) =>
+      val project: TestProject = TestProject(Seq("artifact-suffix", "downstream", caseName))
+      val writer = project.writer(None)
+      writer.writeSettings(Seq(
+        Fragments.settingsManagement,
+        Fragments.rootProjectName("suffixdep"),
+        Fragments.includeScalaJsPluginBuild,
+        "include 'producer'",
+        "include 'consumer'"
+      ))
+      writer.writeBuild(Seq(
+        s"""subprojects {
+           |  group = 'org.example'
+           |  version = '$version'
+           |}
+           |""".stripMargin
+      ))
+      writeFile(
+        project.projectDir,
+        "producer/build.gradle",
+        s"""${plugins()}
+           |${Fragments.scalaVersion(scala3)}
+           |$producerFlag
+           |""".stripMargin
+      )
+      writeFile(
+        project.projectDir,
+        "consumer/build.gradle",
+        s"""${plugins()}
+           |${Fragments.scalaVersion(scala3)}
+           |dependencies {
+           |  implementation project(':producer')
+           |}
+           |def expectedName = '$expectedJar'
+           |tasks.withType(org.gradle.api.tasks.scala.ScalaCompile).configureEach {
+           |  doFirst {
+           |    def archive = rootProject.project(':producer').tasks.named('jar', org.gradle.jvm.tasks.Jar).get().archiveFile.get().asFile
+           |    if (archive.name != expectedName) {
+           |      throw new GradleException("jar.archiveFile " + archive.name + " != " + expectedName)
+           |    }
+           |    if (!classpath.files.contains(archive)) {
+           |      throw new GradleException("classpath " + classpath.files*.name + " missing " + archive)
+           |    }
+           |  }
+           |}
+           |""".stripMargin
+      )
+      writeFile(project.projectDir, "producer/gradle.properties", s"${Backend.property}=${backend.name}\n")
+      writeFile(project.projectDir, "consumer/gradle.properties", s"${Backend.property}=${backend.name}\n")
+      writeFile(
+        project.projectDir,
+        "producer/src/main/scala/lib/Lib.scala",
+        """package lib
+          |object Lib:
+          |  def marker: Int = 1
+          |""".stripMargin
+      )
+      writeFile(
+        project.projectDir,
+        "consumer/src/main/scala/app/App.scala",
+        """package app
+          |object App:
+          |  def use: Int = lib.Lib.marker
+          |""".stripMargin
+      )
+
+      project.build(":consumer:compileScala")
+
+  "a mixed project" should "let downstream projects compile against each backend jar" in :
+    val project: TestProject = TestProject(Seq("artifact-suffix", "mixed-downstream"))
+    val writer = project.writer(None)
+    writer.writeSettings(Seq(
+      Fragments.settingsManagement,
+      Fragments.rootProjectName("suffixmixdown"),
+      Fragments.includeScalaJsPluginBuild,
+      "include 'mix'",
+      "include 'mix:js'",
+      "include 'mix:jvm'",
+      "include 'consumer-js'",
+      "include 'consumer-jvm'"
+    ))
+    writer.writeBuild(Seq())
+    writeFile(
+      project.projectDir,
+      "mix/build.gradle",
+      s"""${plugins()}
+         |${Fragments.scalaVersion(scala3)}
+         |group = 'org.example'
+         |version = '$version'
+         |subprojects {
+         |  group = 'org.example'
+         |  version = '$version'
+         |}
+         |scalaBackend {
+         |  useArtifactSuffix = false
+         |}
+         |""".stripMargin
+    )
+    writeFile(project.projectDir, "mix/js/build.gradle", "")
+    writeFile(
+      project.projectDir,
+      "mix/jvm/build.gradle",
+      """scalaBackend {
+        |  useArtifactSuffix = true
+        |}
+        |""".stripMargin
+    )
+    writeDownstream(
+      project.projectDir,
+      "consumer-js",
+      ScalaJSBackend,
+      ":mix:js",
+      s"js-$version.jar"
+    )
+    writeDownstream(
+      project.projectDir,
+      "consumer-jvm",
+      JvmBackend,
+      ":mix:jvm",
+      s"jvm_3-$version.jar"
+    )
+    writeFile(
+      project.projectDir,
+      "mix/js/src/main/scala/lib/Lib.scala",
+      """package lib
+        |object Lib:
+        |  def marker: Int = 1
+        |""".stripMargin
+    )
+    writeFile(
+      project.projectDir,
+      "mix/jvm/src/main/scala/lib/Lib.scala",
+      """package lib
+        |object Lib:
+        |  def marker: Int = 1
+        |""".stripMargin
+    )
+
+    project.build(":consumer-js:compileScala", ":consumer-jvm:compileScala")
+
+  private def writeDownstream(
+    root: File,
+    projectName: String,
+    backend: Backend,
+    producerPath: String,
+    expectedJar: String
+  ): Unit =
+    writeFile(root, s"$projectName/gradle.properties", s"${Backend.property}=${backend.name}\n")
+    writeFile(
+      root,
+      s"$projectName/build.gradle",
+      s"""${plugins()}
+         |${Fragments.scalaVersion(scala3)}
+         |dependencies {
+         |  implementation project('$producerPath')
+         |}
+         |def expectedName = '$expectedJar'
+         |tasks.withType(org.gradle.api.tasks.scala.ScalaCompile).configureEach {
+         |  doFirst {
+         |    def archive = rootProject.project('$producerPath').tasks.named('jar', org.gradle.jvm.tasks.Jar).get().archiveFile.get().asFile
+         |    if (archive.name != expectedName) {
+         |      throw new GradleException("jar.archiveFile " + archive.name + " != " + expectedName)
+         |    }
+         |    if (!classpath.files.contains(archive)) {
+         |      throw new GradleException("classpath " + classpath.files*.name + " missing " + archive)
+         |    }
+         |  }
+         |}
+         |""".stripMargin
+    )
+    writeFile(
+      root,
+      s"$projectName/src/main/scala/app/App.scala",
+      """package app
+        |object App:
+        |  def use: Int = lib.Lib.marker
+        |""".stripMargin
+    )
+
+  private def writeFile(dir: File, path: String, content: String): Unit =
+    Files.write(File(dir, path), content)
+
   private def writeProject(
     caseName: String,
     backend: Backend,

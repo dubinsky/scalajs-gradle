@@ -37,21 +37,20 @@ abstract class Backend(
     OutputTask.configureTasks(project, isRunningInIntelliJ)
     TestTask.configureTasks(project, testTaskClass)
 
-  // Jar and publication names are applied from projectsEvaluated, so a mixed project can
-  // set useArtifactSuffix in its build script and a backend project can override it.
-  def configureArtifacts(
-    project: Project,
+  // Jar names are applied from a follow-up afterEvaluate.
+  // A build-script afterEvaluate on this project can still set useArtifactSuffix,
+  // and the name is in place before Gradle freezes a project-dependency File.
+  // Publication ids stay on projectsEvaluated: a later afterEvaluate can still setArtifactId.
+  def jarArtifactSuffix(
     projectScalaLibrary: ScalaLibrary,
     useArtifactSuffix: Boolean
-  ): Unit =
-    val artifactSuffix: String =
-      if useArtifactSuffix then Artifact.suffix(this, projectScalaLibrary) else ""
+  ): String =
+    if useArtifactSuffix then Artifact.suffix(this, projectScalaLibrary) else ""
 
-    JarTask.configureJarTask(
-      project,
-      artifactSuffix
-    )
+  def configureJarArtifacts(project: Project, artifactSuffix: String): Unit =
+    JarTask.configureJarTask(project, artifactSuffix)
 
+  def configurePublishedCoordinates(project: Project, artifactSuffix: String): Unit =
     Artifact.configureMavenPublications(
       project,
       project.getName,
