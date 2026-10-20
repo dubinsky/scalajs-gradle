@@ -18,7 +18,7 @@ object ZioTest extends ScalaTestFramework(
   nameSbt = s"${io.AnsiColor.UNDERLINED}ZIO Test${io.AnsiColor.RESET}",
   group = "dev.zio",
   artifact = "zio-test-sbt",
-  versionDefault = Version("2.1.26"),
+  versionDefault = Version("2.1.27"),
   className = "zio.test.sbt.ZTestFramework",
   sharedPackages = List("zio.test.sbt"),
   tagOptions = TagOptions.OptionPerValue("-tags", "-ignore-tags"),

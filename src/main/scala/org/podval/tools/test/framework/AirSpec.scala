@@ -8,7 +8,7 @@ object AirSpec extends ScalaTestFramework(
   nameSbt = "airspec",
   group = "org.wvlet.airframe",
   artifact = "airspec",
-  versionDefault = Version("2026.2.2"),
+  versionDefault = Version("2026.2.4"),
   className = "wvlet.airspec.Framework",
   sharedPackages = List("wvlet.airspec")
 ):

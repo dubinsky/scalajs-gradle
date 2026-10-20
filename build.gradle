@@ -26,7 +26,7 @@ dependencies {
   implementation gradleApi()
 
   // for TestClassVisitor
-  implementation 'org.ow2.asm:asm:9.11'
+  implementation 'org.ow2.asm:asm:9.11.1'
 
   // for running tests
   compileOnly "org.scala-sbt:test-interface:$version_sbt_test_interface"
