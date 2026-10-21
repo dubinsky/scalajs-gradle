@@ -1,9 +1,9 @@
 plugins {
   id 'scala'
   id 'org.podval.conventions'
-  id 'org.podval.conventions.publish'
   id 'org.podval.tools.scala' version '2.3.0'
   id 'com.gradle.plugin-publish' version '2.2.1'
+  id 'org.podval.conventions.publish'
 }
 
 scalaBackend {
@@ -15,8 +15,6 @@ version = version_plugin
 description = 'Gradle plugin for cross-compiling to JVM, Scala.js and Scala Native'
 
 scala.scalaVersion = version_scala
-// Gradle 9.8.1 still defaults Zinc to 1.12.0.
-scala.zincVersion = '1.12.1'
 project.gradle.startParameter.excludedTaskNames.add('compileJava')
 
 dependencies {
@@ -59,14 +57,6 @@ dependencies {
 
 podvalPublish {
   gitHubRepository = 'dubinsky/scalajs-gradle'
-}
-
-publishing {
-  publications {
-    library(MavenPublication) {
-      from components.java
-    }
-  }
 }
 
 ext.scalaTags = [

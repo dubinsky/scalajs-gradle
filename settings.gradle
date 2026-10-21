@@ -1,24 +1,26 @@
 pluginManagement {
   repositories {
-    mavenLocal()
     mavenCentral()
     gradlePluginPortal()
   }
   // String path: a File would call Settings.includeBuild (not a plugin build).
-  final String conventionsDir =
-    providers.gradleProperty('podvalGradleDir').getOrElse('../podval-gradle')
-  if (file(conventionsDir).isDirectory() && file("${conventionsDir}/settings.gradle").isFile()) {
-    includeBuild conventionsDir
+  // When this build has a parent, that parent already included podval-gradle.
+  // Gradle rejects a second include of the same directory.
+  if (gradle.parent == null) {
+    final String conventionsDir =
+      providers.gradleProperty('podvalGradleDir').getOrElse('../podval-gradle')
+    if (file(conventionsDir).isDirectory() && file("${conventionsDir}/settings.gradle").isFile()) {
+      includeBuild conventionsDir
+    }
   }
 }
 
 plugins {
-  id 'org.podval.conventions.settings' version '0.2.0'
+  id 'org.podval.conventions.settings' version '0.3.0'
 }
 
 dependencyResolutionManagement {
   repositories {
-    mavenLocal()
     mavenCentral()
   }
 }

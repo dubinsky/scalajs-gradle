@@ -9,4 +9,4 @@ permissions:
   issues: write
 jobs:
   dependency-updates:
-    uses: dubinsky/podval-gradle/.github/workflows/dependency-updates.yml@0.2.0
+    uses: dubinsky/podval-gradle/.github/workflows/dependency-updates.yml@v0.3.0
