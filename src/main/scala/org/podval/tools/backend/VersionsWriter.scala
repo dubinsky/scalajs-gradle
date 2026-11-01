@@ -55,7 +55,8 @@ object VersionsWriter:
       "plugin"                  -> pluginVersion,
       "scalanative"             -> ScalaNativeBackend.versionDefault,
       "scalajs"                 -> ScalaJSBackend    .versionDefault,
-      "framework-specs2-scala2" -> framework.Specs2  .versionDefaultScala2
+      "framework-specs2-scala2" -> framework.Specs2.versionDefaultScala2,
+      "framework-specs2-before-3-9" -> framework.Specs2.versionDefaultBeforeScala3_9
     ) ++
       (dependencies ++ testFrameworks).map((name, dependency) => name -> dependency.versionDefault)
 

@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 - dependency updates;
+- Scalaprops 0.12.0 runs on Scala.js and Scala Native.
+  Tests are registered with `property("name") = ...`.
+- Specs2 5.11.0 is used from Scala 3.9 on.
+  Earlier Scala 3 stays on 5.9.1.
+  5.11.0 depends on `scala3-library` 3.9.0, and Scala 3.7 cannot read that TASTy.
 
 ## [2.3.0] - 2026-10-07
 

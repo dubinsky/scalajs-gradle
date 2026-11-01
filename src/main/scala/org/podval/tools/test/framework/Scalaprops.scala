@@ -1,20 +1,13 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{Backend, ScalaTestFramework, Version}
-import org.podval.tools.scalajs.ScalaJSBackend
-import org.podval.tools.scalanative.ScalaNativeBackend
+import org.podval.tools.build.{ScalaTestFramework, Version}
 
 object Scalaprops extends ScalaTestFramework(
   name = "Scalaprops",
   nameSbt = "Scalaprops",
   group = "com.github.scalaprops",
   artifact = "scalaprops",
-  versionDefault = Version("0.11.1"),
+  versionDefault = Version("0.12.0"),
   className = "scalaprops.ScalapropsFramework",
   sharedPackages = List("scalaprops")
-):
-  override def isBackendSupported(backend: Backend): Boolean = backend match
-    case ScalaNativeBackend => false
-    case ScalaJSBackend     => false
-    case _                  => true
- 
+)

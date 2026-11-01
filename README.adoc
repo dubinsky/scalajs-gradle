@@ -11,6 +11,7 @@
 :version-scalanative: 0.5.12
 :version-scalajs: 1.22.0
 :version-framework-specs2-scala2: 4.23.0
+:version-framework-specs2-before-3-9: 5.9.1
 :version-scala: 3.10.0
 :version-scala-213: 2.13.18
 :version-scala-212: 2.12.21
@@ -26,9 +27,9 @@
 :version-framework-hedgehog: 0.15.1
 :version-framework-munit: 1.3.6
 :version-framework-scalacheck: 1.20.0
-:version-framework-scalaprops: 0.11.1
+:version-framework-scalaprops: 0.12.0
 :version-framework-scalatest: 3.2.20
-:version-framework-specs2: 5.9.1
+:version-framework-specs2: 5.11.0
 :version-framework-utest: 0.9.5
 :version-framework-weaver-test: 0.13.0
 :version-framework-ziotest: 2.1.27
@@ -1577,9 +1578,9 @@ Framework-specific information for the frameworks that _are_ supported follows.
 
 |Scalaprops
 |com.github.scalaprops:scalaprops
-|jvm
+|jvm, js, native
 |{version-framework-scalaprops}
-|currently not supported on Scala.js nor Scala Native
+|
 
 |ScalaTest
 |org.scalatest:scalatest
@@ -1591,7 +1592,7 @@ Framework-specific information for the frameworks that _are_ supported follows.
 |org.specs2:specs2-core
 |jvm, js, native
 |{version-framework-specs2}
-|latest that supports Scala 2: {version-framework-specs2-scala2}
+|Scala 3.9 and later. Earlier Scala 3 uses {version-framework-specs2-before-3-9}. Scala 2 uses {version-framework-specs2-scala2}. `testFramework(Specs2)` picks one of these.
 
 |uTest
 |com.lihaoyi:utest
@@ -1640,15 +1641,10 @@ dependencies {
   testImplementation scalaBackend.testFramework(Hedgehog, '{version-framework-hedgehog}')
   testImplementation scalaBackend.testFramework(MUnit, '{version-framework-munit}')
   testImplementation scalaBackend.testFramework(ScalaCheck, '{version-framework-scalacheck}')
-  if (scalaBackend.jvm) {
-    testImplementation scalaBackend.testFramework(Scalaprops, '{version-framework-scalaprops}')
-  }
+  testImplementation scalaBackend.testFramework(Scalaprops, '{version-framework-scalaprops}')
   testImplementation scalaBackend.testFramework(ScalaTest, '{version-framework-scalatest}')
-  if (!scalaBackend.scala3) {
-    testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2-scala2}')
-  } else {
-    testImplementation scalaBackend.testFramework(Specs2, '{version-framework-specs2}')
-  }
+  // 5.11.0 needs Scala 3.9 or later. Omitting the version selects 5.11.0, 5.9.1, or 4.23.0.
+  testImplementation scalaBackend.testFramework(Specs2)
   testImplementation scalaBackend.testFramework(UTest, '{version-framework-utest}')
   testImplementation scalaBackend.testFramework(WeaverTest, '{version-framework-weaver-test}')
   testImplementation scalaBackend.testFramework(ZioTest, '{version-framework-ziotest}')
@@ -1681,9 +1677,7 @@ dependencies {
   testImplementation scalaBackend.testFramework(Hedgehog)
   testImplementation scalaBackend.testFramework(MUnit)
   testImplementation scalaBackend.testFramework(ScalaCheck)
-  if (scalaBackend.jvm) {
-    testImplementation scalaBackend.testFramework(Scalaprops)
-  }
+  testImplementation scalaBackend.testFramework(Scalaprops)
   testImplementation scalaBackend.testFramework(ScalaTest)
   testImplementation scalaBackend.testFramework(Specs2)
   testImplementation scalaBackend.testFramework(UTest)
@@ -1852,11 +1846,25 @@ With ScalaCheck, nested test cases are attributed to the _nesting_ suite - and t
 it, since ScalaCheck itself does not keep information about which class a property belongs to.
 
 === Scalaprops
+Register each test with `property`.
+Scala.js and Scala Native run only those tests.
+A `val` whose type is `Property` is still discovered on the JVM, and nowhere else.
+
+[source,scala]
+----
+import scalaprops._
+
+object ScalapropsTest extends Scalaprops {
+  property("revAndRevIsOriginal") = Property.forAll { (xs: List[Int]) => xs.reverse.reverse == xs }
+  property("empty") = Property.forAll { (xs: List[Int]) => xs.isEmpty }.ignore("ignore a test")
+}
+----
+
 - test filtering: does not support test case selectors and runs all test cases in the class
 - test tagging: not supported
 - nested suites: not supported
 - assumptions: not supported
-- ignoring a test: `Property.forAll { ... }.ignore("...")`;
+- ignoring a test: `property("name") = Property.forAll { ... }.ignore("...")`;
 
 === ScalaTest
 - test filtering: works fine
@@ -1884,6 +1892,9 @@ class ScalaTestNesting extends org.scalatest.Suites(
 ----
 
 === Specs2
+Specs2 5.11.0 is built with Scala 3.9.
+On an earlier Scala 3 compiler that library does not compile, so the plugin uses 5.9.1 there, and 4.23.0 on Scala 2.
+
 - test filtering: works fine
 - nested suites: not supported
 - assumptions: not supported

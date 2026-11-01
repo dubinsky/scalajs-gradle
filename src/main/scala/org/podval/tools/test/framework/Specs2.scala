@@ -1,6 +1,6 @@
 package org.podval.tools.test.framework
 
-import org.podval.tools.build.{ScalaTestFramework, TagOptions, Version}
+import org.podval.tools.build.{ScalaTestFramework, ScalaVersion, TagOptions, Version}
 
 // http://etorreborre.github.io/specs2/
 // https://github.com/etorreborre/specs2
@@ -11,7 +11,7 @@ object Specs2 extends ScalaTestFramework(
   nameSbt = "specs2",
   group = "org.specs2",
   artifact = "specs2-core",
-  versionDefault = Version("5.9.1"),
+  versionDefault = Version("5.11.0"),
   className = "org.specs2.runner.Specs2Framework",
   sharedPackages = List("org.specs2.runner"),
   tagOptions = TagOptions.ListWithoutEq("include", "exclude"),
@@ -26,5 +26,13 @@ object Specs2 extends ScalaTestFramework(
   // Latest version that supports Scala 2; v5 doesn't support it...
   val versionDefaultScala2: Version = Version("4.23.0")
 
-  override def versionDefault(isScala3: Boolean): Option[Version] =
-    if isScala3 then None else Some(versionDefaultScala2)
+  // 5.10.0 and later depend on scala3-library 3.9.0 (TASTy 28.9).
+  // Scala 3.7 reads stable TASTy through 28.7, so that library does not compile there.
+  val versionDefaultBeforeScala3_9: Version = Version("5.9.1")
+
+  private val scala3_9: Version = Version("3.9.0")
+
+  override def versionDefault(scalaVersion: ScalaVersion): Option[Version] =
+    if !scalaVersion.binaryVersion.isScala3 then Some(versionDefaultScala2)
+    else if scalaVersion.version >= scala3_9 then None
+    else Some(versionDefaultBeforeScala3_9)

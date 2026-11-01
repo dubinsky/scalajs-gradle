@@ -9,9 +9,9 @@ object ScalapropsFixture extends Fixture(
     s"""import scalaprops._
        |
        |object ScalapropsTest extends Scalaprops {
-       |  val revAndRevIsOriginal = Property.forAll { (xs: List[Int]) => xs.reverse.reverse == xs }
-       |  val revIsOriginal = Property.forAll { (xs: List[Int]) => xs.reverse == xs }
-       |  val empty = Property.forAll { (xs: List[Int]) => xs.isEmpty }.ignore("ignore a test")
+       |  property("revAndRevIsOriginal") = Property.forAll { (xs: List[Int]) => xs.reverse.reverse == xs }
+       |  property("revIsOriginal") = Property.forAll { (xs: List[Int]) => xs.reverse == xs }
+       |  property("empty") = Property.forAll { (xs: List[Int]) => xs.isEmpty }.ignore("ignore a test")
        |}
        |""".stripMargin
   ))

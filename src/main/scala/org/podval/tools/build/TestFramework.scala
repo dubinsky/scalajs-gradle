@@ -23,9 +23,8 @@ abstract class TestFramework(
   // so if the need goes away, this can be simplified ;)
   def isBackendSupported(backend: Backend, isScala3: Boolean): Boolean = isBackendSupported(backend)
   
-  // Note: `isScala3` parameter is needed only to accommodate specs2,
-  // so if the need goes away, this can be simplified ;)
-  def versionDefault(isScala3: Boolean): Option[Version] = None
+  // Specs2 publishes different artifacts for Scala 2, for Scala 3 before 3.9, and from 3.9 on.
+  def versionDefault(scalaVersion: ScalaVersion): Option[Version] = None
 
   // Note: `isJvm` parameter is needed only to accommodate MUnit,
   // which as of v1.2.4 throws an exception if a JVM-specific parameter is supplied on Scala.js or Scala Native.
@@ -43,7 +42,7 @@ abstract class TestFramework(
       .withVersion(
         scalaLibrary,
         version
-          .orElse(versionDefault(scalaLibrary.scalaVersion.binaryVersion.isScala3))
+          .orElse(versionDefault(scalaLibrary.scalaVersion))
           .getOrElse(dependencyForBackend.versionDefault)
       )
 
