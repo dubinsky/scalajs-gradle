@@ -262,8 +262,8 @@ $ ./gradlew -PscalaVersion={version-scala}
 Plugin assumes that the project uses the explicit approach; no assumptions are made about the name of the property.
 
 Starting with Scala 3.8.0, the Scala library is built for Java 17.
-When the project uses Scala 3.8 or newer, the plugin adds `-release:17` to each `ScalaCompile` task that does not
-already set `-release` or `-java-output-version`.
+When the project uses Scala 3.8 or newer, the plugin adds `-java-output-version:17` to each `ScalaCompile` task that
+does not already set `-release` or `-java-output-version`.
 
 === Building for Specific Scala Version
 Plugin does not support building for multiple Scala versions _at the same time_ using only Gradle (unlike the

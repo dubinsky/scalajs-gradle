@@ -44,7 +44,7 @@ final class SingleBackendProject(
     val extension: BackendExtension = BackendExtension.get(project)
     
     val projectScalaLibrary = extension.getScalaLibrary
-    ScalaCompiles.configureJavaRelease(
+    ScalaCompiles.configureJavaOutputVersion(
       project,
       scala3LibraryCompiledByScala3 = projectScalaLibrary.scalaVersion.binaryVersion match
         case ScalaBinaryVersion.Scala3WithScala3Library => true

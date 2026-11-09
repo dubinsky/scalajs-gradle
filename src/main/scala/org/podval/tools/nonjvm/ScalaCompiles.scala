@@ -12,23 +12,23 @@ object ScalaCompiles:
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   // Scala 3.8+ publishes a standard library built with JDK 17.
-  // The compiler requires an explicit release when the running JDK is newer.
-  val javaReleaseParameter: String = "-release:17"
+  // The compiler requires an explicit Java platform version when the running JDK is newer.
+  val javaOutputVersionParameter: String = "-java-output-version:17"
 
-  def javaReleaseToAdd(parameters: Seq[String], scala3LibraryCompiledByScala3: Boolean): Option[String] =
+  def javaOutputVersionToAdd(parameters: Seq[String], scala3LibraryCompiledByScala3: Boolean): Option[String] =
     if !scala3LibraryCompiledByScala3 then None
-    else if parameters.exists(isJavaRelease) then None
-    else Some(javaReleaseParameter)
+    else if parameters.exists(isJavaOutputVersion) then None
+    else Some(javaOutputVersionParameter)
 
-  private def isJavaRelease(parameter: String): Boolean =
+  private def isJavaOutputVersion(parameter: String): Boolean =
     parameter.startsWith("-release") || parameter.startsWith("-java-output-version")
 
-  def configureJavaRelease(project: Project, scala3LibraryCompiledByScala3: Boolean): Unit =
+  def configureJavaOutputVersion(project: Project, scala3LibraryCompiledByScala3: Boolean): Unit =
     Tasks.configureEach(
       project,
       classOf[ScalaCompile],
       (scalaCompile: ScalaCompile) =>
-        javaReleaseToAdd(parametersOf(scalaCompile), scala3LibraryCompiledByScala3)
+        javaOutputVersionToAdd(parametersOf(scalaCompile), scala3LibraryCompiledByScala3)
           .foreach(parameter => ensureParameters(scalaCompile, Seq(parameter)))
     )
 

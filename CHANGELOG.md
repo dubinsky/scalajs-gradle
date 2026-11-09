@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+- Scala 3.8 and newer compiles get `-java-output-version:17` when the `ScalaCompile` task does not already set
+  `-release` or `-java-output-version`.
+
 ## [2.3.1] - 2026-11-01
 
 - dependency updates;
