@@ -15,7 +15,7 @@ version = version_plugin
 description = 'Gradle plugin for cross-compiling to JVM, Scala.js and Scala Native'
 
 scala.scalaVersion = version_scala
-project.gradle.startParameter.excludedTaskNames.add('compileJava')
+podval.compileJavaEnabled = false
 
 dependencies {
   // plugin development plugin added by the plugin publishing plugin
